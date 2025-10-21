@@ -1,0 +1,813 @@
+<template>
+  <DashboardLayout>
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-left-section">
+          <div class="icon-badge">📦</div>
+          <div>
+            <h1 class="page-title">Penerimaan Barang</h1>
+            <p class="page-subtitle">Form penerimaan barang dari Purchase Order</p>
+          </div>
+        </div>
+        <router-link to="/admin/pembelian" class="btn-back">
+          <span class="btn-icon">←</span>
+          <span>Kembali ke Daftar</span>
+        </router-link>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-container">
+      <div class="spinner"></div>
+      <p class="loading-text">Memuat data PO...</p>
+    </div>
+
+    <!-- Form Content -->
+    <form v-else @submit.prevent="submitForm">
+      <!-- Informasi PO Card -->
+      <div class="content-card">
+        <div class="card-header-section">
+          <div class="section-icon-wrapper">
+            <div class="section-icon">ℹ️</div>
+          </div>
+          <div class="section-header-text">
+            <h2 class="section-title">Informasi PO</h2>
+            <p class="section-subtitle">Data purchase order yang akan diterima</p>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="grid-layout">
+            <div class="form-group">
+              <label class="form-label">
+                <span class="label-icon">🔖</span>
+                <span>Nomor PO</span>
+              </label>
+              <input
+                type="text"
+                :value="po?.po_number"
+                readonly
+                class="form-control readonly"
+                placeholder="Memuat nomor PO..."
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                <span class="label-icon">🏭</span>
+                <span>Supplier</span>
+              </label>
+              <input
+                type="text"
+                :value="po?.supplier?.name"
+                readonly
+                class="form-control readonly"
+                placeholder="Memuat nama supplier..."
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail Penerimaan Card -->
+      <div class="content-card">
+        <div class="card-header-section">
+          <div class="section-icon-wrapper">
+            <div class="section-icon">📝</div>
+          </div>
+          <div class="section-header-text">
+            <h2 class="section-title">Detail Penerimaan</h2>
+            <p class="section-subtitle">Isi informasi dan jumlah barang yang diterima</p>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="grid-layout">
+            <div class="form-group">
+              <label class="form-label">
+                <span class="label-icon">📅</span>
+                <span>Tanggal Penerimaan</span>
+                <span class="required">*</span>
+              </label>
+              <input type="date" v-model="form.receipt_date" required class="form-control" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                <span class="label-icon">#️⃣</span>
+                <span>No. Surat Jalan Supplier</span>
+              </label>
+              <input
+                type="text"
+                v-model="form.supplier_document_number"
+                class="form-control"
+                placeholder="Contoh: SJ/2025/123"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Barang -->
+        <div class="table-section">
+          <div class="table-header">
+            <div class="table-title">
+              <span class="table-icon">📋</span>
+              <span>Daftar Barang yang Diterima</span>
+            </div>
+            <div class="table-badge">{{ form.details.length }} item</div>
+          </div>
+
+          <div class="table-container">
+            <div class="table-wrapper">
+              <table class="detail-table">
+                <thead>
+                  <tr>
+                    <th class="th-no">
+                      <div class="th-content">
+                        <span class="th-icon">#</span>
+                        <span>No</span>
+                      </div>
+                    </th>
+                    <th class="th-item">
+                      <div class="th-content">
+                        <span class="th-icon">📦</span>
+                        <span>Nama Barang</span>
+                      </div>
+                    </th>
+                    <th class="th-ordered">
+                      <div class="th-content">
+                        <span class="th-icon">📊</span>
+                        <span>Jumlah Dipesan</span>
+                      </div>
+                    </th>
+                    <th class="th-received">
+                      <div class="th-content">
+                        <span class="th-icon">✅</span>
+                        <span>Jumlah Diterima</span>
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, index) in form.details" :key="item.item_id" class="data-row">
+                    <td class="td-no">
+                      <span class="row-number">{{ index + 1 }}</span>
+                    </td>
+                    <td class="td-item">
+                      <div class="item-info">
+                        <span class="item-name">{{ item.item_name }}</span>
+                        <span class="item-unit">{{ item.item_unit }}</span>
+                      </div>
+                    </td>
+                    <td class="td-ordered">
+                      <span class="qty-badge">{{ item.quantity_ordered }}</span>
+                    </td>
+                    <td class="td-received">
+                      <input
+                        type="number"
+                        v-model="item.quantity_received"
+                        class="qty-input"
+                        min="0"
+                        :max="item.quantity_ordered"
+                        step="0.01"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Catatan -->
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">
+              <span class="label-icon">📄</span>
+              <span>Catatan (Opsional)</span>
+            </label>
+            <textarea
+              v-model="form.notes"
+              rows="3"
+              class="form-control"
+              placeholder="Contoh: Barang diterima dalam kondisi baik, sesuai PO..."
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <button type="button" @click="cancel" class="btn-cancel">
+          <span class="btn-icon">❌</span>
+          <span>Batalkan</span>
+        </button>
+        <button type="submit" class="btn-submit" :disabled="isSaving">
+          <span class="btn-icon">{{ isSaving ? '⏳' : '💾' }}</span>
+          <span>{{ isSaving ? 'Menyimpan...' : 'Simpan Penerimaan' }}</span>
+        </button>
+      </div>
+    </form>
+  </DashboardLayout>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
+import apiClient from '@/api/axios'
+import DashboardLayout from '@/components/DashboardLayout.vue'
+
+const route = useRoute()
+const router = useRouter()
+const toast = useToast()
+
+const loading = ref(true)
+const isSaving = ref(false)
+const error = ref(null)
+const po = ref({}) // Untuk menyimpan data PO asli
+
+// Form data reaktif
+const form = ref({
+  purchase_order_id: null,
+  receipt_date: new Date().toISOString().slice(0, 10),
+  supplier_document_number: '',
+  notes: '',
+  details: [],
+})
+
+// Dijalankan saat komponen dimuat
+onMounted(async () => {
+  const po_id = route.params.po_id
+  form.value.purchase_order_id = po_id
+
+  try {
+    const response = await apiClient.get(`/purchase-orders/${po_id}`)
+    po.value = response.data.data
+
+    // Isi form.details dengan data dari PO
+    form.value.details = po.value.details.map((detail) => ({
+      item_id: detail.item_id,
+      item_name: detail.item.name,
+      item_unit: detail.item.unit.name,
+      quantity_ordered: parseFloat(detail.quantity_ordered),
+      quantity_received: parseFloat(detail.quantity_ordered),
+    }))
+  } catch (err) {
+    error.value = 'Gagal memuat data Pesanan Pembelian.'
+    toast.error(error.value)
+    console.error(err)
+  } finally {
+    loading.value = false
+  }
+})
+
+const submitForm = async () => {
+  isSaving.value = true
+  try {
+    // Kirim data ke backend
+    await apiClient.post('/goods-receipts', form.value)
+
+    toast.success('Penerimaan barang berhasil disimpan & stok diperbarui!')
+    router.push('/admin/pembelian') // Arahkan kembali ke daftar PO
+  } catch (err) {
+    toast.error('Gagal menyimpan penerimaan barang.')
+    console.error('Error saat menyimpan penerimaan barang:', err)
+  } finally {
+    isSaving.value = false
+  }
+}
+
+const cancel = () => {
+  router.push('/admin/pembelian')
+}
+</script>
+
+<style scoped>
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 20px;
+  background: white;
+  border-radius: 16px;
+  padding: 60px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid #d1fae5;
+  border-top-color: #10b981;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  font-size: 16px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+/* Page Header */
+.page-header {
+  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+  padding: 32px 36px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.2), transparent);
+  pointer-events: none;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+  gap: 24px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+.header-left-section {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.icon-badge {
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0 0 6px 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.page-subtitle {
+  font-size: 14px;
+  opacity: 0.95;
+  margin: 0;
+}
+
+.btn-back {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  color: #10b981;
+  text-decoration: none;
+  padding: 12px 22px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-back:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.btn-icon {
+  font-size: 18px;
+}
+
+/* Content Card */
+.content-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
+  border: 1px solid #f0f0f0;
+}
+
+.card-header-section {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 24px 32px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-bottom: 3px solid #e9ecef;
+  position: relative;
+}
+
+.card-header-section::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 32px;
+  width: 70px;
+  height: 3px;
+  background: linear-gradient(90deg, #10b981, #3b82f6);
+  border-radius: 3px 3px 0 0;
+}
+
+.section-icon {
+  font-size: 36px;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  border: 2px solid #6ee7b7;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0 0 4px 0;
+}
+
+.section-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.card-body {
+  padding: 28px 32px;
+}
+
+/* Form */
+.grid-layout {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.form-group {
+  margin-bottom: 0;
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.label-icon {
+  font-size: 16px;
+}
+
+.required {
+  color: #ef4444;
+  font-weight: 800;
+}
+
+.form-control {
+  width: 100%;
+  padding: 13px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 15px;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  background: white;
+  font-family: inherit;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
+}
+
+.form-control.readonly {
+  background: #f8f9fa;
+  color: #64748b;
+  cursor: not-allowed;
+  font-weight: 600;
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.6;
+}
+
+/* Table Section */
+.table-section {
+  margin-top: 24px;
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 32px;
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border-bottom: 2px solid #86efac;
+}
+
+.table-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 16px;
+  color: #065f46;
+}
+
+.table-icon {
+  font-size: 20px;
+}
+
+.table-badge {
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 20px;
+}
+
+.table-container {
+  padding: 24px;
+  background: linear-gradient(135deg, #f8f9fa, #ffffff);
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+  background: white;
+}
+
+.detail-table thead {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+}
+
+.detail-table th {
+  padding: 18px 16px;
+  text-align: left;
+  color: white;
+  font-weight: 800;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.th-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.th-icon {
+  font-size: 16px;
+}
+
+.th-no {
+  width: 8%;
+  text-align: center;
+}
+
+.th-item {
+  width: 45%;
+}
+
+.th-ordered {
+  width: 20%;
+  text-align: center;
+}
+
+.th-received {
+  width: 27%;
+  text-align: center;
+}
+
+.data-row {
+  transition: all 0.2s ease;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.data-row:hover {
+  background: #f0fdf4;
+}
+
+.detail-table td {
+  padding: 16px;
+  vertical-align: middle;
+}
+
+.td-no {
+  text-align: center;
+}
+
+.row-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+  font-weight: 800;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+.item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.item-unit {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.td-ordered {
+  text-align: center;
+}
+
+.qty-badge {
+  display: inline-flex;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+  color: #4338ca;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 2px solid #a5b4fc;
+}
+
+.td-received {
+  text-align: center;
+}
+
+.qty-input {
+  width: 100%;
+  max-width: 120px;
+  padding: 10px 14px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.qty-input:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 32px;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, #f8f9fa, #ffffff);
+  border-radius: 12px;
+  border: 2px solid #e9ecef;
+}
+
+.btn-cancel,
+.btn-submit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.btn-cancel {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  color: #475569;
+  border: 2px solid #cbd5e1;
+}
+
+.btn-cancel:hover {
+  background: linear-gradient(135deg, #e9ecef, #dee2e6);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-submit {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-submit:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4);
+}
+
+.btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-header {
+    padding: 24px 20px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-back {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .grid-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .card-body {
+    padding: 20px;
+  }
+
+  .table-container {
+    padding: 16px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .btn-cancel,
+  .btn-submit {
+    width: 100%;
+    justify-content: center;
+  }
+}
+</style>
