@@ -1,6 +1,5 @@
 <template>
   <DashboardLayout>
-    <!-- Page Header -->
     <div class="page-header">
       <div class="header-content">
         <div class="header-left-section">
@@ -19,13 +18,11 @@
       </div>
     </div>
 
-    <!-- Loading State -->
     <div v-if="loading" class="loading-container">
       <div class="spinner"></div>
       <p class="loading-text">Memuat daftar faktur...</p>
     </div>
 
-    <!-- Content Card -->
     <div v-else class="content-card">
       <div class="card-header">
         <div class="header-left">
@@ -80,7 +77,6 @@
               </tr>
             </thead>
             <tbody>
-              <!-- Empty State -->
               <tr v-if="daftarFaktur.length === 0" class="empty-row">
                 <td colspan="6">
                   <div class="empty-state">
@@ -91,7 +87,6 @@
                 </td>
               </tr>
 
-              <!-- Data Rows -->
               <tr v-for="faktur in daftarFaktur" :key="faktur.id" class="data-row">
                 <td class="td-invoice">
                   <span class="invoice-badge">{{ faktur.bill_number }}</span>
@@ -99,7 +94,9 @@
                 <td class="td-supplier">
                   <div class="supplier-info">
                     <span class="supplier-icon">🏭</span>
-                    <span>{{ faktur.supplier.name }}</span>
+                    <span>{{
+                      faktur.supplier ? faktur.supplier.name : 'Supplier Tidak Tersedia'
+                    }}</span>
                   </div>
                 </td>
                 <td class="td-date">
@@ -115,12 +112,20 @@
                 </td>
                 <td class="td-action">
                   <div class="action-buttons">
-                    <button class="btn-action btn-view" title="Lihat Detail">
+                    <router-link
+                      :to="{ name: 'DetailFakturPembelian', params: { id: faktur.id } }"
+                      class="btn-action btn-view"
+                      title="Lihat Detail"
+                    >
                       <span>👁️</span>
-                    </button>
-                    <button class="btn-action btn-print" title="Cetak Faktur">
+                    </router-link>
+                    <router-link
+                      :to="{ name: 'CetakFakturPembelian', params: { id: faktur.id } }"
+                      class="btn-action btn-print"
+                      title="Cetak Faktur"
+                    >
                       <span>🖨️</span>
-                    </button>
+                    </router-link>
                   </div>
                 </td>
               </tr>
@@ -131,7 +136,6 @@
     </div>
   </DashboardLayout>
 </template>
-
 <script setup>
 import { ref, onMounted } from 'vue'
 import apiClient from '@/api/axios'

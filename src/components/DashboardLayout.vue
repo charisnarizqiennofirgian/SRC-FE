@@ -118,8 +118,7 @@ const menuItems = ref([
     children: [
       { name: 'Data Kategori Produk', route: '/admin/categories' },
       { name: 'Data Satuan', route: '/admin/units' },
-      { name: 'Data Produk Jadi', route: '/admin/products' },
-      { name: 'Data Bahan Baku', route: '/admin/materials' },
+      { name: 'Data Master Barang', route: { name: 'MasterBarang' } },
       { name: 'Data Supplier', route: '/admin/suppliers' },
       { name: 'Data Buyer', route: '/admin/buyers' },
     ],
@@ -128,7 +127,11 @@ const menuItems = ref([
     name: 'Manajemen Stok',
     icon: '📦',
     children: [
-      { name: 'Laporan Stok', route: '/stock-report' },
+      { name: 'Laporan Stok Bahan Operasional', route: '/stock-report-operational' },
+      { name: 'Laporan Stok Produk Jadi', route: '/stock-report-finished' },
+      { name: 'Laporan Stok Kayu Logs', route: '/stock-report-logs' },
+      { name: 'Laporan Stok Kayu RST', route: '/stock-report-rst' },
+      { name: 'Laporan Karton BOX', route: '/laporan/karton-box' },
       { name: 'Stok Adjusment', route: '/stock-adjustment' },
     ],
   },

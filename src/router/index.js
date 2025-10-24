@@ -1,18 +1,27 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import StockReportView from '../views/manajemen-stok/StockReportView.vue'
 import StockAdjustmentView from '../views/manajemen-stok/StockAdjustmentView.vue'
+import LaporanOperasional from '../views/manajemen-stok/LaporanOperasional.vue'
+import LaporanProdukJadi from '../views/manajemen-stok/LaporanProdukJadi.vue'
+import LaporanKayuLogs from '../views/manajemen-stok/LaporanKayuLogs.vue'
+import LaporanKayuRST from '../views/manajemen-stok/LaporanKayuRST.vue'
+import LaporanKartonBox from '../views/manajemen-stok/LaporanKartonBox.vue'
+import DaftarPesananPembelian from '../views/pembelian/DaftarPesananPembelian.vue'
 
 import AdminView from '../views/AdminView.vue'
 import FakturPembelianForm from '../views/pembelian/FakturPembelianForm.vue'
 import FakturPembelianIndex from '../views/pembelian/FakturPembelianIndex.vue'
 import PesananPembelianCetak from '../views/pembelian/PesananPembelianCetak.vue'
+import FakturPembelianCetak from '../views/pembelian/FakturPembelianCetak.vue'
+import DetailFakturPembelian from '../views/pembelian/DetailFakturPembelian.vue'
 import PembelianOperasionalIndex from '../views/pembelian/PembelianOperasionalIndex.vue'
 import PembelianKartonIndex from '../views/pembelian/PembelianKartonIndex.vue'
 import PembelianKayuIndex from '../views/pembelian/PembelianKayuindex.vue'
 import FormOperasional from '../views/pembelian/FormOperasional.vue'
 import FormKarton from '../views/pembelian/FormKarton.vue'
 import FormKayu from '../views/pembelian/FormKayu.vue'
+import MasterBarangView from '../views/master/MasterBarangView.vue'
+import MasterBarangForm from '../views/master/MasterBarangForm.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   linkActiveClass: 'router-link-active',
@@ -44,11 +53,6 @@ const router = createRouter({
           component: () => import('../views/CategoryView.vue'),
         },
         {
-          path: 'products',
-          name: 'admin-products',
-          component: () => import('../views/ProductView.vue'),
-        },
-        {
           path: 'units',
           name: 'admin-units',
           component: () => import('../views/UnitView.vue'),
@@ -64,10 +68,35 @@ const router = createRouter({
           component: () => import('../views/BuyerView.vue'),
         },
         {
-          path: 'materials',
-          name: 'admin-materials',
-          component: () => import('../views/MaterialView.vue'),
-          meta: { title: 'Master Data Bahan Baku' },
+          path: 'master-barang',
+          name: 'MasterBarang',
+          component: MasterBarangView,
+          meta: { title: 'Master Data Barang' },
+        },
+        {
+          path: 'master-barang/tambah',
+          name: 'TambahMasterBarang',
+          component: MasterBarangForm,
+          meta: { title: 'Tambah Master Barang' },
+        },
+        {
+          path: 'master-barang/:id/edit',
+          name: 'EditMasterBarang',
+          component: MasterBarangForm,
+          meta: { title: 'Edit Master Barang' },
+          props: true,
+        },
+        {
+          path: '/admin/pembelian',
+          name: 'DaftarPesananPembelian',
+          component: DaftarPesananPembelian,
+          meta: { title: 'Daftar Pesanan Pembelian' },
+        },
+        {
+          path: '/admin/pembelian/buat',
+          name: 'BuatPembelian',
+          component: () => import('../views/pembelian/BuatPesananPembelian.vue'),
+          meta: { title: 'Buat Pesanan Pembelian' },
         },
         {
           path: '/admin/pembelian/operasional',
@@ -168,12 +197,42 @@ const router = createRouter({
             title: 'Cetak Pesanan Pembelian',
           },
         },
+        {
+          path: 'faktur-pembelian/cetak/:id',
+          name: 'CetakFakturPembelian',
+          component: FakturPembelianCetak,
+          meta: { title: 'Cetak Faktur Pembelian' },
+        },
+        {
+          path: 'faktur-pembelian/detail/:id',
+          name: 'DetailFakturPembelian',
+          component: DetailFakturPembelian,
+          meta: { title: 'Detail Faktur Pembelian' },
+        },
       ],
     },
     {
-      path: '/stock-report',
-      name: 'StockReport',
-      component: StockReportView,
+      path: '/stock-report-operational',
+      name: 'StockReportOperational',
+      component: LaporanOperasional,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/stock-report-finished',
+      name: 'StockReportFinished',
+      component: LaporanProdukJadi,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/stock-report-logs',
+      name: 'StockReportLogs',
+      component: LaporanKayuLogs,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/stock-report-rst',
+      name: 'StockReportRST',
+      component: LaporanKayuRST,
       meta: { requiresAuth: true },
     },
     {
@@ -181,6 +240,12 @@ const router = createRouter({
       name: 'StockAdjustment',
       component: StockAdjustmentView,
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/laporan/karton-box',
+      name: 'LaporanKartonBox',
+      component: LaporanKartonBox,
+      meta: { title: 'Laporan Karton Box' },
     },
   ],
 })

@@ -63,7 +63,11 @@ export function useMenu() {
           name: 'Manajemen Stok',
           icon: '📦',
           children: [
-            { name: 'Laporan Stok', route: '/stock-report' },
+            { name: 'Laporan Stok Bahan Operasional', route: '/stock-report-operational' },
+            { name: 'Laporan Stok Produk Jadi', route: '/stock-report-finished' },
+            { name: 'Laporan Stok Kayu Logs', route: '/stock-report-logs' },
+            { name: 'Laporan Stok Kayu RST', route: '/stock-report-rst' },
+            { name: 'Laporan Karton Box', route: '/laporan/karton-box' },
             { name: 'Penyesuaian Stok', route: '/stock-adjustment' },
           ],
         },

@@ -89,9 +89,21 @@
 
           <transition name="submenu-slide">
             <div v-if="stockManagementOpen && !sidebarCollapsed" class="submenu">
-              <router-link to="/dashboard/stock-report" class="submenu-item">
+              <router-link to="/dashboard/stock-report-operational" class="submenu-item">
                 <span class="submenu-dot"></span>
-                <span>Laporan Stok</span>
+                <span>Laporan Stok Bahan Operasional</span>
+              </router-link>
+              <router-link to="/dashboard/stock-report-finished" class="submenu-item">
+                <span class="submenu-dot"></span>
+                <span>Laporan Stok Produk Jadi</span>
+              </router-link>
+              <router-link to="/dashboard/stock-report-logs" class="submenu-item">
+                <span class="submenu-dot"></span>
+                <span>Laporan Stok Kayu Logs</span>
+              </router-link>
+              <router-link to="/dashboard/stock-report-rst" class="submenu-item">
+                <span class="submenu-dot"></span>
+                <span>Laporan Stok Kayu RST</span>
               </router-link>
               <router-link to="/dashboard/stock-adjustment" class="submenu-item">
                 <span class="submenu-dot"></span>

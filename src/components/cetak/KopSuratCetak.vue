@@ -8,7 +8,7 @@
     <!-- CENTER: Company Details -->
     <div class="company-details">
       <h1 class="company-name">SURYA BANGKIT CEMERLANG, PT</h1>
-      <p class="company-tagline">SUPREME BEAUTY COMFORT</p>
+      <p class="company-tagline">SUPERB BEAUTY COMFORT</p>
       <p class="company-address">Jl. Raya Semarang Purwodadi Km. 18 Karangawen, Demak 59566</p>
       <p class="company-location">Central Java - Indonesia</p>
       <p class="company-contact">

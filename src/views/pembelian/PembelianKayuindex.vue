@@ -1,6 +1,5 @@
 <template>
   <DashboardLayout>
-    <!-- Page Header -->
     <div class="page-header">
       <div class="header-content">
         <div class="header-left">
@@ -17,15 +16,10 @@
             <span class="btn-icon">➕</span>
             <span>Buat PO Baru</span>
           </router-link>
-          <router-link to="/admin/pembelian/faktur/buat" class="btn-header btn-success">
-            <span class="btn-icon">📄</span>
-            <span>Buat Faktur</span>
-          </router-link>
         </div>
       </div>
     </div>
 
-    <!-- Main Content Card -->
     <div class="content-card">
       <div class="card-header">
         <div class="header-left">
@@ -36,19 +30,26 @@
           </div>
         </div>
 
-        <!-- Search Box -->
-        <div class="search-box">
-          <span class="search-icon">🔍</span>
-          <input
-            type="text"
-            placeholder="Cari berdasarkan No. PO..."
-            class="search-input"
-            v-model="searchQuery"
-          />
+        <div class="header-right">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              placeholder="Cari berdasarkan No. PO..."
+              class="search-input"
+              v-model="searchQuery"
+            />
+          </div>
+          <select v-model="perHalaman" @change="handlePerPageChange" class="per-page-select">
+            <option :value="10">10</option>
+            <option :value="15">15</option>
+            <option :value="25">25</option>
+            <option :value="50">50</option>
+            <option :value="100">100</option>
+          </select>
         </div>
       </div>
 
-      <!-- Table Wrapper -->
       <div class="table-wrapper">
         <table class="data-table">
           <thead>
@@ -62,7 +63,6 @@
             </tr>
           </thead>
           <tbody>
-            <!-- Empty State -->
             <tr v-if="daftarPesanan.length === 0" class="empty-row">
               <td colspan="6">
                 <div class="empty-state">
@@ -73,7 +73,6 @@
               </td>
             </tr>
 
-            <!-- Data Rows -->
             <tr v-for="pesanan in daftarPesanan" :key="pesanan.id" class="data-row">
               <td class="td-po">
                 <span class="po-badge">{{ pesanan.po_number }}</span>
@@ -138,7 +137,6 @@
         </table>
       </div>
 
-      <!-- Pagination -->
       <div class="pagination-wrapper">
         <PaginationComponent
           :current-page="halamanSekarang"
@@ -190,6 +188,11 @@ const gantiHalaman = (page) => {
   fetchDaftarPesanan()
 }
 
+const handlePerPageChange = () => {
+  halamanSekarang.value = 1
+  fetchDaftarPesanan()
+}
+
 watch(searchQuery, () => {
   halamanSekarang.value = 1
   fetchDaftarPesanan()
@@ -218,7 +221,6 @@ const formatRupiah = (angka) => {
 </script>
 
 <style scoped>
-/* ===== PAGE HEADER ===== */
 .page-header {
   background: linear-gradient(135deg, #92400e 0%, #78350f 50%, #451a03 100%);
   padding: 32px 36px;
@@ -359,7 +361,6 @@ const formatRupiah = (angka) => {
   font-size: 18px;
 }
 
-/* ===== CONTENT CARD ===== */
 .content-card {
   background: white;
   border-radius: 20px;
@@ -375,7 +376,6 @@ const formatRupiah = (angka) => {
   padding: 28px 36px;
   background: linear-gradient(135deg, #fafbfc 0%, #ffffff 100%);
   border-bottom: 3px solid #e9ecef;
-  flex-wrap: wrap;
   gap: 20px;
   position: relative;
 }
@@ -419,30 +419,35 @@ const formatRupiah = (angka) => {
   font-weight: 600;
 }
 
-/* ===== SEARCH BOX ===== */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .search-box {
   position: relative;
-  min-width: 360px;
+  width: 220px;
 }
 
 .search-icon {
   position: absolute;
-  left: 16px;
+  left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 20px;
+  font-size: 18px;
   z-index: 1;
   color: #94a3b8;
 }
 
 .search-input {
   width: 100%;
-  padding: 14px 18px 14px 50px;
+  padding: 11px 14px 11px 44px;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
-  font-size: 15px;
+  font-size: 14px;
   transition: all 0.3s ease;
-  background: #fafbfc;
+  background: white;
   font-weight: 500;
 }
 
@@ -455,9 +460,32 @@ const formatRupiah = (angka) => {
 
 .search-input::placeholder {
   color: #94a3b8;
+  font-size: 13px;
 }
 
-/* ===== TABLE ===== */
+.per-page-select {
+  padding: 11px 30px 11px 14px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+  width: 80px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.per-page-select:focus {
+  outline: none;
+  border-color: #92400e;
+  box-shadow: 0 0 0 4px rgba(146, 64, 14, 0.1);
+}
+
 .table-wrapper {
   overflow-x: auto;
 }
@@ -486,23 +514,18 @@ const formatRupiah = (angka) => {
 .th-po {
   width: 180px;
 }
-
 .th-supplier {
   width: auto;
 }
-
 .th-date {
   width: 200px;
 }
-
 .th-total {
   width: 160px;
 }
-
 .th-status {
   width: 130px;
 }
-
 .th-action {
   width: 180px;
   text-align: center;
@@ -526,7 +549,6 @@ const formatRupiah = (angka) => {
   box-shadow: 0 2px 8px rgba(146, 64, 14, 0.08);
 }
 
-/* ===== TABLE CELLS ===== */
 .po-badge {
   display: inline-flex;
   padding: 10px 18px;
@@ -566,7 +588,6 @@ const formatRupiah = (angka) => {
   font-family: 'Courier New', monospace;
 }
 
-/* ===== STATUS BADGE ===== */
 .status-badge {
   display: inline-flex;
   padding: 8px 16px;
@@ -598,7 +619,6 @@ const formatRupiah = (angka) => {
   border: 2px solid #34d399;
 }
 
-/* ===== ACTION BUTTONS ===== */
 .td-action {
   text-align: center;
 }
@@ -694,7 +714,6 @@ const formatRupiah = (angka) => {
   box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
 }
 
-/* ===== EMPTY STATE ===== */
 .empty-state {
   text-align: center;
   padding: 80px 20px;
@@ -722,72 +741,68 @@ const formatRupiah = (angka) => {
   font-weight: 500;
 }
 
-/* ===== PAGINATION ===== */
 .pagination-wrapper {
   padding: 24px 36px;
   border-top: 2px solid #f0f0f0;
   background: linear-gradient(135deg, #fafbfc, #ffffff);
 }
 
-/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .page-header {
     padding: 24px;
     border-radius: 16px;
   }
-
   .header-content {
     flex-direction: column;
     align-items: flex-start;
   }
-
   .header-icon {
     width: 52px;
     height: 52px;
     font-size: 26px;
   }
-
   .header-actions {
     width: 100%;
   }
-
   .btn-header {
     flex: 1;
     justify-content: center;
     padding: 12px 18px;
     font-size: 14px;
   }
-
   .page-title {
     font-size: 22px;
   }
-
   .card-header {
     flex-direction: column;
     align-items: flex-start;
     padding: 24px;
   }
-
-  .search-box {
+  .header-right {
     width: 100%;
-    min-width: auto;
+    flex-direction: row;
+    gap: 10px;
   }
-
+  .search-box {
+    flex: 1;
+    min-width: 0;
+  }
+  .per-page-select {
+    width: auto;
+    min-width: 75px;
+  }
   .action-buttons {
     gap: 8px;
   }
-
   .btn-action {
     width: 36px;
     height: 36px;
     font-size: 16px;
   }
-
   .po-badge {
     font-size: 12px;
     padding: 8px 14px;
   }
-
   .total-amount {
     font-size: 14px;
   }

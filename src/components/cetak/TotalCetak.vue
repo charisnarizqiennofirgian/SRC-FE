@@ -7,7 +7,7 @@
           <td>{{ formatCurrency(po.subtotal) }}</td>
         </tr>
         <tr>
-          <td>PPN {{ po.ppn_percentage }}%</td>
+          <td>PPN {{ formatPercentage(po.ppn_percentage) }}%</td>
           <td>{{ formatCurrency(po.ppn_amount) }}</td>
         </tr>
         <tr class="grand-total">
@@ -29,6 +29,11 @@ const formatCurrency = (value) => {
     currency: 'IDR',
     minimumFractionDigits: 0,
   }).format(value)
+}
+
+const formatPercentage = (value) => {
+  if (value == null || isNaN(value)) return '0'
+  return parseInt(value)
 }
 </script>
 
