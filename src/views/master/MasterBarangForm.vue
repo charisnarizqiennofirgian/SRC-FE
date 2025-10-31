@@ -129,12 +129,207 @@
             </div>
           </div>
 
+          <transition name="slide-fade">
+            <div v-if="isKayuRSTCategory" class="form-section">
+              <div class="section-title section-title-accent">
+                <span class="section-icon">🌲</span>
+                <h3>Spesifikasi Kayu RST</h3>
+              </div>
+              <div class="form-row form-row-triple">
+                <div class="form-group">
+                  <label class="form-label">
+                    Tebal (T) mm
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model.number="form.specifications.t"
+                      type="number"
+                      class="form-control"
+                      placeholder="cth: 50"
+                      required
+                      min="0"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">
+                    Lebar (L) mm
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model.number="form.specifications.l"
+                      type="number"
+                      class="form-control"
+                      placeholder="cth: 80"
+                      required
+                      min="0"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">
+                    Panjang (P) mm
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model.number="form.specifications.p"
+                      type="number"
+                      class="form-control"
+                      placeholder="cth: 1000"
+                      required
+                      min="0"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </transition>
+
+          <transition name="slide-fade">
+            <div v-if="isKartonBoxCategory" class="form-section">
+              <div class="section-title section-title-accent">
+                <span class="section-icon">📦</span>
+                <h3>Spesifikasi Karton Box (untuk Volume)</h3>
+              </div>
+
+              <div class="form-row form-row-triple">
+                <div class="form-group">
+                  <label class="form-label">
+                    Panjang (P) mm
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model.number="form.specifications.p"
+                      type="number"
+                      class="form-control"
+                      placeholder="cth: 1000"
+                      required
+                      min="0"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">
+                    Lebar (L) mm
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model.number="form.specifications.l"
+                      type="number"
+                      class="form-control"
+                      placeholder="cth: 900"
+                      required
+                      min="0"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">
+                    Tebal (T) mm
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model.number="form.specifications.t"
+                      type="number"
+                      class="form-control"
+                      placeholder="cth: 943"
+                      required
+                      min="0"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </transition>
+
+          <transition name="slide-fade">
+            <div v-if="isProdukJadiCategory" class="form-section">
+              <div class="section-title section-title-accent">
+                <span class="section-icon">🏭</span>
+                <h3>DNA Produk Jadi (Data Pakem)</h3>
+              </div>
+
+              <div class="form-row form-row-triple">
+                <div class="form-group">
+                  <label class="form-label">
+                    NW per Box (Kg)
+                    <span class="required">*</span>
+                    <span class="label-hint">(Data Pakem, cth: 27)</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model.number="form.nw_per_box"
+                      type="number"
+                      step="0.01"
+                      class="form-control"
+                      placeholder="cth: 27.00"
+                      required
+                      min="0"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">
+                    GW per Box (Kg)
+                    <span class="required">*</span>
+                    <span class="label-hint">(Data Pakem, cth: 42)</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model.number="form.gw_per_box"
+                      type="number"
+                      step="0.01"
+                      class="form-control"
+                      placeholder="cth: 42.00"
+                      required
+                      min="0"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">
+                    Wood Consumed / Pcs (M3)
+                    <span class="required">*</span>
+                    <span class="label-hint">(Pakem BOM, cth: 0.0099)</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model.number="form.wood_consumed_per_pcs"
+                      type="number"
+                      step="0.000001"
+                      class="form-control"
+                      placeholder="cth: 0.009900"
+                      required
+                      min="0"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </transition>
+
           <div class="form-section">
             <div class="section-title">
               <span class="section-icon">📊</span>
               <h3>Detail Tambahan</h3>
             </div>
-
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">
@@ -153,7 +348,6 @@
                   />
                 </div>
               </div>
-
               <div class="form-group form-group-wide">
                 <label class="form-label">
                   Deskripsi
@@ -167,7 +361,7 @@
                     placeholder="Masukkan deskripsi barang"
                     @input="calculateProgress"
                   ></textarea>
-                  <span class="textarea-counter">{{ form.description.length }}/500</span>
+                  <span class="textarea-counter">{{ (form.description || '').length }}/500</span>
                 </div>
               </div>
             </div>
@@ -194,7 +388,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive, computed } from 'vue'
+import { ref, onMounted, reactive, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
@@ -214,20 +408,86 @@ const form = reactive({
   category_id: '',
   unit_id: '',
   stock: 0,
+
+  specifications: {
+    t: null,
+    l: null,
+    p: null,
+  },
+
+  // DNA untuk Produk Jadi
+  nw_per_box: null,
+  gw_per_box: null,
+  wood_consumed_per_pcs: null,
 })
 
 const categories = ref([])
 const units = ref([])
+// const packagingItems = ref([])
 const formProgress = ref(0)
+
+const selectedCategoryName = computed(() => {
+  if (!form.category_id) return ''
+  const found = categories.value.find((cat) => cat.id === form.category_id)
+  return found ? found.name : ''
+})
+
+const isKayuRSTCategory = computed(() => {
+  return selectedCategoryName.value.includes('Kayu RST')
+})
+const isKartonBoxCategory = computed(() => {
+  return selectedCategoryName.value.includes('Karton Box')
+})
+const isProdukJadiCategory = computed(() => {
+  return selectedCategoryName.value.toLowerCase().includes('produk jadi')
+})
+
+watch(
+  () => form.category_id,
+  (newCategoryId) => {
+    // Selalu bersihkan semua DNA saat kategori berubah
+    form.specifications.t = null
+    form.specifications.l = null
+    form.specifications.p = null
+    form.nw_per_box = null
+    form.gw_per_box = null
+    form.wood_consumed_per_pcs = null // <-- BARU
+    // form.default_packaging_id = '' // <-- DIHAPUS
+
+    calculateProgress()
+  },
+)
 
 const calculateProgress = () => {
   let filled = 0
-  const total = 4
+  let total = 4 // Default: code, name, category_id, unit_id
 
   if (form.code) filled++
   if (form.name) filled++
   if (form.category_id) filled++
   if (form.unit_id) filled++
+
+  // Mode 1: Kayu RST
+  if (isKayuRSTCategory.value) {
+    total += 3 // T, L, P
+    if (form.specifications.t) filled++
+    if (form.specifications.l) filled++
+    if (form.specifications.p) filled++
+  }
+  // Mode 2: Karton Box
+  else if (isKartonBoxCategory.value) {
+    total += 3 // P, L, T
+    if (form.specifications.p) filled++
+    if (form.specifications.l) filled++
+    if (form.specifications.t) filled++
+  }
+  // Mode 3: Produk Jadi
+  else if (isProdukJadiCategory.value) {
+    total += 3 // NW, GW, Wood
+    if (form.nw_per_box) filled++
+    if (form.gw_per_box) filled++
+    if (form.wood_consumed_per_pcs) filled++ // <-- DIGANTI
+  }
 
   formProgress.value = Math.round((filled / total) * 100)
 }
@@ -237,12 +497,15 @@ const fetchDropdownData = async () => {
     const [categoriesResponse, unitsResponse] = await Promise.all([
       apiClient.get('/categories/all'),
       apiClient.get('/units/all'),
+      // API Call ke '/items/all-by-category-name' DIHAPUS
     ])
+
     categories.value = categoriesResponse.data.data
     units.value = unitsResponse.data.data
+    // packagingItems.value = ... // <-- DIHAPUS
   } catch (error) {
     console.error('Gagal mengambil data dropdown:', error)
-    showError('Gagal', 'Gagal mengambil data kategori dan satuan')
+    showError('Gagal', 'Gagal mengambil data dropdown (kategori & unit)')
   }
 }
 
@@ -251,6 +514,7 @@ const fetchItemData = async (itemId) => {
     const response = await apiClient.get(`/materials/${itemId}?include=unit,category`)
     const data = response.data.data
 
+    // Data Standar
     form.id = data.id
     form.code = data.code || ''
     form.name = data.name || ''
@@ -258,6 +522,19 @@ const fetchItemData = async (itemId) => {
     form.category_id = data.category_id || ''
     form.unit_id = data.unit_id || ''
     form.stock = parseInt(data.stock) || 0
+
+    // "Buka" DNA Spesifikasi (untuk Kayu & Karton Box)
+    if (data.specifications) {
+      form.specifications.t = data.specifications.t || null
+      form.specifications.l = data.specifications.l || null
+      form.specifications.p = data.specifications.p || null
+    }
+
+    // "Buka" DNA Produk Jadi
+    form.nw_per_box = data.nw_per_box || null
+    form.gw_per_box = data.gw_per_box || null
+    form.wood_consumed_per_pcs = data.wood_consumed_per_pcs || null // <-- BARU
+    // form.default_packaging_id = ... // <-- DIHAPUS
 
     calculateProgress()
   } catch (error) {
@@ -268,9 +545,35 @@ const fetchItemData = async (itemId) => {
 
 const handleSubmit = async () => {
   try {
-    const payload = { ...form }
-    if (!payload.id) {
-      delete payload.id
+    // 1. Siapkan payload standar
+    const payload = {
+      id: form.id,
+      code: form.code,
+      name: form.name,
+      description: form.description,
+      category_id: form.category_id,
+      unit_id: form.unit_id,
+      stock: form.stock,
+
+      // Siapkan "DNA" (default null)
+      specifications: null,
+      nw_per_box: null,
+      gw_per_box: null,
+      wood_consumed_per_pcs: null, // <-- BARU
+      // default_packaging_id: null, // <-- DIHAPUS
+    }
+
+    if (isKayuRSTCategory.value || isKartonBoxCategory.value) {
+      payload.specifications = {
+        t: form.specifications.t,
+        l: form.specifications.l,
+        p: form.specifications.p,
+      }
+    } else if (isProdukJadiCategory.value) {
+      payload.nw_per_box = form.nw_per_box
+      payload.gw_per_box = form.gw_per_box
+      payload.wood_consumed_per_pcs = form.wood_consumed_per_pcs // <-- BARU
+      // payload.default_packaging_id = ... // <-- DIHAPUS
     }
 
     if (!payload.category_id) {
@@ -278,13 +581,16 @@ const handleSubmit = async () => {
       return
     }
 
+    // 3. Kirim ke API
     if (form.id) {
       await apiClient.put(`/materials/${form.id}`, payload)
       showSuccess('Sukses', 'Data barang berhasil diperbarui')
     } else {
+      delete payload.id
       await apiClient.post('/materials', payload)
       showSuccess('Sukses', 'Data barang berhasil ditambahkan')
     }
+
     router.push({ name: 'MasterBarang' })
   } catch (error) {
     console.error('Gagal menyimpan data:', error)

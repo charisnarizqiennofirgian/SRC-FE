@@ -34,7 +34,7 @@
     <div class="signature-col">
       <p>Hormat kami,</p>
       <div class="signature-space"></div>
-      <p class="signature-name">Gifano</p>
+      <p class="signature-name">louis Sebastian</p>
     </div>
   </footer>
 </template>

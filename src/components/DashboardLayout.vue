@@ -145,6 +145,11 @@ const menuItems = ref([
       { name: 'Faktur Pembelian', route: { name: 'DaftarFakturPembelian' } },
     ],
   },
+  {
+    name: 'Penjualan',
+    icon: '💰',
+    children: [{ name: 'Pesanan Penjualan', route: { name: 'DaftarSalesOrder' } }],
+  },
 ])
 
 const openMenus = ref({})

@@ -6,15 +6,25 @@
           <div class="icon-badge-adj">
             <span class="adj-icon">⚖️</span>
           </div>
+
           <div class="header-text">
             <h1 class="page-title">Penyesuaian Stok</h1>
+
             <p class="page-subtitle">Sesuaikan stok manual atau upload stok awal.</p>
           </div>
         </div>
-        <div class="header-right">
-          <button class="btn-upload" @click="showUploadModal = true">
+
+        <div class="header-buttons">
+          <button class="btn-upload btn-upload-secondary" @click="showUploadModal = true">
             <span class="btn-icon">📤</span>
-            <span class="btn-text">Upload Stok Awal (Excel)</span>
+
+            <span class="btn-text">Upload Stok Umum</span>
+          </button>
+
+          <button class="btn-upload" @click="showUploadModalKayu = true">
+            <span class="btn-icon">🌲</span>
+
+            <span class="btn-text">Upload Stok Kayu (Excel)</span>
           </button>
         </div>
       </div>
@@ -22,32 +32,41 @@
 
     <div class="content-card filter-card">
       <div class="card-header-accent"></div>
+
       <div class="card-body">
         <div class="filter-container">
           <div class="filter-header">
             <span class="filter-icon">🔍</span>
+
             <div>
               <h3 class="filter-title">Pilih Kategori Stok</h3>
+
               <p class="filter-desc">Pilih kategori untuk menampilkan dan menyesuaikan stok.</p>
             </div>
           </div>
+
           <div class="filter-input-group">
             <div class="select-wrapper">
               <span class="select-icon">📂</span>
+
               <select id="kategori-filter" v-model="selectedCategory" class="form-control">
                 <option :value="null" disabled>Pilih kategori...</option>
+
                 <option v-for="kategori in daftarKategori" :key="kategori.id" :value="kategori.id">
                   {{ kategori.name }}
                 </option>
               </select>
+
               <span class="select-arrow">▼</span>
             </div>
+
             <button
               @click="fetchStokBarang"
               class="btn-primary"
               :disabled="!selectedCategory || loading.stok"
             >
               <span class="btn-icon">{{ loading.stok ? '⏳' : '🔎' }}</span>
+
               <span class="btn-text">{{ loading.stok ? 'Memuat...' : 'Tampilkan Barang' }}</span>
             </button>
           </div>
@@ -58,12 +77,16 @@
     <div v-if="loading.stok" class="loading-container">
       <div class="loading-animation">
         <div class="spinner"></div>
+
         <div class="loading-dots">
           <span></span>
+
           <span></span>
+
           <span></span>
         </div>
       </div>
+
       <p class="loading-text">Memuat daftar stok...</p>
     </div>
 
@@ -74,30 +97,41 @@
             <thead>
               <tr>
                 <th class="th-nama">Nama Barang</th>
+
                 <th class="th-kategori">Kategori</th>
+
                 <th class="th-satuan">Satuan</th>
+
                 <th class="th-stok-saat-ini">Stok Saat Ini</th>
+
                 <th class="th-stok-baru">Jml Penyesuaian (+/-)</th>
+
                 <th class="th-aksi">Aksi</th>
               </tr>
             </thead>
+
             <tbody>
               <tr v-for="item in daftarStok" :key="item.id" class="data-row">
                 <td class="td-nama">
                   <div class="item-wrapper">
                     <span class="item-icon">📦</span>
+
                     <span class="item-name">{{ item.name }}</span>
                   </div>
                 </td>
+
                 <td class="td-kategori">
                   <span class="badge-category">{{ item.category?.name }}</span>
                 </td>
+
                 <td class="td-satuan">
                   <span class="badge-unit">{{ item.unit?.name }}</span>
                 </td>
+
                 <td class="td-stok-saat-ini">
                   <span class="stock-value">{{ parseFloat(item.stock) }}</span>
                 </td>
+
                 <td class="td-stok-baru">
                   <div class="input-wrapper">
                     <input
@@ -108,6 +142,7 @@
                     />
                   </div>
                 </td>
+
                 <td class="td-aksi">
                   <button
                     @click="handleAdjusment(item)"
@@ -115,6 +150,7 @@
                     :disabled="!item.new_stock"
                   >
                     <span class="save-icon">💾</span>
+
                     <span class="save-text">Simpan</span>
                   </button>
                 </td>
@@ -130,18 +166,22 @@
         <div class="modal-header">
           <div class="modal-header-left">
             <span class="modal-icon">📤</span>
-            <h3 class="modal-title">Upload Stok Awal (Excel)</h3>
+
+            <h3 class="modal-title">Upload Stok Awal (Umum)</h3>
           </div>
+
           <button @click="closeModal" class="modal-close-btn">✕</button>
         </div>
 
         <div class="modal-body">
           <div class="info-box">
             <span class="info-icon">ℹ️</span>
+
             <div class="info-text">
               <p class="info-main">
-                Upload file Excel (.xlsx) atau CSV untuk mengatur (SET) stok awal secara massal.
+                Gunakan ini untuk upload stok **Bahan Operasional** & **Karton Box**.
               </p>
+
               <p class="info-sub">
                 Stok barang yang ada di file akan <strong>langsung menggantikan</strong> stok di
                 sistem.
@@ -152,24 +192,30 @@
           <div class="template-download-box">
             <div class="template-header">
               <span class="template-icon">📄</span>
+
               <p class="template-title">Belum punya template?</p>
             </div>
+
             <a href="#" @click.prevent="downloadTemplate" class="template-link">
               <span class="download-icon">⬇️</span>
-              Download template di sini
+
+              Download template (Umum)
             </a>
+
             <p class="template-note">
               <strong>Penting:</strong> Kolom 'kategori' di template harus diisi dengan
-              <strong>nama</strong> kategori yang <strong>sudah ada</strong> (Contoh: "Kayu RST",
-              "Produk Jadi").
+
+              <strong>nama</strong> kategori yang <strong>sudah ada</strong>.
             </p>
           </div>
 
           <div class="form-group-upload">
             <label class="form-label-upload" for="file-upload">
               <span class="label-icon">📁</span>
-              Pilih File
+
+              Pilih File (Umum)
             </label>
+
             <input
               id="file-upload"
               type="file"
@@ -177,8 +223,10 @@
               class="form-control-file"
               accept=".xlsx, .xls, .csv"
             />
+
             <div v-if="uploadFile" class="file-info">
               <span class="file-icon">✅</span>
+
               File dipilih: <strong>{{ uploadFile.name }}</strong>
             </div>
           </div>
@@ -187,15 +235,108 @@
         <div class="modal-footer">
           <button @click="closeModal" class="btn-secondary">
             <span class="btn-icon-sec">↩️</span>
+
             Batal
           </button>
+
           <button
             @click="handleUpload"
             class="btn-primary-modal"
             :disabled="!uploadFile || isUploading"
           >
             <span class="btn-icon-upload">{{ isUploading ? '⏳' : '📤' }}</span>
+
             {{ isUploading ? 'Mengupload...' : 'Upload Sekarang' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showUploadModalKayu" class="modal-overlay" @click.self="closeModalKayu">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-left">
+            <span class="modal-icon">🌲</span>
+
+            <h3 class="modal-title">Upload Stok Awal (Khusus Kayu)</h3>
+          </div>
+
+          <button @click="closeModalKayu" class="modal-close-btn">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="info-box info-box-kayu">
+            <span class="info-icon">ℹ️</span>
+
+            <div class="info-text">
+              <p class="info-main">
+                Gunakan ini HANYA untuk upload stok **Kayu RST** (dengan P, L, T).
+              </p>
+
+              <p class="info-sub">
+                Sistem akan otomatis **membuat master data baru** jika belum ada, lalu mengisi stok
+                awalnya.
+              </p>
+            </div>
+          </div>
+
+          <div class="template-download-box">
+            <div class="template-header">
+              <span class="template-icon">📄</span>
+
+              <p class="template-title">Template Khusus Kayu</p>
+            </div>
+
+            <a href="#" @click.prevent="downloadTemplateKayu" class="template-link">
+              <span class="download-icon">⬇️</span>
+
+              Download template (Kayu)
+            </a>
+
+            <p class="template-note">
+              <strong>Penting:</strong> Template ini memiliki kolom: `nama_dasar`, `tebal_mm`,
+              `lebar_mm`, `panjang_mm`, dan `stok_awal`.
+            </p>
+          </div>
+
+          <div class="form-group-upload">
+            <label class="form-label-upload" for="file-upload-kayu">
+              <span class="label-icon">📁</span>
+
+              Pilih File (Kayu)
+            </label>
+
+            <input
+              id="file-upload-kayu"
+              type="file"
+              @change="handleFileChangeKayu"
+              class="form-control-file"
+              accept=".xlsx, .xls, .csv"
+            />
+
+            <div v-if="uploadFileKayu" class="file-info">
+              <span class="file-icon">✅</span>
+
+              File dipilih: <strong>{{ uploadFileKayu.name }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button @click="closeModalKayu" class="btn-secondary">
+            <span class="btn-icon-sec">↩️</span>
+
+            Batal
+          </button>
+
+          <button
+            @click="handleUploadKayu"
+            class="btn-primary-modal"
+            :disabled="!uploadFileKayu || isUploadingKayu"
+          >
+            <span class="btn-icon-upload">{{ isUploadingKayu ? '⏳' : '📤' }}</span>
+
+            {{ isUploadingKayu ? 'Mengupload...' : 'Upload Kayu' }}
           </button>
         </div>
       </div>
@@ -205,25 +346,45 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+
 import apiClient from '../../api/axios'
+
 import DashboardLayout from '../../components/DashboardLayout.vue'
+
 import { useToast } from 'vue-toastification'
 
 const toast = useToast()
 
 const loading = ref({
   kategori: true,
+
   stok: false,
 })
+
 const daftarKategori = ref([])
+
 const selectedCategory = ref(null)
+
 const daftarStok = ref([])
+
 const showUploadModal = ref(false)
+
+const uploadFile = ref(null)
+
+const isUploading = ref(false)
+
+const showUploadModalKayu = ref(false)
+
+const uploadFileKayu = ref(null)
+
+const isUploadingKayu = ref(false)
 
 const fetchDaftarKategori = async () => {
   loading.value.kategori = true
+
   try {
     const response = await apiClient.get('/categories/all')
+
     daftarKategori.value = response.data.data
   } catch (error) {
     toast.error('Gagal memuat daftar kategori.')
@@ -235,21 +396,27 @@ const fetchDaftarKategori = async () => {
 const fetchStokBarang = async () => {
   if (!selectedCategory.value) {
     toast.error('Silakan pilih kategori terlebih dahulu.')
+
     return
   }
 
   loading.value.stok = true
+
   daftarStok.value = []
+
   try {
     const response = await apiClient.get('/materials', {
       params: {
         category_id: selectedCategory.value,
+
         include: 'unit,category',
+
         per_page: 9999,
       },
     })
 
     let items = []
+
     if (response.data?.data?.data && Array.isArray(response.data.data.data)) {
       items = response.data.data.data
     } else if (response.data?.data && Array.isArray(response.data.data)) {
@@ -260,10 +427,12 @@ const fetchStokBarang = async () => {
 
     daftarStok.value = items.map((item) => ({
       ...item,
+
       new_stock: null,
     }))
   } catch (error) {
     console.error('Error:', error)
+
     toast.error('Gagal memuat daftar stok.')
   } finally {
     loading.value.stok = false
@@ -275,44 +444,52 @@ const handleAdjusment = async (item) => {
 
   if (adjustmentAmount == null || adjustmentAmount === 0) {
     toast.error('Jumlah penyesuaian tidak boleh nol.')
+
     return
   }
 
   try {
     const currentStock = parseFloat(item.stock) || 0
+
     const newStock = currentStock + adjustmentAmount
 
     if (newStock < 0) {
       toast.error('Stok tidak boleh negatif.')
+
       return
     }
 
     const type = adjustmentAmount > 0 ? 'Stok Masuk' : 'Stok Keluar'
+
     const quantity = Math.abs(adjustmentAmount)
 
     const response = await apiClient.post('/stock-adjustments', {
       item_id: item.id,
+
       type: type,
+
       quantity: quantity,
+
       notes: `Penyesuaian manual: ${adjustmentAmount > 0 ? '+' : ''}${adjustmentAmount}. Dari ${currentStock} menjadi ${newStock}.`,
     })
 
     item.stock = response.data.new_stock
+
     item.new_stock = null
+
     toast.success(`${item.name} berhasil disesuaikan.`)
   } catch (error) {
     console.error('Error:', error)
+
     toast.error(error.response?.data?.message || 'Gagal menyimpan penyesuaian stok.')
   }
 }
 
 onMounted(fetchDaftarKategori)
 
-const uploadFile = ref(null)
-const isUploading = ref(false)
-
 const handleFileChange = (event) => {
   const file = event.target.files[0]
+
   if (file) {
     uploadFile.value = file
   }
@@ -320,18 +497,21 @@ const handleFileChange = (event) => {
 
 const closeModal = () => {
   showUploadModal.value = false
+
   uploadFile.value = null
 }
 
 const handleUpload = async () => {
   if (!uploadFile.value) {
     toast.error('Silakan pilih file Excel terlebih dahulu.')
+
     return
   }
 
   isUploading.value = true
 
   const formData = new FormData()
+
   formData.append('file', uploadFile.value)
 
   try {
@@ -342,6 +522,7 @@ const handleUpload = async () => {
     })
 
     toast.success('Stok awal berhasil di-import! Memuat ulang data...')
+
     closeModal()
 
     if (selectedCategory.value) {
@@ -349,7 +530,9 @@ const handleUpload = async () => {
     }
   } catch (error) {
     const errorMsg = error.response?.data?.message || 'Gagal meng-upload file.'
+
     toast.error(errorMsg)
+
     console.error('Error Upload:', error.response?.data)
   } finally {
     isUploading.value = false
@@ -363,22 +546,126 @@ const downloadTemplate = async () => {
     })
 
     const url = window.URL.createObjectURL(new Blob([response.data]))
+
     const link = document.createElement('a')
+
     link.href = url
 
     const contentDisposition = response.headers['content-disposition']
+
     let fileName = 'template_stok_awal.csv'
+
     if (contentDisposition) {
       const fileNameMatch = contentDisposition.match(/filename="(.+)"/)
+
       if (fileNameMatch && fileNameMatch.length === 2) fileName = fileNameMatch[1]
     }
 
     link.setAttribute('download', fileName)
+
     document.body.appendChild(link)
+
     link.click()
+
     link.remove()
   } catch (error) {
     toast.error('Gagal men-download template.')
+  }
+}
+
+const handleFileChangeKayu = (event) => {
+  const file = event.target.files[0]
+
+  if (file) {
+    uploadFileKayu.value = file
+  }
+}
+
+const closeModalKayu = () => {
+  showUploadModalKayu.value = false
+
+  uploadFileKayu.value = null
+}
+
+const handleUploadKayu = async () => {
+  if (!uploadFileKayu.value) {
+    toast.error('Silakan pilih file Excel (Kayu) terlebih dahulu.')
+
+    return
+  }
+
+  isUploadingKayu.value = true
+
+  const formData = new FormData()
+
+  formData.append('file', uploadFileKayu.value)
+
+  try {
+    await apiClient.post('/stock-adjustments/upload-saldo-awal-kayu', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+
+    toast.success(
+      'Stok awal KAYU berhasil di-import! Master data & stok diperbarui. Memuat ulang data...',
+    )
+
+    closeModalKayu()
+
+    if (selectedCategory.value) {
+      await fetchStokBarang()
+    }
+  } catch (error) {
+    const errorMsg = error.response?.data?.message || 'Gagal meng-upload file kayu.'
+
+    toast.error(errorMsg)
+
+    console.error('Error Upload Kayu:', error.response?.data)
+  } finally {
+    isUploadingKayu.value = false
+  }
+}
+
+const downloadTemplateKayu = async () => {
+  try {
+    const response = await apiClient.get('/stock-adjustments/template-kayu', {
+      responseType: 'blob',
+    })
+
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+
+    const link = document.createElement('a')
+
+    link.href = url
+
+    const contentDisposition = response.headers['content-disposition']
+
+    let fileName = 'template_saldo_awal_kayu.xlsx'
+
+    if (contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename="(.+)"/)
+
+      if (fileNameMatch && fileNameMatch.length === 2) {
+        fileName = fileNameMatch[1]
+      }
+    }
+
+    link.setAttribute('download', fileName)
+
+    document.body.appendChild(link)
+
+    link.click()
+
+    link.remove()
+
+    window.URL.revokeObjectURL(url)
+
+    toast.success('Template saldo awal kayu (Excel) telah diunduh.')
+  } catch (error) {
+    console.error('Error downloading template:', error)
+
+    toast.error('Gagal mendownload template kayu.')
   }
 }
 </script>
@@ -420,6 +707,13 @@ const downloadTemplate = async () => {
   align-items: center;
   gap: 20px;
   color: white;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .icon-badge-adj {
@@ -480,9 +774,33 @@ const downloadTemplate = async () => {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   border: none;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .btn-upload:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.btn-upload-secondary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #10b981;
+  padding: 14px 24px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-upload-secondary:hover {
+  background: white;
   transform: translateY(-3px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
 }
@@ -1188,7 +1506,13 @@ const downloadTemplate = async () => {
     align-items: flex-start;
   }
 
-  .btn-upload {
+  .header-buttons {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .btn-upload,
+  .btn-upload-secondary {
     width: 100%;
     justify-content: center;
   }

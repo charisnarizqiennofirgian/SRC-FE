@@ -16,86 +16,96 @@
 
     <!-- Main Content Card -->
     <div class="content-card">
-      <div class="card-header">
-        <div class="header-left">
-          <div class="header-icon">📂</div>
-          <div>
-            <h2 class="card-title">Kategori yang Ada</h2>
-            <p class="card-subtitle">Total {{ totalItems }} kategori terdaftar</p>
+      <!-- Skeleton Loading State -->
+      <div v-if="loading" class="skeleton-wrapper">
+        <div class="skeleton-header"></div>
+        <div class="skeleton-row" v-for="i in 5" :key="i"></div>
+      </div>
+
+      <!-- Actual Content -->
+      <template v-else>
+        <div class="card-header">
+          <div class="header-left">
+            <div class="header-icon">📂</div>
+            <div>
+              <h2 class="card-title">Kategori yang Ada</h2>
+              <p class="card-subtitle">Total {{ totalItems }} kategori terdaftar</p>
+            </div>
+          </div>
+
+          <!-- Search Box -->
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              placeholder="Cari kategori..."
+              class="search-input"
+              v-model="searchQuery"
+              @input="handleSearch"
+            />
           </div>
         </div>
 
-        <!-- Search Box -->
-        <div class="search-box">
-          <span class="search-icon">🔍</span>
-          <input
-            type="text"
-            placeholder="Cari kategori..."
-            class="search-input"
-            v-model="searchQuery"
+        <!-- Table Wrapper -->
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="th-name">Nama Kategori</th>
+                <th class="th-description">Deskripsi</th>
+                <th class="th-action">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Empty State -->
+              <tr v-if="categories.length === 0" class="empty-row">
+                <td colspan="3">
+                  <div class="empty-state">
+                    <span class="empty-icon">📭</span>
+                    <p class="empty-text">Belum ada data kategori</p>
+                    <p class="empty-hint">
+                      Klik tombol "Tambah Kategori" untuk membuat kategori baru
+                    </p>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Data Rows -->
+              <tr v-for="item in categories" :key="item.id" class="data-row">
+                <td class="td-name">
+                  <span class="category-name">{{ item.name }}</span>
+                </td>
+                <td class="td-description">{{ item.description || '-' }}</td>
+                <td class="td-action">
+                  <div class="action-buttons">
+                    <button class="action-btn btn-edit" @click="openEditModal(item)" title="Edit">
+                      <span>✏️</span>
+                    </button>
+                    <button
+                      class="action-btn btn-delete"
+                      @click="deleteCategory(item.id)"
+                      title="Hapus"
+                    >
+                      <span>🗑️</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-wrapper">
+          <PaginationComponent
+            :current-page="currentPage"
+            :total-pages="totalPages"
+            :total-items="totalItems"
+            :per-page="perPage"
+            @page-change="handlePageChange"
           />
         </div>
-      </div>
-
-      <!-- Table Wrapper -->
-      <div class="table-wrapper">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th class="th-name">Nama Kategori</th>
-              <th class="th-description">Deskripsi</th>
-              <th class="th-action">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Empty State -->
-            <tr v-if="categories.length === 0" class="empty-row">
-              <td colspan="3">
-                <div class="empty-state">
-                  <span class="empty-icon">📭</span>
-                  <p class="empty-text">Belum ada data kategori</p>
-                  <p class="empty-hint">
-                    Klik tombol "Tambah Kategori" untuk membuat kategori baru
-                  </p>
-                </div>
-              </td>
-            </tr>
-
-            <!-- Data Rows -->
-            <tr v-for="item in categories" :key="item.id" class="data-row">
-              <td class="td-name">
-                <span class="category-name">{{ item.name }}</span>
-              </td>
-              <td class="td-description">{{ item.description || '-' }}</td>
-              <td class="td-action">
-                <div class="action-buttons">
-                  <button class="action-btn btn-edit" @click="openEditModal(item)" title="Edit">
-                    <span>✏️</span>
-                  </button>
-                  <button
-                    class="action-btn btn-delete"
-                    @click="deleteCategory(item.id)"
-                    title="Hapus"
-                  >
-                    <span>🗑️</span>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Pagination -->
-      <div class="pagination-wrapper">
-        <PaginationComponent
-          :current-page="currentPage"
-          :total-pages="totalPages"
-          :total-items="totalItems"
-          :per-page="perPage"
-          @page-change="handlePageChange"
-        />
-      </div>
+      </template>
     </div>
 
     <!-- Modal Add -->
@@ -231,7 +241,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import apiClient from '../api/axios'
 import DashboardLayout from '../components/DashboardLayout.vue'
 import PaginationComponent from '../components/BasePagination.vue'
@@ -241,6 +251,7 @@ import { useNotification, useConfirmDialog } from '../composables/useNotificatio
 
 const searchQuery = ref('')
 const categories = ref([])
+const loading = ref(true)
 const showAddModal = ref(false)
 const newCategory = ref({ name: '', description: '' })
 const showEditModal = ref(false)
@@ -250,6 +261,8 @@ const currentPage = ref(1)
 const perPage = ref(10)
 const totalItems = ref(0)
 const totalPages = ref(1)
+
+let searchDebounce = null
 
 const {
   showNotification,
@@ -270,12 +283,29 @@ const {
   handleCancel,
 } = useConfirmDialog()
 
-watch(searchQuery, () => {
-  currentPage.value = 1
-  fetchCategories()
-})
+const handleSearch = () => {
+  clearTimeout(searchDebounce)
+  searchDebounce = setTimeout(() => {
+    currentPage.value = 1
+    fetchCategories()
+  }, 300)
+}
 
 const fetchCategories = async () => {
+  loading.value = true
+
+  const cacheKey = `categories_page${currentPage.value}_search${searchQuery.value}`
+  const cached = sessionStorage.getItem(cacheKey)
+
+  if (cached) {
+    const data = JSON.parse(cached)
+    categories.value = data.categories
+    totalItems.value = data.totalItems
+    totalPages.value = data.totalPages
+    loading.value = false
+    return
+  }
+
   try {
     const params = {
       page: currentPage.value,
@@ -289,10 +319,29 @@ const fetchCategories = async () => {
     totalItems.value = response.data.total
     totalPages.value = response.data.last_page
     currentPage.value = response.data.current_page
+
+    sessionStorage.setItem(
+      cacheKey,
+      JSON.stringify({
+        categories: categories.value,
+        totalItems: totalItems.value,
+        totalPages: totalPages.value,
+      }),
+    )
   } catch (error) {
     console.error('Gagal mengambil data kategori:', error)
     showError('Gagal memuat data kategori', 'Terjadi kesalahan saat mengambil data')
+  } finally {
+    loading.value = false
   }
+}
+
+const clearCache = () => {
+  Object.keys(sessionStorage).forEach((key) => {
+    if (key.startsWith('categories_')) {
+      sessionStorage.removeItem(key)
+    }
+  })
 }
 
 const handlePageChange = (page) => {
@@ -306,6 +355,7 @@ const saveCategory = async () => {
       const response = await apiClient.post('/categories', newCategory.value)
       if (response.status === 201) {
         showSuccess('Kategori berhasil ditambahkan!')
+        clearCache()
         await fetchCategories()
         showAddModal.value = false
         newCategory.value = { name: '', description: '' }
@@ -330,6 +380,7 @@ const deleteCategory = async (id) => {
       try {
         await apiClient.delete(`/categories/${id}`)
         showSuccess('Kategori berhasil dihapus!')
+        clearCache()
         await fetchCategories()
       } catch (error) {
         const message = error.response?.data?.message || 'Gagal menghapus kategori.'
@@ -358,6 +409,7 @@ const updateCategory = async () => {
       })
       if (response.status === 200) {
         showSuccess('Kategori berhasil diperbarui!')
+        clearCache()
         await fetchCategories()
         showEditModal.value = false
         editCategory.value = { id: '', name: '', description: '' }
@@ -375,6 +427,38 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* ===== SKELETON LOADING ===== */
+.skeleton-wrapper {
+  padding: 24px;
+}
+
+.skeleton-header {
+  height: 60px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.skeleton-row {
+  height: 50px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 /* ===== PAGE HEADER ===== */
 .page-header {
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);

@@ -22,6 +22,8 @@ import FormKarton from '../views/pembelian/FormKarton.vue'
 import FormKayu from '../views/pembelian/FormKayu.vue'
 import MasterBarangView from '../views/master/MasterBarangView.vue'
 import MasterBarangForm from '../views/master/MasterBarangForm.vue'
+import DaftarSalesOrder from '../views/penjualan/DaftarSalesOrder.vue'
+import FormSalesOrder from '../views/penjualan/FormSalesOrder.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   linkActiveClass: 'router-link-active',
@@ -91,6 +93,25 @@ const router = createRouter({
           name: 'DaftarPesananPembelian',
           component: DaftarPesananPembelian,
           meta: { title: 'Daftar Pesanan Pembelian' },
+        },
+        {
+          path: '/admin/penjualan/sales-order',
+          name: 'DaftarSalesOrder',
+          component: DaftarSalesOrder,
+          meta: { title: 'Daftar Sales Order' },
+        },
+        {
+          path: '/admin/penjualan/sales-order/tambah',
+          name: 'BuatSalesOrder',
+          component: FormSalesOrder,
+          meta: { title: 'Buat Sales Order Baru' },
+        },
+        {
+          path: '/admin/penjualan/sales-order/:id/edit',
+          name: 'EditSalesOrder',
+          component: FormSalesOrder,
+          meta: { title: 'Edit Sales Order' },
+          props: true,
         },
         {
           path: '/admin/pembelian/buat',

@@ -517,12 +517,23 @@ const fetchPOData = async () => {
 
 const fetchDataDropdown = async () => {
   try {
-    const [supplierRes, barangRes] = await Promise.all([
+    const [supplierRes, barangRes, categoryRes] = await Promise.all([
       apiClient.get('/suppliers?all=true'),
       apiClient.get('/materials?all=true'),
+      apiClient.get('/categories?all=true'),
     ])
     daftarSupplier.value = supplierRes.data.data
-    daftarBarang.value = barangRes.data.data
+
+    const allBarang = barangRes.data.data
+    const allCategories = categoryRes.data.data
+
+    const kayuCategory = allCategories.find((cat) => cat.name === 'Kayu RST')
+
+    if (kayuCategory) {
+      daftarBarang.value = allBarang.filter((item) => item.category_id === kayuCategory.id)
+    } else {
+      daftarBarang.value = allBarang
+    }
   } catch (error) {
     toast.error('Gagal memuat data supplier atau barang.')
   }

@@ -370,14 +370,31 @@ const fetchPOData = async () => {
 
 const fetchDataDropdown = async () => {
   try {
-    const [supplierRes, barangRes] = await Promise.all([
+    const [supplierRes, barangRes, categoryRes] = await Promise.all([
       apiClient.get('/suppliers?all=true'),
       apiClient.get('/materials?all=true'),
+      apiClient.get('/categories?all=true'),
     ])
     daftarSupplier.value = supplierRes.data.data
-    daftarBarang.value = barangRes.data.data
+
+    const allBarang = barangRes.data.data
+    const allCategories = categoryRes.data.data
+
+    const operationalCategories = allCategories.filter(
+      (cat) => cat.name === 'Bahan Penolong' || cat.name === 'Bahan Operasional',
+    )
+
+    const operationalCategoryIds = operationalCategories.map((cat) => cat.id)
+
+    if (operationalCategoryIds.length > 0) {
+      daftarBarang.value = allBarang.filter((item) =>
+        operationalCategoryIds.includes(item.category_id),
+      )
+    } else {
+      daftarBarang.value = allBarang
+    }
   } catch (error) {
-    const errorMessage = error.response?.data?.message || 'Gagal menyimpan pesanan.'
+    const errorMessage = error.response?.data?.message || 'Gagal memuat data.'
     toast.error(errorMessage)
   }
 }

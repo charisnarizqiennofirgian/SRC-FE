@@ -4,7 +4,7 @@
       <div class="header-content">
         <div class="header-left">
           <div class="icon-badge-report">
-            <span class="report-icon">📦</span>
+            <span class="report-icon">🏭</span>
           </div>
           <div class="header-text">
             <h1 class="page-title">Laporan Stok Produk Jadi</h1>
@@ -16,62 +16,20 @@
             <span class="stat-icon">📊</span>
             <div class="stat-content">
               <p class="stat-label">Total Item</p>
-              <p class="stat-value">{{ pagination ? pagination.total : reportData.length }}</p>
+              <p class="stat-value">
+                {{ pagination ? pagination.total : reportData.length }}
+              </p>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div v-if="loading" class="loading-container">
-      <div class="loading-animation">
-        <div class="spinner"></div>
-        <div class="loading-dots">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-      </div>
-      <p class="loading-text">Memuat laporan...</p>
-    </div>
+    <div v-if="loading" class="loading-container"></div>
 
     <div v-else class="content-card report-card">
-      <div class="card-header-report">
-        <div class="report-header-left">
-          <span class="header-icon">📋</span>
-          <h2 class="card-title">Daftar Stok Produk Jadi</h2>
-        </div>
-        <div class="report-info">
-          <span class="info-badge">{{ reportData.length }} Items</span>
-        </div>
-      </div>
-
-      <div class="card-filter-section">
-        <div class="filter-left">
-          <div class="search-wrapper">
-            <span class="search-icon">🔍</span>
-            <input
-              v-model="searchQuery"
-              @input="handleSearch"
-              type="text"
-              placeholder="Cari nama atau kode barang..."
-              class="search-input"
-            />
-            <button v-if="searchQuery" @click="clearSearch" class="clear-btn">✕</button>
-          </div>
-        </div>
-        <div class="filter-right">
-          <div class="per-page-selector">
-            <label class="per-page-label">Tampilkan:</label>
-            <select v-model="perPage" @change="handlePerPageChange" class="per-page-select">
-              <option :value="10">10</option>
-              <option :value="25">25</option>
-              <option :value="50">50</option>
-              <option :value="100">100</option>
-            </select>
-          </div>
-        </div>
-      </div>
+      <div class="card-header-report"></div>
+      <div class="card-filter-section"></div>
 
       <div class="card-body-table">
         <div class="table-wrapper">
@@ -81,14 +39,15 @@
                 <th class="th-no">No</th>
                 <th class="th-kode">Kode</th>
                 <th class="th-nama">Nama Barang</th>
-                <th class="th-kategori">Kategori</th>
-                <th class="th-satuan">Satuan</th>
+                <th class="th-spec">NW/Box (Kg)</th>
+                <th class="th-spec">GW/Box (Kg)</th>
+                <th class="th-spec">Wood (m³)</th>
                 <th class="th-stok">Stok Saat Ini</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="reportData.length === 0" class="empty-row">
-                <td colspan="6" class="empty-cell">
+                <td colspan="7" class="empty-cell">
                   <div class="empty-state">
                     <span class="empty-icon">📭</span>
                     <p class="empty-text">
@@ -99,11 +58,13 @@
               </tr>
               <tr v-for="(item, index) in reportData" :key="item.id" class="data-row">
                 <td class="td-no">
-                  <span class="row-number">{{
-                    pagination
-                      ? (pagination.current_page - 1) * pagination.per_page + index + 1
-                      : index + 1
-                  }}</span>
+                  <span class="row-number">
+                    {{
+                      pagination
+                        ? (pagination.current_page - 1) * pagination.per_page + index + 1
+                        : index + 1
+                    }}
+                  </span>
                 </td>
                 <td class="td-kode">
                   <span class="code-badge">{{ item.code }}</span>
@@ -114,14 +75,12 @@
                     <span class="item-name">{{ item.name }}</span>
                   </div>
                 </td>
-                <td class="td-kategori">
-                  <span class="badge-category">{{ item.category?.name || 'N/A' }}</span>
-                </td>
-                <td class="td-satuan">
-                  <span class="badge-unit">{{ item.unit?.name || 'N/A' }}</span>
-                </td>
+                <td class="td-spec">{{ parseFloat(item.nw_per_box) || 0 }}</td>
+                <td class="td-spec">{{ parseFloat(item.gw_per_box) || 0 }}</td>
+                <td class="td-spec-wood">{{ parseFloat(item.wood_consumed_per_pcs) || 0 }}</td>
                 <td class="td-stok">
                   <span class="stock-value">{{ parseInt(item.stock) }}</span>
+                  <span class="unit-badge">{{ item.unit?.short_name || 'N/A' }}</span>
                 </td>
               </tr>
             </tbody>
@@ -129,40 +88,7 @@
         </div>
       </div>
 
-      <div v-if="pagination && pagination.last_page > 1" class="card-footer-pagination">
-        <div class="pagination-info">
-          Menampilkan {{ pagination.from || 0 }} - {{ pagination.to || 0 }} dari
-          {{ pagination.total }} data
-        </div>
-        <div class="pagination-controls">
-          <button
-            @click="goToPage(pagination.current_page - 1)"
-            :disabled="pagination.current_page === 1"
-            class="pagination-btn pagination-prev"
-          >
-            ← Prev
-          </button>
-          <button
-            v-for="page in paginationPages"
-            :key="page"
-            @click="goToPage(page)"
-            :class="[
-              'pagination-btn',
-              'pagination-number',
-              { active: page === pagination.current_page },
-            ]"
-          >
-            {{ page }}
-          </button>
-          <button
-            @click="goToPage(pagination.current_page + 1)"
-            :disabled="pagination.current_page === pagination.last_page"
-            class="pagination-btn pagination-next"
-          >
-            Next →
-          </button>
-        </div>
-      </div>
+      <div v-if="pagination && pagination.last_page > 1" class="card-footer-pagination"></div>
     </div>
   </DashboardLayout>
 </template>
@@ -186,16 +112,17 @@ const fetchReportData = async () => {
   loading.value = true
   try {
     const params = {
-      categories: 'Produk Jadi',
+      category_name: 'Produk Jadi',
       per_page: perPage.value,
       page: currentPage.value,
+      include: 'unit',
     }
 
     if (searchQuery.value) {
       params.search = searchQuery.value
     }
 
-    const response = await apiClient.get('/stock-report', { params })
+    const response = await apiClient.get('/materials', { params })
 
     if (response.data.data.data) {
       reportData.value = response.data.data.data
@@ -239,7 +166,8 @@ const handlePerPageChange = () => {
 }
 
 const goToPage = (page) => {
-  if (page < 1 || page > pagination.value.last_page) return
+  if (page === '...') return
+  if (page < 1 || (pagination.value && page > pagination.value.last_page)) return
   currentPage.value = page
   fetchReportData()
 }

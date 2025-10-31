@@ -8,7 +8,6 @@
       <!-- HEADER KOP SURAT -->
       <KopSuratCetak :poNumber="po.po_number" />
 
-      <!-- ✅ TAMBAHAN: TITLE PURCHASE ORDER -->
       <div class="po-title-section">
         <h2 class="po-title">PURCHASE ORDER</h2>
         <p class="po-number-line">No. {{ po.po_number }}</p>

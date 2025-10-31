@@ -19,6 +19,13 @@
               <p class="stat-value">{{ pagination ? pagination.total : reportData.length }}</p>
             </div>
           </div>
+          <div class="stat-card">
+            <span class="stat-icon">🧊</span>
+            <div class="stat-content">
+              <p class="stat-label">Total Kubikasi</p>
+              <p class="stat-value">{{ totalKubikasiAllItems }} m³</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -81,14 +88,16 @@
                 <th class="th-no">No</th>
                 <th class="th-kode">Kode</th>
                 <th class="th-nama">Nama Barang</th>
-                <th class="th-kategori">Kategori</th>
-                <th class="th-satuan">Satuan</th>
-                <th class="th-stok">Stok Saat Ini</th>
+                <th class="th-spec">T (mm)</th>
+                <th class="th-spec">L (mm)</th>
+                <th class="th-spec">P (mm)</th>
+                <th class="th-stok">Stok (Pcs)</th>
+                <th class="th-kubikasi">Total Kubikasi (m³)</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="reportData.length === 0" class="empty-row">
-                <td colspan="6" class="empty-cell">
+                <td colspan="8" class="empty-cell">
                   <div class="empty-state">
                     <span class="empty-icon">📭</span>
                     <p class="empty-text">
@@ -114,14 +123,14 @@
                     <span class="item-name">{{ item.name }}</span>
                   </div>
                 </td>
-                <td class="td-kategori">
-                  <span class="badge-category">{{ item.category?.name || 'N/A' }}</span>
-                </td>
-                <td class="td-satuan">
-                  <span class="badge-unit">{{ item.unit?.name || 'N/A' }}</span>
-                </td>
+                <td class="td-spec">{{ item.specifications?.t || '-' }}</td>
+                <td class="td-spec">{{ item.specifications?.l || '-' }}</td>
+                <td class="td-spec">{{ item.specifications?.p || '-' }}</td>
                 <td class="td-stok">
                   <span class="stock-value">{{ parseInt(item.stock) }}</span>
+                </td>
+                <td class="td-kubikasi">
+                  <span class="kubikasi-value">{{ calculateTotalKubikasi(item) }}</span>
                 </td>
               </tr>
             </tbody>
@@ -239,10 +248,55 @@ const handlePerPageChange = () => {
 }
 
 const goToPage = (page) => {
-  if (page < 1 || page > pagination.value.last_page) return
+  if (!pagination.value || page < 1 || page > pagination.value.last_page) return
   currentPage.value = page
   fetchReportData()
 }
+
+// ✅ FUNGSI HELPER BARU YANG LEBIH PINTAR
+const getKubikasiPerPcs = (spec) => {
+  if (!spec) return 0
+
+  // 1. Cek data lama (dari upload excel) yang punya m3_per_pcs
+  if (spec.m3_per_pcs) {
+    return parseFloat(spec.m3_per_pcs) || 0
+  }
+
+  // 2. Cek data baru (dari form master) hitung manual
+  if (spec.t && spec.l && spec.p) {
+    const t_m = parseFloat(spec.t) / 1000
+    const l_m = parseFloat(spec.l) / 1000
+    const p_m = parseFloat(spec.p) / 1000
+
+    if (isNaN(t_m) || isNaN(l_m) || isNaN(p_m)) return 0
+
+    return t_m * l_m * p_m
+  }
+
+  // Jika tidak ada data
+  return 0
+}
+
+// ✅ FUNGSI KALKULASI DI-UPDATE
+const calculateTotalKubikasi = (item) => {
+  const stock = parseFloat(item.stock) || 0
+  const m3PerPcs = getKubikasiPerPcs(item.specifications) // <-- Menggunakan helper baru
+  const total = stock * m3PerPcs
+
+  if (total === 0) return '0.0000'
+  return total.toFixed(4)
+}
+
+// ✅ FUNGSI TOTAL KESELURUHAN DI-UPDATE
+const totalKubikasiAllItems = computed(() => {
+  const total = reportData.value.reduce((acc, item) => {
+    const stock = parseFloat(item.stock) || 0
+    const m3PerPcs = getKubikasiPerPcs(item.specifications) // <-- Menggunakan helper baru
+    return acc + stock * m3PerPcs
+  }, 0)
+
+  return total.toFixed(4)
+})
 
 const paginationPages = computed(() => {
   if (!pagination.value) return []
@@ -278,6 +332,31 @@ const paginationPages = computed(() => {
 
 onMounted(fetchReportData)
 </script>
+
+<style scoped>
+/* Menambahkan style untuk kolom baru */
+.th-spec,
+.td-spec {
+  text-align: center;
+  width: 70px;
+}
+.th-kubikasi,
+.td-kubikasi {
+  text-align: right;
+  width: 150px;
+}
+.td-stok {
+  text-align: center;
+}
+.kubikasi-value {
+  font-weight: 600;
+  color: #0056b3; /* Biru */
+}
+.stock-value {
+  font-weight: 600;
+  color: #333;
+}
+</style>
 
 <style scoped>
 .page-header {

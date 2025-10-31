@@ -26,27 +26,12 @@
     <div v-if="loading" class="loading-container">
       <div class="loading-animation">
         <div class="spinner"></div>
-        <div class="loading-dots">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
+        <p class="loading-text">Memuat data laporan...</p>
       </div>
-      <p class="loading-text">Memuat laporan...</p>
     </div>
 
     <div v-else class="content-card report-card">
       <div class="card-header-report">
-        <div class="report-header-left">
-          <span class="header-icon">📋</span>
-          <h2 class="card-title">Daftar Stok Bahan</h2>
-        </div>
-        <div class="report-info">
-          <span class="info-badge">{{ reportData.length }} Items</span>
-        </div>
-      </div>
-
-      <div class="card-filter-section">
         <div class="filter-left">
           <div class="search-wrapper">
             <span class="search-icon">🔍</span>
@@ -64,10 +49,10 @@
           <div class="per-page-selector">
             <label class="per-page-label">Tampilkan:</label>
             <select v-model="perPage" @change="handlePerPageChange" class="per-page-select">
-              <option :value="10">10</option>
               <option :value="25">25</option>
               <option :value="50">50</option>
               <option :value="100">100</option>
+              <option :value="200">200</option>
             </select>
           </div>
         </div>
@@ -81,29 +66,38 @@
                 <th class="th-no">No</th>
                 <th class="th-kode">Kode</th>
                 <th class="th-nama">Nama Barang</th>
-                <th class="th-kategori">Kategori</th>
-                <th class="th-satuan">Satuan</th>
+                <th class="th-spec">P (mm)</th>
+                <th class="th-spec">L (mm)</th>
+                <th class="th-spec">T (mm)</th>
+                <th class="th-kubikasi">Kubikasi (m³)</th>
                 <th class="th-stok">Stok Saat Ini</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="reportData.length === 0" class="empty-row">
-                <td colspan="6" class="empty-cell">
+                <td colspan="8" class="empty-cell">
                   <div class="empty-state">
-                    <span class="empty-icon">📭</span>
+                    <div class="empty-icon">📭</div>
                     <p class="empty-text">
-                      {{ searchQuery ? 'Tidak ada hasil pencarian.' : 'Tidak ada data stok.' }}
+                      {{ searchQuery ? 'Tidak ada hasil pencarian.' : 'Belum ada data.' }}
+                    </p>
+                    <p class="empty-subtext">
+                      {{
+                        searchQuery ? 'Coba kata kunci lain.' : 'Data akan muncul setelah ada stok.'
+                      }}
                     </p>
                   </div>
                 </td>
               </tr>
               <tr v-for="(item, index) in reportData" :key="item.id" class="data-row">
                 <td class="td-no">
-                  <span class="row-number">{{
-                    pagination
-                      ? (pagination.current_page - 1) * pagination.per_page + index + 1
-                      : index + 1
-                  }}</span>
+                  <span class="row-number">
+                    {{
+                      pagination
+                        ? (pagination.current_page - 1) * pagination.per_page + index + 1
+                        : index + 1
+                    }}
+                  </span>
                 </td>
                 <td class="td-kode">
                   <span class="code-badge">{{ item.code }}</span>
@@ -114,14 +108,13 @@
                     <span class="item-name">{{ item.name }}</span>
                   </div>
                 </td>
-                <td class="td-kategori">
-                  <span class="badge-category">{{ item.category?.name || 'N/A' }}</span>
-                </td>
-                <td class="td-satuan">
-                  <span class="badge-unit">{{ item.unit?.name || 'N/A' }}</span>
-                </td>
+                <td class="td-spec">{{ item.specifications?.p || 0 }}</td>
+                <td class="td-spec">{{ item.specifications?.l || 0 }}</td>
+                <td class="td-spec">{{ item.specifications?.t || 0 }}</td>
+                <td class="td-kubikasi">{{ calculateKubikasi(item) }}</td>
                 <td class="td-stok">
                   <span class="stock-value">{{ parseInt(item.stock) }}</span>
+                  <span class="unit-badge">{{ item.unit?.short_name || 'N/A' }}</span>
                 </td>
               </tr>
             </tbody>
@@ -149,8 +142,9 @@
             :class="[
               'pagination-btn',
               'pagination-number',
-              { active: page === pagination.current_page },
+              { active: page === pagination.current_page, dots: page === '...' },
             ]"
+            :disabled="page === '...'"
           >
             {{ page }}
           </button>
@@ -182,23 +176,52 @@ const currentPage = ref(1)
 let searchTimeout = null
 const toast = useToast()
 
+const calculateKubikasi = (item) => {
+  if (!item.specifications) return '0.000000'
+
+  const p = parseFloat(item.specifications.p) || 0
+  const l = parseFloat(item.specifications.l) || 0
+  const t = parseFloat(item.specifications.t) || 0
+
+  if (p === 0 || l === 0 || t === 0) return '0.000000'
+
+  const kubikasi = (p * l * t) / 1000000000
+  return kubikasi.toFixed(6)
+}
+
 const fetchReportData = async () => {
   loading.value = true
   try {
     const params = {
-      categories: 'Karton Box',
+      category_name: 'Karton Box',
       per_page: perPage.value,
       page: currentPage.value,
+      include: 'unit',
     }
 
     if (searchQuery.value) {
       params.search = searchQuery.value
     }
 
-    const response = await apiClient.get('/stock-report', { params })
+    const response = await apiClient.get('/materials', { params })
 
+    let items = []
     if (response.data.data.data) {
-      reportData.value = response.data.data.data
+      items = response.data.data.data.map((item) => {
+        let specs = null
+        if (typeof item.specifications === 'string' && item.specifications) {
+          try {
+            specs = JSON.parse(item.specifications)
+          } catch (e) {
+            console.error('Gagal parse specifications:', item.specifications)
+          }
+        } else if (typeof item.specifications === 'object') {
+          specs = item.specifications
+        }
+        return { ...item, specifications: specs }
+      })
+
+      reportData.value = items
       pagination.value = {
         current_page: response.data.data.current_page,
         last_page: response.data.data.last_page,
@@ -208,7 +231,19 @@ const fetchReportData = async () => {
         to: response.data.data.to,
       }
     } else {
-      reportData.value = response.data.data
+      reportData.value = (response.data.data || []).map((item) => {
+        let specs = null
+        if (typeof item.specifications === 'string' && item.specifications) {
+          try {
+            specs = JSON.parse(item.specifications)
+          } catch (e) {
+            console.error('Gagal parse specifications:', item.specifications)
+          }
+        } else if (typeof item.specifications === 'object') {
+          specs = item.specifications
+        }
+        return { ...item, specifications: specs }
+      })
       pagination.value = null
     }
   } catch (error) {
@@ -239,7 +274,8 @@ const handlePerPageChange = () => {
 }
 
 const goToPage = (page) => {
-  if (page < 1 || page > pagination.value.last_page) return
+  if (page === '...') return
+  if (page < 1 || (pagination.value && page > pagination.value.last_page)) return
   currentPage.value = page
   fetchReportData()
 }
