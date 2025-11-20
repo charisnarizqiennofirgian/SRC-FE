@@ -66,16 +66,12 @@
                 <th class="th-no">No</th>
                 <th class="th-kode">Kode</th>
                 <th class="th-nama">Nama Barang</th>
-                <th class="th-spec">P (mm)</th>
-                <th class="th-spec">L (mm)</th>
-                <th class="th-spec">T (mm)</th>
-                <th class="th-kubikasi">Kubikasi (m³)</th>
                 <th class="th-stok">Stok Saat Ini</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="reportData.length === 0" class="empty-row">
-                <td colspan="8" class="empty-cell">
+                <td colspan="4" class="empty-cell">
                   <div class="empty-state">
                     <div class="empty-icon">📭</div>
                     <p class="empty-text">
@@ -108,10 +104,6 @@
                     <span class="item-name">{{ item.name }}</span>
                   </div>
                 </td>
-                <td class="td-spec">{{ item.specifications?.p || 0 }}</td>
-                <td class="td-spec">{{ item.specifications?.l || 0 }}</td>
-                <td class="td-spec">{{ item.specifications?.t || 0 }}</td>
-                <td class="td-kubikasi">{{ calculateKubikasi(item) }}</td>
                 <td class="td-stok">
                   <span class="stock-value">{{ parseInt(item.stock) }}</span>
                   <span class="unit-badge">{{ item.unit?.short_name || 'N/A' }}</span>
@@ -175,19 +167,6 @@ const perPage = ref(50)
 const currentPage = ref(1)
 let searchTimeout = null
 const toast = useToast()
-
-const calculateKubikasi = (item) => {
-  if (!item.specifications) return '0.000000'
-
-  const p = parseFloat(item.specifications.p) || 0
-  const l = parseFloat(item.specifications.l) || 0
-  const t = parseFloat(item.specifications.t) || 0
-
-  if (p === 0 || l === 0 || t === 0) return '0.000000'
-
-  const kubikasi = (p * l * t) / 1000000000
-  return kubikasi.toFixed(6)
-}
 
 const fetchReportData = async () => {
   loading.value = true
@@ -308,7 +287,6 @@ const paginationPages = computed(() => {
       pages.push(lastPageNum)
     }
   }
-
   return pages
 })
 

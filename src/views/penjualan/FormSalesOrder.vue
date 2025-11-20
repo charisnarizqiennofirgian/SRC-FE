@@ -1,6 +1,5 @@
 <template>
   <DashboardLayout>
-    <!-- ✅ HEADER SECTION -->
     <div class="page-header-form">
       <div class="header-content-form">
         <div class="header-left-form">
@@ -10,7 +9,7 @@
           <div class="header-text-form">
             <h1 class="page-title-form">{{ pageTitle }}</h1>
             <p class="page-subtitle-form">
-              {{ isEditMode ? 'Perbarui detail sales order' : 'Buat pesanan penjualan baru' }}
+              {{ isEditMode ? 'Perbarui detail pesanan penjualan' : 'Buat pesanan penjualan baru' }}
             </p>
           </div>
         </div>
@@ -22,7 +21,6 @@
       </div>
     </div>
 
-    <!-- ✅ LOADING STATE -->
     <div v-if="loading" class="loading-container-form">
       <div class="loading-animation-form">
         <div class="spinner-form"></div>
@@ -35,9 +33,7 @@
       <p class="loading-text-form">Memuat data...</p>
     </div>
 
-    <!-- ✅ FORM CONTENT -->
     <form v-else @submit.prevent="handleSubmit" class="form-container-so">
-      <!-- SECTION 1: INFO CUSTOMER -->
       <div class="form-section-so">
         <div class="section-header-so">
           <span class="section-icon-so">👤</span>
@@ -69,18 +65,13 @@
             </div>
           </div>
 
-          <div class="form-grid-3">
+          <div class="form-grid-2">
             <div class="form-group-so">
               <label class="form-label-so">
-                Tanggal SO
+                Tanggal PO
                 <span class="required-mark">*</span>
               </label>
               <input v-model="form.so_date" type="date" class="form-input-so" required />
-            </div>
-
-            <div class="form-group-so">
-              <label class="form-label-so">Tanggal Kirim (Estimasi)</label>
-              <input v-model="form.delivery_date" type="date" class="form-input-so" />
             </div>
 
             <div class="form-group-so">
@@ -116,6 +107,7 @@
                 v-model.number="form.exchange_rate"
                 type="number"
                 min="1"
+                step="1"
                 class="form-input-so"
                 required
               />
@@ -124,7 +116,6 @@
         </div>
       </div>
 
-      <!-- SECTION 2: DETAIL BARANG -->
       <div class="form-section-so">
         <div class="section-header-so">
           <span class="section-icon-so">📦</span>
@@ -137,29 +128,39 @@
                 <tr>
                   <th class="th-item">Nama Barang</th>
                   <th class="th-qty">Qty</th>
+                  <th class="th-date">Tgl. Kirim</th>
                   <th class="th-price">Harga Satuan ({{ form.currency }})</th>
+                  <th class="th-keterangan">Keterangan</th>
                   <th class="th-total">Total Baris</th>
                   <th class="th-action"></th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, index) in form.details" :key="index" class="data-row-so">
+                <tr v-for="(item, index) in form.details" :key="`row-${index}`" class="data-row-so">
                   <td>
-                    <select
+                    <VueSelect
+                      :key="`select-${index}-${item.item_id}`"
                       v-model="item.item_id"
-                      @change="onItemSelect(index)"
-                      class="form-input-so form-select-so form-input-sm"
-                      required
+                      :options="masterData.items"
+                      :reduce="(opt) => opt.id"
+                      label="name"
+                      placeholder="Ketik cari produk..."
+                      :clearable="false"
+                      @update:model-value="onItemSelect(index)"
+                      class="vue-select-table"
                     >
-                      <option disabled value="">Pilih produk...</option>
-                      <option
-                        v-for="masterItem in masterData.items"
-                        :key="masterItem.id"
-                        :value="masterItem.id"
-                      >
-                        {{ masterItem.name }} (Stok: {{ formatStock(masterItem.stock) }})
-                      </option>
-                    </select>
+                      <template #option="{ name, code, stock }">
+                        <span class="option-item">
+                          <strong>{{ code || '-' }}</strong> | {{ name }} (Stok:
+                          {{ formatStock(stock) }})
+                        </span>
+                      </template>
+                      <template #selected-option="{ name, code }">
+                        <span class="selected-item">
+                          <strong>{{ code || '-' }}</strong> | {{ name }}
+                        </span>
+                      </template>
+                    </VueSelect>
                   </td>
                   <td>
                     <input
@@ -173,12 +174,29 @@
                   </td>
                   <td>
                     <input
+                      v-model="item.delivery_date"
+                      type="date"
+                      class="form-input-so form-input-sm"
+                      required
+                    />
+                  </td>
+                  <td>
+                    <input
                       v-model.number="item.unit_price"
                       type="number"
                       min="0"
                       class="form-input-so form-input-sm"
                       required
                     />
+                  </td>
+                  <!-- ✅ KOLOM BARU: Keterangan -->
+                  <td>
+                    <textarea
+                      v-model="item.keterangan"
+                      rows="2"
+                      class="form-textarea-so form-textarea-sm"
+                      placeholder="Catatan (opsional)..."
+                    ></textarea>
                   </td>
                   <td class="td-total-so">
                     <span class="total-line-value">{{
@@ -205,7 +223,6 @@
         </div>
       </div>
 
-      <!-- SECTION 3: TOTAL & CATATAN -->
       <div class="form-section-so">
         <div class="section-header-so">
           <span class="section-icon-so">💰</span>
@@ -213,7 +230,6 @@
         </div>
         <div class="section-content-so">
           <div class="form-grid-2-gap">
-            <!-- LEFT: CATATAN -->
             <div class="notes-container-so">
               <div class="form-group-so">
                 <label class="form-label-so">Catatan</label>
@@ -226,7 +242,6 @@
               </div>
             </div>
 
-            <!-- RIGHT: SUMMARY -->
             <div class="summary-container-so">
               <div class="summary-row-so">
                 <span class="summary-label-so">Subtotal</span>
@@ -272,7 +287,6 @@
         </div>
       </div>
 
-      <!-- FORM ACTIONS -->
       <div class="form-actions-so">
         <button @click.prevent="goBack" type="button" class="btn-cancel-so">
           <span class="btn-icon">↩️</span>
@@ -281,7 +295,7 @@
         <button type="submit" class="btn-submit-so" :disabled="isSaving">
           <span v-if="isSaving" class="loading-spinner-inline"></span>
           <span v-else class="btn-icon">💾</span>
-          <span class="btn-text">{{ isEditMode ? 'Update' : 'Simpan' }} Sales Order</span>
+          <span class="btn-text">{{ isEditMode ? 'Update' : 'Simpan' }} Pesanan</span>
         </button>
       </div>
     </form>
@@ -291,6 +305,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import VueSelect from 'vue-select'
 import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
 import DashboardLayout from '../../components/DashboardLayout.vue'
@@ -307,7 +322,6 @@ const soId = ref(null)
 const form = reactive({
   buyer_id: '',
   so_date: new Date().toISOString().split('T')[0],
-  delivery_date: null,
   customer_po_number: '',
   notes: '',
   status: 'Draft',
@@ -381,14 +395,13 @@ const fetchSalesOrder = async (id) => {
     const so = response.data.data
 
     form.buyer_id = so.buyer_id
-    form.so_date = so.so_date
-    form.delivery_date = so.delivery_date
+    form.so_date = so.so_date ? so.so_date.substring(0, 10) : ''
     form.customer_po_number = so.customer_po_number
     form.notes = so.notes
     form.status = so.status
-    form.discount = so.discount
+    form.discount = parseFloat(so.discount) || 0
     form.currency = so.currency
-    form.exchange_rate = so.exchange_rate
+    form.exchange_rate = parseInt(so.exchange_rate) || 1
 
     if (so.tax_ppn > 0) {
       const calculatedRate = so.tax_ppn / so.subtotal
@@ -400,18 +413,22 @@ const fetchSalesOrder = async (id) => {
     }
 
     form.details = so.details.map((detail) => ({
-      item_id: detail.item_id,
-      item_name: detail.item_name,
-      item_unit: detail.item_unit,
-      quantity: detail.quantity,
-      unit_price: detail.unit_price,
-      discount: detail.discount,
-      line_total: detail.line_total,
-      specifications: detail.specifications,
+      id: detail.id, // ✅ Penting untuk update
+      item_id: parseInt(detail.item_id),
+      item_code: detail.item_code || '', // ✅ BARU
+      item_name: detail.item_name || '',
+      item_unit: detail.item_unit || 'N/A',
+      quantity: parseFloat(detail.quantity) || 1,
+      unit_price: parseFloat(detail.unit_price) || 0,
+      discount: parseFloat(detail.discount) || 0,
+      line_total: parseFloat(detail.line_total) || 0,
+      specifications: detail.specifications || null,
+      delivery_date: detail.delivery_date ? detail.delivery_date.substring(0, 10) : '',
+      keterangan: detail.keterangan || '', // ✅ BARU
     }))
   } catch (error) {
     console.error('Error fetch SO:', error)
-    toast.error('Gagal memuat data Sales Order.')
+    toast.error('Gagal memuat data Pesanan Penjualan.')
     router.push({ name: 'DaftarSalesOrder' })
   }
 }
@@ -427,13 +444,16 @@ watch(
 
 const addItemRow = () => {
   form.details.push({
-    item_id: '',
+    item_id: null,
+    item_code: '', // ✅ BARU
     item_name: '',
     item_unit: '',
     quantity: 1,
     unit_price: 0,
     line_total: 0,
     specifications: null,
+    delivery_date: form.so_date,
+    keterangan: '', // ✅ BARU
   })
 }
 
@@ -444,8 +464,11 @@ const removeItemRow = (index) => {
 const onItemSelect = (index) => {
   const selectedItem = masterData.items.find((item) => item.id === form.details[index].item_id)
   if (selectedItem) {
+    form.details[index].item_code = selectedItem.code || '' // ✅ BARU: Auto-fill kode
     form.details[index].item_name = selectedItem.name
     form.details[index].item_unit = selectedItem.unit?.name || 'N/A'
+    form.details[index].quantity = 1
+    form.details[index].unit_price = 0
   }
 }
 
@@ -478,7 +501,7 @@ const handleSubmit = async () => {
   isSaving.value = true
 
   if (form.details.length === 0) {
-    toast.error('Harus ada minimal 1 barang dalam Sales Order.')
+    toast.error('Harus ada minimal 1 barang dalam Pesanan Penjualan.')
     isSaving.value = false
     return
   }
@@ -486,10 +509,10 @@ const handleSubmit = async () => {
   try {
     if (isEditMode.value) {
       await apiClient.put(`/sales-orders/${soId.value}`, form)
-      toast.success('Sales Order berhasil diperbarui!')
+      toast.success('Pesanan Penjualan berhasil diperbarui!')
     } else {
       await apiClient.post('/sales-orders', form)
-      toast.success('Sales Order baru berhasil disimpan!')
+      toast.success('Pesanan Penjualan baru berhasil disimpan!')
     }
     router.push({ name: 'DaftarSalesOrder' })
   } catch (error) {
@@ -505,7 +528,7 @@ const goBack = () => {
 }
 
 const pageTitle = computed(() => {
-  return isEditMode.value ? 'Edit Sales Order' : 'Buat Sales Order Baru'
+  return isEditMode.value ? 'Edit Pesanan Penjualan' : 'Buat Pesanan Penjualan Baru'
 })
 
 const formatCurrency = (value, currency) => {
@@ -531,7 +554,73 @@ const formatStock = (value) => {
 </script>
 
 <style scoped>
-/* ========== PAGE HEADER ========== */
+/* ✅ TAMBAHAN: Style untuk textarea kecil */
+.form-textarea-sm {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 0.9rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.form-textarea-sm:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.th-keterangan {
+  min-width: 200px;
+}
+
+/* Existing styles tetap sama */
+</style>
+
+<style scoped>
+:deep(.vue-select-table .vs__dropdown-toggle) {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  background: white;
+}
+
+:deep(.vue-select-table .vs__dropdown-toggle:hover) {
+  border-color: #667eea;
+}
+
+:deep(.vue-select-table .vs__search) {
+  font-size: 0.8125rem;
+  padding: 0;
+  margin: 0;
+}
+
+:deep(.vue-select-table .vs__dropdown-menu) {
+  font-size: 0.8125rem;
+  max-height: 250px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+}
+
+:deep(.vue-select-table .vs__dropdown-option) {
+  padding: 0.5rem 0.75rem;
+}
+
+:deep(.vue-select-table .vs__dropdown-option--highlight) {
+  background: #667eea;
+  color: white;
+}
+
+:deep(.vue-select-table .vs__clear) {
+  display: none;
+}
+
+.option-item,
+.selected-item {
+  font-size: 0.8125rem;
+}
+
 .page-header-form {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 16px;
@@ -613,7 +702,6 @@ const formatStock = (value) => {
   border-color: rgba(16, 185, 129, 0.5);
 }
 
-/* ========== LOADING ========== */
 .loading-container-form {
   display: flex;
   flex-direction: column;
@@ -650,6 +738,7 @@ const formatStock = (value) => {
   display: flex;
   gap: 6px;
   margin-top: 1rem;
+  justify-content: center;
 }
 
 .loading-dots-form span {
@@ -684,17 +773,14 @@ const formatStock = (value) => {
   font-weight: 500;
 }
 
-/* ========== FORM CONTAINER ========== */
 .form-container-so {
   max-width: 100%;
   margin: 0 auto;
-  padding: 0 1rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
-/* ========== FORM SECTION ========== */
 .form-section-so {
   background: white;
   border-radius: 12px;
@@ -726,17 +812,11 @@ const formatStock = (value) => {
   padding: 1.5rem;
 }
 
-/* ========== FORM GRIDS ========== */
 .form-grid-2 {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
-}
-
-.form-grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
 .form-grid-2-gap {
@@ -745,7 +825,6 @@ const formatStock = (value) => {
   gap: 2rem;
 }
 
-/* ========== FORM ELEMENTS ========== */
 .form-group-so {
   display: flex;
   flex-direction: column;
@@ -812,7 +891,6 @@ const formatStock = (value) => {
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-/* ========== TABLE ========== */
 .table-wrapper-so {
   overflow-x: auto;
   border-radius: 8px;
@@ -845,6 +923,9 @@ const formatStock = (value) => {
 .th-qty {
   width: 100px;
 }
+.th-date {
+  width: 140px;
+}
 .th-price {
   width: 180px;
 }
@@ -871,8 +952,9 @@ const formatStock = (value) => {
 }
 
 .total-line-value {
-  font-weight: 600;
+  font-weight: 700;
   color: #10b981;
+  font-size: 0.9375rem;
 }
 
 .td-action-so {
@@ -880,19 +962,24 @@ const formatStock = (value) => {
 }
 
 .btn-remove-row {
-  padding: 0.375rem 0.625rem;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: white;
   color: #ef4444;
   border: 1px solid #ef4444;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 0.875rem;
+  font-size: 1rem;
 }
 
 .btn-remove-row:hover {
   background: #ef4444;
   color: white;
+  transform: scale(1.1);
 }
 
 .btn-add-row-so {
@@ -915,7 +1002,14 @@ const formatStock = (value) => {
   color: #5568d3;
 }
 
-/* ========== SUMMARY ========== */
+.btn-icon {
+  font-size: 1rem;
+}
+
+.btn-text {
+  font-size: 0.9375rem;
+}
+
 .notes-container-so {
   display: flex;
   flex-direction: column;
@@ -983,7 +1077,6 @@ const formatStock = (value) => {
   color: #10b981;
 }
 
-/* ========== FORM ACTIONS ========== */
 .form-actions-so {
   display: flex;
   justify-content: flex-end;
@@ -1044,7 +1137,6 @@ const formatStock = (value) => {
   animation: spin 0.6s linear infinite;
 }
 
-/* ========== RESPONSIVE ========== */
 @media (max-width: 1024px) {
   .form-grid-2-gap {
     grid-template-columns: 1fr;
@@ -1066,8 +1158,7 @@ const formatStock = (value) => {
     font-size: 1.5rem;
   }
 
-  .form-grid-2,
-  .form-grid-3 {
+  .form-grid-2 {
     grid-template-columns: 1fr;
   }
 

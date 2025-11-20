@@ -29,7 +29,34 @@
 
     <div v-else class="content-card report-card">
       <div class="card-header-report"></div>
-      <div class="card-filter-section"></div>
+
+      <!-- Filter Section -->
+      <div class="card-filter-section">
+        <div class="filter-left">
+          <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input
+              v-model="searchQuery"
+              @input="handleSearch"
+              type="text"
+              placeholder="Cari kode atau nama produk..."
+              class="search-input"
+            />
+            <button v-if="searchQuery" @click="clearSearch" class="clear-btn">✕</button>
+          </div>
+        </div>
+        <div class="filter-right">
+          <div class="per-page-selector">
+            <label class="per-page-label">Tampilkan:</label>
+            <select v-model="perPage" @change="handlePerPageChange" class="per-page-select">
+              <option :value="10">10</option>
+              <option :value="25">25</option>
+              <option :value="50">50</option>
+              <option :value="100">100</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
       <div class="card-body-table">
         <div class="table-wrapper">
@@ -88,7 +115,40 @@
         </div>
       </div>
 
-      <div v-if="pagination && pagination.last_page > 1" class="card-footer-pagination"></div>
+      <div v-if="pagination && pagination.last_page > 1" class="card-footer-pagination">
+        <div class="pagination-info">
+          Menampilkan {{ pagination.from || 0 }} - {{ pagination.to || 0 }} dari
+          {{ pagination.total }} data
+        </div>
+        <div class="pagination-controls">
+          <button
+            @click="goToPage(pagination.current_page - 1)"
+            :disabled="pagination.current_page === 1"
+            class="pagination-btn pagination-prev"
+          >
+            ← Prev
+          </button>
+          <button
+            v-for="page in paginationPages"
+            :key="page"
+            @click="goToPage(page)"
+            :class="[
+              'pagination-btn',
+              'pagination-number',
+              { active: page === pagination.current_page },
+            ]"
+          >
+            {{ page }}
+          </button>
+          <button
+            @click="goToPage(pagination.current_page + 1)"
+            :disabled="pagination.current_page === pagination.last_page"
+            class="pagination-btn pagination-next"
+          >
+            Next →
+          </button>
+        </div>
+      </div>
     </div>
   </DashboardLayout>
 </template>
@@ -117,13 +177,10 @@ const fetchReportData = async () => {
       page: currentPage.value,
       include: 'unit',
     }
-
     if (searchQuery.value) {
       params.search = searchQuery.value
     }
-
     const response = await apiClient.get('/materials', { params })
-
     if (response.data.data.data) {
       reportData.value = response.data.data.data
       pagination.value = {
@@ -174,11 +231,9 @@ const goToPage = (page) => {
 
 const paginationPages = computed(() => {
   if (!pagination.value) return []
-
   const pages = []
   const currentPageNum = pagination.value.current_page
   const lastPageNum = pagination.value.last_page
-
   if (lastPageNum <= 7) {
     for (let i = 1; i <= lastPageNum; i++) {
       pages.push(i)
@@ -200,7 +255,6 @@ const paginationPages = computed(() => {
       pages.push(lastPageNum)
     }
   }
-
   return pages
 })
 

@@ -2,8 +2,9 @@
 const config = {
   development: {
     apiUrl: 'http://192.168.1.48:8000/api',
-    timeout: 10000,
+    timeout: 300000, // 5 menit
   },
+
   production: {
     apiUrl: import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api',
     timeout: 15000,

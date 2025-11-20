@@ -7,14 +7,14 @@
             <span class="sales-icon">🧾</span>
           </div>
           <div class="header-text">
-            <h1 class="page-title">Daftar Sales Order</h1>
+            <h1 class="page-title">Daftar Pesanan Penjualan</h1>
             <p class="page-subtitle">Kelola pesanan penjualan dari customer</p>
           </div>
         </div>
         <div class="header-actions">
           <button @click="goToCreatePage" class="btn-create-so">
             <span class="btn-icon">➕</span>
-            <span class="btn-text">Tambah SO Baru</span>
+            <span class="btn-text">Tambah Pesanan Baru</span>
           </button>
         </div>
       </div>
@@ -29,21 +29,20 @@
           <span></span>
         </div>
       </div>
-      <p class="loading-text">Memuat daftar sales order...</p>
+      <p class="loading-text">Memuat daftar pesanan penjualan...</p>
     </div>
 
     <div v-else class="content-card">
       <div class="card-header-list">
         <div class="list-header-left">
           <span class="header-icon">📋</span>
-          <h2 class="card-title">Daftar Sales Order</h2>
+          <h2 class="card-title">Daftar Pesanan Penjualan</h2>
         </div>
         <div class="list-info">
-          <span class="info-badge">{{ pagination.total || 0 }} SO</span>
+          <span class="info-badge">{{ pagination.total || 0 }} Pesanan</span>
         </div>
       </div>
 
-      <!-- ✅ FILTER SECTION -->
       <div class="card-filter-section">
         <div class="filter-row">
           <div class="filter-group">
@@ -78,7 +77,7 @@
             <input
               v-model="filters.search"
               type="text"
-              placeholder="Nama customer atau No. SO..."
+              placeholder="Nama customer atau No. Pesanan..."
               class="filter-input-search"
               @input="handleFilterChange"
             />
@@ -96,13 +95,17 @@
         <div class="empty-state">
           <span class="empty-icon">📭</span>
           <h3 class="empty-title">
-            {{ filters.search || filters.startDate ? 'Tidak Ada Hasil' : 'Belum Ada Sales Order' }}
+            {{
+              filters.search || filters.startDate
+                ? 'Tidak Ada Hasil'
+                : 'Belum Ada Pesanan Penjualan'
+            }}
           </h3>
           <p class="empty-text">
             {{
               filters.search || filters.startDate
                 ? 'Coba ubah filter pencarian'
-                : 'Mulai buat sales order pertama Anda'
+                : 'Mulai buat pesanan penjualan pertama Anda'
             }}
           </p>
           <button
@@ -111,7 +114,7 @@
             class="btn-create-empty"
           >
             <span class="btn-icon">➕</span>
-            Tambah SO Baru
+            Tambah Pesanan Baru
           </button>
           <button v-else @click="clearFilters" class="btn-create-empty">
             <span class="btn-icon">🔄</span>
@@ -126,10 +129,10 @@
             <thead>
               <tr>
                 <th class="th-no">No</th>
-                <th class="th-so-number">No. SO</th>
+                <th class="th-so-number">No. Pesanan</th>
+                <th class="th-items">Nama Barang</th>
                 <th class="th-customer">Customer</th>
-                <th class="th-date">Tgl. SO</th>
-                <th class="th-date">Tgl. Kirim</th>
+                <th class="th-date">Tgl. Pesanan</th>
                 <th class="th-status">Status</th>
                 <th class="th-total">Total</th>
                 <th class="th-actions">Aksi</th>
@@ -143,6 +146,13 @@
                 <td class="td-so-number">
                   <span class="so-badge">{{ so.so_number }}</span>
                 </td>
+                <td class="td-items">
+                  <div class="items-list">
+                    <span v-for="(detail, idx) in so.details" :key="idx" class="item-tag">
+                      {{ detail.item_name || 'N/A' }}
+                    </span>
+                  </div>
+                </td>
                 <td class="td-customer">
                   <div class="customer-info">
                     <span class="customer-icon">👤</span>
@@ -150,22 +160,32 @@
                   </div>
                 </td>
                 <td class="td-date">{{ formatDisplayDate(so.so_date) }}</td>
-                <td class="td-date">
-                  {{ so.delivery_date ? formatDisplayDate(so.delivery_date) : '-' }}
-                </td>
                 <td class="td-status">
-                  <span :class="getStatusClass(so.status)">
-                    {{ so.status }}
-                  </span>
+                  <span :class="getStatusClass(so.status)">{{ so.status }}</span>
                 </td>
                 <td class="td-total">
                   <span class="total-value">{{ formatCurrency(so.grand_total, so.currency) }}</span>
                 </td>
                 <td class="td-actions">
-                  <button @click="goToEditPage(so.id)" class="btn-action-edit">
-                    <span class="action-icon">✏️</span>
-                    <span class="action-text">Edit</span>
-                  </button>
+                  <div class="action-buttons-group">
+                    <button
+                      @click="goToCetakPage(so.id)"
+                      class="btn-action btn-print"
+                      title="Cetak"
+                    >
+                      🖨️
+                    </button>
+                    <button @click="goToEditPage(so.id)" class="btn-action btn-edit" title="Edit">
+                      ✏️
+                    </button>
+                    <button
+                      @click="deleteOrder(so.id, so.so_number)"
+                      class="btn-action btn-delete"
+                      title="Hapus"
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -173,7 +193,6 @@
         </div>
       </div>
 
-      <!-- ✅ PAGINATION -->
       <div v-if="pagination && pagination.last_page > 1" class="card-footer-pagination">
         <div class="pagination-info">
           Menampilkan {{ pagination.from }} - {{ pagination.to }} dari {{ pagination.total }} data
@@ -219,6 +238,7 @@ import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
 import DashboardLayout from '../../components/DashboardLayout.vue'
+import Swal from 'sweetalert2'
 
 const loading = ref(true)
 const allSalesOrders = ref([])
@@ -234,7 +254,6 @@ const filters = ref({
 const currentPage = ref(1)
 const perPage = ref(15)
 
-// ✅ COMPUTED: Filter di frontend
 const filteredOrders = computed(() => {
   let filtered = [...allSalesOrders.value]
 
@@ -258,7 +277,6 @@ const filteredOrders = computed(() => {
   return filtered
 })
 
-// ✅ COMPUTED: Pagination di frontend
 const paginatedOrders = computed(() => {
   const start = (currentPage.value - 1) * perPage.value
   const end = start + perPage.value
@@ -323,7 +341,7 @@ const fetchSalesOrders = async () => {
     }
   } catch (error) {
     console.error('Error fetching sales orders:', error)
-    toast.error('Gagal memuat daftar Sales Order.')
+    toast.error('Gagal memuat daftar Pesanan Penjualan.')
   } finally {
     loading.value = false
   }
@@ -356,6 +374,35 @@ const goToCreatePage = () => {
 
 const goToEditPage = (id) => {
   router.push({ name: 'EditSalesOrder', params: { id } })
+}
+
+const goToCetakPage = (id) => {
+  const routeData = router.resolve({ name: 'CetakSalesOrder', params: { id } })
+  window.open(routeData.href, '_blank')
+}
+
+const deleteOrder = (id, soNumber) => {
+  Swal.fire({
+    title: 'Hapus Pesanan?',
+    text: `Anda yakin ingin menghapus pesanan "${soNumber}"? Tindakan ini tidak dapat dibatalkan.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Ya, Hapus!',
+    cancelButtonText: 'Batal',
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        await apiClient.delete(`/sales-orders/${id}`)
+        toast.success(`Pesanan "${soNumber}" berhasil dihapus.`)
+        fetchSalesOrders()
+      } catch (error) {
+        console.error('Gagal menghapus pesanan:', error)
+        toast.error(error.response?.data?.message || 'Gagal menghapus pesanan.')
+      }
+    }
+  })
 }
 
 const formatDisplayDate = (dateString) => {
@@ -405,144 +452,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ========== FILTER SECTION ========== */
-.card-filter-section {
-  padding: 1.5rem 2rem;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.filter-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  align-items: end;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.filter-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #374151;
-}
-
-.label-icon {
-  font-size: 1rem;
-}
-
-.filter-input-date,
-.filter-input-search {
-  padding: 0.625rem 0.875rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
-}
-
-.filter-input-date:focus,
-.filter-input-search:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.filter-actions {
-  display: flex;
-  align-items: flex-end;
-}
-
-.btn-filter-clear {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1rem;
-  background: white;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.btn-filter-clear:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
-}
-
-/* ========== PAGINATION ========== */
-.card-footer-pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem 2rem;
-  background: #f9fafb;
-  border-top: 1px solid #e5e7eb;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.pagination-info {
-  color: #6b7280;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.pagination-controls {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.pagination-btn {
-  padding: 0.5rem 0.875rem;
-  border: 1px solid #d1d5db;
-  background: white;
-  color: #374151;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 40px;
-}
-
-.pagination-btn:hover:not(:disabled):not(.dots) {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-}
-
-.pagination-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.pagination-btn.active {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
-}
-
-.pagination-btn.dots {
-  border: none;
-  cursor: default;
-}
-
-.pagination-btn.dots:hover {
-  background: white;
-}
-
-/* ========== EXISTING STYLES ========== */
 .page-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 16px;
@@ -619,6 +528,14 @@ onMounted(() => {
   background: #f8f9ff;
 }
 
+.btn-icon {
+  font-size: 1rem;
+}
+
+.btn-text {
+  font-size: 0.9375rem;
+}
+
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -655,6 +572,7 @@ onMounted(() => {
   display: flex;
   gap: 6px;
   margin-top: 1rem;
+  justify-content: center;
 }
 
 .loading-dots span {
@@ -729,6 +647,80 @@ onMounted(() => {
   border-radius: 20px;
   font-size: 0.875rem;
   font-weight: 600;
+}
+
+.card-filter-section {
+  padding: 1.5rem 2rem;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.label-icon {
+  font-size: 1rem;
+}
+
+.filter-input-date,
+.filter-input-search {
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.filter-input-date:focus,
+.filter-input-search:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.filter-actions {
+  display: flex;
+  align-items: flex-end;
+}
+
+.btn-filter-clear {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: white;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-filter-clear:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
 }
 
 .empty-state-container {
@@ -812,10 +804,20 @@ onMounted(() => {
   width: 60px;
   text-align: center;
 }
+
+.th-so-number {
+  width: 130px;
+}
+
+.th-items {
+  min-width: 250px;
+}
+
 .th-actions {
-  width: 100px;
+  width: 150px;
   text-align: center;
 }
+
 .th-total {
   text-align: right;
 }
@@ -832,6 +834,7 @@ onMounted(() => {
 .data-table td {
   padding: 1rem;
   color: #4b5563;
+  vertical-align: middle;
 }
 
 .td-no {
@@ -840,25 +843,46 @@ onMounted(() => {
 
 .row-number {
   display: inline-block;
-  min-width: 24px;
-  height: 24px;
-  line-height: 24px;
+  min-width: 28px;
+  height: 28px;
+  line-height: 28px;
   text-align: center;
   background: #e5e7eb;
   color: #374151;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
 }
 
 .so-badge {
   display: inline-block;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 0.375rem 0.75rem;
+  padding: 0.375rem 0.875rem;
   border-radius: 6px;
   font-weight: 600;
   font-size: 0.8125rem;
+}
+
+.td-items {
+  vertical-align: middle;
+}
+
+.items-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.item-tag {
+  display: inline-block;
+  background: linear-gradient(135deg, #e0e7ff 0%, #f0e6ff 100%);
+  color: #667eea;
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .customer-info {
@@ -925,26 +949,123 @@ onMounted(() => {
   text-align: center;
 }
 
-.btn-action-edit {
+.action-buttons-group {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.btn-action {
+  width: 36px;
+  height: 36px;
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-print {
+  background: white;
+  color: #8b5cf6;
+  border: 1px solid #8b5cf6;
+}
+
+.btn-print:hover {
+  background: #8b5cf6;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+}
+
+.btn-edit {
   background: white;
   color: #3b82f6;
   border: 1px solid #3b82f6;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 0.8125rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
 }
 
-.btn-action-edit:hover {
+.btn-edit:hover {
   background: #3b82f6;
   color: white;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.btn-delete {
+  background: white;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+}
+
+.btn-delete:hover {
+  background: #ef4444;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+.card-footer-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.pagination-info {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.pagination-btn {
+  padding: 0.5rem 0.875rem;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 40px;
+}
+
+.pagination-btn:hover:not(:disabled):not(.dots) {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-btn.active {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.pagination-btn.dots {
+  border: none;
+  cursor: default;
+}
+
+.pagination-btn.dots:hover {
+  background: white;
 }
 
 @media (max-width: 768px) {
@@ -976,6 +1097,16 @@ onMounted(() => {
   .data-table th,
   .data-table td {
     padding: 0.75rem 0.5rem;
+  }
+
+  .action-buttons-group {
+    gap: 0.375rem;
+  }
+
+  .btn-action {
+    width: 32px;
+    height: 32px;
+    font-size: 0.875rem;
   }
 
   .card-footer-pagination {

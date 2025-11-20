@@ -24,6 +24,12 @@ import MasterBarangView from '../views/master/MasterBarangView.vue'
 import MasterBarangForm from '../views/master/MasterBarangForm.vue'
 import DaftarSalesOrder from '../views/penjualan/DaftarSalesOrder.vue'
 import FormSalesOrder from '../views/penjualan/FormSalesOrder.vue'
+import SalesOrderCetak from '../views/penjualan/SalesOrderCetak.vue'
+import DaftarPengiriman from '../views/penjualan/DaftarPengiriman.vue'
+import FormPengiriman from '../views/penjualan/FormPengiriman.vue'
+import CetakPengiriman from '../views/penjualan/CetakPengiriman.vue'
+import BomIndex from '../views/bom/BomIndex.vue'
+import BomForm from '../views/bom/BomForm.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   linkActiveClass: 'router-link-active',
@@ -89,6 +95,24 @@ const router = createRouter({
           props: true,
         },
         {
+          path: '/admin/boms',
+          name: 'BomIndex',
+          component: BomIndex,
+          meta: { title: 'Daftar BOM' },
+        },
+        {
+          path: '/admin/boms/tambah',
+          name: 'BomCreate',
+          component: BomForm,
+          meta: { title: 'Tambah BOM' },
+        },
+        {
+          path: '/admin/boms/edit/:id',
+          name: 'BomEdit',
+          component: BomForm,
+          meta: { title: 'Edit BOM' },
+        },
+        {
           path: '/admin/pembelian',
           name: 'DaftarPesananPembelian',
           component: DaftarPesananPembelian,
@@ -112,6 +136,44 @@ const router = createRouter({
           component: FormSalesOrder,
           meta: { title: 'Edit Sales Order' },
           props: true,
+        },
+        {
+          path: '/admin/penjualan/sales-order/cetak/:id',
+          name: 'CetakSalesOrder',
+          component: SalesOrderCetak,
+          meta: { title: 'Cetak Pesanan Penjualan' },
+          props: true,
+        },
+        {
+          path: '/admin/penjualan/pengiriman-barang',
+          name: 'DaftarPengiriman',
+          component: DaftarPengiriman,
+          meta: { title: 'Daftar Pengiriman Barang' },
+        },
+        {
+          path: '/admin/penjualan/pengiriman-barang/tambah',
+          name: 'BuatPengiriman',
+          component: FormPengiriman,
+          meta: { title: 'Buat Pengiriman Barang' },
+        },
+        {
+          path: '/admin/penjualan/pengiriman-barang/:id/edit',
+          name: 'EditPengiriman',
+          component: FormPengiriman,
+          meta: { title: 'Edit Pengiriman Barang' },
+          props: true,
+        },
+        {
+          path: '/admin/penjualan/pengiriman-barang/cetak/:id',
+          name: 'CetakPengiriman',
+          component: CetakPengiriman,
+          meta: { title: 'Cetak Pengiriman Barang' },
+          props: true,
+        },
+        {
+          path: '/delivery-orders/:id/cetak-barcode',
+          name: 'CetakBarcodeKemendag',
+          component: () => import('../views/penjualan/PackingListBarcodeCetak.vue'), // file hasil copy tadi
         },
         {
           path: '/admin/pembelian/buat',

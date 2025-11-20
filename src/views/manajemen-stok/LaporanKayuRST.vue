@@ -91,13 +91,16 @@
                 <th class="th-spec">T (mm)</th>
                 <th class="th-spec">L (mm)</th>
                 <th class="th-spec">P (mm)</th>
+                <th class="th-jenis">Jenis</th>
+                <th class="th-kualitas">Kualitas</th>
+                <th class="th-bentuk">Bentuk</th>
                 <th class="th-stok">Stok (Pcs)</th>
                 <th class="th-kubikasi">Total Kubikasi (m³)</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="reportData.length === 0" class="empty-row">
-                <td colspan="8" class="empty-cell">
+                <td colspan="11" class="empty-cell">
                   <div class="empty-state">
                     <span class="empty-icon">📭</span>
                     <p class="empty-text">
@@ -108,11 +111,13 @@
               </tr>
               <tr v-for="(item, index) in reportData" :key="item.id" class="data-row">
                 <td class="td-no">
-                  <span class="row-number">{{
-                    pagination
-                      ? (pagination.current_page - 1) * pagination.per_page + index + 1
-                      : index + 1
-                  }}</span>
+                  <span class="row-number">
+                    {{
+                      pagination
+                        ? (pagination.current_page - 1) * pagination.per_page + index + 1
+                        : index + 1
+                    }}
+                  </span>
                 </td>
                 <td class="td-kode">
                   <span class="code-badge">{{ item.code }}</span>
@@ -126,6 +131,9 @@
                 <td class="td-spec">{{ item.specifications?.t || '-' }}</td>
                 <td class="td-spec">{{ item.specifications?.l || '-' }}</td>
                 <td class="td-spec">{{ item.specifications?.p || '-' }}</td>
+                <td class="td-jenis">{{ item.jenis || '-' }}</td>
+                <td class="td-kualitas">{{ item.kualitas || '-' }}</td>
+                <td class="td-bentuk">{{ item.bentuk || '-' }}</td>
                 <td class="td-stok">
                   <span class="stock-value">{{ parseInt(item.stock) }}</span>
                 </td>

@@ -304,7 +304,7 @@
 
                 <div class="form-group">
                   <label class="form-label">
-                    Wood Consumed / Pcs (M3)
+                    Wood Consumed / Pcs (M³)
                     <span class="required">*</span>
                     <span class="label-hint">(Pakem BOM, cth: 0.0099)</span>
                   </label>
@@ -315,6 +315,28 @@
                       step="0.000001"
                       class="form-control"
                       placeholder="cth: 0.009900"
+                      required
+                      min="0"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">
+                    Kubikasi per Karton (M³)
+                    <span class="required">*</span>
+                    <span class="label-hint">(Data Pakem, cth: 0.045)</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model.number="form.m3_per_carton"
+                      type="number"
+                      step="0.000001"
+                      class="form-control"
+                      placeholder="cth: 0.045000"
                       required
                       min="0"
                       @input="calculateProgress"
@@ -415,15 +437,14 @@ const form = reactive({
     p: null,
   },
 
-  // DNA untuk Produk Jadi
   nw_per_box: null,
   gw_per_box: null,
   wood_consumed_per_pcs: null,
+  m3_per_carton: null,
 })
 
 const categories = ref([])
 const units = ref([])
-// const packagingItems = ref([])
 const formProgress = ref(0)
 
 const selectedCategoryName = computed(() => {
@@ -445,14 +466,13 @@ const isProdukJadiCategory = computed(() => {
 watch(
   () => form.category_id,
   (newCategoryId) => {
-    // Selalu bersihkan semua DNA saat kategori berubah
     form.specifications.t = null
     form.specifications.l = null
     form.specifications.p = null
     form.nw_per_box = null
     form.gw_per_box = null
-    form.wood_consumed_per_pcs = null // <-- BARU
-    // form.default_packaging_id = '' // <-- DIHAPUS
+    form.wood_consumed_per_pcs = null
+    form.m3_per_carton = null
 
     calculateProgress()
   },
@@ -460,33 +480,29 @@ watch(
 
 const calculateProgress = () => {
   let filled = 0
-  let total = 4 // Default: code, name, category_id, unit_id
+  let total = 4
 
   if (form.code) filled++
   if (form.name) filled++
   if (form.category_id) filled++
   if (form.unit_id) filled++
 
-  // Mode 1: Kayu RST
   if (isKayuRSTCategory.value) {
-    total += 3 // T, L, P
+    total += 3
     if (form.specifications.t) filled++
     if (form.specifications.l) filled++
     if (form.specifications.p) filled++
-  }
-  // Mode 2: Karton Box
-  else if (isKartonBoxCategory.value) {
-    total += 3 // P, L, T
+  } else if (isKartonBoxCategory.value) {
+    total += 3
     if (form.specifications.p) filled++
     if (form.specifications.l) filled++
     if (form.specifications.t) filled++
-  }
-  // Mode 3: Produk Jadi
-  else if (isProdukJadiCategory.value) {
-    total += 3 // NW, GW, Wood
+  } else if (isProdukJadiCategory.value) {
+    total += 4
     if (form.nw_per_box) filled++
     if (form.gw_per_box) filled++
-    if (form.wood_consumed_per_pcs) filled++ // <-- DIGANTI
+    if (form.wood_consumed_per_pcs) filled++
+    if (form.m3_per_carton) filled++
   }
 
   formProgress.value = Math.round((filled / total) * 100)
@@ -497,12 +513,10 @@ const fetchDropdownData = async () => {
     const [categoriesResponse, unitsResponse] = await Promise.all([
       apiClient.get('/categories/all'),
       apiClient.get('/units/all'),
-      // API Call ke '/items/all-by-category-name' DIHAPUS
     ])
 
     categories.value = categoriesResponse.data.data
     units.value = unitsResponse.data.data
-    // packagingItems.value = ... // <-- DIHAPUS
   } catch (error) {
     console.error('Gagal mengambil data dropdown:', error)
     showError('Gagal', 'Gagal mengambil data dropdown (kategori & unit)')
@@ -514,7 +528,6 @@ const fetchItemData = async (itemId) => {
     const response = await apiClient.get(`/materials/${itemId}?include=unit,category`)
     const data = response.data.data
 
-    // Data Standar
     form.id = data.id
     form.code = data.code || ''
     form.name = data.name || ''
@@ -523,18 +536,16 @@ const fetchItemData = async (itemId) => {
     form.unit_id = data.unit_id || ''
     form.stock = parseInt(data.stock) || 0
 
-    // "Buka" DNA Spesifikasi (untuk Kayu & Karton Box)
     if (data.specifications) {
       form.specifications.t = data.specifications.t || null
       form.specifications.l = data.specifications.l || null
       form.specifications.p = data.specifications.p || null
     }
 
-    // "Buka" DNA Produk Jadi
     form.nw_per_box = data.nw_per_box || null
     form.gw_per_box = data.gw_per_box || null
-    form.wood_consumed_per_pcs = data.wood_consumed_per_pcs || null // <-- BARU
-    // form.default_packaging_id = ... // <-- DIHAPUS
+    form.wood_consumed_per_pcs = data.wood_consumed_per_pcs || null
+    form.m3_per_carton = data.m3_per_carton || null
 
     calculateProgress()
   } catch (error) {
@@ -545,7 +556,6 @@ const fetchItemData = async (itemId) => {
 
 const handleSubmit = async () => {
   try {
-    // 1. Siapkan payload standar
     const payload = {
       id: form.id,
       code: form.code,
@@ -555,12 +565,11 @@ const handleSubmit = async () => {
       unit_id: form.unit_id,
       stock: form.stock,
 
-      // Siapkan "DNA" (default null)
       specifications: null,
       nw_per_box: null,
       gw_per_box: null,
-      wood_consumed_per_pcs: null, // <-- BARU
-      // default_packaging_id: null, // <-- DIHAPUS
+      wood_consumed_per_pcs: null,
+      m3_per_carton: null,
     }
 
     if (isKayuRSTCategory.value || isKartonBoxCategory.value) {
@@ -572,8 +581,8 @@ const handleSubmit = async () => {
     } else if (isProdukJadiCategory.value) {
       payload.nw_per_box = form.nw_per_box
       payload.gw_per_box = form.gw_per_box
-      payload.wood_consumed_per_pcs = form.wood_consumed_per_pcs // <-- BARU
-      // payload.default_packaging_id = ... // <-- DIHAPUS
+      payload.wood_consumed_per_pcs = form.wood_consumed_per_pcs
+      payload.m3_per_carton = form.m3_per_carton
     }
 
     if (!payload.category_id) {
@@ -581,7 +590,6 @@ const handleSubmit = async () => {
       return
     }
 
-    // 3. Kirim ke API
     if (form.id) {
       await apiClient.put(`/materials/${form.id}`, payload)
       showSuccess('Sukses', 'Data barang berhasil diperbarui')

@@ -1,9 +1,7 @@
 <template>
   <div class="dashboard-wrapper">
-    <!-- ✅ OVERLAY (untuk mobile) -->
     <div class="sidebar-overlay" :class="{ show: sidebarOpen }" @click="closeSidebar"></div>
 
-    <!-- ✅ SIDEBAR dengan class 'open' -->
     <aside class="sidebar" :class="{ open: sidebarOpen }">
       <div class="logo-section">
         <img src="@/assets/logo.jpeg" alt="Logo Surya Bangkit Cemerlang" class="logo-image" />
@@ -60,7 +58,6 @@
 
     <div class="main-content">
       <header class="top-header">
-        <!-- ✅ HAMBURGER BUTTON -->
         <button class="sidebar-toggle" @click="toggleSidebar" :class="{ active: sidebarOpen }">
           <span></span>
           <span></span>
@@ -108,7 +105,7 @@ const router = useRouter()
 const route = useRoute()
 const userName = ref('User')
 const userMenuOpen = ref(false)
-const sidebarOpen = ref(false) // ✅ State untuk sidebar toggle
+const sidebarOpen = ref(false)
 
 const menuItems = ref([
   { name: 'Dashboard', route: '/dashboard', icon: '📊' },
@@ -136,6 +133,11 @@ const menuItems = ref([
     ],
   },
   {
+    name: 'Produksi',
+    icon: '🏭',
+    children: [{ name: 'BOM', route: { name: 'BomIndex' } }],
+  },
+  {
     name: 'Pembelian',
     icon: '🛒',
     children: [
@@ -148,23 +150,23 @@ const menuItems = ref([
   {
     name: 'Penjualan',
     icon: '💰',
-    children: [{ name: 'Pesanan Penjualan', route: { name: 'DaftarSalesOrder' } }],
+    children: [
+      { name: 'Pesanan Penjualan', route: { name: 'DaftarSalesOrder' } },
+      { name: 'Daftar Pengiriman', route: { name: 'DaftarPengiriman' } },
+    ],
   },
 ])
 
 const openMenus = ref({})
 
-// ✅ Toggle sidebar (buka/tutup)
 const toggleSidebar = () => {
   sidebarOpen.value = !sidebarOpen.value
 }
 
-// ✅ Tutup sidebar (untuk overlay)
 const closeSidebar = () => {
   sidebarOpen.value = false
 }
 
-// ✅ Auto close sidebar pas klik nav item di mobile
 const onNavItemClick = () => {
   if (window.innerWidth <= 768) {
     closeSidebar()
@@ -214,7 +216,6 @@ onMounted(() => {
     }
   }
 
-  // ✅ Auto open sidebar di desktop
   if (window.innerWidth > 768) {
     sidebarOpen.value = true
   }
@@ -244,7 +245,6 @@ watch(
   position: relative;
 }
 
-/* ===== HAMBURGER BUTTON ===== */
 .sidebar-toggle {
   position: absolute;
   top: 14px;
@@ -753,9 +753,8 @@ watch(
     padding: 16px;
   }
 
-  /* Saat sidebar terbuka di mobile, pastikan tombol tetap terlihat */
   .sidebar.open + .main-content .top-header {
-    padding-left: 70px; /* Menjaga padding saat sidebar terbuka di mobile */
+    padding-left: 70px;
   }
 }
 
