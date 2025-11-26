@@ -5,7 +5,6 @@ const apiClient = axios.create({
   baseURL: config.apiUrl,
   timeout: config.timeout,
   headers: {
-    // 'Content-Type': 'application/json', // <-- HAPUS BARIS INI
     Accept: 'application/json',
   },
 })

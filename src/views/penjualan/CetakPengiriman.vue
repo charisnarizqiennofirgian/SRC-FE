@@ -5,33 +5,47 @@
         <span class="btn-icon">↩️</span>
         <span class="btn-text">Kembali</span>
       </button>
-      <button @click="handlePrint" class="btn-print">
-        <span class="btn-icon">🖨️</span>
-        <span class="btn-text">Cetak</span>
+
+      <button @click="handlePrintPL" class="btn-print">
+        <span class="btn-icon">📄</span>
+        <span class="btn-text">Cetak Packing List</span>
+      </button>
+
+      <button
+        v-if="deliveryOrder?.barcode_image"
+        @click="handlePrintBarcode"
+        class="btn-print btn-secondary"
+      >
+        <span class="btn-icon">📷</span>
+        <span class="btn-text">Cetak Lampiran</span>
       </button>
     </div>
+
     <div v-if="loading || !deliveryOrder" class="loading-container-print">
       <div class="spinner-form"></div>
       <p class="loading-text-form">Memuat data Pengiriman...</p>
     </div>
+
     <div v-else class="print-sheet-a4">
       <KopSuratCetak />
+
       <div class="title-main">
-        <div class="title-packing">PACKING LIST</div>
+        <div class="title-packing">
+          {{ printMode === 'barcode' ? 'LAMPIRAN KEMENDAG' : 'PACKING LIST' }}
+        </div>
         <div class="title-meta">
           <div>NO. : {{ deliveryOrder.do_number }}</div>
           <div>DATE : {{ formatDisplayDateFull(deliveryOrder.delivery_date) }}</div>
         </div>
       </div>
-      <table class="header-table">
+
+      <table class="header-table" style="margin-bottom: 12px; margin-top: 12px">
         <tr>
           <td class="header-label">Shipper</td>
           <td class="header-value" colspan="3">
             <div style="white-space: pre-line">
-              PT. SURYA BANGKIT CEMERLANG<br />
-              JL.RAYA SEMARANG PURWODADI KM 18<br />
-              KARANGAWEN DEMAK 59566<br />
-              INDONESIA
+              {{ deliveryOrder.shipper_info?.name || '-' }}<br />
+              {{ deliveryOrder.shipper_info?.address || '-' }}
             </div>
           </td>
           <td class="header-label">Applicant</td>
@@ -107,61 +121,79 @@
           </td>
         </tr>
       </table>
-      <table class="table-print-packing">
-        <thead>
-          <tr>
-            <th rowspan="2" style="width: 3%">NO</th>
-            <th rowspan="2" style="width: 9%">CODE</th>
-            <th rowspan="2" style="width: 31%">DESCRIPTION</th>
-            <th colspan="2" style="width: 10%">QUANTITY</th>
-            <th colspan="2" style="width: 13%">WOOD CONSUMED</th>
-            <th colspan="2" style="width: 14%">VOLUME</th>
-            <th colspan="2" style="width: 14%">WEIGHT (KG)</th>
-          </tr>
-          <tr>
-            <th style="width: 5%">BOXES</th>
-            <th style="width: 5%">PCS</th>
-            <th style="width: 6.5%">PCS</th>
-            <th style="width: 6.5%">M3</th>
-            <th style="width: 6.5%">M3/BOX</th>
-            <th style="width: 6.5%">M3</th>
-            <th style="width: 7%">NETT</th>
-            <th style="width: 7%">GROSS</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="!deliveryOrder.details || deliveryOrder.details.length === 0">
-            <td colspan="11" class="text-center-empty">Tidak ada barang.</td>
-          </tr>
-          <tr v-for="(item, index) in deliveryOrder.details" :key="item.id">
-            <td class="text-center">{{ index + 1 }}</td>
-            <td class="text-center">{{ item.item?.code || '-' }}</td>
-            <td>{{ item.item_name }}</td>
-            <td class="text-center">{{ formatNumber(item.quantity_boxes) }}</td>
-            <td class="text-center">{{ formatNumber(item.quantity_shipped) }}</td>
-            <td class="text-center">{{ formatDecimal(item.item?.wood_consumed_per_pcs, 4) }}</td>
-            <td class="text-center">{{ formatDecimal(calculateWoodTotal(item), 4) }}</td>
-            <td class="text-center">{{ formatDecimal(item.item?.m3_per_carton, 4) }}</td>
-            <td class="text-center">{{ formatDecimal(calculateVolumeTotal(item), 4) }}</td>
-            <td class="text-center">{{ formatNumber(calculateNettTotal(item)) }}</td>
-            <td class="text-center">{{ formatNumber(calculateGrossTotal(item)) }}</td>
-          </tr>
-          <tr class="total-row">
-            <td colspan="3" class="text-right-bold">TOTAL</td>
-            <td class="text-center-bold">{{ formatNumber(totals.boxes) }}</td>
-            <td class="text-center-bold">{{ formatNumber(totals.pcs) }}</td>
-            <td></td>
-            <td class="text-center-bold">{{ formatDecimal(totals.woodM3, 4) }}</td>
-            <td></td>
-            <td class="text-center-bold">{{ formatDecimal(totals.volumeM3, 4) }}</td>
-            <td class="text-center-bold">{{ formatNumber(totals.nett) }}</td>
-            <td class="text-center-bold">{{ formatNumber(totals.gross) }}</td>
-          </tr>
-        </tbody>
-      </table>
+
+      <div v-if="printMode === 'all' || printMode === 'pl'">
+        <table class="table-print-packing">
+          <thead>
+            <tr>
+              <th rowspan="2" style="width: 3%">NO</th>
+              <th rowspan="2" style="width: 9%">CODE</th>
+              <th rowspan="2" style="width: 31%">DESCRIPTION</th>
+              <th colspan="2" style="width: 10%">QUANTITY</th>
+              <th colspan="2" style="width: 13%">WOOD CONSUMED</th>
+              <th colspan="2" style="width: 14%">VOLUME</th>
+              <th colspan="2" style="width: 14%">WEIGHT (KG)</th>
+            </tr>
+            <tr>
+              <th style="width: 5%">BOXES</th>
+              <th style="width: 5%">PCS</th>
+              <th style="width: 6.5%">PCS</th>
+              <th style="width: 6.5%">M3</th>
+              <th style="width: 6.5%">M3/BOX</th>
+              <th style="width: 6.5%">M3</th>
+              <th style="width: 7%">NETT</th>
+              <th style="width: 7%">GROSS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="!deliveryOrder.details || deliveryOrder.details.length === 0">
+              <td colspan="11" class="text-center-empty">Tidak ada barang.</td>
+            </tr>
+            <tr v-for="(item, index) in deliveryOrder.details" :key="item.id">
+              <td class="text-center">{{ index + 1 }}</td>
+              <td class="text-center">{{ item.item?.code || '-' }}</td>
+              <td>{{ item.item_name }}</td>
+              <td class="text-center">{{ formatNumber(item.quantity_boxes) }}</td>
+              <td class="text-center">{{ formatNumber(item.quantity_shipped) }}</td>
+              <td class="text-center">{{ formatDecimal(item.item?.wood_consumed_per_pcs, 4) }}</td>
+              <td class="text-center">{{ formatDecimal(calculateWoodTotal(item), 4) }}</td>
+
+              <td class="text-center">{{ formatDecimal(item.item?.m3_per_carton, 4) }}</td>
+              <td class="text-center">{{ formatDecimal(calculateVolumeTotal(item), 4) }}</td>
+
+              <td class="text-center">{{ formatNumber(calculateNettTotal(item)) }}</td>
+              <td class="text-center">{{ formatNumber(calculateGrossTotal(item)) }}</td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="3" class="text-right-bold">TOTAL</td>
+              <td class="text-center-bold">{{ formatNumber(totals.boxes) }}</td>
+              <td class="text-center-bold">{{ formatNumber(totals.pcs) }}</td>
+              <td></td>
+              <td class="text-center-bold">{{ formatDecimal(totals.woodM3, 4) }}</td>
+              <td></td>
+              <td class="text-center-bold">{{ formatDecimal(totals.volumeM3, 4) }}</td>
+              <td class="text-center-bold">{{ formatNumber(totals.nett) }}</td>
+              <td class="text-center-bold">{{ formatNumber(totals.gross) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-if="deliveryOrder.barcode_image && printMode === 'barcode'">
+        <div class="footer-barcode-qr">
+          <img
+            :src="deliveryOrder.barcode_image"
+            alt="Barcode Kemendag"
+            class="kemendag-barcode-img"
+          />
+        </div>
+        <div v-if="deliveryOrder.sipk_number" class="barcode-label">
+          No. SIPK: {{ deliveryOrder.sipk_number }}
+        </div>
+      </div>
+
       <div class="footer-info" style="margin-top: 25px">
         <div style="display: flex; width: 100%">
-          <!-- KIRI: Applicant + FSC -->
           <div
             style="
               flex: 1 1 0;
@@ -179,9 +211,7 @@
             </div>
             <div style="margin-top: 36px">FSC100%: SA-COC-012797</div>
           </div>
-          <!-- Spacer agar jarak rapat hingga kanan -->
           <div style="flex: 1 0 0"></div>
-          <!-- KANAN: Signature -->
           <div
             style="
               flex: 1 1 0;
@@ -199,23 +229,13 @@
             <div>ELLEN APRILIANA</div>
           </div>
         </div>
-        <div class="footer-barcode-qr" v-if="deliveryOrder.barcode_image">
-          <img
-            :src="deliveryOrder.barcode_image"
-            alt="Barcode Kemendag"
-            class="kemendag-barcode-img"
-          />
-        </div>
-        <div v-if="deliveryOrder.sipk_number" class="barcode-label">
-          No. SIPK: {{ deliveryOrder.sipk_number }}
-        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
@@ -227,6 +247,10 @@ const toast = useToast()
 const loading = ref(true)
 const deliveryOrder = ref(null)
 const doId = ref(route.params.id)
+
+// STATE MODE CETAK
+const printMode = ref('all') // 'all' | 'pl' | 'barcode'
+
 const fetchDeliveryOrder = async () => {
   loading.value = true
   try {
@@ -238,18 +262,40 @@ const fetchDeliveryOrder = async () => {
     loading.value = false
   }
 }
-const handlePrint = () => {
-  window.print()
+
+// === PERBAIKAN LOGIKA TOMBOL ===
+// Menggunakan setTimeout agar Browser punya waktu untuk menyembunyikan elemen sebelum Print Dialog muncul
+
+const handlePrintPL = async () => {
+  printMode.value = 'pl' // 1. Ubah mode ke PL (Barcode hilang)
+  await nextTick() // 2. Tunggu Vue update DOM
+  setTimeout(() => {
+    window.print() // 3. Munculkan Print Dialog setelah 500ms
+    printMode.value = 'all' // 4. Reset (Setelah user tutup dialog print)
+  }, 500)
 }
+
+const handlePrintBarcode = async () => {
+  printMode.value = 'barcode' // 1. Ubah mode ke Barcode (Tabel hilang)
+  await nextTick()
+  setTimeout(() => {
+    window.print()
+    printMode.value = 'all'
+  }, 500)
+}
+
 const goBack = () => {
   router.push({ name: 'DaftarPengiriman' })
 }
+
+// === HITUNGAN ASLI (M3 PER CARTON) ===
 const calculateWoodTotal = (item) => {
   const woodPerPcs = parseFloat(item.item?.wood_consumed_per_pcs || 0)
   const qty = parseFloat(item.quantity_shipped || 0)
   return woodPerPcs * qty
 }
 const calculateVolumeTotal = (item) => {
+  // TETAP PAKAI M3_PER_CARTON (Sesuai Request Anda)
   const m3PerCarton = parseFloat(item.item?.m3_per_carton || 0)
   const boxes = parseFloat(item.quantity_boxes || 0)
   return m3PerCarton * boxes
@@ -284,21 +330,13 @@ const totals = computed(() => {
 const formatDisplayDate = (dateString) => {
   if (!dateString) return ''
   const date = new Date(dateString)
-  return date.toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
+  return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 const formatDisplayDateFull = (dateString) => {
   if (!dateString) return ''
   const date = new Date(dateString)
   return date
-    .toLocaleDateString('en-US', {
-      month: 'long',
-      day: '2-digit',
-      year: 'numeric',
-    })
+    .toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })
     .toUpperCase()
 }
 const formatNumber = (value) => {
@@ -313,7 +351,6 @@ onMounted(() => {
   fetchDeliveryOrder()
 })
 </script>
-
 <style scoped>
 /* ========================================
    PRINT PAGE CONTAINER & CONTROLS

@@ -1,266 +1,394 @@
 <template>
   <DashboardLayout>
-    <div class="page-header-form"></div>
-    <div v-if="loadingMaster" class="loading-container-form">
-      <div class="loading-animation-form">
-        <div class="spinner-form"></div>
-        <p class="loading-text-form">Memuat data pesanan...</p>
-      </div>
-    </div>
-    <div v-else-if="errorState" class="error-container-form">
-      <div class="error-content-form">
-        <div class="error-icon">⚠️</div>
-        <h3 class="error-title">Terjadi Kesalahan</h3>
-        <p class="error-message">{{ errorState }}</p>
-        <button @click="retryLoad" class="btn-retry">Coba Lagi</button>
+    <!-- PAGE HEADER -->
+    <div class="page-header-modern">
+      <div class="header-content-wrapper">
+        <div class="header-left">
+          <div class="icon-badge-shipping">
+            <span class="icon">🚚</span>
+          </div>
+          <div class="header-text">
+            <h1 class="page-title">Buat Pengiriman Barang</h1>
+            <p class="page-subtitle">Kelola surat jalan dan packing list untuk pengiriman ekspor</p>
+          </div>
+        </div>
       </div>
     </div>
 
-    <form v-else @submit.prevent="handleSubmit" class="form-container-so">
-      <div class="form-section-so">
-        <div class="form-group-so">
-          <label class="form-label-so">
-            Pilih Pesanan (SO) Siap Kirim <span class="required-mark">*</span>
-          </label>
-          <select
-            v-model="form.sales_order_id"
-            @change="onSalesOrderSelect"
-            class="form-input-so"
-            required
-          >
-            <option disabled value="">Pilih Pesanan Penjualan...</option>
-            <option v-for="so in openSalesOrders" :key="so.id" :value="so.id">
-              {{ so.so_number }} - ({{ so.buyer.name }})
-            </option>
-          </select>
+    <!-- LOADING STATE -->
+    <div v-if="loadingMaster" class="loading-container-modern">
+      <div class="loading-content">
+        <div class="spinner-modern"></div>
+        <p class="loading-text">Memuat data pesanan...</p>
+      </div>
+    </div>
+
+    <!-- ERROR STATE -->
+    <div v-else-if="errorState" class="error-container-modern">
+      <div class="error-content">
+        <div class="error-icon">⚠️</div>
+        <h3 class="error-title">Terjadi Kesalahan</h3>
+        <p class="error-message">{{ errorState }}</p>
+        <button @click="retryLoad" class="btn-retry">
+          <span class="btn-icon">🔄</span>
+          Coba Lagi
+        </button>
+      </div>
+    </div>
+
+    <!-- FORM CONTENT -->
+    <form v-else @submit.prevent="handleSubmit" class="form-container-modern">
+      <!-- SECTION 1: PILIH SALES ORDER -->
+      <div class="form-card">
+        <div class="card-header">
+          <span class="header-icon">📋</span>
+          <h2 class="card-title">Pilih Pesanan Penjualan</h2>
+        </div>
+        <div class="card-body">
+          <div class="form-group-modern">
+            <label class="form-label-modern"> Sales Order <span class="required">*</span> </label>
+            <div class="select-wrapper-modern">
+              <select
+                v-model="form.sales_order_id"
+                @change="onSalesOrderSelect"
+                class="form-select-modern"
+                required
+              >
+                <option disabled value="">-- Pilih Pesanan Penjualan --</option>
+                <option v-for="so in openSalesOrders" :key="so.id" :value="so.id">
+                  {{ so.so_number }} - {{ so.buyer.name }}
+                </option>
+              </select>
+              <span class="select-arrow">▼</span>
+            </div>
+          </div>
         </div>
       </div>
 
       <template v-if="selectedSalesOrder">
-        <div class="form-section-so">
-          <div class="section-content-so">
-            <div class="form-grid-3">
-              <!-- SHIPPER -->
-              <div class="form-group-so">
-                <label class="form-label-so">Shipper</label>
-                <input v-model="form.shipper_name" type="text" class="form-input-so" />
-                <textarea
-                  v-model="form.shipper_address"
-                  rows="2"
-                  class="form-textarea-so"
-                ></textarea>
-              </div>
-              <!-- CONSIGNEE -->
-              <div class="form-group-so">
-                <label class="form-label-so">Consignee (Penerima)</label>
-                <input v-model="form.consignee_info.name" type="text" class="form-input-so" />
+        <!-- SECTION 2: SHIPPER INFO -->
+        <div class="form-card">
+          <div class="card-header">
+            <span class="header-icon">🏢</span>
+            <h2 class="card-title">Informasi Pengirim</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-group-modern">
+              <label class="form-label-modern">Shipper (Pengirim)</label>
+              <textarea class="form-textarea-modern readonly-field" readonly rows="4">
+PT. SURYA BANGKIT CEMERLANG
+JL.RAYA SEMARANG PURWODADI KM 18
+KARANGAWEN DEMAK 59566
+INDONESIA</textarea
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: SHIPPING DETAILS -->
+        <div class="form-card">
+          <div class="card-header">
+            <span class="header-icon">🌍</span>
+            <h2 class="card-title">Detail Pengiriman & Dokumen</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-grid-modern">
+              <!-- Consignee -->
+              <div class="form-group-modern span-2">
+                <label class="form-label-modern">Consignee (Penerima Barang)</label>
+                <input
+                  v-model="form.consignee_info.name"
+                  type="text"
+                  class="form-input-modern"
+                  placeholder="Nama penerima"
+                />
                 <textarea
                   v-model="form.consignee_info.address"
                   rows="2"
-                  class="form-textarea-so"
+                  class="form-textarea-modern"
+                  placeholder="Alamat lengkap penerima"
                 ></textarea>
               </div>
-              <!-- APPLICANT -->
-              <div class="form-group-so">
-                <label class="form-label-so">Applicant (Pemohon)</label>
-                <input v-model="form.applicant_info.name" type="text" class="form-input-so" />
+
+              <!-- Applicant -->
+              <div class="form-group-modern span-2">
+                <label class="form-label-modern">Applicant (Pemohon)</label>
+                <input
+                  v-model="form.applicant_info.name"
+                  type="text"
+                  class="form-input-modern"
+                  placeholder="Nama pemohon"
+                />
                 <textarea
                   v-model="form.applicant_info.address"
                   rows="2"
-                  class="form-textarea-so"
+                  class="form-textarea-modern"
+                  placeholder="Alamat lengkap pemohon"
                 ></textarea>
               </div>
-              <!-- NOTIFY -->
-              <div class="form-group-so">
-                <label class="form-label-so">Notify</label>
-                <input v-model="form.notify_info.name" type="text" class="form-input-so" />
+
+              <!-- Notify -->
+              <div class="form-group-modern span-2">
+                <label class="form-label-modern">Notify (Pihak yang Diberitahu)</label>
+                <input
+                  v-model="form.notify_info.name"
+                  type="text"
+                  class="form-input-modern"
+                  placeholder="Nama pihak notify"
+                />
                 <textarea
                   v-model="form.notify_info.address"
                   rows="2"
-                  class="form-textarea-so"
+                  class="form-textarea-modern"
+                  placeholder="Alamat lengkap notify"
                 ></textarea>
               </div>
-              <!-- INCOTERM -->
-              <div class="form-group-so">
-                <label class="form-label-so">Incoterm</label>
-                <input v-model="form.incoterm" type="text" class="form-input-so" />
-              </div>
-              <!-- FREIGHT -->
-              <div class="form-group-so">
-                <label class="form-label-so">Freight</label>
-                <input v-model="form.freight_terms" type="text" class="form-input-so" />
-              </div>
-              <!-- CONTAINER -->
-              <div class="form-group-so">
-                <label class="form-label-so">Container</label>
-                <input v-model="form.container_number" type="text" class="form-input-so" />
-              </div>
-              <!-- REX -->
-              <div class="form-group-so">
-                <label class="form-label-so">REX</label>
-                <input v-model="form.rex_info" type="text" class="form-input-so" />
-              </div>
-              <!-- EU FACTORY NUMBER -->
-              <div class="form-group-so">
-                <label class="form-label-so">EU Factory Number</label>
-                <input v-model="form.eu_factory_number" type="text" class="form-input-so" />
-              </div>
-              <!-- PORT OF LOADING -->
-              <div class="form-group-so">
-                <label class="form-label-so">Port of Loading</label>
-                <input v-model="form.port_of_loading" type="text" class="form-input-so" />
-              </div>
-              <!-- PORT OF DISCHARGE -->
-              <div class="form-group-so">
-                <label class="form-label-so">Port of Discharge</label>
-                <input v-model="form.port_of_discharge" type="text" class="form-input-so" />
-              </div>
-              <!-- FINAL DESTINATION -->
-              <div class="form-group-so">
-                <label class="form-label-so">Final Destination</label>
-                <input v-model="form.final_destination" type="text" class="form-input-so" />
-              </div>
-              <!-- FEEDER VESSEL -->
-              <div class="form-group-so">
-                <label class="form-label-so">Feeder Vessel</label>
-                <input v-model="form.vessel_name" type="text" class="form-input-so" />
-              </div>
-              <!-- MOTHER VESSEL -->
-              <div class="form-group-so">
-                <label class="form-label-so">Mother Vessel</label>
-                <input v-model="form.mother_vessel" type="text" class="form-input-so" />
-              </div>
-              <!-- REX DATE -->
-              <div class="form-group-so">
-                <label class="form-label-so">REX DATE</label>
-                <input v-model="form.rex_date" type="date" class="form-input-so" />
-              </div>
-              <!-- DESCRIPTION OF GOODS -->
-              <div class="form-group-so">
-                <label class="form-label-so">Description of Goods</label>
-                <input v-model="form.goods_description" type="text" class="form-input-so" />
-              </div>
-              <!-- BL NUMBER -->
-              <div class="form-group-so">
-                <label class="form-label-so">BL Number</label>
-                <input v-model="form.bl_number" type="text" class="form-input-so" />
-              </div>
-              <!-- BL DATE -->
-              <div class="form-group-so">
-                <label class="form-label-so">BL Date</label>
-                <input v-model="form.bl_date" type="date" class="form-input-so" />
-              </div>
-              <!-- SEAL NUMBER -->
-              <div class="form-group-so">
-                <label class="form-label-so">Seal Number</label>
-                <input v-model="form.seal_number" type="text" class="form-input-so" />
-              </div>
-              <!-- BARCODE -->
-              <div class="form-group-so">
-                <label class="form-label-so">
-                  Barcode Kemendag (PNG/JPG) <span style="color: red">*</span>
-                  <span style="font-weight: normal; font-size: 11px; display: block">
-                    Konversi PDF barcode di
-                    <a href="https://smallpdf.com/pdf-to-jpg" target="_blank" style="color: #007bff"
-                      >smallpdf.com/pdf-to-jpg</a
-                    >. Upload 1 barcode tiap transaksi ekspor!
-                  </span>
-                </label>
+
+              <!-- Grid 3 columns -->
+              <div class="form-group-modern">
+                <label class="form-label-modern">Incoterm</label>
                 <input
-                  type="file"
-                  accept="image/png, image/jpeg"
-                  class="form-input-so"
-                  @change="handleBarcodeImageUpload"
+                  v-model="form.incoterm"
+                  type="text"
+                  class="form-input-modern"
+                  placeholder="FOB, CIF, dll"
                 />
-                <div v-if="barcodeImagePreview" style="margin-top: 7px">
-                  <img
-                    :src="barcodeImagePreview"
-                    alt="Preview Barcode Kemendag"
-                    style="
-                      max-width: 210px;
-                      max-height: 80px;
-                      display: block;
-                      border: 1px solid #bbb;
-                    "
-                  />
-                  <div style="color: #008700; font-size: 11px">✓ Gambar barcode siap cetak.</div>
-                </div>
-                <div
-                  v-if="barcodeImageError"
-                  class="error-message"
-                  style="color: red; font-size: 11px"
-                >
-                  {{ barcodeImageError }}
-                </div>
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">Freight Terms</label>
+                <input
+                  v-model="form.freight_terms"
+                  type="text"
+                  class="form-input-modern"
+                  placeholder="Prepaid/Collect"
+                />
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">EU Factory Number</label>
+                <input
+                  v-model="form.eu_factory_number"
+                  type="text"
+                  class="form-input-modern"
+                  placeholder="No. pabrik EU"
+                />
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">Container Number</label>
+                <input
+                  v-model="form.container_number"
+                  type="text"
+                  class="form-input-modern"
+                  placeholder="ABCD1234567"
+                />
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">Seal Number</label>
+                <input
+                  v-model="form.seal_number"
+                  type="text"
+                  class="form-input-modern"
+                  placeholder="SL123456"
+                />
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">BL Number</label>
+                <input
+                  v-model="form.bl_number"
+                  type="text"
+                  class="form-input-modern"
+                  placeholder="Bill of Lading No"
+                />
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">BL Date</label>
+                <input v-model="form.bl_date" type="date" class="form-input-modern" />
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">Port of Loading</label>
+                <input
+                  v-model="form.port_of_loading"
+                  type="text"
+                  class="form-input-modern"
+                  placeholder="Pelabuhan muat"
+                />
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">Port of Discharge</label>
+                <input
+                  v-model="form.port_of_discharge"
+                  type="text"
+                  class="form-input-modern"
+                  placeholder="Pelabuhan bongkar"
+                />
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">Final Destination</label>
+                <input
+                  v-model="form.final_destination"
+                  type="text"
+                  class="form-input-modern"
+                  placeholder="Tujuan akhir"
+                />
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">Feeder Vessel</label>
+                <input
+                  v-model="form.vessel_name"
+                  type="text"
+                  class="form-input-modern"
+                  placeholder="Nama kapal feeder"
+                />
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">Mother Vessel</label>
+                <input
+                  v-model="form.mother_vessel"
+                  type="text"
+                  class="form-input-modern"
+                  placeholder="Nama kapal induk"
+                />
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">REX Info</label>
+                <input
+                  v-model="form.rex_info"
+                  type="text"
+                  class="form-input-modern"
+                  placeholder="Keterangan REX"
+                />
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">REX Date</label>
+                <input v-model="form.rex_date" type="date" class="form-input-modern" />
+              </div>
+
+              <div class="form-group-modern span-3">
+                <label class="form-label-modern">Goods Description</label>
+                <input
+                  v-model="form.goods_description"
+                  type="text"
+                  class="form-input-modern"
+                  placeholder="TEAK GARDEN FURNITURE AND ACCESSORIES"
+                />
               </div>
             </div>
           </div>
         </div>
 
-        <div class="form-section-so">
-          <div class="section-header-so">
-            <span class="section-title-so">Barang Dikirim</span>
+        <!-- SECTION 4: BARCODE UPLOAD -->
+        <div class="form-card">
+          <div class="card-header">
+            <span class="header-icon">📸</span>
+            <h2 class="card-title">Barcode Kemendag</h2>
           </div>
-          <div class="section-content-so">
-            <table class="data-table-so">
-              <thead>
-                <tr>
-                  <th>Nama Barang</th>
-                  <th>Qty Dipesan</th>
-                  <th>Qty Sudah Dikirim</th>
-                  <th>Stok</th>
-                  <th>Kirim (Pcs)</th>
-                  <th>Kirim (Box)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(item, idx) in form.details" :key="item.sales_order_detail_id">
-                  <td>{{ item.item_name }}</td>
-                  <td>{{ item.quantity_ordered }}</td>
-                  <td>{{ item.quantity_already_shipped }}</td>
-                  <td>{{ item.current_stock }}</td>
-                  <td>
-                    <input
-                      v-model.number="item.quantity_shipped"
-                      type="number"
-                      min="0"
-                      :max="Math.min(item.quantity_sisa, item.current_stock)"
-                      class="form-input-so form-input-sm"
-                    />
-                    <div v-if="item.error" class="error-message">{{ item.error }}</div>
-                  </td>
-                  <td>
-                    <input
-                      v-model.number="item.quantity_boxes"
-                      type="number"
-                      min="0"
-                      class="form-input-so form-input-sm"
-                      placeholder="Manual"
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="card-body">
+            <div class="form-group-modern">
+              <label class="form-label-modern">
+                Upload Barcode (PNG/JPG) <span class="required">*</span>
+              </label>
+              <div class="file-upload-area">
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg"
+                  class="file-input-hidden"
+                  id="barcodeInput"
+                  @change="handleBarcodeImageUpload"
+                  required
+                />
+                <label for="barcodeInput" class="file-upload-label">
+                  <span class="upload-icon">📁</span>
+                  <span class="upload-text">Pilih File Barcode</span>
+                </label>
+              </div>
+              <div v-if="barcodeImagePreview" class="barcode-preview">
+                <img :src="barcodeImagePreview" alt="Preview Barcode" class="preview-image" />
+                <p class="preview-success">✓ Gambar barcode siap</p>
+              </div>
+              <div v-if="barcodeImageError" class="error-text">{{ barcodeImageError }}</div>
+            </div>
           </div>
         </div>
 
-        <div class="form-actions-so">
-          <button @click.prevent="goBack" type="button" class="btn-cancel-so">
-            <span class="btn-icon">↩️</span>
-            <span class="btn-text">Batal</span>
-          </button>
-          <button
-            type="submit"
-            class="btn-submit-so"
-            :disabled="isSaving || !isFormValid"
-            style="background-color: #007bff"
-          >
-            <span v-if="isSaving" class="loading-spinner-inline"></span>
-            <span v-else class="btn-icon">💾</span>
-            <span class="btn-text">Simpan & Potong Stok</span>
-          </button>
+        <!-- SECTION 5: BARANG DIKIRIM -->
+        <div class="form-card">
+          <div class="card-header">
+            <span class="header-icon">📦</span>
+            <h2 class="card-title">Barang yang Dikirim</h2>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table-modern">
+                <thead>
+                  <tr>
+                    <th>Nama Barang</th>
+                    <th class="text-center">Qty Dipesan</th>
+                    <th class="text-center">Qty Terkirim</th>
+                    <th class="text-center">Stok Tersedia</th>
+                    <th class="text-center">Kirim (Pcs)</th>
+                    <th class="text-center">Kirim (Box)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, idx) in form.details" :key="item.sales_order_detail_id">
+                    <td class="item-name">{{ item.item_name }}</td>
+                    <td class="text-center">{{ item.quantity_ordered }}</td>
+                    <td class="text-center">{{ item.quantity_already_shipped }}</td>
+                    <td class="text-center">
+                      <span class="stock-badge">{{ item.current_stock }}</span>
+                    </td>
+                    <td class="text-center">
+                      <input
+                        v-model.number="item.quantity_shipped"
+                        type="number"
+                        min="0"
+                        :max="Math.min(item.quantity_sisa, item.current_stock)"
+                        class="form-input-table"
+                        placeholder="0"
+                      />
+                      <div v-if="item.error" class="error-text-small">{{ item.error }}</div>
+                    </td>
+                    <td class="text-center">
+                      <input
+                        v-model.number="item.quantity_boxes"
+                        type="number"
+                        min="0"
+                        class="form-input-table"
+                        placeholder="0"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </template>
+
+      <!-- FORM ACTIONS -->
+      <div class="form-actions-modern">
+        <button @click.prevent="goBack" type="button" class="btn-secondary-modern">
+          <span class="btn-icon">↩️</span>
+          <span>Batal</span>
+        </button>
+        <button type="submit" class="btn-primary-modern" :disabled="isSaving || !isFormValid">
+          <span v-if="isSaving" class="spinner-inline"></span>
+          <span v-else class="btn-icon">💾</span>
+          <span>{{ isSaving ? 'Menyimpan...' : 'Simpan & Potong Stok' }}</span>
+        </button>
+      </div>
     </form>
   </DashboardLayout>
 </template>
@@ -290,9 +418,6 @@ const form = reactive({
   sales_order_id: '',
   buyer_id: '',
   delivery_date: new Date().toISOString().split('T')[0],
-  driver_name: '',
-  vehicle_number: '',
-  notes: '',
   incoterm: '',
   bl_date: null,
   vessel_name: '',
@@ -309,8 +434,6 @@ const form = reactive({
   rex_date: null,
   goods_description: '',
   rex_certificate_file: null,
-  shipper_name: '',
-  shipper_address: '',
   consignee_info: { name: '', address: '' },
   applicant_info: { name: '', address: '' },
   notify_info: { name: '', address: '' },
@@ -326,7 +449,7 @@ const fetchOpenSalesOrders = async () => {
   loadingMaster.value = true
   try {
     const response = await apiClient.get('/sales-orders-open')
-    openSalesOrders.value = response.data.data
+    openSalesOrders.value = response.data.data.data
   } catch (error) {
     console.error('Error fetching open sales orders:', error)
     toast.error('Gagal memuat daftar pesanan yang siap kirim.')
@@ -342,7 +465,6 @@ const onSalesOrderSelect = () => {
   if (found) {
     selectedSalesOrder.value = found
     form.buyer_id = found.buyer_id
-    form.goods_description = ''
     form.details = found.details
       .map((detail) => {
         const qtySisa = parseFloat(detail.quantity) - parseFloat(detail.quantity_shipped)
@@ -361,9 +483,6 @@ const onSalesOrderSelect = () => {
         }
       })
       .filter((detail) => detail.quantity_sisa > 0)
-    // (Jika mau, dapat auto-isi data dari SO, contoh:)
-    // form.incoterm = found.incoterm || ''
-    // dst.
   } else {
     selectedSalesOrder.value = null
     form.details = []
@@ -375,6 +494,7 @@ const handleBarcodeImageUpload = (event) => {
   barcodeImageError.value = ''
   barcodeImageFile.value = null
   barcodeImagePreview.value = null
+
   if (!file) return
   if (!['image/png', 'image/jpeg'].includes(file.type)) {
     barcodeImageError.value = 'Hanya file PNG/JPG yang diperbolehkan.'
@@ -409,9 +529,6 @@ const handleSubmit = async () => {
   formData.append('sales_order_id', form.sales_order_id)
   formData.append('buyer_id', form.buyer_id)
   formData.append('delivery_date', form.delivery_date)
-  formData.append('driver_name', form.driver_name)
-  formData.append('vehicle_number', form.vehicle_number)
-  formData.append('notes', form.notes)
   formData.append('incoterm', form.incoterm)
   formData.append('bl_date', form.bl_date || '')
   formData.append('vessel_name', form.vessel_name)
@@ -427,8 +544,6 @@ const handleSubmit = async () => {
   formData.append('seal_number', form.seal_number)
   formData.append('rex_date', form.rex_date || '')
   formData.append('goods_description', form.goods_description)
-  formData.append('shipper_name', form.shipper_name)
-  formData.append('shipper_address', form.shipper_address)
   formData.append('consignee_info', JSON.stringify(form.consignee_info))
   formData.append('applicant_info', JSON.stringify(form.applicant_info))
   formData.append('notify_info', JSON.stringify(form.notify_info))
@@ -436,9 +551,11 @@ const handleSubmit = async () => {
   if (form.rex_certificate_file) {
     formData.append('rex_certificate_file', form.rex_certificate_file)
   }
+
   if (barcodeImageFile.value) {
     formData.append('barcode_image', barcodeImageFile.value)
   }
+
   try {
     const response = await apiClient.post('/delivery-orders', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -473,14 +590,59 @@ const goBack = () => {
 </script>
 
 <style scoped>
-/* (Anda bisa menggunakan style CSS dari file FormSalesOrder.vue Anda) */
-.form-container-so {
-  max-width: 900px;
-  margin: 0 auto 2rem auto;
+/* ========================================
+   MODERN PAGE HEADER
+   ======================================== */
+.page-header-modern {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem;
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.25);
 }
 
-/* Error Container */
-.error-container-form {
+.header-content-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.icon-badge-shipping {
+  width: 64px;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;k
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+.header-text .page-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.5px;
+}
+
+.header-text .page-subtitle {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+}
+
+/* ========================================
+   LOADING & ERROR STATES
+   ======================================== */
+.loading-container-modern,
+.error-container-modern {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -488,218 +650,438 @@ const goBack = () => {
   padding: 2rem;
 }
 
-.error-content-form {
+.loading-content,
+.error-content {
   text-align: center;
   background: white;
-  padding: 2.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0.1);
-  max-width: 500px;
-  width: 100%;
+  padding: 3rem 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  max-width: 400px;
+}
+
+.spinner-modern {
+  width: 56px;
+  height: 56px;
+  border: 5px solid #f0f2f5;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1.5rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  font-size: 1rem;
+  color: #666;
+  font-weight: 500;
 }
 
 .error-icon {
-  font-size: 3rem;
+  font-size: 4rem;
   margin-bottom: 1rem;
-  color: #dc3545;
 }
 
 .error-title {
   font-size: 1.5rem;
   color: #333;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
 }
 
 .error-message {
   color: #666;
   margin-bottom: 1.5rem;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .btn-retry {
-  background-color: #007bff;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.75rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .btn-retry:hover {
-  background-color: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
 }
-.form-section-so {
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+/* ========================================
+   FORM CONTAINER
+   ======================================== */
+.form-container-modern {
+  max-width: 1200px;
+  margin: 0 auto 3rem;
+}
+
+/* ========================================
+   FORM CARD
+   ======================================== */
+.form-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   margin-bottom: 1.5rem;
   overflow: hidden;
+  transition: box-shadow 0.3s;
 }
-.section-header-so {
+
+.form-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  background-color: #fcfcfd;
-  border-bottom: 1px solid #eef2f7;
-}
-.section-icon-so {
-  font-size: 1.25rem;
-}
-.section-title-so {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0;
-}
-.section-content-so {
-  padding: 1.5rem;
-}
-.form-grid-3 {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-}
-.form-group-so {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-.form-label-so {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #333;
-}
-.form-input-so,
-.form-textarea-so {
-  padding: 0.75rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-family: inherit;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
-}
-.form-input-so:focus,
-.form-textarea-so:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-}
-.form-textarea-so {
-  resize: vertical;
-  min-height: 80px;
-}
-.form-input-sm {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.9rem;
-}
-.required-mark {
-  color: #d90000;
-}
-.text-center {
-  text-align: center;
-}
-.th-qty-kirim {
-  width: 150px;
-}
-
-/* Table */
-.table-wrapper-so {
-  overflow-x: auto;
-}
-.data-table-so {
-  width: 100%;
-  border-collapse: collapse;
-}
-.data-table-so th,
-.data-table-so td {
-  padding: 0.75rem 1rem;
-  text-align: left;
-  vertical-align: middle;
-  border-bottom: 1px solid #eef2f7;
-}
-.data-table-so th {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #777;
-  text-transform: uppercase;
-  background-color: #fcfcfd;
-}
-.error-message {
-  color: #d90000;
-  font-size: 0.8rem;
-}
-
-/* Actions */
-.form-actions-so {
-  display: flex;
-  justify-content: flex-end;
   gap: 1rem;
   padding: 1.5rem;
-  background-color: #fcfcfd;
-  border-top: 1px solid #eef2f7;
-  border-radius: 0 0 12px 12px;
+  background: linear-gradient(to right, #f8f9fa, #ffffff);
+  border-bottom: 2px solid #f0f2f5;
 }
-.btn-cancel-so,
-.btn-submit-so {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+
+.header-icon {
+  font-size: 1.5rem;
+}
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+}
+
+.card-body {
+  padding: 2rem;
+}
+
+/* ========================================
+   FORM ELEMENTS
+   ======================================== */
+.form-group-modern {
+  margin-bottom: 1.5rem;
+}
+
+.form-label-modern {
+  display: block;
+  font-size: 0.875rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  color: #333;
+  margin-bottom: 0.5rem;
 }
-.btn-cancel-so {
-  background-color: #f1f1f1;
-  color: #555;
-  border: 1px solid #ddd;
+
+.required {
+  color: #ef4444;
 }
-.btn-submit-so {
-  background-color: #ff6a00;
-  color: white;
+
+.form-input-modern,
+.form-select-modern,
+.form-textarea-modern {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  transition: all 0.2s;
+  background: white;
 }
-.btn-submit-so:disabled {
-  opacity: 0.5;
+
+.form-input-modern:focus,
+.form-select-modern:focus,
+.form-textarea-modern:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+}
+
+.form-textarea-modern {
+  resize: vertical;
+  min-height: 80px;
+  margin-top: 0.5rem;
+}
+
+.readonly-field {
+  background: #f9fafb;
+  color: #374151;
+  font-weight: 600;
   cursor: not-allowed;
 }
 
-/* Loading */
-.loading-container-form {
-  text-align: center;
-  padding: 3rem;
-  background-color: white;
+.select-wrapper-modern {
+  position: relative;
+}
+
+.select-arrow {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #9ca3af;
+  font-size: 0.75rem;
+}
+
+/* ========================================
+   FORM GRID
+   ======================================== */
+.form-grid-modern {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+.span-3 {
+  grid-column: span 3;
+}
+
+@media (max-width: 1024px) {
+  .form-grid-modern {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .span-2,
+  .span-3 {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .form-grid-modern {
+    grid-template-columns: 1fr;
+  }
+  .span-2,
+  .span-3 {
+    grid-column: span 1;
+  }
+}
+
+/* ========================================
+   FILE UPLOAD
+   ======================================== */
+.file-upload-area {
+  margin-bottom: 1rem;
+}
+
+.file-input-hidden {
+  display: none;
+}
+
+.file-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  border: 2px dashed #d1d5db;
   border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fafbfc;
 }
-.spinner-form {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f0f2f5;
-  border-top-color: #007bff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 1rem auto;
+
+.file-upload-label:hover {
+  border-color: #667eea;
+  background: #f8f9ff;
 }
-.loading-spinner-inline {
+
+.upload-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.upload-text {
+  font-size: 0.9375rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.barcode-preview {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f0fdf4;
+  border: 2px solid #86efac;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.preview-image {
+  max-width: 240px;
+  max-height: 100px;
+  display: block;
+  margin: 0 auto 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+}
+
+.preview-success {
+  color: #16a34a;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.error-text {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+/* ========================================
+   TABLE
+   ======================================== */
+.table-responsive {
+  overflow-x: auto;
+}
+
+.table-modern {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-modern thead {
+  background: linear-gradient(to right, #f8f9fa, #e9ecef);
+}
+
+.table-modern th {
+  padding: 1rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+  text-align: left;
+}
+
+.table-modern td {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f3f5;
+  vertical-align: middle;
+}
+
+.table-modern tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.item-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.stock-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.form-input-table {
+  width: 100px;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+
+.form-input-table:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.error-text-small {
+  color: #ef4444;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+/* ========================================
+   FORM ACTIONS
+   ======================================== */
+.form-actions-modern {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 2rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.btn-secondary-modern,
+.btn-primary-modern {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.75rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary-modern {
+  background: #f3f4f6;
+  color: #374151;
+  border: 2px solid #e5e7eb;
+}
+
+.btn-secondary-modern:hover {
+  background: #e5e7eb;
+}
+
+.btn-primary-modern {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary-modern:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary-modern:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinner-inline {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.5);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-top-color: white;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-right: 0.5rem;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  animation: spin 0.8s linear infinite;
 }
 </style>

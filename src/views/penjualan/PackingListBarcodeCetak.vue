@@ -160,8 +160,6 @@
   </div>
 </template>
 
-<!-- SCRIPT SAMA, TAPI FUNGSI UNTUK TABEL TIDAK DIPAKAI DAN BOLEH DIHAPUS -->
-
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -221,7 +219,7 @@ onMounted(() => {
 
 <style scoped>
 /* ========================================
-   PRINT PAGE CONTAINER & CONTROLS
+   1. CONTAINER & TOMBOL (TIDAK DICETAK)
    ======================================== */
 .print-page-container {
   max-width: 100%;
@@ -239,6 +237,7 @@ onMounted(() => {
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  justify-content: center;
 }
 
 .btn-back,
@@ -264,7 +263,6 @@ onMounted(() => {
   background: #6c757d;
   color: white;
 }
-
 .btn-back:hover {
   background: #5a6268;
   transform: translateY(-1px);
@@ -274,14 +272,22 @@ onMounted(() => {
   background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
   color: white;
 }
-
 .btn-print:hover {
   background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
   transform: translateY(-1px);
 }
 
+/* Tombol Secondary (Hijau) untuk Cetak Lampiran */
+.btn-secondary {
+  background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+  color: white;
+}
+.btn-secondary:hover {
+  background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+}
+
 /* ========================================
-   LOADING STATE
+   2. LOADING STATE
    ======================================== */
 .loading-container-print {
   display: flex;
@@ -317,7 +323,7 @@ onMounted(() => {
 }
 
 /* ========================================
-   PRINT SHEET A4
+   3. KERTAS A4 (AREA UTAMA)
    ======================================== */
 .print-sheet-a4 {
   width: 210mm;
@@ -333,7 +339,7 @@ onMounted(() => {
 }
 
 /* ========================================
-   TITLE SECTION
+   4. JUDUL & META DATA
    ======================================== */
 .title-main {
   text-align: center;
@@ -360,7 +366,7 @@ onMounted(() => {
 }
 
 /* ========================================
-   HEADER TABLE
+   5. TABEL HEADER (INFO PENGIRIMAN)
    ======================================== */
 .header-table {
   width: 100%;
@@ -392,7 +398,7 @@ onMounted(() => {
 }
 
 /* ========================================
-   PACKING LIST TABLE
+   6. TABEL BARANG (PACKING LIST)
    ======================================== */
 .table-print-packing {
   width: 100%;
@@ -427,10 +433,6 @@ onMounted(() => {
   font-weight: 500;
 }
 
-.text-center {
-  text-align: center;
-}
-
 .text-center-empty {
   text-align: center;
   padding: 20px !important;
@@ -444,7 +446,6 @@ onMounted(() => {
   padding-right: 10px !important;
   color: #000;
 }
-
 .text-center-bold {
   text-align: center;
   font-weight: 800;
@@ -462,7 +463,7 @@ onMounted(() => {
 }
 
 /* ========================================
-   FOOTER SECTION - PERBAIKAN UTAMA
+   7. FOOTER & TANDA TANGAN
    ======================================== */
 .footer-info {
   margin-top: 12px;
@@ -501,49 +502,54 @@ onMounted(() => {
 }
 
 /* ========================================
-   BARCODE SECTION - LEBIH JELAS
+   8. BARCODE KEMENDAG (PERBAIKAN UTAMA)
    ======================================== */
 .footer-barcode-qr {
   width: 100%;
   display: flex;
   justify-content: center;
-  margin-top: 15px;
-  margin-bottom: 8px;
+  align-items: center;
+  margin-top: 20px;
+  margin-bottom: 15px;
+  min-height: 120px; /* Biar ada space */
 }
 
 .kemendag-barcode-img {
   display: block;
-  margin: 0 auto;
-  max-width: 360px;
-  max-height: 130px;
-  border: 2px solid #000;
-  background: #fff;
+  /* Agar responsif tapi tidak gepeng */
+  max-width: 85%;
+  max-height: 300px;
+  width: auto;
+  height: auto;
+  object-fit: contain; /* KUNCI AGAR TIDAK GEPENG */
+
+  /* Kosmetik */
+  border: 1px solid #333;
   padding: 5px;
+  background: #fff;
 }
 
 .barcode-label {
   text-align: center;
   font-size: 11px;
-  margin-top: 6px;
+  margin-top: 8px;
   color: #000;
   font-weight: 700;
   letter-spacing: 0.5px;
 }
 
 /* ========================================
-   PRINT OPTIMIZATION
+   9. MODE CETAK (PRINT MEDIA)
    ======================================== */
 @media print {
   body {
     margin: 0;
     padding: 0;
   }
-
   .print-page-container {
     background: none;
     padding: 0;
   }
-
   .print-controls {
     display: none !important;
   }
@@ -568,15 +574,20 @@ onMounted(() => {
     border: 1.2px solid #000;
   }
 
+  /* Settingan Barcode Khusus Print */
   .kemendag-barcode-img {
-    max-width: 350px;
-    max-height: 120px;
-    border: 2px solid #000;
+    max-width: 400px !important; /* Ukuran optimal di kertas A4 */
+    max-height: 180px !important;
+    border: none !important; /* Hilangkan border kotak saat print biar bersih */
+  }
+
+  .footer-barcode-qr {
+    page-break-inside: avoid; /* Jangan terpotong halaman */
   }
 }
 
 /* ========================================
-   RESPONSIVE
+   10. RESPONSIVE MOBILE
    ======================================== */
 @media screen and (max-width: 768px) {
   .print-sheet-a4 {
@@ -584,30 +595,13 @@ onMounted(() => {
     padding: 6mm;
     font-size: 10px;
   }
-
   .title-packing {
     font-size: 18px;
   }
 
   .kemendag-barcode-img {
-    max-width: 300px;
-  }
-
-  .footer-barcode-qr {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    margin-top: 15px;
-    margin-bottom: 16px;
-  }
-  .kemendag-barcode-img {
-    display: block;
-    margin: 0 auto;
-    max-width: 350px;
-    max-height: 120px;
-    border: 2px solid #000;
-    background: #fff;
-    padding: 6px;
+    max-width: 100%;
+    max-height: 150px;
   }
 }
 </style>

@@ -14,19 +14,16 @@
         </div>
 
         <div class="header-buttons">
-          <!-- Button 1: Upload Umum -->
           <button class="btn-upload btn-upload-secondary" @click="showUploadModalUmum = true">
             <span class="btn-icon">📤</span>
             <span class="btn-text">Upload Stok Umum</span>
           </button>
 
-          <!-- Button 2: Upload Kayu -->
           <button class="btn-upload" @click="showUploadModalKayu = true">
             <span class="btn-icon">🌲</span>
             <span class="btn-text">Upload Stok Kayu</span>
           </button>
 
-          <!-- Button 3: Upload Produk Jadi -->
           <button class="btn-upload btn-upload-produk" @click="showUploadModalProdukJadi = true">
             <span class="btn-icon">🏭</span>
             <span class="btn-text">Upload Produk Jadi</span>
@@ -86,8 +83,30 @@
       <p class="loading-text">Memuat daftar stok...</p>
     </div>
 
-    <!-- Tabel Stok -->
+    <!-- Tabel Stok (UPDATED) -->
     <div v-if="daftarStok.length > 0 && !loading.stok" class="content-card table-card">
+      <!-- SEARCH BAR (BARU) -->
+      <div class="search-bar-container">
+        <div class="search-wrapper">
+          <span class="search-icon">🔍</span>
+          <input
+            v-model="searchQuery"
+            @input="handleSearch"
+            type="text"
+            class="search-input"
+            placeholder="Cari berdasarkan nama atau kode barang..."
+          />
+          <span v-if="searchQuery" @click="clearSearch" class="clear-search">✕</span>
+        </div>
+        <div class="search-info">
+          <span class="info-icon">📊</span>
+          <span class="info-text">
+            Menampilkan {{ paginatedStok.length }} dari {{ filteredStok.length }} barang
+            <span v-if="searchQuery">(hasil pencarian)</span>
+          </span>
+        </div>
+      </div>
+
       <div class="card-body-table">
         <div class="table-wrapper">
           <table class="data-table">
@@ -102,7 +121,13 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in daftarStok" :key="item.id" class="data-row">
+              <tr v-if="paginatedStok.length === 0">
+                <td colspan="6" class="no-data">
+                  <span class="no-data-icon">🔍</span>
+                  <p>Tidak ada barang yang sesuai dengan pencarian "{{ searchQuery }}"</p>
+                </td>
+              </tr>
+              <tr v-for="item in paginatedStok" :key="item.id" class="data-row">
                 <td class="td-nama">
                   <div class="item-wrapper">
                     <span class="item-icon">📦</span>
@@ -141,6 +166,48 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- PAGINATION (BARU) -->
+      <div v-if="totalPages > 1" class="pagination-container">
+        <div class="pagination-info">Halaman {{ currentPage }} dari {{ totalPages }}</div>
+        <div class="pagination-controls">
+          <button @click="goToPage(1)" class="pagination-btn" :disabled="currentPage === 1">
+            ⏮️ First
+          </button>
+          <button
+            @click="goToPage(currentPage - 1)"
+            class="pagination-btn"
+            :disabled="currentPage === 1"
+          >
+            ◀️ Prev
+          </button>
+
+          <button
+            v-for="page in visiblePages"
+            :key="page"
+            @click="goToPage(page)"
+            class="pagination-btn pagination-number"
+            :class="{ active: currentPage === page }"
+          >
+            {{ page }}
+          </button>
+
+          <button
+            @click="goToPage(currentPage + 1)"
+            class="pagination-btn"
+            :disabled="currentPage === totalPages"
+          >
+            Next ▶️
+          </button>
+          <button
+            @click="goToPage(totalPages)"
+            class="pagination-btn"
+            :disabled="currentPage === totalPages"
+          >
+            Last ⏭️
+          </button>
         </div>
       </div>
     </div>
@@ -375,7 +442,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import { useToast } from 'vue-toastification'
@@ -391,17 +458,81 @@ const daftarKategori = ref([])
 const selectedCategory = ref(null)
 const daftarStok = ref([])
 
-// State untuk Upload Umum
+// ========== PAGINATION & SEARCH ==========
+const searchQuery = ref('')
+const currentPage = ref(1)
+const itemsPerPage = ref(10)
+
+// Computed: Filter data berdasarkan search query
+const filteredStok = computed(() => {
+  if (!searchQuery.value) {
+    return daftarStok.value
+  }
+
+  const query = searchQuery.value.toLowerCase()
+  return daftarStok.value.filter((item) => {
+    const name = (item.name || '').toLowerCase()
+    const code = (item.code || '').toLowerCase()
+    return name.includes(query) || code.includes(query)
+  })
+})
+
+// Computed: Total halaman
+const totalPages = computed(() => {
+  return Math.ceil(filteredStok.value.length / itemsPerPage.value)
+})
+
+// Computed: Data yang ditampilkan per halaman
+const paginatedStok = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return filteredStok.value.slice(start, end)
+})
+
+// Computed: Halaman yang ditampilkan (max 5 nomor halaman)
+const visiblePages = computed(() => {
+  const pages = []
+  const maxVisible = 5
+  let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2))
+  let end = Math.min(totalPages.value, start + maxVisible - 1)
+
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1)
+  }
+
+  for (let i = start; i <= end; i++) {
+    pages.push(i)
+  }
+  return pages
+})
+
+// Function: Ganti halaman
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+  }
+}
+
+// Function: Reset ke halaman 1 saat search
+const handleSearch = () => {
+  currentPage.value = 1
+}
+
+// Function: Clear search (TAMBAHAN BARU)
+const clearSearch = () => {
+  searchQuery.value = ''
+  handleSearch()
+}
+
+// ========== UPLOAD MODALS STATE ==========
 const showUploadModalUmum = ref(false)
 const uploadFileUmum = ref(null)
 const isUploadingUmum = ref(false)
 
-// State untuk Upload Kayu
 const showUploadModalKayu = ref(false)
 const uploadFileKayu = ref(null)
 const isUploadingKayu = ref(false)
 
-// State untuk Upload Produk Jadi
 const showUploadModalProdukJadi = ref(false)
 const uploadFileProdukJadi = ref(null)
 const isUploadingProdukJadi = ref(false)
@@ -413,6 +544,7 @@ const fetchDaftarKategori = async () => {
     const response = await apiClient.get('/categories/all')
     daftarKategori.value = response.data.data
   } catch (error) {
+    console.error('Error fetching categories:', error)
     toast.error('Gagal memuat daftar kategori.')
   } finally {
     loading.value.kategori = false
@@ -427,6 +559,8 @@ const fetchStokBarang = async () => {
 
   loading.value.stok = true
   daftarStok.value = []
+  searchQuery.value = ''
+  currentPage.value = 1
 
   try {
     const response = await apiClient.get('/materials', {
@@ -739,10 +873,6 @@ const downloadTemplateProdukJadi = async () => {
 </script>
 
 <style scoped>
-/* Add your existing styles here */
-</style>
-
-<style scoped>
 .page-header {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   padding: 32px 36px;
@@ -875,6 +1005,15 @@ const downloadTemplateProdukJadi = async () => {
   background: white;
   transform: translateY(-3px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.btn-upload-produk {
+  background: rgba(255, 255, 255, 0.95);
+  color: #10b981;
+}
+
+.btn-upload-produk:hover {
+  background: white;
 }
 
 .filter-card {
@@ -1091,6 +1230,102 @@ const downloadTemplateProdukJadi = async () => {
   margin-top: 24px;
 }
 
+/* ========== SEARCH BAR (BARU) ========== */
+.search-bar-container {
+  padding: 24px 28px;
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border-bottom: 3px solid #10b981;
+}
+
+.search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 18px;
+  font-size: 22px;
+  color: #10b981;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.search-input {
+  width: 100%;
+  padding: 16px 56px 16px 56px;
+  border: 2px solid #10b981;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  background: white;
+  transition: all 0.3s ease;
+}
+
+.search-input:hover {
+  border-color: #059669;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #059669;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.clear-search {
+  position: absolute;
+  right: 18px;
+  font-size: 20px;
+  color: #9ca3af;
+  cursor: pointer;
+  background: #f3f4f6;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  font-weight: bold;
+}
+
+.clear-search:hover {
+  background: #e5e7eb;
+  color: #1e293b;
+  transform: rotate(90deg);
+}
+
+.search-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #166534;
+  font-weight: 700;
+}
+
+.info-icon {
+  font-size: 18px;
+}
+
+.info-text {
+  font-weight: 600;
+}
+
+/* ========== TABLE ========== */
+.card-body-table {
+  padding: 0;
+}
+
 .table-wrapper {
   overflow-x: auto;
 }
@@ -1151,6 +1386,25 @@ const downloadTemplateProdukJadi = async () => {
 .data-table td {
   padding: 16px 20px;
   vertical-align: middle;
+}
+
+.no-data {
+  text-align: center;
+  padding: 60px 20px !important;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+}
+
+.no-data-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.no-data p {
+  font-size: 16px;
+  color: #92400e;
+  font-weight: 700;
+  margin: 0;
 }
 
 .item-wrapper {
@@ -1267,6 +1521,73 @@ const downloadTemplateProdukJadi = async () => {
   font-size: 16px;
 }
 
+/* ========== PAGINATION (BARU) ========== */
+.pagination-container {
+  padding: 24px 28px;
+  background: #f9fafb;
+  border-top: 2px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.pagination-info {
+  font-size: 15px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  padding: 10px 16px;
+  border: 2px solid #e5e7eb;
+  background: white;
+  color: #475569;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+  border-color: #10b981;
+  color: #10b981;
+  transform: translateY(-2px);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-number {
+  min-width: 44px;
+  text-align: center;
+}
+
+.pagination-number.active {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border-color: #10b981;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  transform: scale(1.05);
+}
+
+.pagination-number.active:hover {
+  transform: scale(1.05);
+}
+
+/* ========== MODALS ========== */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1374,6 +1695,16 @@ const downloadTemplateProdukJadi = async () => {
   border-radius: 16px;
   border-left: 4px solid #1e40af;
   margin-bottom: 24px;
+}
+
+.info-box-kayu {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-left-color: #92400e;
+}
+
+.info-box-produk {
+  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+  border-left-color: #4338ca;
 }
 
 .info-icon {
@@ -1568,6 +1899,7 @@ const downloadTemplateProdukJadi = async () => {
   font-size: 18px;
 }
 
+/* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
   .page-header {
     padding: 24px 20px;
@@ -1584,7 +1916,8 @@ const downloadTemplateProdukJadi = async () => {
   }
 
   .btn-upload,
-  .btn-upload-secondary {
+  .btn-upload-secondary,
+  .btn-upload-produk {
     width: 100%;
     justify-content: center;
   }
@@ -1595,6 +1928,15 @@ const downloadTemplateProdukJadi = async () => {
 
   .btn-primary {
     width: 100%;
+    justify-content: center;
+  }
+
+  .pagination-container {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .pagination-controls {
     justify-content: center;
   }
 
