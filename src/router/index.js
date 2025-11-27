@@ -170,11 +170,7 @@ const router = createRouter({
           meta: { title: 'Cetak Pengiriman Barang' },
           props: true,
         },
-        {
-          path: '/delivery-orders/:id/cetak-barcode',
-          name: 'CetakBarcodeKemendag',
-          component: () => import('../views/penjualan/PackingListBarcodeCetak.vue'), // file hasil copy tadi
-        },
+
         {
           path: '/admin/pembelian/buat',
           name: 'BuatPembelian',

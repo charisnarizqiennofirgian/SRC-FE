@@ -149,10 +149,11 @@
                 <td class="td-items">
                   <div class="items-list">
                     <span v-for="(detail, idx) in so.details" :key="idx" class="item-tag">
-                      {{ detail.item_name || 'N/A' }}
+                      {{ detail.item?.name || detail.item_name || 'N/A' }}
                     </span>
                   </div>
                 </td>
+
                 <td class="td-customer">
                   <div class="customer-info">
                     <span class="customer-icon">👤</span>

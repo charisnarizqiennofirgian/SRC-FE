@@ -617,7 +617,7 @@ const goBack = () => {
   height: 64px;
   background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(10px);
-  border-radius: 16px;k
+  border-radius: 16px; /* ✅ Hapus huruf 'k' */
   display: flex;
   align-items: center;
   justify-content: center;
