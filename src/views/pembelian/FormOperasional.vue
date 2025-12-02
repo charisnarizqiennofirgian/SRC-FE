@@ -103,7 +103,8 @@
                     >
                       <option disabled value="">Pilih Barang</option>
                       <option v-for="barang in daftarBarang" :key="barang.id" :value="barang.id">
-                        {{ barang.code }} - {{ barang.name }}
+                        {{ barang.code }} - {{ barang.name }} (Stok:
+                        {{ formatStock(barang.stock) }})
                       </option>
                     </select>
                   </td>
@@ -247,9 +248,11 @@ const grandTotal = computed(() => {
   return totalSubtotal.value + totalPPN.value
 })
 
+// ✅ PERBAIKAN: Rebuild dropdown dengan data yang sudah difilter
 const initializeChoices = async () => {
   await nextTick()
 
+  // ✅ Destroy semua Choices.js instance lama
   choicesInstances.value.forEach((choice) => {
     if (choice && choice.destroy) {
       choice.destroy()
@@ -257,20 +260,43 @@ const initializeChoices = async () => {
   })
   choicesInstances.value = []
 
+  // ✅ Buat Choices.js baru untuk setiap row
   form.details.forEach((item, index) => {
     const selectElement = document.getElementById(`select-barang-${index}`)
     if (selectElement) {
+      // ✅ HAPUS semua option lama
+      selectElement.innerHTML = '<option disabled value="">Pilih Barang</option>'
+
+      // ✅ TAMBAH option dari daftarBarang YANG SUDAH DIFILTER
+      daftarBarang.value.forEach((barang) => {
+        const option = document.createElement('option')
+        option.value = barang.id
+        option.textContent = `${barang.code} - ${barang.name} (Stok: ${formatStock(barang.stock)})`
+        selectElement.appendChild(option)
+      })
+
+      // ✅ PERBAIKAN: Set value ke kosong (tidak auto-select)
+      selectElement.value = ''
+
+      // ✅ Reset v-model jika item baru
+      if (!item.item_id) {
+        item.item_id = ''
+      }
+
+      // ✅ Inisialisasi Choices.js
       const choices = new Choices(selectElement, {
         searchEnabled: true,
-        searchPlaceholderValue: 'Ketik untuk mencari barang...',
-        noResultsText: 'Tidak ditemukan',
-        noChoicesText: 'Tidak ada pilihan',
+        searchPlaceholderValue: 'Ketik nama barang untuk mencari...',
+        noResultsText: 'Barang tidak ditemukan',
+        noChoicesText: 'Tidak ada barang operasional',
         itemSelectText: 'Klik untuk pilih',
         shouldSort: false,
         removeItemButton: false,
         position: 'bottom',
+        searchFields: ['label'],
       })
 
+      // ✅ Event listener untuk update v-model
       selectElement.addEventListener('change', (event) => {
         item.item_id = parseInt(event.target.value) || ''
       })
@@ -380,22 +406,62 @@ const fetchDataDropdown = async () => {
     const allBarang = barangRes.data.data
     const allCategories = categoryRes.data.data
 
-    const operationalCategories = allCategories.filter(
-      (cat) => cat.name === 'Bahan Penolong' || cat.name === 'Bahan Operasional',
-    )
+    console.log('🔍 === DEBUG START ===')
+    console.log('📦 Total semua barang:', allBarang.length)
+    console.log('📦 Sample barang pertama:', allBarang[0])
+    console.log('📂 Total kategori:', allCategories.length)
+    console.log('📂 Semua kategori:', allCategories)
+
+    // ✅ FILTER: Case-insensitive untuk nama kategori
+    const operationalCategories = allCategories.filter((cat) => {
+      const catName = (cat.name || '').toLowerCase().trim()
+      const isOperational = catName === 'bahan penolong' || catName === 'bahan operasional'
+      console.log(
+        `🔍 Check kategori: "${cat.name}" (id: ${cat.id}) → ${isOperational ? '✅ OPERATIONAL' : '❌ BUKAN'}`,
+      )
+      return isOperational
+    })
+
+    console.log('✅ Kategori operasional found:', operationalCategories)
 
     const operationalCategoryIds = operationalCategories.map((cat) => cat.id)
+    console.log('✅ Category IDs operasional:', operationalCategoryIds)
 
+    // ✅ FILTER: Hanya barang dengan kategori operasional
     if (operationalCategoryIds.length > 0) {
-      daftarBarang.value = allBarang.filter((item) =>
-        operationalCategoryIds.includes(item.category_id),
-      )
+      daftarBarang.value = allBarang.filter((item) => {
+        const hasCategory = operationalCategoryIds.includes(item.category_id)
+
+        // Debug setiap item
+        if (hasCategory) {
+          console.log(
+            `✅ INCLUDE: ${item.code} - ${item.name} (category_id: ${item.category_id}, category: ${item.category?.name || 'N/A'})`,
+          )
+        } else {
+          console.log(
+            `❌ EXCLUDE: ${item.code} - ${item.name} (category_id: ${item.category_id}, category: ${item.category?.name || 'N/A'})`,
+          )
+        }
+
+        return hasCategory
+      })
     } else {
+      console.warn('⚠️ TIDAK ADA kategori operasional! Semua barang akan ditampilkan.')
       daftarBarang.value = allBarang
     }
+
+    console.log('✅ Total barang operasional FILTERED:', daftarBarang.value.length)
+    console.log('📋 Barang operasional yang akan ditampilkan:')
+    daftarBarang.value.forEach((item, idx) => {
+      console.log(
+        `  ${idx + 1}. ${item.code} - ${item.name} (Stok: ${item.stock}, Category: ${item.category?.name || 'N/A'})`,
+      )
+    })
+    console.log('🔍 === DEBUG END ===')
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'Gagal memuat data.'
     toast.error(errorMessage)
+    console.error('❌ Error fetchDataDropdown:', error)
   }
 }
 
@@ -403,6 +469,12 @@ onMounted(async () => {
   await fetchDataDropdown()
   await fetchPOData()
 })
+
+// ✅ HELPER: Format stok
+const formatStock = (stock) => {
+  if (stock === null || stock === undefined) return '0'
+  return parseFloat(stock).toLocaleString('id-ID')
+}
 
 const formatCurrency = (value) => {
   if (isNaN(value)) return 'Rp 0'
