@@ -94,7 +94,7 @@
                     v-model="form.category_id"
                     class="form-control form-select"
                     required
-                    @change="calculateProgress"
+                    @change="handleCategoryChange"
                   >
                     <option value="">Pilih Kategori...</option>
                     <option v-for="category in categories" :key="category.id" :value="category.id">
@@ -128,6 +128,38 @@
               </div>
             </div>
           </div>
+
+          <transition name="slide-fade">
+            <div v-if="isProdukJadiCategory" class="form-section">
+              <div class="section-title section-title-accent">
+                <span class="section-icon">🌍</span>
+                <h3>Data Ekspor</h3>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">
+                    HS Code
+                    <span class="required">*</span>
+                    <span class="label-hint">(Contoh: 4407.99)</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📜</span>
+                    <input
+                      v-model="form.hs_code"
+                      type="text"
+                      class="form-control"
+                      placeholder="Masukkan HS Code"
+                      required
+                      @input="calculateProgress"
+                    />
+                  </div>
+                  <p class="form-help-text">
+                    Kode HS untuk ekspor kayu (wajib diisi untuk produk jadi)
+                  </p>
+                </div>
+              </div>
+            </div>
+          </transition>
 
           <transition name="slide-fade">
             <div v-if="isKayuRSTCategory" class="form-section">
@@ -430,6 +462,7 @@ const form = reactive({
   category_id: '',
   unit_id: '',
   stock: 0,
+  hs_code: '',
 
   specifications: {
     t: null,
@@ -463,17 +496,25 @@ const isProdukJadiCategory = computed(() => {
   return selectedCategoryName.value.toLowerCase().includes('produk jadi')
 })
 
+const handleCategoryChange = () => {
+  form.specifications.t = null
+  form.specifications.l = null
+  form.specifications.p = null
+  form.nw_per_box = null
+  form.gw_per_box = null
+  form.wood_consumed_per_pcs = null
+  form.m3_per_carton = null
+
+  if (!isProdukJadiCategory.value) {
+    form.hs_code = ''
+  }
+
+  calculateProgress()
+}
+
 watch(
   () => form.category_id,
-  (newCategoryId) => {
-    form.specifications.t = null
-    form.specifications.l = null
-    form.specifications.p = null
-    form.nw_per_box = null
-    form.gw_per_box = null
-    form.wood_consumed_per_pcs = null
-    form.m3_per_carton = null
-
+  () => {
     calculateProgress()
   },
 )
@@ -486,6 +527,11 @@ const calculateProgress = () => {
   if (form.name) filled++
   if (form.category_id) filled++
   if (form.unit_id) filled++
+
+  if (isProdukJadiCategory.value) {
+    total += 1
+    if (form.hs_code) filled++
+  }
 
   if (isKayuRSTCategory.value) {
     total += 3
@@ -535,6 +581,7 @@ const fetchItemData = async (itemId) => {
     form.category_id = data.category_id || ''
     form.unit_id = data.unit_id || ''
     form.stock = parseInt(data.stock) || 0
+    form.hs_code = data.hs_code || ''
 
     if (data.specifications) {
       form.specifications.t = data.specifications.t || null
@@ -556,15 +603,19 @@ const fetchItemData = async (itemId) => {
 
 const handleSubmit = async () => {
   try {
+    if (isProdukJadiCategory.value && !form.hs_code.trim()) {
+      showError('Validasi Gagal', 'HS Code wajib diisi untuk Produk Jadi')
+      return
+    }
+
     const payload = {
-      id: form.id,
       code: form.code,
       name: form.name,
       description: form.description,
       category_id: form.category_id,
       unit_id: form.unit_id,
-      stock: form.stock,
-
+      stock: form.stock || 0,
+      hs_code: form.hs_code || null,
       specifications: null,
       nw_per_box: null,
       gw_per_box: null,
@@ -590,11 +641,12 @@ const handleSubmit = async () => {
       return
     }
 
+    console.log('📤 PAYLOAD DIKIRIM:', payload)
+
     if (form.id) {
       await apiClient.put(`/materials/${form.id}`, payload)
       showSuccess('Sukses', 'Data barang berhasil diperbarui')
     } else {
-      delete payload.id
       await apiClient.post('/materials', payload)
       showSuccess('Sukses', 'Data barang berhasil ditambahkan')
     }

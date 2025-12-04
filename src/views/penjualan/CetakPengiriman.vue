@@ -1,44 +1,47 @@
 <template>
   <div class="print-page-container">
-    <!-- CONTROL PANEL - DIPERCANTIK -->
-    <div class="print-controls">
-      <button @click="goBack" class="btn-back">
+    <!-- ✅ CONTROL PANEL DIPERBAIKI -->
+    <div class="print-controls-modern">
+      <button @click="goBack" class="btn-control btn-back-modern">
         <span class="btn-icon">↩️</span>
         <span class="btn-text">Kembali</span>
       </button>
 
-      <div class="document-selector">
-        <label for="doc-select">📑 Pilih Dokumen:</label>
-        <select id="doc-select" v-model="selectedDocument" class="form-select">
-          <option value="pl">📄 Packing List</option>
-          <option value="do">🚚 Delivery Order (Supir)</option>
-          <option value="barcode">📷 Packing List Barcode</option>
+      <div class="document-selector-modern">
+        <label for="doc-select" class="selector-label">
+          <span class="label-icon">📑</span>
+          <span class="label-text">Pilih Dokumen:</span>
+        </label>
+        <select id="doc-select" v-model="selectedDocument" class="form-select-modern">
+          <option value="pl">Packing List</option>
+          <option value="invoice">Commercial Invoice</option>
+          <option value="invoice-barcode">Commercial Invoice Barcode</option>
+          <option value="do">Delivery Order (Supir)</option>
+          <option value="barcode">Packing List Barcode</option>
+          <option value="si">🚢 Shipping Instruction</option>
         </select>
       </div>
 
-      <button @click="handlePrint" class="btn-print">
+      <button @click="handlePrint" class="btn-control btn-print-modern">
         <span class="btn-icon">🖨️</span>
         <span class="btn-text">Cetak Dokumen Ini</span>
       </button>
     </div>
 
-    <!-- LOADING STATE - DIPERCANTIK -->
     <div v-if="loading || !deliveryOrder" class="loading-container-print">
-      <div class="loading-content">
-        <div class="spinner-form"></div>
-        <p class="loading-text-form">Memuat data pengiriman...</p>
-        <p class="loading-sub-text">Mohon tunggu sebentar</p>
-      </div>
+      <div class="spinner-form"></div>
+      <p class="loading-text-form">Memuat data...</p>
     </div>
 
-    <!-- KERTAS A4 - PREVIEW DIPERCANTIK -->
     <div v-else class="print-sheet-a4">
       <KopSuratCetak />
 
-      <!-- ✅ UBAH 1: HEADING SELALU "PACKING LIST" -->
-      <div v-if="selectedDocument === 'pl' || selectedDocument === 'barcode'">
-        <div class="title-main">
-          <div class="title-packing">PACKING LIST</div>
+      <!-- ✅ KONDISI HEADER: Sembunyikan header panjang kalau pilih SI atau DO -->
+      <div v-if="selectedDocument !== 'do' && selectedDocument !== 'si'">
+        <div v-if="selectedDocument === 'pl' || selectedDocument === 'barcode'" class="title-main">
+          <div class="title-packing">
+            {{ selectedDocument === 'barcode' ? 'PACKING LIST ' : 'PACKING LIST' }}
+          </div>
           <div class="title-meta">
             <div>NO. : {{ deliveryOrder.do_number }}</div>
             <div>DATE : {{ formatDisplayDateFull(deliveryOrder.delivery_date) }}</div>
@@ -49,11 +52,12 @@
           <tr>
             <td class="header-label">Shipper</td>
             <td class="header-value" colspan="3">
-              <div style="white-space: pre-line">
-                {{ deliveryOrder.shipper_info?.name || '-' }}<br />
-                {{ deliveryOrder.shipper_info?.address || '-' }}
+              <div style="white-space: pre-line; font-weight: bold">
+                PT. SURYA BANGKIT CEMERLANG JL. RAYA SEMARANG PURWODADI KM 18 KARANGAWEN DEMAK 59566
+                INDONESIA
               </div>
             </td>
+
             <td class="header-label">Applicant</td>
             <td class="header-value" colspan="3">
               <div style="white-space: pre-line">
@@ -133,78 +137,97 @@
         <hr style="border: 1px solid #000; margin: 15px 0" />
       </div>
 
-      <!-- ✅ UBAH 2: TABEL DETAIL HANYA TAMPIL DI MODE PL -->
+      <!-- ✅ TEMPLATE ROUTING -->
       <div v-if="selectedDocument === 'pl'">
         <TemplatePackingList :data="deliveryOrder" />
+      </div>
+
+      <div v-if="selectedDocument === 'invoice'">
+        <TemplateCommercialInvoice :data="deliveryOrder" />
+      </div>
+
+      <div v-if="selectedDocument === 'invoice-barcode'">
+        <TemplateCommercialInvoiceBarcode :data="deliveryOrder" />
       </div>
 
       <div v-if="selectedDocument === 'do'">
         <TemplateDeliveryOrder :data="deliveryOrder" />
       </div>
 
-      <!-- ✅ UBAH 3: HAPUS TemplateBarcode dari sini -->
-      <!-- <div v-if="selectedDocument === 'barcode'">
-        <TemplateBarcode :data="deliveryOrder" />
-      </div> -->
+      <!-- ✅ TEMPLATE SHIPPING INSTRUCTION BARU -->
+      <div v-if="selectedDocument === 'si'">
+        <TemplateShippingInstruction :data="deliveryOrder" />
+      </div>
 
-      <!-- ✅ UBAH 4: FOOTER DENGAN BARCODE -->
+      <!-- Footer tetap untuk PL & Barcode -->
       <div
         v-if="selectedDocument === 'pl' || selectedDocument === 'barcode'"
-        class="footer-info"
-        style="margin-top: 25px"
+        class="footer-section"
       >
-        <div style="display: flex; width: 100%">
-          <div
-            style="
-              flex: 1 1 0;
-              font-size: 10px;
-              font-weight: 700;
-              min-height: 80px;
-              display: flex;
-              flex-direction: column;
-              justify-content: flex-end;
-            "
-          >
-            <div>
-              MADE OUT TO APPLICANT: {{ deliveryOrder.applicant_info?.name || '' }}
-              {{ deliveryOrder.applicant_info?.address || '' }}
+        <div class="footer-info" style="margin-top: 25px">
+          <div style="display: flex; width: 100%">
+            <div
+              style="
+                flex: 1 1 0;
+                font-size: 10px;
+                font-weight: 700;
+                min-height: 80px;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-end;
+              "
+            >
+              <div>
+                MADE OUT TO APPLICANT: {{ deliveryOrder.applicant_info?.name || '' }}
+                {{ deliveryOrder.applicant_info?.address || '' }}
+              </div>
+              <div style="margin-top: 36px">FSC100%: SA-COC-012797</div>
             </div>
-            <div style="margin-top: 36px">FSC100%: SA-COC-012797</div>
-          </div>
-          <div style="flex: 1 0 0"></div>
-          <div
-            style="
-              flex: 1 1 0;
-              text-align: right;
-              font-size: 10px;
-              font-weight: 700;
-              min-height: 80px;
-              display: flex;
-              flex-direction: column;
-              justify-content: flex-end;
-            "
-          >
-            <div>PT. SURYA BANGKIT CEMERLANG</div>
-            <div style="height: 36px"></div>
-            <div>ELLEN APRILIANA</div>
+
+            <div style="flex: 1 0 0"></div>
+
+            <div
+              style="
+                flex: 1 1 0;
+                text-align: right;
+                font-size: 10px;
+                font-weight: 700;
+                min-height: 80px;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-end;
+              "
+            >
+              <div>PT. SURYA BANGKIT CEMERLANG</div>
+              <div style="height: 36px"></div>
+              <div>ELLEN APRILIANA</div>
+            </div>
           </div>
         </div>
 
-        <!-- ✅ UBAH 5: BARCODE DI BAWAH ELLEN (HANYA MODE BARCODE) -->
-        <div v-if="selectedDocument === 'barcode'" class="barcode-footer-section">
-          <div class="barcode-wrapper">
+        <div
+          v-if="selectedDocument === 'barcode'"
+          class="barcode-footer-section"
+          style="margin-top: 20px"
+        >
+          <div class="barcode-wrapper" style="text-align: center">
             <img
               v-if="deliveryOrder.barcode_image"
               :src="deliveryOrder.barcode_image"
               alt="Barcode Kemendag"
               class="barcode-img"
+              style="max-width: 80%; max-height: 300px; object-fit: contain"
             />
-            <div v-else class="empty-state">
+            <div v-else class="empty-state" style="color: red; font-style: italic">
               ⚠️ Gambar Barcode belum di-upload di form pengiriman.
             </div>
           </div>
 
-          <div v-if="deliveryOrder.sipk_number" class="sipk-label">
+          <div
+            v-if="deliveryOrder.sipk_number"
+            class="sipk-label"
+            style="text-align: center; font-weight: bold; margin-top: 5px"
+          >
             No. SIPK: {{ deliveryOrder.sipk_number }}
           </div>
         </div>
@@ -220,9 +243,12 @@ import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
 import KopSuratCetak from '../../components/cetak/KopSuratCetak.vue'
 
-// Import Template Anak (HAPUS TemplateBarcode)
+// ✅ IMPORT TEMPLATE ANAK
 import TemplatePackingList from './templates/TemplatePackingList.vue'
 import TemplateDeliveryOrder from './templates/TemplateDeliveryOrder.vue'
+import TemplateCommercialInvoice from './templates/TemplateCommercialInvoice.vue'
+import TemplateCommercialInvoiceBarcode from './templates/TemplateCommercialInvoiceBarcode.vue'
+import TemplateShippingInstruction from './templates/TemplateShippingInstruction.vue' // ✅ BARU
 
 const route = useRoute()
 const router = useRouter()
@@ -274,132 +300,158 @@ onMounted(() => {
 
 <style scoped>
 /* ========================================
-   CONTAINER & BACKGROUND - DIPERCANTIK
+   CONTAINER & BACKGROUND
    ======================================== */
 .print-page-container {
   width: 100%;
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 30px 20px;
+  padding: 2rem 1.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
 /* ========================================
-   CONTROL PANEL - DIPERCANTIK
+   ✅ CONTROL PANEL BARU - MODERN & RAPI
    ======================================== */
-.print-controls {
+.print-controls-modern {
   width: 100%;
   max-width: 210mm;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-  padding: 20px 25px;
-  margin-bottom: 25px;
+  background: white;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  gap: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
-.document-selector {
-  flex-grow: 1;
-  display: flex;
+/* ✅ BUTTON CONTROL - KONSISTEN */
+.btn-control {
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  padding: 12px 18px;
-  border-radius: 12px;
-  border: 2px solid #dee2e6;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.document-selector label {
-  font-weight: 700;
-  color: #495057;
-  font-size: 15px;
-  white-space: nowrap;
-}
-
-.form-select {
-  flex-grow: 1;
-  padding: 10px 14px;
-  border: 2px solid #ced4da;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.form-select:hover {
-  border-color: #007bff;
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
-}
-
-.form-select:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.15);
-  transform: translateY(-1px);
-}
-
-.btn-back,
-.btn-print {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 24px;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1.75rem;
   border: none;
   border-radius: 12px;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 0.9375rem;
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 140px;
 }
 
 .btn-icon {
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 
-.btn-back {
+.btn-text {
+  font-weight: 700;
+  letter-spacing: 0.015em;
+}
+
+/* ✅ BUTTON BACK */
+.btn-back-modern {
   background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
   color: white;
 }
 
-.btn-back:hover {
+.btn-back-modern:hover {
   background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(108, 117, 125, 0.3);
 }
 
-.btn-back:active {
-  transform: translateY(-1px);
+.btn-back-modern:active {
+  transform: translateY(0);
 }
 
-.btn-print {
-  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+/* ✅ BUTTON PRINT */
+.btn-print-modern {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
 }
 
-.btn-print:hover {
-  background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.5);
+.btn-print-modern:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
-.btn-print:active {
+.btn-print-modern:active {
+  transform: translateY(0);
+}
+
+/* ========================================
+   ✅ DOCUMENT SELECTOR - MODERN
+   ======================================== */
+.document-selector-modern {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  padding: 0.875rem 1.25rem;
+  border-radius: 12px;
+  border: 2.5px solid #e9ecef;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.selector-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: #495057;
+  font-size: 0.9375rem;
+  white-space: nowrap;
+}
+
+.label-icon {
+  font-size: 1.25rem;
+}
+
+.label-text {
+  font-weight: 800;
+  letter-spacing: 0.015em;
+}
+
+/* ✅ SELECT DROPDOWN - MODERN */
+.form-select-modern {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 2.5px solid #dee2e6;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.form-select-modern:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.form-select-modern:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
   transform: translateY(-1px);
 }
 
 /* ========================================
-   LOADING STATE - DIPERCANTIK
+   LOADING STATE
    ======================================== */
 .loading-container-print {
   display: flex;
@@ -407,22 +459,17 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 5rem 3rem;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  background: white;
   border-radius: 20px;
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
   margin-top: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-}
-
-.loading-content {
-  text-align: center;
 }
 
 .spinner-form {
   width: 60px;
   height: 60px;
   border: 6px solid #e9ecef;
-  border-top-color: #007bff;
+  border-top-color: #667eea;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 1.5rem;
@@ -435,28 +482,21 @@ onMounted(() => {
 }
 
 .loading-text-form {
-  margin: 0 0 0.5rem 0;
+  margin: 0;
   color: #495057;
-  font-size: 1.2rem;
+  font-size: 1.125rem;
   font-weight: 700;
 }
 
-.loading-sub-text {
-  margin: 0;
-  color: #6c757d;
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
 /* ========================================
-   PRINT SHEET A4 - PREVIEW DIPERCANTIK
+   PRINT SHEET A4
    ======================================== */
 .print-sheet-a4 {
   width: 210mm;
   min-height: 297mm;
   background: #fff;
   padding: 8mm 10mm;
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25);
   font-family: 'Arial', 'Helvetica', sans-serif;
   font-size: 9px;
   line-height: 1.3;
@@ -464,7 +504,6 @@ onMounted(() => {
   margin-bottom: 30px;
   box-sizing: border-box;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 /* ========================================
@@ -524,7 +563,9 @@ onMounted(() => {
   color: #000;
 }
 
-/* ✅ TAMBAHAN: BARCODE DI FOOTER */
+/* ========================================
+   BARCODE FOOTER
+   ======================================== */
 .barcode-footer-section {
   margin-top: 30px;
   text-align: right;
@@ -569,7 +610,7 @@ onMounted(() => {
 }
 
 /* ========================================
-   PRINT MODE - TIDAK BERUBAH!
+   PRINT MODE
    ======================================== */
 @media print {
   @page {
@@ -595,7 +636,7 @@ onMounted(() => {
     display: block;
   }
 
-  .print-controls,
+  .print-controls-modern,
   .loading-container-print {
     display: none !important;
   }
@@ -609,7 +650,6 @@ onMounted(() => {
     page-break-after: always;
     box-sizing: border-box;
     border-radius: 0 !important;
-    border: none !important;
   }
 
   * {
@@ -640,23 +680,29 @@ onMounted(() => {
    ======================================== */
 @media screen and (max-width: 768px) {
   .print-page-container {
-    padding: 15px 10px;
+    padding: 1rem 0.75rem;
   }
 
-  .print-controls {
+  .print-controls-modern {
     flex-direction: column;
-    gap: 15px;
-    padding: 20px;
+    gap: 1rem;
+    padding: 1.25rem;
   }
 
-  .document-selector {
+  .document-selector-modern {
     width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
   }
 
-  .btn-back,
-  .btn-print {
-    width: 100%;
+  .selector-label {
     justify-content: center;
+  }
+
+  .btn-control {
+    width: 100%;
+    min-width: auto;
   }
 
   .print-sheet-a4 {

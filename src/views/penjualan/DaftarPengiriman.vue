@@ -155,13 +155,7 @@
                       🖨️
                     </button>
                     <!-- Tambahkan tombol baru di sini -->
-                    <button
-                      @click="goToCetakBarcodePage(sj.id)"
-                      class="btn-action btn-barcode"
-                      title="Cetak Barcode Kemendag"
-                    >
-                      🏷️
-                    </button>
+
                     <!-- (Tombol edit dan delete tetap ada seperti biasa) -->
                     <button
                       @click="goToEditPage(sj.id)"

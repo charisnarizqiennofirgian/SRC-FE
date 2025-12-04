@@ -4,12 +4,13 @@
       <thead>
         <tr>
           <th rowspan="2" style="width: 3%">NO</th>
-          <th rowspan="2" style="width: 9%">CODE</th>
-          <th rowspan="2" style="width: 31%">DESCRIPTION</th>
+          <th rowspan="2" style="width: 8%">CODE</th>
+          <th rowspan="2" style="width: 10%">HS CODE</th>
+          <th rowspan="2" style="width: 25%">DESCRIPTION</th>
           <th colspan="2" style="width: 10%">QUANTITY</th>
           <th colspan="2" style="width: 13%">WOOD CONSUMED</th>
-          <th colspan="2" style="width: 14%">VOLUME</th>
-          <th colspan="2" style="width: 14%">WEIGHT (KG)</th>
+          <th colspan="2" style="width: 13%">VOLUME</th>
+          <th colspan="2" style="width: 12%">WEIGHT (KG)</th>
         </tr>
         <tr>
           <th style="width: 5%">BOXES</th>
@@ -18,25 +19,33 @@
           <th style="width: 6.5%">M3</th>
           <th style="width: 6.5%">M3/BOX</th>
           <th style="width: 6.5%">M3</th>
-          <th style="width: 7%">NETT</th>
-          <th style="width: 7%">GROSS</th>
+          <th style="width: 6%">NETT</th>
+          <th style="width: 6%">GROSS</th>
         </tr>
       </thead>
       <tbody>
         <tr v-if="!data.details || data.details.length === 0">
-          <td colspan="11" class="text-center-empty">Tidak ada barang.</td>
+          <td colspan="12" class="text-center-empty">Tidak ada barang.</td>
         </tr>
 
         <tr v-for="(item, index) in data.details" :key="item.id">
           <td class="text-center">{{ index + 1 }}</td>
           <td class="text-center">{{ item.item?.code || '-' }}</td>
+
+          <td class="text-center hs-code-cell">
+            {{ item.item?.hs_code ? formatHsCode(item.item.hs_code) : '-' }}
+          </td>
+
           <td>{{ item.item_name }}</td>
           <td class="text-center">{{ formatNumber(item.quantity_boxes) }}</td>
           <td class="text-center">{{ formatNumber(item.quantity_shipped) }}</td>
           <td class="text-center">{{ formatDecimal(item.item?.wood_consumed_per_pcs, 4) }}</td>
           <td class="text-center">{{ formatDecimal(calculateWoodTotal(item), 4) }}</td>
 
-          <td class="text-center">{{ formatDecimal(item.item?.m3_per_carton, 4) }}</td>
+          <td class="text-center">
+            {{ formatDecimal(item.item?.volume_m3 || item.item?.m3_per_carton || 0, 4) }}
+          </td>
+
           <td class="text-center">{{ formatDecimal(calculateVolumeTotal(item), 4) }}</td>
 
           <td class="text-center">{{ formatNumber(calculateNettTotal(item)) }}</td>
@@ -44,7 +53,9 @@
         </tr>
 
         <tr class="total-row">
-          <td colspan="3" class="text-right-bold">TOTAL</td>
+          <td colspan="2" class="text-right-bold">TOTAL</td>
+          <td></td>
+          <td></td>
           <td class="text-center-bold">{{ formatNumber(totals.boxes) }}</td>
           <td class="text-center-bold">{{ formatNumber(totals.pcs) }}</td>
           <td></td>
@@ -62,15 +73,9 @@
 <script setup>
 import { computed } from 'vue'
 
-// Menerima data 'deliveryOrder' dari Parent
 const props = defineProps({
-  data: {
-    type: Object,
-    required: true,
-  },
+  data: { type: Object, required: true },
 })
-
-// === SEMUA LOGIKA HITUNGAN DIPINDAH KESINI (Biar Rapi) ===
 
 const formatNumber = (value) => {
   if (!value && value !== 0) return 0
@@ -82,17 +87,27 @@ const formatDecimal = (value, decimals = 4) => {
   return parseFloat(Number(value).toFixed(decimals))
 }
 
+const formatHsCode = (hsCode) => {
+  if (!hsCode) return '-'
+  let cleaned = hsCode.replace(/[^0-9.]/g, '')
+  if (!cleaned.includes('.') && cleaned.length >= 6) {
+    cleaned = cleaned.substring(0, 4) + '.' + cleaned.substring(4)
+  }
+  return cleaned
+}
+
 const calculateWoodTotal = (item) => {
   const woodPerPcs = parseFloat(item.item?.wood_consumed_per_pcs || 0)
   const qty = parseFloat(item.quantity_shipped || 0)
   return woodPerPcs * qty
 }
 
+// ✅ PERBAIKAN LOGIC HITUNG VOLUME
 const calculateVolumeTotal = (item) => {
-  // Rumus: M3/Box * Jml Box (Sesuai request Anda)
-  const m3PerCarton = parseFloat(item.item?.m3_per_carton || 0)
+  // Ambil volume_m3 DULU (sesuai DB), kalau null baru fallback ke m3_per_carton
+  const volPerBox = parseFloat(item.item?.volume_m3 || item.item?.m3_per_carton || 0)
   const boxes = parseFloat(item.quantity_boxes || 0)
-  return m3PerCarton * boxes
+  return volPerBox * boxes
 }
 
 const calculateNettTotal = (item) => {
@@ -107,7 +122,6 @@ const calculateGrossTotal = (item) => {
   return gwPerBox * boxes
 }
 
-// Computed Totals
 const totals = computed(() => {
   if (!props.data || !props.data.details) {
     return { boxes: 0, pcs: 0, woodM3: 0, volumeM3: 0, nett: 0, gross: 0 }
@@ -117,7 +131,7 @@ const totals = computed(() => {
       acc.boxes += parseFloat(item.quantity_boxes || 0)
       acc.pcs += parseFloat(item.quantity_shipped || 0)
       acc.woodM3 += calculateWoodTotal(item)
-      acc.volumeM3 += calculateVolumeTotal(item)
+      acc.volumeM3 += calculateVolumeTotal(item) // Pakai fungsi perbaikan
       acc.nett += calculateNettTotal(item)
       acc.gross += calculateGrossTotal(item)
       return acc
@@ -156,6 +170,19 @@ const totals = computed(() => {
   font-size: 10px;
   font-weight: 500;
 }
+
+/* ✅ STYLING KHUSUS UNTUK KOLOM HS CODE */
+.hs-code-cell {
+  font-weight: 700;
+  background-color: #f8f9fa;
+  font-family: 'Courier New', monospace;
+}
+.hs-code-cell::before {
+  content: 'HS ';
+  color: #6c757d;
+  font-weight: 400;
+}
+
 .text-center {
   text-align: center;
 }
