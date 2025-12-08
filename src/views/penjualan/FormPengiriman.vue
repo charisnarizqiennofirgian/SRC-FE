@@ -62,6 +62,21 @@
               <span class="select-arrow">▼</span>
             </div>
           </div>
+
+          <!-- MODE PENGIRIMAN -->
+          <div class="form-group-modern" style="margin-top: 1.5rem">
+            <label class="form-label-modern">Mode Pengiriman</label>
+            <div style="display: flex; gap: 1rem; align-items: center">
+              <label style="display: flex; align-items: center; gap: 0.35rem">
+                <input type="radio" value="SEA" v-model="form.shipment_mode" />
+                <span>Sea Freight (Laut)</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.35rem">
+                <input type="radio" value="AIR" v-model="form.shipment_mode" />
+                <span>Air Freight (Udara)</span>
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -85,14 +100,14 @@ INDONESIA</textarea
           </div>
         </div>
 
-        <!-- SECTION 3: SHIPPING DETAILS - DIPERBAIKI GRID -->
+        <!-- SECTION 3: DETAIL PENGIRIMAN & DOKUMEN (FULL DIPULIHKAN) -->
         <div class="form-card">
           <div class="card-header">
             <span class="header-icon">🌍</span>
             <h2 class="card-title">Detail Pengiriman & Dokumen</h2>
           </div>
           <div class="card-body">
-            <!-- SUBSECTION: Pihak Terkait -->
+            <!-- Pihak Terkait -->
             <div class="form-subsection">
               <h3 class="subsection-title">📬 Pihak Terkait</h3>
               <div class="form-grid-2col">
@@ -131,7 +146,7 @@ INDONESIA</textarea
                 </div>
               </div>
 
-              <!-- Notify - Full Width -->
+              <!-- Notify -->
               <div class="form-group-modern notify-section">
                 <label class="form-label-modern">Notify (Pihak yang Diberitahu)</label>
                 <div class="form-grid-2col">
@@ -151,7 +166,7 @@ INDONESIA</textarea
               </div>
             </div>
 
-            <!-- SUBSECTION: Syarat Pengiriman -->
+            <!-- Syarat Pengiriman -->
             <div class="form-subsection">
               <h3 class="subsection-title">📝 Syarat Pengiriman</h3>
               <div class="form-grid-3col">
@@ -187,11 +202,10 @@ INDONESIA</textarea
               </div>
             </div>
 
-            <!-- ✅ SUBSECTION: Container & Seal (UPDATE) -->
+            <!-- Container & Seal -->
             <div class="form-subsection">
               <h3 class="subsection-title">📦 Container & Seal</h3>
 
-              <!-- BARIS 1: Container Type (BARU) + Container Number + Seal Number -->
               <div class="form-grid-3col">
                 <div class="form-group-modern">
                   <label class="form-label-modern">Container Type (Tipe Container)</label>
@@ -224,7 +238,6 @@ INDONESIA</textarea
                 </div>
               </div>
 
-              <!-- BARIS 2: PEB Number (BARU) + BL Number + BL Date -->
               <div class="form-grid-3col bl-date-row">
                 <div class="form-group-modern">
                   <label class="form-label-modern">PEB Number (Nomor PEB)</label>
@@ -253,7 +266,7 @@ INDONESIA</textarea
               </div>
             </div>
 
-            <!-- ✅ SUBSECTION BARU: Forwarder Info (Messrs) -->
+            <!-- Forwarder (Messrs) -->
             <div class="form-subsection">
               <h3 class="subsection-title">📨 Forwarder Information (Messrs)</h3>
               <div class="form-group-modern">
@@ -269,7 +282,7 @@ INDONESIA</textarea
               </div>
             </div>
 
-            <!-- SUBSECTION: Pelabuhan -->
+            <!-- Pelabuhan & Tujuan -->
             <div class="form-subsection">
               <h3 class="subsection-title">⚓ Pelabuhan & Tujuan</h3>
               <div class="form-grid-3col">
@@ -305,7 +318,7 @@ INDONESIA</textarea
               </div>
             </div>
 
-            <!-- SUBSECTION: Kapal -->
+            <!-- Kapal -->
             <div class="form-subsection">
               <h3 class="subsection-title">🚢 Informasi Kapal</h3>
               <div class="form-grid-2col">
@@ -331,7 +344,7 @@ INDONESIA</textarea
               </div>
             </div>
 
-            <!-- SUBSECTION: REX & Goods -->
+            <!-- REX & Goods -->
             <div class="form-subsection">
               <h3 class="subsection-title">📋 REX & Deskripsi Barang</h3>
               <div class="form-grid-3col">
@@ -414,18 +427,30 @@ INDONESIA</textarea
                     <th class="text-center">Qty Dipesan</th>
                     <th class="text-center">Qty Terkirim</th>
                     <th class="text-center">Stok Tersedia</th>
+                    <th v-if="form.shipment_mode === 'AIR'" class="text-center">Kirim (Crate)</th>
                     <th class="text-center">Kirim (Pcs)</th>
                     <th class="text-center">Kirim (Box)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(item, idx) in form.details" :key="item.sales_order_detail_id">
+                  <tr v-for="item in form.details" :key="item.sales_order_detail_id">
                     <td class="item-name">{{ item.item_name }}</td>
                     <td class="text-center">{{ item.quantity_ordered }}</td>
                     <td class="text-center">{{ item.quantity_already_shipped }}</td>
                     <td class="text-center">
                       <span class="stock-badge">{{ item.current_stock }}</span>
                     </td>
+
+                    <td v-if="form.shipment_mode === 'AIR'" class="text-center">
+                      <input
+                        v-model.number="item.quantity_crates"
+                        type="number"
+                        min="0"
+                        class="form-input-table"
+                        placeholder="0"
+                      />
+                    </td>
+
                     <td class="text-center">
                       <input
                         v-model.number="item.quantity_shipped"
@@ -517,10 +542,11 @@ const form = reactive({
   details: [],
   barcode_image: '',
 
-  // ✅ TAMBAHAN BARU UNTUK SHIPPING INSTRUCTION
-  forwarder_name: '', // Nama & Alamat Forwarder (Messrs)
-  peb_number: '', // Nomor PEB
-  container_type: '', // Tipe Container (2x40HC, dll)
+  forwarder_name: '',
+  peb_number: '',
+  container_type: '',
+
+  shipment_mode: 'SEA',
 })
 
 onMounted(async () => {
@@ -561,6 +587,7 @@ const onSalesOrderSelect = () => {
           delivery_date_promise: detail.delivery_date,
           quantity_shipped: 0,
           quantity_boxes: null,
+          quantity_crates: null,
           error: null,
         }
       })
@@ -601,12 +628,15 @@ const handleSubmit = async () => {
       item_id: d.item_id,
       quantity_shipped: d.quantity_shipped,
       quantity_boxes: d.quantity_boxes || null,
+      quantity_crates: form.shipment_mode === 'AIR' ? d.quantity_crates || null : null,
     }))
+
   if (payloadDetails.length === 0) {
     toast.error('Tidak ada barang yang dikirim. Isi "Qty Kirim (Pcs)" minimal 1 barang.')
     isSaving.value = false
     return
   }
+
   const formData = new FormData()
   formData.append('sales_order_id', form.sales_order_id)
   formData.append('buyer_id', form.buyer_id)
@@ -631,10 +661,11 @@ const handleSubmit = async () => {
   formData.append('notify_info', JSON.stringify(form.notify_info))
   formData.append('details', JSON.stringify(payloadDetails))
 
-  // ✅ TAMBAHAN BARU UNTUK SHIPPING INSTRUCTION
   formData.append('forwarder_name', form.forwarder_name)
   formData.append('peb_number', form.peb_number)
   formData.append('container_type', form.container_type)
+
+  formData.append('shipment_mode', form.shipment_mode)
 
   if (form.rex_certificate_file) {
     formData.append('rex_certificate_file', form.rex_certificate_file)

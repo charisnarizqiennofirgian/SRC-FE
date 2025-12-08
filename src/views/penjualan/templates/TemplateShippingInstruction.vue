@@ -175,10 +175,9 @@ const formatNumber = (val) => {
 
 // Format volume (3.267) - Menghilangkan 0 tidak perlu di belakang
 const formatVolume = (val) => {
-  if (!val) return 0
-  return parseFloat(parseFloat(val).toFixed(4))
+  if (!val && val !== 0) return '0.0000'
+  return Number(val).toFixed(4)
 }
-
 // Format Tanggal
 const formatDate = (dateString) => {
   if (!dateString) return ''

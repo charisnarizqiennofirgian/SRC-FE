@@ -540,26 +540,28 @@ onMounted(() => {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 12px;
-  font-size: 8.5px;
+  font-size: 9.5px; /* sedikit lebih besar */
+  font-weight: 600;
 }
 
 .header-table td {
   padding: 4px 6px;
-  border: 1.5px solid #000;
+  border: 1.8px solid #000; /* garis sedikit lebih tebal */
   vertical-align: top;
   line-height: 1.4;
 }
 
 .header-label {
   width: 18%;
-  font-weight: 700;
+  font-weight: 900; /* seperti header tabel PL/Invoice */
   background: #f0f0f0;
   color: #000;
+  text-transform: uppercase;
 }
 
 .header-value {
   width: 32%;
-  font-weight: 500;
+  font-weight: 600; /* sedikit ditebalkan */
   color: #000;
 }
 

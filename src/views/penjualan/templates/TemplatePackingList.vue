@@ -7,14 +7,20 @@
           <th rowspan="2" style="width: 8%">CODE</th>
           <th rowspan="2" style="width: 10%">HS CODE</th>
           <th rowspan="2" style="width: 25%">DESCRIPTION</th>
-          <th colspan="2" style="width: 10%">QUANTITY</th>
+
+          <!-- ✅ QUANTITY: colspan dinamis -->
+          <th :colspan="hasCrates ? 3 : 2" style="width: 10%">QUANTITY</th>
+
           <th colspan="2" style="width: 13%">WOOD CONSUMED</th>
           <th colspan="2" style="width: 13%">VOLUME</th>
           <th colspan="2" style="width: 12%">WEIGHT (KG)</th>
         </tr>
         <tr>
+          <!-- ✅ Header CRATE hanya jika AIR -->
+          <th v-if="hasCrates" style="width: 5%">CRATE</th>
           <th style="width: 5%">BOXES</th>
           <th style="width: 5%">PCS</th>
+
           <th style="width: 6.5%">PCS</th>
           <th style="width: 6.5%">M3</th>
           <th style="width: 6.5%">M3/BOX</th>
@@ -25,7 +31,7 @@
       </thead>
       <tbody>
         <tr v-if="!data.details || data.details.length === 0">
-          <td colspan="12" class="text-center-empty">Tidak ada barang.</td>
+          <td :colspan="hasCrates ? 13 : 12" class="text-center-empty">Tidak ada barang.</td>
         </tr>
 
         <tr v-for="(item, index) in data.details" :key="item.id">
@@ -37,16 +43,29 @@
           </td>
 
           <td>{{ item.item_name }}</td>
+
+          <!-- ✅ Kolom CRATE per item (hanya jika AIR) -->
+          <td v-if="hasCrates" class="text-center">
+            {{ formatNumber(item.quantity_crates) }}
+          </td>
+
           <td class="text-center">{{ formatNumber(item.quantity_boxes) }}</td>
           <td class="text-center">{{ formatNumber(item.quantity_shipped) }}</td>
-          <td class="text-center">{{ formatDecimal(item.item?.wood_consumed_per_pcs, 4) }}</td>
-          <td class="text-center">{{ formatDecimal(calculateWoodTotal(item), 4) }}</td>
+
+          <td class="text-center">
+            {{ formatDecimal(item.item?.wood_consumed_per_pcs, 4) }}
+          </td>
+          <td class="text-center">
+            {{ formatDecimal(calculateWoodTotal(item), 4) }}
+          </td>
 
           <td class="text-center">
             {{ formatDecimal(item.item?.volume_m3 || item.item?.m3_per_carton || 0, 4) }}
           </td>
 
-          <td class="text-center">{{ formatDecimal(calculateVolumeTotal(item), 4) }}</td>
+          <td class="text-center">
+            {{ formatDecimal(calculateVolumeTotal(item), 4) }}
+          </td>
 
           <td class="text-center">{{ formatNumber(calculateNettTotal(item)) }}</td>
           <td class="text-center">{{ formatNumber(calculateGrossTotal(item)) }}</td>
@@ -56,6 +75,12 @@
           <td colspan="2" class="text-right-bold">TOTAL</td>
           <td></td>
           <td></td>
+
+          <!-- ✅ Total CRATE kalau AIR -->
+          <td v-if="hasCrates" class="text-center-bold">
+            {{ formatNumber(totals.crates) }}
+          </td>
+
           <td class="text-center-bold">{{ formatNumber(totals.boxes) }}</td>
           <td class="text-center-bold">{{ formatNumber(totals.pcs) }}</td>
           <td></td>
@@ -77,6 +102,14 @@ const props = defineProps({
   data: { type: Object, required: true },
 })
 
+// ✅ Penentu: apakah ini AIR / punya crate
+const hasCrates = computed(() => {
+  const mode = props.data?.shipment_mode || 'SEA'
+  if (mode === 'AIR') return true
+  const details = props.data?.details || []
+  return details.some((d) => parseFloat(d.quantity_crates || 0) > 0)
+})
+
 const formatNumber = (value) => {
   if (!value && value !== 0) return 0
   return parseFloat(Number(value).toFixed(0))
@@ -84,7 +117,7 @@ const formatNumber = (value) => {
 
 const formatDecimal = (value, decimals = 4) => {
   if (!value && value !== 0) return '0.' + '0'.repeat(decimals)
-  return parseFloat(Number(value).toFixed(decimals))
+  return Number(value).toFixed(decimals)
 }
 
 const formatHsCode = (hsCode) => {
@@ -102,9 +135,8 @@ const calculateWoodTotal = (item) => {
   return woodPerPcs * qty
 }
 
-// ✅ PERBAIKAN LOGIC HITUNG VOLUME
+// volume total per item = volume per box * jumlah box
 const calculateVolumeTotal = (item) => {
-  // Ambil volume_m3 DULU (sesuai DB), kalau null baru fallback ke m3_per_carton
   const volPerBox = parseFloat(item.item?.volume_m3 || item.item?.m3_per_carton || 0)
   const boxes = parseFloat(item.quantity_boxes || 0)
   return volPerBox * boxes
@@ -124,19 +156,20 @@ const calculateGrossTotal = (item) => {
 
 const totals = computed(() => {
   if (!props.data || !props.data.details) {
-    return { boxes: 0, pcs: 0, woodM3: 0, volumeM3: 0, nett: 0, gross: 0 }
+    return { crates: 0, boxes: 0, pcs: 0, woodM3: 0, volumeM3: 0, nett: 0, gross: 0 }
   }
   return props.data.details.reduce(
     (acc, item) => {
+      acc.crates += parseFloat(item.quantity_crates || 0)
       acc.boxes += parseFloat(item.quantity_boxes || 0)
       acc.pcs += parseFloat(item.quantity_shipped || 0)
       acc.woodM3 += calculateWoodTotal(item)
-      acc.volumeM3 += calculateVolumeTotal(item) // Pakai fungsi perbaikan
+      acc.volumeM3 += calculateVolumeTotal(item)
       acc.nett += calculateNettTotal(item)
       acc.gross += calculateGrossTotal(item)
       return acc
     },
-    { boxes: 0, pcs: 0, woodM3: 0, volumeM3: 0, nett: 0, gross: 0 },
+    { crates: 0, boxes: 0, pcs: 0, woodM3: 0, volumeM3: 0, nett: 0, gross: 0 },
   )
 })
 </script>
@@ -146,7 +179,7 @@ const totals = computed(() => {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 10px;
-  font-size: 10px;
+  font-size: 11px; /* 🔹 diperjelas */
 }
 .table-print-packing thead {
   background: #e0e0e0;
@@ -160,18 +193,18 @@ const totals = computed(() => {
   vertical-align: middle;
 }
 .table-print-packing th {
-  font-weight: 800;
+  font-weight: 900; /* 🔹 lebih tebal */
   color: #000;
-  font-size: 9.5px;
+  font-size: 11px; /* 🔹 lebih besar */
   text-transform: uppercase;
 }
 .table-print-packing td {
   color: #000;
-  font-size: 10px;
-  font-weight: 500;
+  font-size: 11px; /* 🔹 lebih besar */
+  font-weight: 600; /* 🔹 lebih tebal */
 }
 
-/* ✅ STYLING KHUSUS UNTUK KOLOM HS CODE */
+/* HS CODE */
 .hs-code-cell {
   font-weight: 700;
   background-color: #f8f9fa;
@@ -179,8 +212,9 @@ const totals = computed(() => {
 }
 .hs-code-cell::before {
   content: 'HS ';
-  color: #6c757d;
-  font-weight: 400;
+  color: #000; /* lebih gelap */
+  font-weight: 700; /* lebih tebal */
+  letter-spacing: 0.5px;
 }
 
 .text-center {
@@ -209,7 +243,7 @@ const totals = computed(() => {
   background: #e8e8e8;
   border-top: 2.5px solid #000;
   padding: 7px 5px !important;
-  font-size: 10.5px;
+  font-size: 11px;
   color: #000;
 }
 </style>

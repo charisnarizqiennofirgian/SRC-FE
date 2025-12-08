@@ -30,6 +30,7 @@
 
       <div class="card-body">
         <form @submit.prevent="handleSubmit">
+          <!-- INFORMASI DASAR -->
           <div class="form-section">
             <div class="section-title">
               <span class="section-icon">📝</span>
@@ -76,6 +77,7 @@
             </div>
           </div>
 
+          <!-- KLASIFIKASI -->
           <div class="form-section">
             <div class="section-title">
               <span class="section-icon">🗂️</span>
@@ -129,6 +131,7 @@
             </div>
           </div>
 
+          <!-- DATA EKSPOR (PRODUK JADI) -->
           <transition name="slide-fade">
             <div v-if="isProdukJadiCategory" class="form-section">
               <div class="section-title section-title-accent">
@@ -161,12 +164,15 @@
             </div>
           </transition>
 
+          <!-- SPESIFIKASI KAYU RST -->
           <transition name="slide-fade">
             <div v-if="isKayuRSTCategory" class="form-section">
               <div class="section-title section-title-accent">
                 <span class="section-icon">🌲</span>
                 <h3>Spesifikasi Kayu RST</h3>
               </div>
+
+              <!-- Dimensi -->
               <div class="form-row form-row-triple">
                 <div class="form-group">
                   <label class="form-label">
@@ -220,9 +226,64 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Jenis / Kualitas / Bentuk -->
+              <div class="form-row form-row-triple">
+                <div class="form-group">
+                  <label class="form-label">
+                    Jenis Kayu
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model="form.jenis"
+                      type="text"
+                      class="form-control"
+                      placeholder="cth: TEAK / MAHONI"
+                      required
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">
+                    Kualitas
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model="form.kualitas"
+                      type="text"
+                      class="form-control"
+                      placeholder="cth: A / B / MIXED"
+                      required
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">
+                    Bentuk
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model="form.bentuk"
+                      type="text"
+                      class="form-control"
+                      placeholder="cth: PLANK / S4S / COMPONENT"
+                      required
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </transition>
 
+          <!-- KARTON BOX -->
           <transition name="slide-fade">
             <div v-if="isKartonBoxCategory" class="form-section">
               <div class="section-title section-title-accent">
@@ -286,6 +347,7 @@
             </div>
           </transition>
 
+          <!-- DNA PRODUK JADI -->
           <transition name="slide-fade">
             <div v-if="isProdukJadiCategory" class="form-section">
               <div class="section-title section-title-accent">
@@ -379,6 +441,7 @@
             </div>
           </transition>
 
+          <!-- DETAIL TAMBAHAN -->
           <div class="form-section">
             <div class="section-title">
               <span class="section-icon">📊</span>
@@ -415,12 +478,13 @@
                     placeholder="Masukkan deskripsi barang"
                     @input="calculateProgress"
                   ></textarea>
-                  <span class="textarea-counter">{{ (form.description || '').length }}/500</span>
+                  <span class="textarea-counter"> {{ (form.description || '').length }}/500 </span>
                 </div>
               </div>
             </div>
           </div>
 
+          <!-- ACTIONS -->
           <div class="form-actions">
             <button
               type="button"
@@ -463,13 +527,16 @@ const form = reactive({
   unit_id: '',
   stock: 0,
   hs_code: '',
-
   specifications: {
     t: null,
     l: null,
     p: null,
   },
-
+  // 🔽 FIELD KAYU RST BARU
+  jenis: '',
+  kualitas: '',
+  bentuk: '',
+  // PRODUK JADI
   nw_per_box: null,
   gw_per_box: null,
   wood_consumed_per_pcs: null,
@@ -486,15 +553,11 @@ const selectedCategoryName = computed(() => {
   return found ? found.name : ''
 })
 
-const isKayuRSTCategory = computed(() => {
-  return selectedCategoryName.value.includes('Kayu RST')
-})
-const isKartonBoxCategory = computed(() => {
-  return selectedCategoryName.value.includes('Karton Box')
-})
-const isProdukJadiCategory = computed(() => {
-  return selectedCategoryName.value.toLowerCase().includes('produk jadi')
-})
+const isKayuRSTCategory = computed(() => selectedCategoryName.value.includes('Kayu RST'))
+const isKartonBoxCategory = computed(() => selectedCategoryName.value.includes('Karton Box'))
+const isProdukJadiCategory = computed(() =>
+  selectedCategoryName.value.toLowerCase().includes('produk jadi'),
+)
 
 const handleCategoryChange = () => {
   form.specifications.t = null
@@ -504,6 +567,9 @@ const handleCategoryChange = () => {
   form.gw_per_box = null
   form.wood_consumed_per_pcs = null
   form.m3_per_carton = null
+  form.jenis = ''
+  form.kualitas = ''
+  form.bentuk = ''
 
   if (!isProdukJadiCategory.value) {
     form.hs_code = ''
@@ -534,10 +600,14 @@ const calculateProgress = () => {
   }
 
   if (isKayuRSTCategory.value) {
-    total += 3
+    // dimensi + 3 field baru
+    total += 6
     if (form.specifications.t) filled++
     if (form.specifications.l) filled++
     if (form.specifications.p) filled++
+    if (form.jenis) filled++
+    if (form.kualitas) filled++
+    if (form.bentuk) filled++
   } else if (isKartonBoxCategory.value) {
     total += 3
     if (form.specifications.p) filled++
@@ -589,6 +659,11 @@ const fetchItemData = async (itemId) => {
       form.specifications.p = data.specifications.p || null
     }
 
+    // 🔽 MUAT FIELD KAYU RST
+    form.jenis = data.jenis || ''
+    form.kualitas = data.kualitas || ''
+    form.bentuk = data.bentuk || ''
+
     form.nw_per_box = data.nw_per_box || null
     form.gw_per_box = data.gw_per_box || null
     form.wood_consumed_per_pcs = data.wood_consumed_per_pcs || null
@@ -608,6 +683,13 @@ const handleSubmit = async () => {
       return
     }
 
+    if (isKayuRSTCategory.value) {
+      if (!form.jenis.trim() || !form.kualitas.trim() || !form.bentuk.trim()) {
+        showError('Validasi Gagal', 'Jenis, Kualitas, dan Bentuk wajib diisi untuk Kayu RST')
+        return
+      }
+    }
+
     const payload = {
       code: form.code,
       name: form.name,
@@ -621,6 +703,10 @@ const handleSubmit = async () => {
       gw_per_box: null,
       wood_consumed_per_pcs: null,
       m3_per_carton: null,
+      // 🔽 FIELD KAYU RST
+      jenis: null,
+      kualitas: null,
+      bentuk: null,
     }
 
     if (isKayuRSTCategory.value || isKartonBoxCategory.value) {
@@ -629,7 +715,15 @@ const handleSubmit = async () => {
         l: form.specifications.l,
         p: form.specifications.p,
       }
-    } else if (isProdukJadiCategory.value) {
+    }
+
+    if (isKayuRSTCategory.value) {
+      payload.jenis = form.jenis
+      payload.kualitas = form.kualitas
+      payload.bentuk = form.bentuk
+    }
+
+    if (isProdukJadiCategory.value) {
       payload.nw_per_box = form.nw_per_box
       payload.gw_per_box = form.gw_per_box
       payload.wood_consumed_per_pcs = form.wood_consumed_per_pcs

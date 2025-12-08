@@ -1,12 +1,12 @@
 <template>
   <div class="template-invoice-container">
-    <!-- ✅ HANYA TABEL PRODUCT -->
     <table class="table-invoice">
       <thead>
         <tr>
           <th rowspan="2" style="width: 3%">NO</th>
           <th colspan="2" style="width: 37%">PRODUCT</th>
-          <th colspan="2" style="width: 10%">QUANTITY</th>
+          <!-- QUANTITY: colspan dinamis -->
+          <th :colspan="hasCrates ? 3 : 2" style="width: 10%">QUANTITY</th>
           <th colspan="2" style="width: 12%">WOOD CONSUMED</th>
           <th colspan="2" style="width: 15%">VOLUME PACKING</th>
           <th rowspan="2" style="width: 10%">UNIT PRICE<br />(USD)</th>
@@ -15,8 +15,12 @@
         <tr>
           <th style="width: 10%">CODE</th>
           <th style="width: 27%">DESCRIPTION</th>
+
+          <!-- CRATE hanya jika AIR -->
+          <th v-if="hasCrates" style="width: 5%">CRATE</th>
           <th style="width: 5%">BOXES</th>
           <th style="width: 5%">PCS</th>
+
           <th style="width: 6%">/PCS</th>
           <th style="width: 6%">M3</th>
           <th style="width: 7.5%">/BOX</th>
@@ -28,14 +32,28 @@
           <td class="text-center">{{ index + 1 }}</td>
           <td class="text-center">{{ item.item?.code || '-' }}</td>
           <td>{{ item.item_name }}</td>
+
+          <!-- CRATE per item -->
+          <td v-if="hasCrates" class="text-center">
+            {{ formatNumber(item.quantity_crates) }}
+          </td>
+
           <td class="text-center">{{ formatNumber(item.quantity_boxes) }}</td>
           <td class="text-center">{{ formatNumber(item.quantity_shipped) }}</td>
 
-          <td class="text-center">{{ formatDecimal(item.item?.wood_consumed_per_pcs, 4) }}</td>
-          <td class="text-center">{{ formatDecimal(calculateWoodTotal(item), 4) }}</td>
+          <td class="text-center">
+            {{ formatDecimal(item.item?.wood_consumed_per_pcs, 4) }}
+          </td>
+          <td class="text-center">
+            {{ formatDecimal(calculateWoodTotal(item), 4) }}
+          </td>
 
-          <td class="text-center">{{ formatDecimal(item.item?.m3_per_carton, 4) }}</td>
-          <td class="text-center">{{ formatDecimal(calculateVolumeTotal(item), 4) }}</td>
+          <td class="text-center">
+            {{ formatDecimal(item.item?.m3_per_carton, 4) }}
+          </td>
+          <td class="text-center">
+            {{ formatDecimal(calculateVolumeTotal(item), 4) }}
+          </td>
 
           <td class="text-right">{{ formatMoney(getPrice(item)) }}</td>
           <td class="text-right" style="padding-right: 5px">
@@ -45,12 +63,22 @@
 
         <tr class="total-row">
           <td colspan="3" class="text-right-bold">TOTAL</td>
+
+          <!-- Total Crate -->
+          <td v-if="hasCrates" class="text-center-bold">
+            {{ formatNumber(totals.crates) }}
+          </td>
+
           <td class="text-center-bold">{{ formatNumber(totals.boxes) }}</td>
           <td class="text-center-bold">{{ formatNumber(totals.pcs) }}</td>
           <td></td>
-          <td class="text-center-bold">{{ formatDecimal(totals.woodM3, 4) }}</td>
+          <td class="text-center-bold">
+            {{ formatDecimal(totals.woodM3, 4) }}
+          </td>
           <td></td>
-          <td class="text-center-bold">{{ formatDecimal(totals.volumeM3, 4) }}</td>
+          <td class="text-center-bold">
+            {{ formatDecimal(totals.volumeM3, 4) }}
+          </td>
           <td></td>
           <td class="text-right-bold" style="padding-right: 5px">
             {{ formatMoney(totals.amountUSD) }}
@@ -59,12 +87,10 @@
       </tbody>
     </table>
 
-    <!-- ✅ SAY TOTAL -->
     <div class="say-total">
       SAY : UNITED STATES DOLLAR ({{ formatNumberWords(totals.amountUSD) }})
     </div>
 
-    <!-- ✅ BOTTOM SECTION -->
     <div class="bottom-section">
       <div class="bottom-left">
         <div class="made-out">
@@ -124,7 +150,14 @@ const props = defineProps({
   data: { type: Object, required: true },
 })
 
-// === FORMATTERS ===
+// Deteksi mode AIR / ada crate
+const hasCrates = computed(() => {
+  const mode = props.data?.shipment_mode || 'SEA'
+  if (mode === 'AIR') return true
+  const details = props.data?.details || []
+  return details.some((d) => parseFloat(d.quantity_crates || 0) > 0)
+})
+
 const formatNumber = (value) => {
   if (!value && value !== 0) return 0
   return parseFloat(Number(value).toFixed(0))
@@ -132,10 +165,9 @@ const formatNumber = (value) => {
 
 const formatDecimal = (value, decimals = 4) => {
   if (!value && value !== 0) return '0.' + '0'.repeat(decimals)
-  return parseFloat(Number(value).toFixed(decimals))
+  return Number(value).toFixed(decimals)
 }
 
-// ✅ FORMAT TANPA DESIMAL (untuk semua USD)
 const formatMoney = (val) =>
   val
     ? parseFloat(val).toLocaleString('en-US', {
@@ -148,7 +180,6 @@ const formatNumberWords = (amount) => {
   return Math.round(amount).toLocaleString('en-US')
 }
 
-// === LOGIC HITUNGAN ===
 const calculateWoodTotal = (item) => {
   const woodPerPcs = parseFloat(item.item?.wood_consumed_per_pcs || 0)
   const qty = parseFloat(item.quantity_shipped || 0)
@@ -177,13 +208,13 @@ const calculatePriceTotal = (item) => {
   return qty * price
 }
 
-// === TOTALS ===
 const totals = computed(() => {
   if (!props.data || !props.data.details)
-    return { boxes: 0, pcs: 0, woodM3: 0, volumeM3: 0, amountUSD: 0, nett: 0 }
+    return { crates: 0, boxes: 0, pcs: 0, woodM3: 0, volumeM3: 0, amountUSD: 0, nett: 0 }
 
   return props.data.details.reduce(
     (acc, item) => {
+      acc.crates += parseFloat(item.quantity_crates || 0)
       acc.boxes += parseFloat(item.quantity_boxes || 0)
       acc.pcs += parseFloat(item.quantity_shipped || 0)
       acc.woodM3 += calculateWoodTotal(item)
@@ -192,7 +223,7 @@ const totals = computed(() => {
       acc.nett += calculateNettTotal(item)
       return acc
     },
-    { boxes: 0, pcs: 0, woodM3: 0, volumeM3: 0, amountUSD: 0, nett: 0 },
+    { crates: 0, boxes: 0, pcs: 0, woodM3: 0, volumeM3: 0, amountUSD: 0, nett: 0 },
   )
 })
 </script>
@@ -208,22 +239,27 @@ const totals = computed(() => {
 .table-invoice {
   width: 100%;
   border-collapse: collapse;
-  font-size: 8px;
+  font-size: 9px; /* 🔹 lebih besar */
   margin-bottom: 5px;
 }
 
 .table-invoice th,
 .table-invoice td {
   border: 1px solid #000;
-  padding: 3px 4px;
+  padding: 4px 5px; /* sedikit lebih lega */
   vertical-align: middle;
 }
 
 .table-invoice th {
   text-align: center;
-  font-weight: bold;
+  font-weight: 900; /* 🔹 lebih tebal */
   background: #e0e0e0;
-  font-size: 7.5px;
+  font-size: 9px; /* 🔹 lebih besar */
+}
+
+.table-invoice td {
+  font-size: 9px;
+  font-weight: 600; /* 🔹 sedikit ditebalkan */
 }
 
 .text-center {

@@ -99,7 +99,7 @@ const formatNumber = (value) => {
 
 const formatDecimal = (value, decimals = 4) => {
   if (!value && value !== 0) return '0.' + '0'.repeat(decimals)
-  return parseFloat(Number(value).toFixed(decimals))
+  return Number(value).toFixed(decimals) // sekarang output string dengan 4 desimal
 }
 
 const formatNumberWords = (amount) => {
