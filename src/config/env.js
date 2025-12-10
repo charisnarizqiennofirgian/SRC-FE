@@ -1,8 +1,8 @@
 // Environment configuration
 const config = {
   development: {
-    apiUrl: 'http://192.168.1.30:8000/api',
-    timeout: 300000, // 5 menit
+    apiUrl: 'http://192.168.1.23:8000/api',
+    timeout: 300000,
   },
 
   production: {

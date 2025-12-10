@@ -28,8 +28,8 @@ import SalesOrderCetak from '../views/penjualan/SalesOrderCetak.vue'
 import DaftarPengiriman from '../views/penjualan/DaftarPengiriman.vue'
 import FormPengiriman from '../views/penjualan/FormPengiriman.vue'
 import CetakPengiriman from '../views/penjualan/CetakPengiriman.vue'
-import BomIndex from '../views/bom/BomIndex.vue'
-import BomForm from '../views/bom/BomForm.vue'
+import BomIndex from '../views/produksi/BomIndex.vue'
+import BomForm from '../views/produksi/BomForm.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   linkActiveClass: 'router-link-active',
@@ -289,6 +289,12 @@ const router = createRouter({
           meta: { title: 'Detail Faktur Pembelian' },
         },
       ],
+    },
+    {
+      path: '/admin/produksi/sawmill',
+      name: 'ProduksiSawmill',
+      component: () => import('../views/produksi/ProduksiSawmill.vue'),
+      meta: { title: 'Produksi Sawmill' },
     },
     {
       path: '/stock-report-operational',

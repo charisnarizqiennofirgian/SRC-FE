@@ -135,7 +135,10 @@ const menuItems = ref([
   {
     name: 'Produksi',
     icon: '🏭',
-    children: [{ name: 'BOM', route: { name: 'BomIndex' } }],
+    children: [
+      { name: 'BOM', route: { name: 'BomIndex' } },
+      { name: 'Produksi Sawmill', route: { name: 'ProduksiSawmill' } },
+    ],
   },
   {
     name: 'Pembelian',

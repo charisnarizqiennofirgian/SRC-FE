@@ -99,11 +99,13 @@
               </tr>
               <tr v-for="(item, index) in reportData" :key="item.id" class="data-row">
                 <td class="td-no">
-                  <span class="row-number">{{
-                    pagination
-                      ? (pagination.current_page - 1) * pagination.per_page + index + 1
-                      : index + 1
-                  }}</span>
+                  <span class="row-number">
+                    {{
+                      pagination
+                        ? (pagination.current_page - 1) * pagination.per_page + index + 1
+                        : index + 1
+                    }}
+                  </span>
                 </td>
                 <td class="td-kode">
                   <span class="code-badge">{{ item.code }}</span>
@@ -120,8 +122,23 @@
                 <td class="td-satuan">
                   <span class="badge-unit">{{ item.unit?.name || 'N/A' }}</span>
                 </td>
+
+                <!-- 🔹 Stok per gudang + total, tanpa menghapus stok lama -->
                 <td class="td-stok">
-                  <span class="stock-value">{{ parseInt(item.stock) }}</span>
+                  <div v-if="item.stocks && item.stocks.length">
+                    <div v-for="stock in item.stocks" :key="stock.id" class="stock-per-warehouse">
+                      <span class="warehouse-name">
+                        {{ stock.warehouse?.name || stock.warehouse?.code || 'Gudang' }}:
+                      </span>
+                      <span class="stock-qty">
+                        {{ formatQty(stock.quantity) }}
+                      </span>
+                    </div>
+                    <div class="stock-total">Total: {{ formatQty(totalQty(item.stocks)) }}</div>
+                  </div>
+                  <div v-else>
+                    <span class="stock-value">{{ parseInt(item.stock) }}</span>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -186,7 +203,7 @@ const fetchReportData = async () => {
   loading.value = true
   try {
     const params = {
-      categories: 'Kayu Logs',
+      categories: 'Kayu Log',
       per_page: perPage.value,
       page: currentPage.value,
     }
@@ -276,10 +293,25 @@ const paginationPages = computed(() => {
   return pages
 })
 
+// 🔹 helper untuk stok per gudang
+const formatQty = (val) => {
+  if (!val && val !== 0) return 0
+  return parseFloat(val).toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 4,
+  })
+}
+
+const totalQty = (stocks) => {
+  return stocks.reduce((sum, s) => sum + parseFloat(s.quantity || 0), 0)
+}
+
 onMounted(fetchReportData)
 </script>
 
 <style scoped>
+/* (CSS asli kamu tetap, ditambah sedikit di bawah) */
+
 .page-header {
   background: linear-gradient(135deg, #92400e 0%, #78350f 100%);
   padding: 32px 36px;
@@ -774,6 +806,31 @@ onMounted(fetchReportData)
   font-size: 17px;
   min-width: 70px;
   box-shadow: 0 2px 8px rgba(146, 64, 14, 0.2);
+}
+
+/* 🔹 tambahan tampilan stok per gudang */
+.stock-per-warehouse {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.warehouse-name {
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.stock-qty {
+  font-weight: 600;
+}
+
+.stock-total {
+  margin-top: 4px;
+  font-weight: 700;
+  border-top: 1px dashed #ccc;
+  padding-top: 2px;
+  font-size: 12px;
 }
 
 .empty-row {

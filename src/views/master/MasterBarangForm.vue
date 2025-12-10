@@ -164,6 +164,93 @@
             </div>
           </transition>
 
+          <!-- SPESIFIKASI KAYU LOG -->
+          <transition name="slide-fade">
+            <div v-if="isKayuLogCategory" class="form-section">
+              <div class="section-title section-title-accent">
+                <span class="section-icon">🪵</span>
+                <h3>Spesifikasi Kayu Log</h3>
+              </div>
+
+              <div class="form-row form-row-triple">
+                <div class="form-group">
+                  <label class="form-label">
+                    Diameter (mm)
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model.number="form.specifications.t"
+                      type="number"
+                      class="form-control"
+                      placeholder="cth: 300"
+                      required
+                      min="0"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">
+                    Panjang (P) mm
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model.number="form.specifications.p"
+                      type="number"
+                      class="form-control"
+                      placeholder="cth: 2000"
+                      required
+                      min="0"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">
+                    Jenis Kayu
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model="form.jenis"
+                      type="text"
+                      class="form-control"
+                      placeholder="cth: TEAK / MAHONI"
+                      required
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Kubikasi per batang (manual) -->
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">
+                    Kubikasi per Batang (m³)
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model.number="form.volume_m3"
+                      type="number"
+                      min="0"
+                      step="0.0001"
+                      class="form-control"
+                      placeholder="cth: 0.4567"
+                      required
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </transition>
+
           <!-- SPESIFIKASI KAYU RST -->
           <transition name="slide-fade">
             <div v-if="isKayuRSTCategory" class="form-section">
@@ -532,15 +619,14 @@ const form = reactive({
     l: null,
     p: null,
   },
-  // 🔽 FIELD KAYU RST BARU
   jenis: '',
   kualitas: '',
   bentuk: '',
-  // PRODUK JADI
   nw_per_box: null,
   gw_per_box: null,
   wood_consumed_per_pcs: null,
   m3_per_carton: null,
+  volume_m3: null, // ✅ kubikasi (manual untuk Log, auto RST)
 })
 
 const categories = ref([])
@@ -553,10 +639,17 @@ const selectedCategoryName = computed(() => {
   return found ? found.name : ''
 })
 
-const isKayuRSTCategory = computed(() => selectedCategoryName.value.includes('Kayu RST'))
-const isKartonBoxCategory = computed(() => selectedCategoryName.value.includes('Karton Box'))
+const isKayuRSTCategory = computed(() =>
+  selectedCategoryName.value.toLowerCase().includes('kayu rst'),
+)
+const isKartonBoxCategory = computed(() =>
+  selectedCategoryName.value.toLowerCase().includes('karton box'),
+)
 const isProdukJadiCategory = computed(() =>
   selectedCategoryName.value.toLowerCase().includes('produk jadi'),
+)
+const isKayuLogCategory = computed(() =>
+  selectedCategoryName.value.toLowerCase().includes('kayu log'),
 )
 
 const handleCategoryChange = () => {
@@ -570,6 +663,7 @@ const handleCategoryChange = () => {
   form.jenis = ''
   form.kualitas = ''
   form.bentuk = ''
+  form.volume_m3 = null
 
   if (!isProdukJadiCategory.value) {
     form.hs_code = ''
@@ -599,8 +693,15 @@ const calculateProgress = () => {
     if (form.hs_code) filled++
   }
 
+  if (isKayuLogCategory.value) {
+    total += 4
+    if (form.specifications.t) filled++ // diameter
+    if (form.specifications.p) filled++ // panjang
+    if (form.jenis) filled++
+    if (form.volume_m3) filled++ // kubikasi manual
+  }
+
   if (isKayuRSTCategory.value) {
-    // dimensi + 3 field baru
     total += 6
     if (form.specifications.t) filled++
     if (form.specifications.l) filled++
@@ -654,20 +755,19 @@ const fetchItemData = async (itemId) => {
     form.hs_code = data.hs_code || ''
 
     if (data.specifications) {
-      form.specifications.t = data.specifications.t || null
-      form.specifications.l = data.specifications.l || null
-      form.specifications.p = data.specifications.p || null
+      form.specifications.t = data.specifications.t ?? null
+      form.specifications.l = data.specifications.l ?? null
+      form.specifications.p = data.specifications.p ?? null
     }
 
-    // 🔽 MUAT FIELD KAYU RST
     form.jenis = data.jenis || ''
     form.kualitas = data.kualitas || ''
     form.bentuk = data.bentuk || ''
-
     form.nw_per_box = data.nw_per_box || null
     form.gw_per_box = data.gw_per_box || null
     form.wood_consumed_per_pcs = data.wood_consumed_per_pcs || null
     form.m3_per_carton = data.m3_per_carton || null
+    form.volume_m3 = data.volume_m3 || null
 
     calculateProgress()
   } catch (error) {
@@ -690,6 +790,21 @@ const handleSubmit = async () => {
       }
     }
 
+    if (isKayuLogCategory.value) {
+      if (
+        !form.jenis.trim() ||
+        !form.specifications.t ||
+        !form.specifications.p ||
+        !form.volume_m3
+      ) {
+        showError(
+          'Validasi Gagal',
+          'Diameter, Panjang, Jenis Kayu, dan Kubikasi wajib diisi untuk Kayu Log',
+        )
+        return
+      }
+    }
+
     const payload = {
       code: form.code,
       name: form.name,
@@ -703,13 +818,13 @@ const handleSubmit = async () => {
       gw_per_box: null,
       wood_consumed_per_pcs: null,
       m3_per_carton: null,
-      // 🔽 FIELD KAYU RST
       jenis: null,
       kualitas: null,
       bentuk: null,
+      volume_m3: form.volume_m3, // dikirim apa adanya, backend akan override hanya untuk RST
     }
 
-    if (isKayuRSTCategory.value || isKartonBoxCategory.value) {
+    if (isKayuRSTCategory.value || isKartonBoxCategory.value || isKayuLogCategory.value) {
       payload.specifications = {
         t: form.specifications.t,
         l: form.specifications.l,
@@ -717,8 +832,10 @@ const handleSubmit = async () => {
       }
     }
 
-    if (isKayuRSTCategory.value) {
+    if (isKayuRSTCategory.value || isKayuLogCategory.value) {
       payload.jenis = form.jenis
+    }
+    if (isKayuRSTCategory.value) {
       payload.kualitas = form.kualitas
       payload.bentuk = form.bentuk
     }
@@ -759,6 +876,7 @@ onMounted(async () => {
   if (itemId) {
     await fetchItemData(itemId)
   }
+  calculateProgress()
 })
 </script>
 
