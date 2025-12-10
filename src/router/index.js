@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import StockAdjustmentView from '../views/manajemen-stok/StockAdjustmentView.vue'
+import StockIndex from '../views/manajemen-stok/StockIndex.vue'
 import LaporanOperasional from '../views/manajemen-stok/LaporanOperasional.vue'
 import LaporanProdukJadi from '../views/manajemen-stok/LaporanProdukJadi.vue'
 import LaporanKayuLogs from '../views/manajemen-stok/LaporanKayuLogs.vue'
@@ -318,6 +319,12 @@ const router = createRouter({
       path: '/stock-report-rst',
       name: 'StockReportRST',
       component: LaporanKayuRST,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/stock-index',
+      name: 'StockIndex',
+      component: StockIndex,
       meta: { requiresAuth: true },
     },
     {

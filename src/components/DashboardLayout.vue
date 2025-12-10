@@ -129,6 +129,7 @@ const menuItems = ref([
       { name: 'Laporan Stok Kayu Logs', route: '/stock-report-logs' },
       { name: 'Laporan Stok Kayu RST', route: '/stock-report-rst' },
       { name: 'Laporan Karton BOX', route: '/laporan/karton-box' },
+      { name: 'Stock Index (Baru)', route: { name: 'StockIndex' } },
       { name: 'Stok Adjusment', route: '/stock-adjustment' },
     ],
   },
