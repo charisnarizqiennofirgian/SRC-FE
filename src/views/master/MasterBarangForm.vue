@@ -227,7 +227,6 @@
                 </div>
               </div>
 
-              <!-- Kubikasi per batang (manual) -->
               <div class="form-row">
                 <div class="form-group">
                   <label class="form-label">
@@ -259,7 +258,6 @@
                 <h3>Spesifikasi Kayu RST</h3>
               </div>
 
-              <!-- Dimensi -->
               <div class="form-row form-row-triple">
                 <div class="form-group">
                   <label class="form-label">
@@ -314,7 +312,6 @@
                 </div>
               </div>
 
-              <!-- Jenis / Kualitas / Bentuk -->
               <div class="form-row form-row-triple">
                 <div class="form-group">
                   <label class="form-label">
@@ -548,10 +545,39 @@
                     class="form-control"
                     placeholder="0"
                     min="0"
-                    @input="calculateProgress"
+                    @input="handleInitialStockChange"
                   />
                 </div>
               </div>
+
+              <!-- Dropdown Gudang untuk Stok Awal -->
+              <div class="form-group">
+                <label class="form-label">
+                  Pilih Gudang
+                  <span class="label-hint">(Untuk Stok Awal)</span>
+                  <span v-if="mustSelectWarehouse" class="required">*</span>
+                </label>
+                <div class="select-wrapper">
+                  <span class="input-icon">🏠</span>
+                  <select
+                    v-model="form.initial_warehouse_id"
+                    class="form-control form-select"
+                    :disabled="!mustSelectWarehouse"
+                  >
+                    <option value="">
+                      {{ mustSelectWarehouse ? 'Pilih Gudang...' : 'Isi stok awal dulu' }}
+                    </option>
+                    <option v-for="wh in warehouses" :key="wh.id" :value="wh.id">
+                      {{ wh.name }}
+                    </option>
+                  </select>
+                  <span class="select-arrow">▼</span>
+                </div>
+                <p class="form-help-text">
+                  Jika Stok Awal &gt; 0, gudang wajib dipilih (alamat fisik stok pertama).
+                </p>
+              </div>
+
               <div class="form-group form-group-wide">
                 <label class="form-label">
                   Deskripsi
@@ -613,6 +639,7 @@ const form = reactive({
   category_id: '',
   unit_id: '',
   stock: 0,
+  initial_warehouse_id: '', // gudang untuk stok awal
   hs_code: '',
   specifications: {
     t: null,
@@ -626,11 +653,12 @@ const form = reactive({
   gw_per_box: null,
   wood_consumed_per_pcs: null,
   m3_per_carton: null,
-  volume_m3: null, // ✅ kubikasi (manual untuk Log, auto RST)
+  volume_m3: null,
 })
 
 const categories = ref([])
 const units = ref([])
+const warehouses = ref([]) // master gudang
 const formProgress = ref(0)
 
 const selectedCategoryName = computed(() => {
@@ -651,6 +679,9 @@ const isProdukJadiCategory = computed(() =>
 const isKayuLogCategory = computed(() =>
   selectedCategoryName.value.toLowerCase().includes('kayu log'),
 )
+
+// stok awal > 0 => gudang wajib dipilih & dropdown aktif
+const mustSelectWarehouse = computed(() => (form.stock || 0) > 0)
 
 const handleCategoryChange = () => {
   form.specifications.t = null
@@ -695,10 +726,10 @@ const calculateProgress = () => {
 
   if (isKayuLogCategory.value) {
     total += 4
-    if (form.specifications.t) filled++ // diameter
-    if (form.specifications.p) filled++ // panjang
+    if (form.specifications.t) filled++
+    if (form.specifications.p) filled++
     if (form.jenis) filled++
-    if (form.volume_m3) filled++ // kubikasi manual
+    if (form.volume_m3) filled++
   }
 
   if (isKayuRSTCategory.value) {
@@ -727,16 +758,18 @@ const calculateProgress = () => {
 
 const fetchDropdownData = async () => {
   try {
-    const [categoriesResponse, unitsResponse] = await Promise.all([
+    const [categoriesResponse, unitsResponse, warehousesResponse] = await Promise.all([
       apiClient.get('/categories/all'),
       apiClient.get('/units/all'),
+      apiClient.get('/warehouses'), // endpoint master gudang
     ])
 
     categories.value = categoriesResponse.data.data
     units.value = unitsResponse.data.data
+    warehouses.value = warehousesResponse.data.data
   } catch (error) {
     console.error('Gagal mengambil data dropdown:', error)
-    showError('Gagal', 'Gagal mengambil data dropdown (kategori & unit)')
+    showError('Gagal', 'Gagal mengambil data dropdown (kategori, unit, gudang)')
   }
 }
 
@@ -753,6 +786,7 @@ const fetchItemData = async (itemId) => {
     form.unit_id = data.unit_id || ''
     form.stock = parseInt(data.stock) || 0
     form.hs_code = data.hs_code || ''
+    form.initial_warehouse_id = data.initial_warehouse_id || '' // kalau nanti backend sediakan
 
     if (data.specifications) {
       form.specifications.t = data.specifications.t ?? null
@@ -774,6 +808,14 @@ const fetchItemData = async (itemId) => {
     console.error('Gagal mengambil data barang:', error)
     showError('Gagal', 'Gagal mengambil data barang untuk diedit')
   }
+}
+
+const handleInitialStockChange = () => {
+  // jika stok awal jadi 0 / kosong, reset gudang
+  if (!mustSelectWarehouse.value) {
+    form.initial_warehouse_id = ''
+  }
+  calculateProgress()
 }
 
 const handleSubmit = async () => {
@@ -805,6 +847,12 @@ const handleSubmit = async () => {
       }
     }
 
+    // Validasi khusus Fase 2: stok awal > 0 => gudang wajib
+    if (mustSelectWarehouse.value && !form.initial_warehouse_id) {
+      showError('Validasi Gagal', 'Silakan pilih Gudang untuk Stok Awal.')
+      return
+    }
+
     const payload = {
       code: form.code,
       name: form.name,
@@ -812,6 +860,7 @@ const handleSubmit = async () => {
       category_id: form.category_id,
       unit_id: form.unit_id,
       stock: form.stock || 0,
+      initial_warehouse_id: form.initial_warehouse_id || null,
       hs_code: form.hs_code || null,
       specifications: null,
       nw_per_box: null,
@@ -821,7 +870,7 @@ const handleSubmit = async () => {
       jenis: null,
       kualitas: null,
       bentuk: null,
-      volume_m3: form.volume_m3, // dikirim apa adanya, backend akan override hanya untuk RST
+      volume_m3: form.volume_m3,
     }
 
     if (isKayuRSTCategory.value || isKartonBoxCategory.value || isKayuLogCategory.value) {

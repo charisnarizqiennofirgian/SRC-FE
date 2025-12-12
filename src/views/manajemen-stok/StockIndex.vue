@@ -1,23 +1,28 @@
 <template>
   <DashboardLayout>
-    <div class="page-header">
-      <div class="header-content">
-        <div class="header-left">
-          <div class="icon-badge-report">
-            <span class="report-icon">📦</span>
+    <!-- ========================================
+         HEADER SECTION - MODERN & GRADIENT
+         ======================================== -->
+    <div class="page-header-stock">
+      <div class="header-content-wrapper">
+        <div class="header-left-section">
+          <div class="icon-badge-stock">
+            <span class="stock-icon">📦</span>
           </div>
-          <div class="header-text">
-            <h1 class="page-title">Laporan Stok</h1>
-            <p class="page-subtitle">
-              Ringkasan stok per kategori & gudang (Kayu Log, RST, Produk Jadi, Bahan Operasional).
+          <div class="header-text-content">
+            <h1 class="page-title-stock">Laporan Stok Inventory</h1>
+            <p class="page-subtitle-stock">
+              Real-time monitoring stok per kategori & gudang untuk manajemen inventory yang efisien
             </p>
           </div>
         </div>
-        <div class="header-stats">
-          <div class="stat-card">
-            <span class="stat-icon">📊</span>
+        <div class="header-stats-section">
+          <div class="stat-card-modern">
+            <div class="stat-icon-wrapper">
+              <span class="stat-icon">📊</span>
+            </div>
             <div class="stat-content">
-              <p class="stat-label">Total Item</p>
+              <p class="stat-label">Total Items</p>
               <p class="stat-value">{{ pagination ? pagination.total : reportData.length }}</p>
             </div>
           </div>
@@ -25,141 +30,179 @@
       </div>
     </div>
 
-    <!-- Tabs kategori -->
-    <div class="tabs-wrapper">
+    <!-- ========================================
+         TABS KATEGORI - MODERN PILLS
+         ======================================== -->
+    <div class="tabs-container-modern">
       <button
         v-for="tab in tabs"
         :key="tab.key"
-        :class="['tab-btn', { active: activeTab === tab.key }]"
+        :class="['tab-btn-modern', { active: activeTab === tab.key }]"
         @click="setTab(tab.key)"
       >
-        {{ tab.label }}
+        <span class="tab-icon">{{ tab.icon }}</span>
+        <span class="tab-label">{{ tab.label }}</span>
+        <span v-if="activeTab === tab.key" class="tab-indicator">✓</span>
       </button>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="loading-container">
-      <div class="loading-animation">
-        <div class="spinner"></div>
-        <div class="loading-dots">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
+    <!-- ========================================
+         LOADING STATE - ANIMATED
+         ======================================== -->
+    <div v-if="loading" class="loading-container-modern">
+      <div class="loading-content">
+        <div class="spinner-modern"></div>
+        <p class="loading-text-modern">Memuat data stok...</p>
+        <p class="loading-subtext">Mohon tunggu sebentar</p>
       </div>
-      <p class="loading-text">Memuat laporan...</p>
     </div>
 
-    <!-- Konten -->
-    <div v-else class="content-card report-card">
-      <div class="card-header-report">
-        <div class="report-header-left">
-          <span class="header-icon">📋</span>
-          <h2 class="card-title">Daftar Stok - {{ currentCategory() }}</h2>
+    <!-- ========================================
+         CONTENT CARD - MAIN DATA
+         ======================================== -->
+    <div v-else class="content-card-stock">
+      <!-- CARD HEADER -->
+      <div class="card-header-stock">
+        <div class="header-left-info">
+          <div class="header-icon-badge">
+            <span class="header-icon">📋</span>
+          </div>
+          <div class="header-title-section">
+            <h2 class="card-title-stock">{{ currentCategory() }}</h2>
+            <p class="card-subtitle-stock">Daftar lengkap stok barang</p>
+          </div>
         </div>
-        <div class="report-info">
-          <span class="info-badge">{{ reportData.length }} Items</span>
+        <div class="header-right-info">
+          <div class="info-badge-count">
+            <span class="badge-icon">📦</span>
+            <span class="badge-text">{{ reportData.length }} Items</span>
+          </div>
         </div>
       </div>
 
-      <!-- filter sederhana (search + per_page) -->
-      <div class="card-filter-section">
-        <div class="filter-left">
-          <div class="search-wrapper">
-            <span class="search-icon">🔍</span>
+      <!-- FILTER SECTION -->
+      <div class="card-filter-modern">
+        <div class="filter-left-group">
+          <div class="search-box-modern">
+            <span class="search-icon-box">🔍</span>
             <input
               v-model="searchQuery"
               @input="handleSearch"
               type="text"
-              placeholder="Cari nama atau kode barang..."
-              class="search-input"
+              placeholder="Cari kode atau nama barang..."
+              class="search-input-modern"
             />
-            <button v-if="searchQuery" @click="clearSearch" class="clear-btn">✕</button>
+            <button v-if="searchQuery" @click="clearSearch" class="clear-btn-search">
+              <span>✕</span>
+            </button>
           </div>
         </div>
-        <div class="filter-right">
-          <div class="per-page-selector">
-            <label class="per-page-label">Tampilkan:</label>
-            <select v-model="perPage" @change="handlePerPageChange" class="per-page-select">
+        <div class="filter-right-group">
+          <div class="per-page-control">
+            <label class="per-page-label-modern">Tampilkan:</label>
+            <select v-model="perPage" @change="handlePerPageChange" class="per-page-select-modern">
               <option :value="10">10</option>
               <option :value="25">25</option>
               <option :value="50">50</option>
               <option :value="100">100</option>
             </select>
+            <span class="per-page-suffix">per halaman</span>
           </div>
         </div>
       </div>
 
-      <!-- Tabel -->
-      <div class="card-body-table">
-        <div class="table-wrapper">
-          <table class="data-table">
+      <!-- TABLE SECTION -->
+      <div class="card-body-stock">
+        <div class="table-container-modern">
+          <table class="table-stock-modern">
             <thead>
               <tr>
-                <th class="th-no">No</th>
-                <th class="th-kode">Kode</th>
-                <th class="th-nama">Nama Barang</th>
-                <th class="th-kategori">Kategori</th>
-                <th class="th-satuan">Satuan</th>
-                <th class="th-stok">Stok Saat Ini</th>
+                <th class="th-number">No</th>
+                <th class="th-code">Kode Item</th>
+                <th class="th-name">Nama Barang</th>
+                <th class="th-category">Kategori</th>
+                <th class="th-unit">Satuan</th>
+                <th class="th-stock">Stok Per Gudang</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-if="reportData.length === 0" class="empty-row">
-                <td colspan="6" class="empty-cell">
-                  <div class="empty-state">
-                    <span class="empty-icon">📭</span>
-                    <p class="empty-text">
+              <!-- EMPTY STATE -->
+              <tr v-if="reportData.length === 0" class="empty-row-modern">
+                <td colspan="6" class="empty-cell-modern">
+                  <div class="empty-state-content">
+                    <div class="empty-icon-wrapper">
+                      <span class="empty-icon">📭</span>
+                    </div>
+                    <p class="empty-title">Tidak Ada Data</p>
+                    <p class="empty-message">
                       {{
                         searchQuery
-                          ? 'Tidak ada hasil pencarian.'
-                          : 'Tidak ada data stok untuk kategori ini.'
+                          ? 'Tidak ditemukan hasil yang sesuai dengan pencarian Anda'
+                          : 'Belum ada data stok untuk kategori ini'
                       }}
                     </p>
                   </div>
                 </td>
               </tr>
-              <tr v-for="(item, index) in reportData" :key="item.id" class="data-row">
-                <td class="td-no">
-                  <span class="row-number">
+
+              <!-- DATA ROWS -->
+              <tr v-for="(item, index) in reportData" :key="item.id" class="data-row-modern">
+                <td class="td-number">
+                  <div class="number-badge">
                     {{
                       pagination
                         ? (pagination.current_page - 1) * pagination.per_page + index + 1
                         : index + 1
                     }}
+                  </div>
+                </td>
+                <td class="td-code">
+                  <div class="code-badge-modern">
+                    <span class="code-icon">🏷️</span>
+                    <span class="code-text">{{ item.code }}</span>
+                  </div>
+                </td>
+                <td class="td-name">
+                  <div class="item-info-modern">
+                    <div class="item-icon-box">
+                      <span class="item-icon">📦</span>
+                    </div>
+                    <div class="item-text">
+                      <span class="item-name-text">{{ item.name }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="td-category">
+                  <span class="badge-category-modern">
+                    <span class="badge-dot"></span>
+                    {{ item.category?.name || 'N/A' }}
                   </span>
                 </td>
-                <td class="td-kode">
-                  <span class="code-badge">{{ item.code }}</span>
-                </td>
-                <td class="td-nama">
-                  <div class="item-info">
-                    <span class="item-icon">📦</span>
-                    <span class="item-name">{{ item.name }}</span>
-                  </div>
-                </td>
-                <td class="td-kategori">
-                  <span class="badge-category">{{ item.category?.name || 'N/A' }}</span>
-                </td>
-                <td class="td-satuan">
-                  <span class="badge-unit">{{ item.unit?.name || 'N/A' }}</span>
+                <td class="td-unit">
+                  <span class="badge-unit-modern">{{ item.unit?.name || 'N/A' }}</span>
                 </td>
 
-                <!-- stok per gudang + total -->
-                <td class="td-stok">
-                  <div v-if="item.stocks && item.stocks.length">
-                    <div v-for="stock in item.stocks" :key="stock.id" class="stock-per-warehouse">
-                      <span class="warehouse-name">
-                        {{ stock.warehouse?.name || stock.warehouse?.code || 'Gudang' }}:
-                      </span>
-                      <span class="stock-qty">
-                        {{ formatQty(stock.quantity) }}
-                      </span>
+                <!-- STOCK PER WAREHOUSE -->
+                <td class="td-stock">
+                  <div v-if="item.stocks && item.stocks.length" class="stock-warehouse-list">
+                    <div v-for="stock in item.stocks" :key="stock.id" class="stock-warehouse-item">
+                      <div class="warehouse-info">
+                        <span class="warehouse-icon">🏢</span>
+                        <span class="warehouse-name">
+                          {{ stock.warehouse?.name || stock.warehouse?.code || 'Gudang' }}
+                        </span>
+                      </div>
+                      <div class="stock-qty-box">
+                        <span class="stock-qty">{{ formatQty(stock.quantity) }}</span>
+                      </div>
                     </div>
-                    <div class="stock-total">Total: {{ formatQty(totalQty(item.stocks)) }}</div>
+                    <div class="stock-total-box">
+                      <span class="total-label">Total Stok:</span>
+                      <span class="total-value">{{ formatQty(totalQty(item.stocks)) }}</span>
+                    </div>
                   </div>
-                  <div v-else>
-                    <span class="stock-value">{{ parseInt(item.stock) }}</span>
+                  <div v-else class="stock-simple">
+                    <span class="stock-value-simple">{{ parseInt(item.stock) }}</span>
                   </div>
                 </td>
               </tr>
@@ -168,38 +211,45 @@
         </div>
       </div>
 
-      <!-- pagination -->
-      <div v-if="pagination && pagination.last_page > 1" class="card-footer-pagination">
-        <div class="pagination-info">
-          Menampilkan {{ pagination.from || 0 }} - {{ pagination.to || 0 }} dari
-          {{ pagination.total }} data
+      <!-- PAGINATION -->
+      <div v-if="pagination && pagination.last_page > 1" class="card-footer-modern">
+        <div class="pagination-info-modern">
+          <span class="info-icon">📄</span>
+          <span class="info-text">
+            Menampilkan <strong>{{ pagination.from || 0 }}</strong> -
+            <strong>{{ pagination.to || 0 }}</strong> dari
+            <strong>{{ pagination.total }}</strong> data
+          </span>
         </div>
-        <div class="pagination-controls">
+        <div class="pagination-controls-modern">
           <button
             @click="goToPage(pagination.current_page - 1)"
             :disabled="pagination.current_page === 1"
-            class="pagination-btn pagination-prev"
+            class="pagination-btn-modern pagination-prev"
           >
-            ← Prev
+            <span class="btn-icon-nav">←</span>
+            <span class="btn-text-nav">Prev</span>
           </button>
           <button
             v-for="page in paginationPages"
             :key="page"
-            @click="goToPage(page)"
+            @click="page !== '...' && goToPage(page)"
             :class="[
-              'pagination-btn',
+              'pagination-btn-modern',
               'pagination-number',
-              { active: page === pagination.current_page },
+              { active: page === pagination.current_page, dots: page === '...' },
             ]"
+            :disabled="page === '...'"
           >
             {{ page }}
           </button>
           <button
             @click="goToPage(pagination.current_page + 1)"
             :disabled="pagination.current_page === pagination.last_page"
-            class="pagination-btn pagination-next"
+            class="pagination-btn-modern pagination-next"
           >
-            Next →
+            <span class="btn-text-nav">Next</span>
+            <span class="btn-icon-nav">→</span>
           </button>
         </div>
       </div>
@@ -216,10 +266,10 @@ import { useToast } from 'vue-toastification'
 const toast = useToast()
 
 const tabs = [
-  { key: 'logs', label: 'Kayu Log', category: 'Kayu Log' },
-  { key: 'rst', label: 'Kayu RST', category: 'Kayu RST' },
-  { key: 'finished', label: 'Produk Jadi', category: 'Produk Jadi' },
-  { key: 'operational', label: 'Bahan Operasional', category: 'Bahan Operasional' },
+  { key: 'logs', label: 'Kayu Log', category: 'Kayu Log', icon: '🪵' },
+  { key: 'rst', label: 'Kayu RST', category: 'Kayu RST', icon: '🪚' },
+  { key: 'finished', label: 'Produk Jadi', category: 'Produk Jadi', icon: '🪑' },
+  { key: 'operational', label: 'Bahan Operasional', category: 'Bahan Operasional', icon: '🔧' },
 ]
 
 const activeTab = ref('logs')
@@ -338,7 +388,6 @@ const paginationPages = computed(() => {
   return pages
 })
 
-// helper stok per gudang
 const formatQty = (val) => {
   if (!val && val !== 0) return 0
   return parseFloat(val).toLocaleString('en-US', {
@@ -355,286 +404,834 @@ onMounted(fetchReport)
 </script>
 
 <style scoped>
-/* pakai gaya serupa LaporanKayuLogs + tab */
-
-.page-header {
-  margin-bottom: 16px;
+/* ========================================
+   PAGE HEADER - GRADIENT & MODERN
+   ======================================== */
+.page-header-stock {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem 2.5rem;
+  border-radius: 20px;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
 }
-.header-content {
+
+.header-content-wrapper {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 2rem;
 }
-.header-left {
+
+.header-left-section {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 1.5rem;
+  flex: 1;
 }
-.icon-badge-report {
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  background: #fffbeb;
+
+.icon-badge-stock {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.stock-icon {
+  font-size: 2.5rem;
+}
+
+.header-text-content {
+  flex: 1;
+}
+
+.page-title-stock {
+  font-size: 2rem;
+  font-weight: 800;
+  color: white;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.5px;
+}
+
+.page-subtitle-stock {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 1rem;
+  margin: 0;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.header-stats-section {
+  display: flex;
+  gap: 1rem;
+}
+
+.stat-card-modern {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1rem 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  min-width: 160px;
+}
+
+.stat-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea15, #764ba215);
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.report-icon {
-  font-size: 22px;
-}
-.page-title {
-  font-size: 24px;
-  font-weight: 700;
-}
-.page-subtitle {
-  color: #64748b;
-  font-size: 14px;
-}
-.header-stats {
-  display: flex;
-}
-.stat-card {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #f9fafb;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
-}
+
 .stat-icon {
-  font-size: 18px;
+  font-size: 1.5rem;
 }
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
 .stat-label {
-  font-size: 12px;
+  font-size: 0.8125rem;
   color: #6b7280;
+  font-weight: 600;
+  margin: 0;
 }
+
 .stat-value {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+  line-height: 1;
 }
 
-.tabs-wrapper {
+/* ========================================
+   TABS - MODERN PILLS
+   ======================================== */
+.tabs-container-modern {
   display: flex;
-  gap: 8px;
-  margin: 16px 0;
-}
-.tab-btn {
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid #e2e8f0;
-  background: #f9fafb;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.tab-btn.active {
-  background: #92400e;
-  color: white;
-  border-color: #92400e;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
 }
 
-.content-card.report-card {
-  background: white;
+.tab-btn-modern {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1.5rem;
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  padding: 16px;
-}
-
-.card-header-report {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-.report-header-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.header-icon {
-  font-size: 18px;
-}
-.card-title {
-  font-size: 18px;
-  font-weight: 600;
-}
-.info-badge {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  font-size: 12px;
-}
-
-/* filter */
-.card-filter-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-.search-wrapper {
-  position: relative;
-}
-.search-input {
-  padding: 6px 26px 6px 26px;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  font-size: 13px;
-}
-.search-icon {
-  position: absolute;
-  left: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 13px;
-}
-.clear-btn {
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  border: none;
-  background: transparent;
+  border: 2.5px solid #e5e7eb;
+  background: white;
+  font-size: 0.9375rem;
+  font-weight: 700;
   cursor: pointer;
-  font-size: 12px;
-}
-.per-page-selector {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.per-page-label {
-  font-size: 12px;
-}
-.per-page-select {
-  padding: 4px 6px;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  font-size: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-/* table */
-.table-wrapper {
-  overflow-x: auto;
+.tab-btn-modern:hover {
+  border-color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
 }
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
+
+.tab-btn-modern.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.35);
 }
-.data-table thead {
-  background: #f9fafb;
+
+.tab-icon {
+  font-size: 1.25rem;
 }
-.data-table th,
-.data-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid #e5e7eb;
-  text-align: left;
+
+.tab-label {
+  font-weight: 700;
+  letter-spacing: 0.015em;
 }
-.th-no {
-  width: 40px;
+
+.tab-indicator {
+  margin-left: 0.25rem;
+  font-size: 0.875rem;
 }
-.td-no {
+
+/* ========================================
+   LOADING STATE
+   ======================================== */
+.loading-container-modern {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 5rem 2rem;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.loading-content {
   text-align: center;
 }
-.code-badge {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  font-size: 12px;
-}
-.item-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.item-icon {
-  font-size: 16px;
-}
-.badge-category,
-.badge-unit {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: #f3f4f6;
-  font-size: 12px;
+
+.spinner-modern {
+  width: 64px;
+  height: 64px;
+  border: 6px solid #f3f4f6;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1.5rem;
 }
 
-/* stok per gudang */
-.stock-per-warehouse {
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text-modern {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.loading-subtext {
+  font-size: 0.9375rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ========================================
+   CONTENT CARD
+   ======================================== */
+.content-card-stock {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f0f2f5;
+  overflow: hidden;
+}
+
+/* CARD HEADER */
+.card-header-stock {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  padding: 1.75rem 2rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-bottom: 3px solid #e9ecef;
 }
-.warehouse-name {
-  font-size: 12px;
-  color: #4b5563;
+
+.header-left-info {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
 }
-.stock-qty {
-  font-weight: 600;
+
+.header-icon-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea15, #764ba215);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.stock-total {
-  margin-top: 4px;
-  font-size: 12px;
-  font-weight: 600;
+
+.header-icon {
+  font-size: 1.5rem;
+}
+
+.header-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.card-title-stock {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+  letter-spacing: -0.25px;
+}
+
+.card-subtitle-stock {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 500;
+}
+
+.header-right-info {
+  display: flex;
+  gap: 1rem;
+}
+
+.info-badge-count {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-radius: 12px;
+  border: 2px solid #93c5fd;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.badge-icon {
+  font-size: 1.125rem;
+}
+
+.badge-text {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #1e40af;
+}
+
+/* ========================================
+   FILTER SECTION
+   ======================================== */
+.card-filter-modern {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: #fafbfc;
+  border-bottom: 2px solid #e5e7eb;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-left-group {
+  flex: 1;
+  min-width: 300px;
+}
+
+.search-box-modern {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon-box {
+  position: absolute;
+  left: 1rem;
+  font-size: 1.125rem;
+  pointer-events: none;
+  color: #9ca3af;
+}
+
+.search-input-modern {
+  width: 100%;
+  padding: 0.875rem 3rem 0.875rem 3rem;
+  border: 2.5px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  background: white;
   color: #111827;
 }
-.stock-value {
+
+.search-input-modern::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.search-input-modern:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+  transform: translateY(-1px);
+}
+
+.clear-btn-search {
+  position: absolute;
+  right: 1rem;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+.clear-btn-search:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.filter-right-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.per-page-control {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 1.25rem;
+  background: white;
+  border: 2.5px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.per-page-label-modern {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.per-page-select-modern {
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.per-page-select-modern:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+.per-page-suffix {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* ========================================
+   TABLE SECTION
+   ======================================== */
+.card-body-stock {
+  padding: 0;
+}
+
+.table-container-modern {
+  overflow-x: auto;
+}
+
+.table-stock-modern {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9375rem;
+}
+
+.table-stock-modern thead {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.table-stock-modern th {
+  padding: 1.25rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #374151;
+  border-bottom: 3px solid #d1d5db;
+  text-align: left;
+  white-space: nowrap;
+  letter-spacing: 0.05em;
+}
+
+.table-stock-modern td {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+.data-row-modern {
+  transition: all 0.2s ease;
+}
+
+.data-row-modern:hover {
+  background: #f9fafb;
+  box-shadow: inset 0 0 0 1px #e5e7eb;
+}
+
+/* TABLE CELLS */
+.th-number {
+  width: 60px;
+}
+
+.td-number {
+  text-align: center;
+}
+
+.number-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.code-badge-modern {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  border-radius: 10px;
+  border: 2px solid #93c5fd;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: #1e40af;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+}
+
+.code-icon {
+  font-size: 1rem;
+}
+
+.item-info-modern {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.item-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.item-icon {
+  font-size: 1.25rem;
+}
+
+.item-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-name-text {
+  font-weight: 700;
+  color: #111827;
+  font-size: 0.9375rem;
+}
+
+.badge-category-modern {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #667eea;
+}
+
+.badge-unit-modern {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-radius: 10px;
+  border: 2px solid #fcd34d;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: #92400e;
+}
+
+/* STOCK PER WAREHOUSE */
+.stock-warehouse-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stock-warehouse-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.warehouse-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.warehouse-icon {
+  font-size: 1rem;
+}
+
+.warehouse-name {
+  font-size: 0.875rem;
+  color: #4b5563;
   font-weight: 600;
 }
 
-/* empty state */
-.empty-row .empty-cell {
-  text-align: center;
-  padding: 24px 0;
-}
-.empty-icon {
-  font-size: 24px;
-}
-.empty-text {
-  color: #6b7280;
-  font-size: 13px;
+.stock-qty-box {
+  display: flex;
+  align-items: center;
 }
 
-/* loading */
-.loading-container {
+.stock-qty {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: #111827;
+}
+
+.stock-total-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  border-radius: 8px;
+  border: 2px solid #93c5fd;
+  margin-top: 0.5rem;
+}
+
+.total-label {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1e40af;
+}
+
+.total-value {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1e3a8a;
+}
+
+.stock-simple {
+  display: flex;
+  justify-content: center;
+}
+
+.stock-value-simple {
+  display: inline-block;
+  padding: 0.625rem 1.25rem;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  border-radius: 10px;
+  border: 2px solid #93c5fd;
+  font-weight: 800;
+  font-size: 1.125rem;
+  color: #1e3a8a;
+}
+
+/* ========================================
+   EMPTY STATE
+   ======================================== */
+.empty-row-modern .empty-cell-modern {
+  padding: 5rem 2rem;
+  text-align: center;
+}
+
+.empty-state-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 24px 0;
-}
-.loading-text {
-  font-size: 13px;
-  color: #6b7280;
+  gap: 1rem;
 }
 
-/* pagination */
-.card-footer-pagination {
-  margin-top: 12px;
+.empty-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-icon {
+  font-size: 3rem;
+}
+
+.empty-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+}
+
+.empty-message {
+  font-size: 0.9375rem;
+  color: #6b7280;
+  margin: 0;
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+/* ========================================
+   PAGINATION
+   ======================================== */
+.card-footer-modern {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 1.5rem 2rem;
+  background: #fafbfc;
+  border-top: 2px solid #e5e7eb;
+  gap: 1.5rem;
+  flex-wrap: wrap;
 }
-.pagination-info {
-  font-size: 12px;
+
+.pagination-info-modern {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
   color: #6b7280;
 }
-.pagination-controls {
+
+.info-icon {
+  font-size: 1.125rem;
+}
+
+.info-text strong {
+  color: #111827;
+  font-weight: 700;
+}
+
+.pagination-controls-modern {
   display: flex;
-  gap: 4px;
+  gap: 0.5rem;
 }
-.pagination-btn {
-  padding: 4px 8px;
-  font-size: 12px;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
+
+.pagination-btn-modern {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border: 2.5px solid #e5e7eb;
+  border-radius: 10px;
+  background: white;
+  font-size: 0.875rem;
+  font-weight: 700;
   cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 40px;
+  justify-content: center;
 }
-.pagination-number.active {
-  background: #92400e;
+
+.pagination-btn-modern:hover:not(:disabled):not(.dots) {
+  border-color: #667eea;
+  background: #f8f9ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.pagination-btn-modern.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  border-color: #92400e;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+}
+
+.pagination-btn-modern:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-btn-modern.dots {
+  border-color: transparent;
+  cursor: default;
+}
+
+.btn-icon-nav {
+  font-size: 1rem;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 1024px) {
+  .header-content-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .card-filter-modern {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-left-group {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header-stock {
+    padding: 1.5rem;
+  }
+
+  .tabs-container-modern {
+    gap: 0.5rem;
+  }
+
+  .tab-btn-modern {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .table-stock-modern th,
+  .table-stock-modern td {
+    padding: 1rem;
+    font-size: 0.875rem;
+  }
+
+  .card-footer-modern {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pagination-controls-modern {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
 }
 </style>
