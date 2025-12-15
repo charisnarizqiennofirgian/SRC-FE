@@ -1,8 +1,5 @@
 <template>
   <DashboardLayout>
-    <!-- ========================================
-         PAGE HEADER - MODERN GRADIENT
-         ======================================== -->
     <div class="page-header-sawmill">
       <div class="header-content-wrapper">
         <div class="header-left-section">
@@ -28,9 +25,6 @@
       </div>
     </div>
 
-    <!-- ========================================
-         FORM CARD - MODERN LAYOUT
-         ======================================== -->
     <div class="content-card-sawmill">
       <div class="card-body-sawmill">
         <form @submit.prevent="handleSubmit">
@@ -176,7 +170,7 @@
                     <div v-if="row.item_rst_id" class="dimension-info">
                       <span class="dimension-icon">📐</span>
                       <span class="dimension-text">
-                        Dimensi: {{ getRstDimensionText(row.item_rst_id) }}
+                        Dimensi Master: {{ getRstDimensionText(row.item_rst_id) }}
                       </span>
                     </div>
                   </div>
@@ -277,20 +271,28 @@ const form = reactive({
 
 const logItems = ref([])
 const rstItems = ref([])
+const warehouses = ref([])
 
 const fetchItems = async () => {
   try {
-    const [logsRes, rstRes] = await Promise.all([
+    const [logsRes, rstRes, whRes] = await Promise.all([
       apiClient.get('/materials', { params: { category_name: 'Kayu Log', per_page: 100 } }),
       apiClient.get('/materials', { params: { category_name: 'Kayu RST', per_page: 100 } }),
+      apiClient.get('/warehouses'),
     ])
 
     logItems.value = logsRes.data.data?.data || logsRes.data.data || []
     rstItems.value = rstRes.data.data?.data || rstRes.data.data || []
+    warehouses.value = whRes.data.data || whRes.data || []
   } catch (error) {
     console.error(error)
-    showError('Gagal', 'Gagal mengambil daftar kayu Log / RST')
+    showError('Gagal', 'Gagal mengambil data kayu Log / RST / gudang')
   }
+}
+
+const getWarehouseIdByName = (name) => {
+  const wh = warehouses.value.find((w) => w.name === name)
+  return wh ? wh.id : null
 }
 
 const getRstItem = (itemId) => {
@@ -300,7 +302,13 @@ const getRstItem = (itemId) => {
 const getRstDimensionText = (itemId) => {
   const item = getRstItem(itemId)
   if (!item) return '-'
-  if (item.dimensi_text) return item.dimensi_text
+  const specs = item.specifications || {}
+  const t = specs.t ?? null
+  const l = specs.l ?? null
+  const p = specs.p ?? null
+  if (t && l && p) {
+    return `${t} x ${l} x ${p} mm`
+  }
   return item.name
 }
 
@@ -353,10 +361,18 @@ const handleSubmit = async () => {
       return
     }
 
+    const warehouseFromId = getWarehouseIdByName('Gudang Log')
+    const warehouseToId = getWarehouseIdByName('Gudang Sanwil')
+
+    if (!warehouseFromId || !warehouseToId) {
+      showError('Konfigurasi', 'Gudang Log / Gudang Sanwil tidak ditemukan di master')
+      return
+    }
+
     const payload = {
       date: form.date,
-      warehouse_from_id: 1,
-      warehouse_to_id: 2,
+      warehouse_from_id: warehouseFromId,
+      warehouse_to_id: warehouseToId,
       notes: form.notes || null,
       logs: [
         {

@@ -1,8 +1,6 @@
 <template>
   <DashboardLayout>
-    <!-- ========================================
-         HEADER SECTION - MODERN & GRADIENT
-         ======================================== -->
+    <!-- HEADER -->
     <div class="page-header-stock">
       <div class="header-content-wrapper">
         <div class="header-left-section">
@@ -23,16 +21,16 @@
             </div>
             <div class="stat-content">
               <p class="stat-label">Total Items</p>
-              <p class="stat-value">{{ pagination ? pagination.total : reportData.length }}</p>
+              <p class="stat-value">
+                {{ pagination ? pagination.total : reportData.length }}
+              </p>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ========================================
-         TABS KATEGORI - MODERN PILLS
-         ======================================== -->
+    <!-- TABS -->
     <div class="tabs-container-modern">
       <button
         v-for="tab in tabs"
@@ -46,9 +44,7 @@
       </button>
     </div>
 
-    <!-- ========================================
-         LOADING STATE - ANIMATED
-         ======================================== -->
+    <!-- LOADING -->
     <div v-if="loading" class="loading-container-modern">
       <div class="loading-content">
         <div class="spinner-modern"></div>
@@ -57,9 +53,7 @@
       </div>
     </div>
 
-    <!-- ========================================
-         CONTENT CARD - MAIN DATA
-         ======================================== -->
+    <!-- CONTENT -->
     <div v-else class="content-card-stock">
       <!-- CARD HEADER -->
       <div class="card-header-stock">
@@ -80,7 +74,7 @@
         </div>
       </div>
 
-      <!-- FILTER SECTION -->
+      <!-- FILTER -->
       <div class="card-filter-modern">
         <div class="filter-left-group">
           <div class="search-box-modern">
@@ -111,12 +105,28 @@
         </div>
       </div>
 
-      <!-- TABLE SECTION -->
+      <!-- TABLE -->
       <div class="card-body-stock">
         <div class="table-container-modern">
           <table class="table-stock-modern">
             <thead>
-              <tr>
+              <!-- Header khusus Kayu RST -->
+              <tr v-if="activeTab === 'rst'">
+                <th class="th-number">No</th>
+                <th class="th-code">Kode</th>
+                <th class="th-name">Nama</th>
+                <th class="th-small">Bentuk</th>
+                <th class="th-small">Kualitas</th>
+                <th class="th-small">T (mm)</th>
+                <th class="th-small">L (mm)</th>
+                <th class="th-small">P (mm)</th>
+                <th class="th-small">Gudang</th>
+                <th class="th-small">Stok</th>
+                <th class="th-small">Kubikasi (m³)</th>
+              </tr>
+
+              <!-- Header default kategori lain -->
+              <tr v-else>
                 <th class="th-number">No</th>
                 <th class="th-code">Kode Item</th>
                 <th class="th-name">Nama Barang</th>
@@ -125,10 +135,11 @@
                 <th class="th-stock">Stok Per Gudang</th>
               </tr>
             </thead>
+
             <tbody>
-              <!-- EMPTY STATE -->
+              <!-- EMPTY -->
               <tr v-if="reportData.length === 0" class="empty-row-modern">
-                <td colspan="6" class="empty-cell-modern">
+                <td :colspan="activeTab === 'rst' ? 11 : 6" class="empty-cell-modern">
                   <div class="empty-state-content">
                     <div class="empty-icon-wrapper">
                       <span class="empty-icon">📭</span>
@@ -145,8 +156,74 @@
                 </td>
               </tr>
 
-              <!-- DATA ROWS -->
-              <tr v-for="(item, index) in reportData" :key="item.id" class="data-row-modern">
+              <!-- ROWS KAYU RST -->
+              <tr
+                v-else-if="activeTab === 'rst'"
+                v-for="(item, index) in reportData"
+                :key="item.id"
+                class="data-row-modern"
+              >
+                <td class="td-number">
+                  <div class="number-badge">
+                    {{
+                      pagination
+                        ? (pagination.current_page - 1) * pagination.per_page + index + 1
+                        : index + 1
+                    }}
+                  </div>
+                </td>
+                <td class="td-code">
+                  <div class="code-badge-modern">
+                    <span class="code-icon">🏷️</span>
+                    <span class="code-text">{{ item.code }}</span>
+                  </div>
+                </td>
+                <td class="td-name">
+                  <div class="item-info-modern">
+                    <div class="item-icon-box">
+                      <span class="item-icon">📦</span>
+                    </div>
+                    <div class="item-text">
+                      <span class="item-name-text">{{ item.name }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="td-small">
+                  <span class="badge-unit-modern">{{ item.bentuk || '-' }}</span>
+                </td>
+                <td class="td-small">
+                  <span class="badge-unit-modern">{{ item.kualitas || '-' }}</span>
+                </td>
+                <td class="td-small">
+                  {{ item.specifications?.t ?? '-' }}
+                </td>
+                <td class="td-small">
+                  {{ item.specifications?.l ?? '-' }}
+                </td>
+                <td class="td-small">
+                  {{ item.specifications?.p ?? '-' }}
+                </td>
+                <td class="td-small">
+                  <div v-if="item.stocks && item.stocks.length" class="rst-warehouse-cell">
+                    <div v-for="stock in item.stocks" :key="stock.id" class="rst-warehouse-row">
+                      <span class="warehouse-icon">🏢</span>
+                      <span class="warehouse-name">
+                        {{ stock.warehouse?.name || stock.warehouse?.code || 'Gudang' }}
+                      </span>
+                    </div>
+                  </div>
+                  <span v-else>-</span>
+                </td>
+                <td class="td-small">
+                  {{ formatQty(totalQty(item.stocks || [])) }}
+                </td>
+                <td class="td-small">
+                  {{ formatQty(totalKubikasi(item)) }}
+                </td>
+              </tr>
+
+              <!-- ROWS KATEGORI LAIN -->
+              <tr v-else v-for="(item, index) in reportData" :key="item.id" class="data-row-modern">
                 <td class="td-number">
                   <div class="number-badge">
                     {{
@@ -181,8 +258,6 @@
                 <td class="td-unit">
                   <span class="badge-unit-modern">{{ item.unit?.name || 'N/A' }}</span>
                 </td>
-
-                <!-- STOCK PER WAREHOUSE -->
                 <td class="td-stock">
                   <div v-if="item.stocks && item.stocks.length" class="stock-warehouse-list">
                     <div v-for="stock in item.stocks" :key="stock.id" class="stock-warehouse-item">
@@ -270,6 +345,8 @@ const tabs = [
   { key: 'rst', label: 'Kayu RST', category: 'Kayu RST', icon: '🪚' },
   { key: 'finished', label: 'Produk Jadi', category: 'Produk Jadi', icon: '🪑' },
   { key: 'operational', label: 'Bahan Operasional', category: 'Bahan Operasional', icon: '🔧' },
+  { key: 'packaging', label: 'Karton Box', category: 'Karton Box', icon: '📦' }, // NEW
+  { key: 'component', label: 'Komponen', category: 'Komponen', icon: '🧩' }, // NEW
 ]
 
 const activeTab = ref('logs')
@@ -397,7 +474,21 @@ const formatQty = (val) => {
 }
 
 const totalQty = (stocks) => {
-  return stocks.reduce((sum, s) => sum + parseFloat(s.quantity || 0), 0)
+  return (stocks || []).reduce((sum, s) => sum + parseFloat(s.quantity || 0), 0)
+}
+
+// hitung kubikasi untuk item RST: asumsi T,L,P dalam mm
+const totalKubikasi = (item) => {
+  if (!item || !item.specifications) return 0
+  const t = Number(item.specifications.t || 0)
+  const l = Number(item.specifications.l || 0)
+  const p = Number(item.specifications.p || 0)
+  if (!t || !l || !p) return 0
+
+  // volume per pcs dalam m3 (mm -> m)
+  const volumePerPcs = (t * l * p) / 1_000_000_000
+  const qty = totalQty(item.stocks || [])
+  return volumePerPcs * qty
 }
 
 onMounted(fetchReport)

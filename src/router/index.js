@@ -2,11 +2,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import StockAdjustmentView from '../views/manajemen-stok/StockAdjustmentView.vue'
 import StockIndex from '../views/manajemen-stok/StockIndex.vue'
-import LaporanOperasional from '../views/manajemen-stok/LaporanOperasional.vue'
-import LaporanProdukJadi from '../views/manajemen-stok/LaporanProdukJadi.vue'
-import LaporanKayuLogs from '../views/manajemen-stok/LaporanKayuLogs.vue'
-import LaporanKayuRST from '../views/manajemen-stok/LaporanKayuRST.vue'
-import LaporanKartonBox from '../views/manajemen-stok/LaporanKartonBox.vue'
+// LAPORAN STOK LAMA DIHAPUS DARI ROUTER SESUAI ARAHAN PM
+// import LaporanOperasional from '../views/manajemen-stok/LaporanOperasional.vue'
+// import LaporanProdukJadi from '../views/manajemen-stok/LaporanProdukJadi.vue'
+// import LaporanKayuLogs from '../views/manajemen-stok/LaporanKayuLogs.vue'
+// import LaporanKayuRST from '../views/manajemen-stok/LaporanKayuRST.vue'
+// import LaporanKartonBox from '../views/manajemen-stok/LaporanKartonBox.vue'
 import DaftarPesananPembelian from '../views/pembelian/DaftarPesananPembelian.vue'
 
 import AdminView from '../views/AdminView.vue'
@@ -31,6 +32,8 @@ import FormPengiriman from '../views/penjualan/FormPengiriman.vue'
 import CetakPengiriman from '../views/penjualan/CetakPengiriman.vue'
 import BomIndex from '../views/produksi/BomIndex.vue'
 import BomForm from '../views/produksi/BomForm.vue'
+import SawmilReport from '../views/produksi/SawmilReport.vue'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   linkActiveClass: 'router-link-active',
@@ -209,7 +212,6 @@ const router = createRouter({
           component: FormOperasional,
           meta: { title: 'Edit PO Operasional' },
         },
-        // Rute untuk Pembelian Karton Box
         {
           path: '/admin/pembelian/karton/buat',
           name: 'BuatPembelianKarton',
@@ -222,7 +224,6 @@ const router = createRouter({
           component: FormKarton,
           meta: { title: 'Edit PO Karton' },
         },
-        // Rute untuk Pembelian Kayu
         {
           path: '/admin/pembelian/kayu/buat',
           name: 'BuatPembelianKayu',
@@ -298,29 +299,13 @@ const router = createRouter({
       meta: { title: 'Produksi Sawmill' },
     },
     {
-      path: '/stock-report-operational',
-      name: 'StockReportOperational',
-      component: LaporanOperasional,
-      meta: { requiresAuth: true },
+      path: '/reports/sawmill',
+      name: 'SawmillReport',
+      component: SawmilReport,
+      meta: { title: 'Laporan Produksi Sawmill', requiresAuth: true },
     },
-    {
-      path: '/stock-report-finished',
-      name: 'StockReportFinished',
-      component: LaporanProdukJadi,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/stock-report-logs',
-      name: 'StockReportLogs',
-      component: LaporanKayuLogs,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/stock-report-rst',
-      name: 'StockReportRST',
-      component: LaporanKayuRST,
-      meta: { requiresAuth: true },
-    },
+
+    // ROUTE STOK YANG MASIH DIPAKAI
     {
       path: '/stock-index',
       name: 'StockIndex',
@@ -333,12 +318,38 @@ const router = createRouter({
       component: StockAdjustmentView,
       meta: { requiresAuth: true },
     },
-    {
-      path: '/laporan/karton-box',
-      name: 'LaporanKartonBox',
-      component: LaporanKartonBox,
-      meta: { title: 'Laporan Karton Box' },
-    },
+
+    // ROUTE LAPORAN STOK LAMA DIHAPUS DARI NAVIGASI, BISA DIHAPUS TOTAL JIKA SUDAH YAKIN
+    // {
+    //   path: '/stock-report-operational',
+    //   name: 'StockReportOperational',
+    //   component: LaporanOperasional,
+    //   meta: { requiresAuth: true },
+    // },
+    // {
+    //   path: '/stock-report-finished',
+    //   name: 'StockReportFinished',
+    //   component: LaporanProdukJadi,
+    //   meta: { requiresAuth: true },
+    // },
+    // {
+    //   path: '/stock-report-logs',
+    //   name: 'StockReportLogs',
+    //   component: LaporanKayuLogs,
+    //   meta: { requiresAuth: true },
+    // },
+    // {
+    //   path: '/stock-report-rst',
+    //   name: 'StockReportRST',
+    //   component: LaporanKayuRST,
+    //   meta: { requiresAuth: true },
+    // },
+    // {
+    //   path: '/laporan/karton-box',
+    //   name: 'LaporanKartonBox',
+    //   component: LaporanKartonBox,
+    //   meta: { title: 'Laporan Karton Box' },
+    // },
   ],
 })
 

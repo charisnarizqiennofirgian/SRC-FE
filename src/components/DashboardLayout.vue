@@ -124,13 +124,9 @@ const menuItems = ref([
     name: 'Manajemen Stok',
     icon: '📦',
     children: [
-      { name: 'Laporan Stok Bahan Operasional', route: '/stock-report-operational' },
-      { name: 'Laporan Stok Produk Jadi', route: '/stock-report-finished' },
-      { name: 'Laporan Stok Kayu Logs', route: '/stock-report-logs' },
-      { name: 'Laporan Stok Kayu RST', route: '/stock-report-rst' },
-      { name: 'Laporan Karton BOX', route: '/laporan/karton-box' },
-      { name: 'Stock Index (Baru)', route: { name: 'StockIndex' } },
-      { name: 'Stok Adjusment', route: '/stock-adjustment' },
+      { name: 'Laporan Produksi Sawmill', route: '/reports/sawmill' },
+      { name: 'Stock Index', route: { name: 'StockIndex' } },
+      { name: 'Stock Adjustment', route: '/stock-adjustment' },
     ],
   },
   {
