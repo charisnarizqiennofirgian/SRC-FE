@@ -345,8 +345,8 @@ const tabs = [
   { key: 'rst', label: 'Kayu RST', category: 'Kayu RST', icon: '🪚' },
   { key: 'finished', label: 'Produk Jadi', category: 'Produk Jadi', icon: '🪑' },
   { key: 'operational', label: 'Bahan Operasional', category: 'Bahan Operasional', icon: '🔧' },
-  { key: 'packaging', label: 'Karton Box', category: 'Karton Box', icon: '📦' }, // NEW
-  { key: 'component', label: 'Komponen', category: 'Komponen', icon: '🧩' }, // NEW
+  { key: 'packaging', label: 'Karton Box', category: 'Karton Box', icon: '📦' },
+  { key: 'component', label: 'Komponen', category: 'Komponen', icon: '🧩' },
 ]
 
 const activeTab = ref('logs')
@@ -358,15 +358,25 @@ const perPage = ref(50)
 const currentPage = ref(1)
 let searchTimeout = null
 
+// kategori untuk tampilan (header)
 const currentCategory = () => {
   return tabs.find((t) => t.key === activeTab.value)?.category ?? 'Kayu Log'
+}
+
+// kategori untuk param API
+const currentCategoryParam = () => {
+  if (activeTab.value === 'operational') {
+    // gabung Bahan Operasional + Bahan Penolong
+    return 'Bahan Operasional,Bahan Penolong'
+  }
+  return currentCategory()
 }
 
 const fetchReport = async () => {
   loading.value = true
   try {
     const params = {
-      categories: currentCategory(),
+      categories: currentCategoryParam(),
       per_page: perPage.value,
       page: currentPage.value,
     }
@@ -376,7 +386,7 @@ const fetchReport = async () => {
 
     const response = await apiClient.get('/stock-report', { params })
 
-    if (response.data.data.data) {
+    if (response.data.data?.data) {
       reportData.value = response.data.data.data
       pagination.value = {
         current_page: response.data.data.current_page,
@@ -441,9 +451,7 @@ const paginationPages = computed(() => {
   const lastPageNum = pagination.value.last_page
 
   if (lastPageNum <= 7) {
-    for (let i = 1; i <= lastPageNum; i++) {
-      pages.push(i)
-    }
+    for (let i = 1; i <= lastPageNum; i++) pages.push(i)
   } else {
     if (currentPageNum <= 4) {
       for (let i = 1; i <= 5; i++) pages.push(i)
@@ -485,7 +493,6 @@ const totalKubikasi = (item) => {
   const p = Number(item.specifications.p || 0)
   if (!t || !l || !p) return 0
 
-  // volume per pcs dalam m3 (mm -> m)
   const volumePerPcs = (t * l * p) / 1_000_000_000
   const qty = totalQty(item.stocks || [])
   return volumePerPcs * qty

@@ -19,9 +19,14 @@
             <span class="btn-text">Upload Stok Umum</span>
           </button>
 
+          <button class="btn-upload" @click="showUploadModalKayuRst = true">
+            <span class="btn-icon">🪵</span>
+            <span class="btn-text">Upload Stok Kayu RST</span>
+          </button>
+
           <button class="btn-upload" @click="showUploadModalKayu = true">
             <span class="btn-icon">🌲</span>
-            <span class="btn-text">Upload Stok Kayu</span>
+            <span class="btn-text">Upload Stok Kayu Log</span>
           </button>
 
           <button class="btn-upload btn-upload-produk" @click="showUploadModalProdukJadi = true">
@@ -83,9 +88,8 @@
       <p class="loading-text">Memuat daftar stok...</p>
     </div>
 
-    <!-- Tabel Stok (UPDATED) -->
+    <!-- Tabel Stok -->
     <div v-if="daftarStok.length > 0 && !loading.stok" class="content-card table-card">
-      <!-- SEARCH BAR (BARU) -->
       <div class="search-bar-container">
         <div class="search-wrapper">
           <span class="search-icon">🔍</span>
@@ -169,7 +173,6 @@
         </div>
       </div>
 
-      <!-- PAGINATION (BARU) -->
       <div v-if="totalPages > 1" class="pagination-container">
         <div class="pagination-info">Halaman {{ currentPage }} dari {{ totalPages }}</div>
         <div class="pagination-controls">
@@ -212,7 +215,7 @@
       </div>
     </div>
 
-    <!-- ========== MODAL 1: UPLOAD UMUM ========== -->
+    <!-- MODAL 1: UPLOAD UMUM -->
     <div v-if="showUploadModalUmum" class="modal-overlay" @click.self="closeModalUmum">
       <div class="modal-content">
         <div class="modal-header">
@@ -288,13 +291,92 @@
       </div>
     </div>
 
-    <!-- ========== MODAL 2: UPLOAD KAYU ========== -->
+    <!-- MODAL 2: UPLOAD KAYU RST -->
+    <div v-if="showUploadModalKayuRst" class="modal-overlay" @click.self="closeModalKayuRst">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-left">
+            <span class="modal-icon">🪵</span>
+            <h3 class="modal-title">Upload Stok Awal (Kayu RST)</h3>
+          </div>
+          <button @click="closeModalKayuRst" class="modal-close-btn">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="info-box info-box-kayu">
+            <span class="info-icon">ℹ️</span>
+            <div class="info-text">
+              <p class="info-main">
+                Gunakan ini untuk upload stok <strong>Kayu RST</strong> (plank, mal, dll).
+              </p>
+              <p class="info-sub">
+                Sistem akan membuat / memperbarui master Kayu RST dan stok awal per
+                <strong>gudang</strong>.
+              </p>
+            </div>
+          </div>
+
+          <div class="template-download-box">
+            <div class="template-header">
+              <span class="template-icon">📄</span>
+              <p class="template-title">Template Kayu RST</p>
+            </div>
+            <a href="#" @click.prevent="downloadTemplateKayuRst" class="template-link">
+              <span class="download-icon">⬇️</span>
+              Download template (Kayu RST)
+            </a>
+            <p class="template-note">
+              <strong>Penting:</strong> Template Kayu RST memiliki kolom:
+              <code>
+                kode_barang, nama_dasar, jenis, kualitas, bentuk, tebal_mm, lebar_mm, panjang_mm,
+                stok_awal, gudang </code
+              >. Kolom <code>gudang</code> diisi dengan <strong>kode gudang</strong> yang sudah ada.
+            </p>
+          </div>
+
+          <div class="form-group-upload">
+            <label class="form-label-upload" for="file-upload-kayu-rst">
+              <span class="label-icon">📁</span>
+              Pilih File (Kayu RST)
+            </label>
+            <input
+              id="file-upload-kayu-rst"
+              type="file"
+              @change="handleFileChangeKayuRst"
+              class="form-control-file"
+              accept=".xlsx, .xls, .csv"
+            />
+            <div v-if="uploadFileKayuRst" class="file-info">
+              <span class="file-icon">✅</span>
+              File dipilih: <strong>{{ uploadFileKayuRst.name }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button @click="closeModalKayuRst" class="btn-secondary">
+            <span class="btn-icon-sec">↩️</span>
+            Batal
+          </button>
+          <button
+            @click="handleUploadKayuRst"
+            class="btn-primary-modal"
+            :disabled="!uploadFileKayuRst || isUploadingKayuRst"
+          >
+            <span class="btn-icon-upload">{{ isUploadingKayuRst ? '⏳' : '📤' }}</span>
+            {{ isUploadingKayuRst ? 'Mengupload...' : 'Upload Kayu RST' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 3: UPLOAD KAYU LOG -->
     <div v-if="showUploadModalKayu" class="modal-overlay" @click.self="closeModalKayu">
       <div class="modal-content">
         <div class="modal-header">
           <div class="modal-header-left">
             <span class="modal-icon">🌲</span>
-            <h3 class="modal-title">Upload Stok Awal (Khusus Kayu)</h3>
+            <h3 class="modal-title">Upload Stok Awal (Kayu Log)</h3>
           </div>
           <button @click="closeModalKayu" class="modal-close-btn">✕</button>
         </div>
@@ -304,11 +386,11 @@
             <span class="info-icon">ℹ️</span>
             <div class="info-text">
               <p class="info-main">
-                Gunakan ini HANYA untuk upload stok **Kayu RST** (dengan P, L, T).
+                Gunakan ini HANYA untuk upload stok <strong>Kayu Log</strong> (qty dalam batang).
               </p>
               <p class="info-sub">
-                Sistem akan otomatis **membuat master data baru** jika belum ada, lalu mengisi stok
-                awalnya.
+                Sistem akan membuat / memperbarui master Kayu Log lalu mengisi stok awal per
+                <strong>gudang</strong>.
               </p>
             </div>
           </div>
@@ -316,22 +398,25 @@
           <div class="template-download-box">
             <div class="template-header">
               <span class="template-icon">📄</span>
-              <p class="template-title">Template Khusus Kayu</p>
+              <p class="template-title">Template Kayu Log</p>
             </div>
             <a href="#" @click.prevent="downloadTemplateKayu" class="template-link">
               <span class="download-icon">⬇️</span>
-              Download template (Kayu)
+              Download template (Kayu Log)
             </a>
             <p class="template-note">
-              <strong>Penting:</strong> Template ini memiliki kolom: `nama_dasar`, `tebal_mm`,
-              `lebar_mm`, `panjang_mm`, dan `stok_awal`.
+              <strong>Penting:</strong> Template Kayu Log memiliki kolom:
+              <code>
+                kode_item, nama_item, kategori, satuan, gudang, qty_batang, diameter_cm, panjang_cm,
+                jenis_kayu, kubikasi_m3 </code
+              >. Kolom <code>gudang</code> diisi dengan <strong>kode gudang</strong> (mis: LOG).
             </p>
           </div>
 
           <div class="form-group-upload">
             <label class="form-label-upload" for="file-upload-kayu">
               <span class="label-icon">📁</span>
-              Pilih File (Kayu)
+              Pilih File (Kayu Log)
             </label>
             <input
               id="file-upload-kayu"
@@ -358,13 +443,13 @@
             :disabled="!uploadFileKayu || isUploadingKayu"
           >
             <span class="btn-icon-upload">{{ isUploadingKayu ? '⏳' : '📤' }}</span>
-            {{ isUploadingKayu ? 'Mengupload...' : 'Upload Kayu' }}
+            {{ isUploadingKayu ? 'Mengupload...' : 'Upload Kayu Log' }}
           </button>
         </div>
       </div>
     </div>
 
-    <!-- ========== MODAL 3: UPLOAD PRODUK JADI ========== -->
+    <!-- MODAL 4: UPLOAD PRODUK JADI -->
     <div v-if="showUploadModalProdukJadi" class="modal-overlay" @click.self="closeModalProdukJadi">
       <div class="modal-content">
         <div class="modal-header">
@@ -380,10 +465,11 @@
             <span class="info-icon">ℹ️</span>
             <div class="info-text">
               <p class="info-main">
-                Gunakan ini untuk upload stok **Produk Jadi** dengan DNA (NW, GW, Wood, M³ Karton).
+                Gunakan ini untuk upload stok <strong>Produk Jadi</strong> dengan DNA (NW, GW, Wood,
+                M³ Karton).
               </p>
               <p class="info-sub">
-                Sistem akan otomatis **update master data DNA** dan stok awal produk jadi.
+                Sistem akan otomatis update master DNA dan stok awal produk jadi.
               </p>
             </div>
           </div>
@@ -398,8 +484,11 @@
               Download template (Produk Jadi)
             </a>
             <p class="template-note">
-              <strong>Penting:</strong> Template memiliki kolom: `kode_barang`, `nama_produk`,
-              `stok_awal`, `nw_per_box`, `gw_per_box`, `wood_consumed_per_pcs`, `m3_per_carton`.
+              Template:
+              <code>
+                kode_barang, nama_produk, stok_awal, nw_per_box, gw_per_box, wood_consumed_per_pcs,
+                m3_per_carton </code
+              >.
             </p>
           </div>
 
@@ -458,12 +547,10 @@ const daftarKategori = ref([])
 const selectedCategory = ref(null)
 const daftarStok = ref([])
 
-// ========== PAGINATION & SEARCH ==========
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
 
-// Computed: Filter data berdasarkan search query
 const filteredStok = computed(() => {
   if (!searchQuery.value) {
     return daftarStok.value
@@ -477,19 +564,16 @@ const filteredStok = computed(() => {
   })
 })
 
-// Computed: Total halaman
 const totalPages = computed(() => {
   return Math.ceil(filteredStok.value.length / itemsPerPage.value)
 })
 
-// Computed: Data yang ditampilkan per halaman
 const paginatedStok = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value
   const end = start + itemsPerPage.value
   return filteredStok.value.slice(start, end)
 })
 
-// Computed: Halaman yang ditampilkan (max 5 nomor halaman)
 const visiblePages = computed(() => {
   const pages = []
   const maxVisible = 5
@@ -506,28 +590,28 @@ const visiblePages = computed(() => {
   return pages
 })
 
-// Function: Ganti halaman
 const goToPage = (page) => {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
   }
 }
 
-// Function: Reset ke halaman 1 saat search
 const handleSearch = () => {
   currentPage.value = 1
 }
 
-// Function: Clear search (TAMBAHAN BARU)
 const clearSearch = () => {
   searchQuery.value = ''
   handleSearch()
 }
 
-// ========== UPLOAD MODALS STATE ==========
 const showUploadModalUmum = ref(false)
 const uploadFileUmum = ref(null)
 const isUploadingUmum = ref(false)
+
+const showUploadModalKayuRst = ref(false)
+const uploadFileKayuRst = ref(null)
+const isUploadingKayuRst = ref(false)
 
 const showUploadModalKayu = ref(false)
 const uploadFileKayu = ref(null)
@@ -537,7 +621,6 @@ const showUploadModalProdukJadi = ref(false)
 const uploadFileProdukJadi = ref(null)
 const isUploadingProdukJadi = ref(false)
 
-// ========== FETCH DATA ==========
 const fetchDaftarKategori = async () => {
   loading.value.kategori = true
   try {
@@ -631,7 +714,7 @@ const handleAdjusment = async (item) => {
 
 onMounted(fetchDaftarKategori)
 
-// ========== UPLOAD UMUM ==========
+// UPLOAD UMUM
 const handleFileChangeUmum = (event) => {
   const file = event.target.files[0]
   if (file) {
@@ -709,7 +792,88 @@ const downloadTemplateUmum = async () => {
   }
 }
 
-// ========== UPLOAD KAYU ==========
+// UPLOAD KAYU RST
+const handleFileChangeKayuRst = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    uploadFileKayuRst.value = file
+  }
+}
+
+const closeModalKayuRst = () => {
+  showUploadModalKayuRst.value = false
+  uploadFileKayuRst.value = null
+}
+
+const handleUploadKayuRst = async () => {
+  if (!uploadFileKayuRst.value) {
+    toast.error('Silakan pilih file Excel (Kayu RST) terlebih dahulu.')
+    return
+  }
+
+  isUploadingKayuRst.value = true
+  const formData = new FormData()
+  formData.append('file', uploadFileKayuRst.value)
+
+  try {
+    await apiClient.post('/materials/import-kayu-rst', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+
+    toast.success(
+      'Stok awal KAYU RST berhasil di-import! Master data & stok per gudang diperbarui. Memuat ulang data...',
+    )
+
+    closeModalKayuRst()
+
+    if (selectedCategory.value) {
+      await fetchStokBarang()
+    }
+  } catch (error) {
+    const errorMsg = error.response?.data?.message || 'Gagal meng-upload file Kayu RST.'
+    toast.error(errorMsg)
+    console.error('Error Upload Kayu RST:', error.response?.data)
+  } finally {
+    isUploadingKayuRst.value = false
+  }
+}
+
+const downloadTemplateKayuRst = async () => {
+  try {
+    const response = await apiClient.get('/stock-adjustments/template-kayu-rst', {
+      responseType: 'blob',
+    })
+
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+
+    let fileName = 'template_saldo_awal_kayu_rst.xlsx'
+    const contentDisposition = response.headers['content-disposition']
+
+    if (contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename="(.+)"/)
+      if (fileNameMatch && fileNameMatch.length === 2) {
+        fileName = fileNameMatch[1]
+      }
+    }
+
+    link.setAttribute('download', fileName)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+
+    toast.success('Template saldo awal Kayu RST (Excel) telah diunduh.')
+  } catch (error) {
+    console.error('Error downloading template:', error)
+    toast.error('Gagal mendownload template Kayu RST.')
+  }
+}
+
+// UPLOAD KAYU LOG
 const handleFileChangeKayu = (event) => {
   const file = event.target.files[0]
   if (file) {
@@ -724,7 +888,7 @@ const closeModalKayu = () => {
 
 const handleUploadKayu = async () => {
   if (!uploadFileKayu.value) {
-    toast.error('Silakan pilih file Excel (Kayu) terlebih dahulu.')
+    toast.error('Silakan pilih file Excel (Kayu Log) terlebih dahulu.')
     return
   }
 
@@ -740,7 +904,7 @@ const handleUploadKayu = async () => {
     })
 
     toast.success(
-      'Stok awal KAYU berhasil di-import! Master data & stok diperbarui. Memuat ulang data...',
+      'Stok awal KAYU LOG berhasil di-import! Master data & stok per gudang diperbarui. Memuat ulang data...',
     )
 
     closeModalKayu()
@@ -749,9 +913,9 @@ const handleUploadKayu = async () => {
       await fetchStokBarang()
     }
   } catch (error) {
-    const errorMsg = error.response?.data?.message || 'Gagal meng-upload file kayu.'
+    const errorMsg = error.response?.data?.message || 'Gagal meng-upload file kayu log.'
     toast.error(errorMsg)
-    console.error('Error Upload Kayu:', error.response?.data)
+    console.error('Error Upload Kayu Log:', error.response?.data)
   } finally {
     isUploadingKayu.value = false
   }
@@ -768,7 +932,7 @@ const downloadTemplateKayu = async () => {
     link.href = url
 
     const contentDisposition = response.headers['content-disposition']
-    let fileName = 'template_saldo_awal_kayu.xlsx'
+    let fileName = 'template_saldo_awal_kayu_log.xlsx'
 
     if (contentDisposition) {
       const fileNameMatch = contentDisposition.match(/filename="(.+)"/)
@@ -783,14 +947,14 @@ const downloadTemplateKayu = async () => {
     link.remove()
     window.URL.revokeObjectURL(url)
 
-    toast.success('Template saldo awal kayu (Excel) telah diunduh.')
+    toast.success('Template saldo awal Kayu Log (Excel) telah diunduh.')
   } catch (error) {
     console.error('Error downloading template:', error)
-    toast.error('Gagal mendownload template kayu.')
+    toast.error('Gagal mendownload template Kayu Log.')
   }
 }
 
-// ========== UPLOAD PRODUK JADI ==========
+// UPLOAD PRODUK JADI
 const handleFileChangeProdukJadi = (event) => {
   const file = event.target.files[0]
   if (file) {
