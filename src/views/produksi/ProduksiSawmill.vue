@@ -36,7 +36,7 @@
               </div>
               <div class="section-title-group">
                 <h3 class="section-title">Informasi Umum</h3>
-                <p class="section-subtitle">Tanggal dan catatan produksi</p>
+                <p class="section-subtitle">Tanggal, PO, dan catatan produksi</p>
               </div>
             </div>
 
@@ -61,6 +61,41 @@
                     class="form-input-modern"
                     placeholder="Contoh: Sawmill shift pagi, operator A"
                   />
+                </div>
+              </div>
+            </div>
+
+            <!-- SO & PRODUK AKHIR -->
+            <div class="form-grid-2col">
+              <div class="form-group-modern">
+                <label class="form-label-modern">
+                  Pilih SO / PO <span class="required-star">*</span>
+                </label>
+                <div class="select-wrapper-modern">
+                  <span class="select-icon">🧾</span>
+                  <select v-model="selectedSoId" class="form-select-modern" required>
+                    <option value="">-- Pilih SO --</option>
+                    <option v-for="so in salesOrders" :key="so.id" :value="so.id">
+                      {{ so.so_number }} - {{ so.buyer?.name }}
+                    </option>
+                  </select>
+                  <span class="select-arrow">▼</span>
+                </div>
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">
+                  Produk Akhir (Target) <span class="required-star">*</span>
+                </label>
+                <div class="select-wrapper-modern">
+                  <span class="select-icon">🪑</span>
+                  <select v-model="selectedProductId" class="form-select-modern" required>
+                    <option value="">-- Pilih Produk dari SO --</option>
+                    <option v-for="prod in soProducts" :key="prod.id" :value="prod.id">
+                      {{ prod.code }} - {{ prod.name }}
+                    </option>
+                  </select>
+                  <span class="select-arrow">▼</span>
                 </div>
               </div>
             </div>
@@ -245,7 +280,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
@@ -273,20 +308,36 @@ const logItems = ref([])
 const rstItems = ref([])
 const warehouses = ref([])
 
+// SO & Produk Akhir
+const salesOrders = ref([])
+const selectedSoId = ref('')
+const selectedProductId = ref('')
+
+const soProducts = computed(() => {
+  const so = salesOrders.value.find((s) => s.id === selectedSoId.value)
+  if (!so || !so.details) return []
+  // asumsi setiap detail punya relasi item
+  return so.details.map((d) => d.item).filter((it) => it) // buang null
+})
+
 const fetchItems = async () => {
   try {
-    const [logsRes, rstRes, whRes] = await Promise.all([
+    const [logsRes, rstRes, whRes, soRes] = await Promise.all([
       apiClient.get('/materials', { params: { category_name: 'Kayu Log', per_page: 100 } }),
       apiClient.get('/materials', { params: { category_name: 'Kayu RST', per_page: 100 } }),
       apiClient.get('/warehouses'),
+      apiClient.get('/sales-orders'),
     ])
 
     logItems.value = logsRes.data.data?.data || logsRes.data.data || []
     rstItems.value = rstRes.data.data?.data || rstRes.data.data || []
     warehouses.value = whRes.data.data || whRes.data || []
+
+    const soData = soRes.data.data?.data || soRes.data.data || []
+    salesOrders.value = soData
   } catch (error) {
     console.error(error)
-    showError('Gagal', 'Gagal mengambil data kayu Log / RST / gudang')
+    showError('Gagal', 'Gagal mengambil data kayu Log / RST / gudang / SO')
   }
 }
 
@@ -352,6 +403,15 @@ const handleSubmit = async () => {
       return
     }
 
+    if (!selectedSoId.value) {
+      showError('Validasi', 'Sales Order (SO) wajib dipilih')
+      return
+    }
+    if (!selectedProductId.value) {
+      showError('Validasi', 'Produk akhir (target) wajib dipilih')
+      return
+    }
+
     const validRsts = form.rsts.filter(
       (row) => row.item_rst_id && row.qty_rst_pcs && row.qty_rst_pcs > 0,
     )
@@ -369,11 +429,16 @@ const handleSubmit = async () => {
       return
     }
 
+    const so = salesOrders.value.find((s) => s.id === selectedSoId.value)
+    const refPoId = so?.so_number || null
+
     const payload = {
       date: form.date,
       warehouse_from_id: warehouseFromId,
       warehouse_to_id: warehouseToId,
       notes: form.notes || null,
+      ref_po_id: refPoId,
+      ref_product_id: selectedProductId.value,
       logs: [
         {
           item_log_id: form.item_log_id,

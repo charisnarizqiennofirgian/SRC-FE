@@ -299,6 +299,12 @@ const router = createRouter({
       meta: { title: 'Produksi Sawmill' },
     },
     {
+      path: '/admin/produksi/candy',
+      name: 'ProduksiCandy',
+      component: () => import('../views/produksi/ProduksiCandy.vue'),
+      meta: { title: 'Produksi Candy', requiresAuth: true },
+    },
+    {
       path: '/reports/sawmill',
       name: 'SawmillReport',
       component: SawmilReport,

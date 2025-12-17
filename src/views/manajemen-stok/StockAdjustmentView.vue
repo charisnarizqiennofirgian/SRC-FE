@@ -19,6 +19,18 @@
             <span class="btn-text">Upload Stok Umum</span>
           </button>
 
+          <!-- NEW: Karton Box -->
+          <button class="btn-upload btn-upload-secondary" @click="showUploadModalKarton = true">
+            <span class="btn-icon">📦</span>
+            <span class="btn-text">Upload Karton Box</span>
+          </button>
+
+          <!-- NEW: Komponen -->
+          <button class="btn-upload btn-upload-secondary" @click="showUploadModalKomponen = true">
+            <span class="btn-icon">🧩</span>
+            <span class="btn-text">Upload Komponen</span>
+          </button>
+
           <button class="btn-upload" @click="showUploadModalKayuRst = true">
             <span class="btn-icon">🪵</span>
             <span class="btn-text">Upload Stok Kayu RST</span>
@@ -286,6 +298,156 @@
           >
             <span class="btn-icon-upload">{{ isUploadingUmum ? '⏳' : '📤' }}</span>
             {{ isUploadingUmum ? 'Mengupload...' : 'Upload Sekarang' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 1B: UPLOAD KARTON BOX -->
+    <div v-if="showUploadModalKarton" class="modal-overlay" @click.self="closeModalKarton">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-left">
+            <span class="modal-icon">📦</span>
+            <h3 class="modal-title">Upload Stok Awal (Karton Box)</h3>
+          </div>
+          <button @click="closeModalKarton" class="modal-close-btn">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="info-box">
+            <span class="info-icon">ℹ️</span>
+            <div class="info-text">
+              <p class="info-main">
+                Gunakan ini untuk upload stok <strong>Karton Box</strong> dengan dimensi P, L, T.
+              </p>
+              <p class="info-sub">
+                Template kolom: <code>kode, nama, kategori, satuan, p, l, t, stok_awal</code>.
+              </p>
+            </div>
+          </div>
+
+          <div class="template-download-box">
+            <div class="template-header">
+              <span class="template-icon">📄</span>
+              <p class="template-title">Template Karton Box</p>
+            </div>
+            <a href="#" @click.prevent="downloadTemplateKarton" class="template-link">
+              <span class="download-icon">⬇️</span>
+              Download template (Karton Box)
+            </a>
+            <p class="template-note">
+              <strong>Penting:</strong> Kolom <code>kategori</code> isi dengan
+              <strong>Karton Box</strong>.
+            </p>
+          </div>
+
+          <div class="form-group-upload">
+            <label class="form-label-upload" for="file-upload-karton">
+              <span class="label-icon">📁</span>
+              Pilih File (Karton Box)
+            </label>
+            <input
+              id="file-upload-karton"
+              type="file"
+              @change="handleFileChangeKarton"
+              class="form-control-file"
+              accept=".xlsx, .xls, .csv"
+            />
+            <div v-if="uploadFileKarton" class="file-info">
+              <span class="file-icon">✅</span>
+              File dipilih: <strong>{{ uploadFileKarton.name }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button @click="closeModalKarton" class="btn-secondary">
+            <span class="btn-icon-sec">↩️</span>
+            Batal
+          </button>
+          <button
+            @click="handleUploadKarton"
+            class="btn-primary-modal"
+            :disabled="!uploadFileKarton || isUploadingKarton"
+          >
+            <span class="btn-icon-upload">{{ isUploadingKarton ? '⏳' : '📤' }}</span>
+            {{ isUploadingKarton ? 'Mengupload...' : 'Upload Karton Box' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 1C: UPLOAD KOMPONEN -->
+    <div v-if="showUploadModalKomponen" class="modal-overlay" @click.self="closeModalKomponen">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-left">
+            <span class="modal-icon">🧩</span>
+            <h3 class="modal-title">Upload Stok Awal (Komponen)</h3>
+          </div>
+          <button @click="closeModalKomponen" class="modal-close-btn">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="info-box">
+            <span class="info-icon">ℹ️</span>
+            <div class="info-text">
+              <p class="info-main">
+                Gunakan ini untuk upload stok <strong>Komponen</strong> dengan dimensi P, L, T.
+              </p>
+              <p class="info-sub">
+                Template kolom: <code>kode, nama, kategori, satuan, p, l, t, stok_awal</code>.
+              </p>
+            </div>
+          </div>
+
+          <div class="template-download-box">
+            <div class="template-header">
+              <span class="template-icon">📄</span>
+              <p class="template-title">Template Komponen</p>
+            </div>
+            <a href="#" @click.prevent="downloadTemplateKomponen" class="template-link">
+              <span class="download-icon">⬇️</span>
+              Download template (Komponen)
+            </a>
+            <p class="template-note">
+              <strong>Penting:</strong> Kolom <code>kategori</code> isi dengan
+              <strong>Komponen</strong>.
+            </p>
+          </div>
+
+          <div class="form-group-upload">
+            <label class="form-label-upload" for="file-upload-komponen">
+              <span class="label-icon">📁</span>
+              Pilih File (Komponen)
+            </label>
+            <input
+              id="file-upload-komponen"
+              type="file"
+              @change="handleFileChangeKomponen"
+              class="form-control-file"
+              accept=".xlsx, .xls, .csv"
+            />
+            <div v-if="uploadFileKomponen" class="file-info">
+              <span class="file-icon">✅</span>
+              File dipilih: <strong>{{ uploadFileKomponen.name }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button @click="closeModalKomponen" class="btn-secondary">
+            <span class="btn-icon-sec">↩️</span>
+            Batal
+          </button>
+          <button
+            @click="handleUploadKomponen"
+            class="btn-primary-modal"
+            :disabled="!uploadFileKomponen || isUploadingKomponen"
+          >
+            <span class="btn-icon-upload">{{ isUploadingKomponen ? '⏳' : '📤' }}</span>
+            {{ isUploadingKomponen ? 'Mengupload...' : 'Upload Komponen' }}
           </button>
         </div>
       </div>
@@ -609,6 +771,14 @@ const showUploadModalUmum = ref(false)
 const uploadFileUmum = ref(null)
 const isUploadingUmum = ref(false)
 
+const showUploadModalKarton = ref(false)
+const uploadFileKarton = ref(null)
+const isUploadingKarton = ref(false)
+
+const showUploadModalKomponen = ref(false)
+const uploadFileKomponen = ref(null)
+const isUploadingKomponen = ref(false)
+
 const showUploadModalKayuRst = ref(false)
 const uploadFileKayuRst = ref(null)
 const isUploadingKayuRst = ref(false)
@@ -789,6 +959,164 @@ const downloadTemplateUmum = async () => {
   } catch (error) {
     console.error('Error downloading template:', error)
     toast.error('Gagal mendownload template umum.')
+  }
+}
+
+// UPLOAD KARTON BOX
+const handleFileChangeKarton = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    uploadFileKarton.value = file
+  }
+}
+
+const closeModalKarton = () => {
+  showUploadModalKarton.value = false
+  uploadFileKarton.value = null
+}
+
+const handleUploadKarton = async () => {
+  if (!uploadFileKarton.value) {
+    toast.error('Silakan pilih file Excel (Karton Box) terlebih dahulu.')
+    return
+  }
+
+  isUploadingKarton.value = true
+  const formData = new FormData()
+  formData.append('file', uploadFileKarton.value)
+
+  try {
+    await apiClient.post('/stock-adjustments/upload-karton-box', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+
+    toast.success('Stok awal KARTON BOX berhasil di-import! Memuat ulang data...')
+
+    closeModalKarton()
+
+    if (selectedCategory.value) {
+      await fetchStokBarang()
+    }
+  } catch (error) {
+    const errorMsg = error.response?.data?.message || 'Gagal meng-upload file Karton Box.'
+    toast.error(errorMsg)
+    console.error('Error Upload Karton Box:', error.response?.data)
+  } finally {
+    isUploadingKarton.value = false
+  }
+}
+
+const downloadTemplateKarton = async () => {
+  try {
+    const response = await apiClient.get('/stock-adjustments/template-karton-box', {
+      responseType: 'blob',
+    })
+
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+
+    const contentDisposition = response.headers['content-disposition']
+    let fileName = 'template_saldo_awal_karton_box.xlsx'
+
+    if (contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename="(.+)"/)
+      if (fileNameMatch && fileNameMatch.length === 2) {
+        fileName = fileNameMatch[1]
+      }
+    }
+
+    link.setAttribute('download', fileName)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+
+    toast.success('Template saldo awal Karton Box (Excel) telah diunduh.')
+  } catch (error) {
+    console.error('Error downloading template:', error)
+    toast.error('Gagal mendownload template Karton Box.')
+  }
+}
+
+// UPLOAD KOMPONEN
+const handleFileChangeKomponen = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    uploadFileKomponen.value = file
+  }
+}
+
+const closeModalKomponen = () => {
+  showUploadModalKomponen.value = false
+  uploadFileKomponen.value = null
+}
+
+const handleUploadKomponen = async () => {
+  if (!uploadFileKomponen.value) {
+    toast.error('Silakan pilih file Excel (Komponen) terlebih dahulu.')
+    return
+  }
+
+  isUploadingKomponen.value = true
+  const formData = new FormData()
+  formData.append('file', uploadFileKomponen.value)
+
+  try {
+    await apiClient.post('/stock-adjustments/upload-komponen', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+
+    toast.success('Stok awal KOMPONEN berhasil di-import! Memuat ulang data...')
+
+    closeModalKomponen()
+
+    if (selectedCategory.value) {
+      await fetchStokBarang()
+    }
+  } catch (error) {
+    const errorMsg = error.response?.data?.message || 'Gagal meng-upload file Komponen.'
+    toast.error(errorMsg)
+    console.error('Error Upload Komponen:', error.response?.data)
+  } finally {
+    isUploadingKomponen.value = false
+  }
+}
+
+const downloadTemplateKomponen = async () => {
+  try {
+    const response = await apiClient.get('/stock-adjustments/template-komponen', {
+      responseType: 'blob',
+    })
+
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+
+    const contentDisposition = response.headers['content-disposition']
+    let fileName = 'template_saldo_awal_komponen.xlsx'
+
+    if (contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename="(.+)"/)
+      if (fileNameMatch && fileNameMatch.length === 2) {
+        fileName = fileNameMatch[1]
+      }
+    }
+
+    link.setAttribute('download', fileName)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+
+    toast.success('Template saldo awal Komponen (Excel) telah diunduh.')
+  } catch (error) {
+    console.error('Error downloading template:', error)
+    toast.error('Gagal mendownload template Komponen.')
   }
 }
 
