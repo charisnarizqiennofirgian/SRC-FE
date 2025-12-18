@@ -27,7 +27,7 @@
 
     <div class="content-card-sawmill">
       <div class="card-body-sawmill">
-        <form @submit.prevent="handleSubmit">
+        <form @submit.prevent="handleSubmit" @keydown.enter.prevent>
           <!-- SECTION 1: INFO UMUM -->
           <div class="form-section-modern">
             <div class="section-header">
@@ -65,37 +65,63 @@
               </div>
             </div>
 
-            <!-- SO & PRODUK AKHIR -->
+            <!-- PO + CONTEKAN TARGET -->
             <div class="form-grid-2col">
               <div class="form-group-modern">
                 <label class="form-label-modern">
-                  Pilih SO / PO <span class="required-star">*</span>
+                  Pilih Production Order <span class="required-star">*</span>
                 </label>
                 <div class="select-wrapper-modern">
                   <span class="select-icon">🧾</span>
-                  <select v-model="selectedSoId" class="form-select-modern" required>
-                    <option value="">-- Pilih SO --</option>
-                    <option v-for="so in salesOrders" :key="so.id" :value="so.id">
-                      {{ so.so_number }} - {{ so.buyer?.name }}
+                  <select
+                    v-model="selectedProductionOrderId"
+                    class="form-select-modern"
+                    required
+                    @change="handlePoChange"
+                  >
+                    <option value="">-- Pilih Production Order --</option>
+                    <option v-for="po in productionOrders" :key="po.id" :value="po.id">
+                      {{ po.label }}
                     </option>
                   </select>
                   <span class="select-arrow">▼</span>
                 </div>
               </div>
 
+              <!-- KOSONGKAN KOLOM KANAN (dulu Produk Akhir) ATAU BISA BUAT INFO LAIN NANTI -->
               <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Produk Akhir (Target) <span class="required-star">*</span>
-                </label>
-                <div class="select-wrapper-modern">
-                  <span class="select-icon">🪑</span>
-                  <select v-model="selectedProductId" class="form-select-modern" required>
-                    <option value="">-- Pilih Produk dari SO --</option>
-                    <option v-for="prod in soProducts" :key="prod.id" :value="prod.id">
-                      {{ prod.code }} - {{ prod.name }}
-                    </option>
-                  </select>
-                  <span class="select-arrow">▼</span>
+                <label class="form-label-modern">&nbsp;</label>
+                <div class="input-wrapper-icon">
+                  <span class="input-icon">ℹ️</span>
+                  <input
+                    type="text"
+                    class="form-input-modern readonly-input"
+                    readonly
+                    value="Pilih PO untuk melihat kebutuhan item di bawah"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- KOTAK CONTEKAN TARGET DARI PO -->
+            <div v-if="poTargets.length" class="po-hint-box">
+              <div class="po-hint-header">
+                <span class="po-hint-icon">📌</span>
+                <div class="po-hint-text">
+                  <div class="po-hint-title">
+                    PO ini butuh:
+                    <span v-if="poInfo.buyer_name"
+                      >({{ poInfo.buyer_name }} - {{ poInfo.so_number }})</span
+                    >
+                  </div>
+                  <ul class="po-hint-list">
+                    <li v-for="t in poTargets" :key="t.item_id" class="po-hint-item">
+                      • {{ t.name || t.code || 'Item #' + t.item_id }} ({{
+                        parseInt(t.qty_planned)
+                      }}
+                      unit)
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -280,7 +306,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive, computed } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
@@ -308,41 +334,64 @@ const logItems = ref([])
 const rstItems = ref([])
 const warehouses = ref([])
 
-// SO & Produk Akhir
-const salesOrders = ref([])
-const selectedSoId = ref('')
-const selectedProductId = ref('')
+const productionOrders = ref([])
+const selectedProductionOrderId = ref('')
 
-const soProducts = computed(() => {
-  const so = salesOrders.value.find((s) => s.id === selectedSoId.value)
-  if (!so || !so.details) return []
-  // asumsi setiap detail punya relasi item
-  return so.details.map((d) => d.item).filter((it) => it) // buang null
+const poTargets = ref([])
+const poInfo = ref({
+  buyer_name: null,
+  so_number: null,
 })
 
 const fetchItems = async () => {
   try {
-    const [logsRes, rstRes, whRes, soRes] = await Promise.all([
+    const [logsRes, rstRes, whRes, poRes] = await Promise.all([
       apiClient.get('/materials', { params: { category_name: 'Kayu Log', per_page: 100 } }),
       apiClient.get('/materials', { params: { category_name: 'Kayu RST', per_page: 100 } }),
       apiClient.get('/warehouses'),
-      apiClient.get('/sales-orders'),
+      apiClient.get('/production-orders', { params: { status_not: 'completed' } }),
     ])
 
     logItems.value = logsRes.data.data?.data || logsRes.data.data || []
     rstItems.value = rstRes.data.data?.data || rstRes.data.data || []
     warehouses.value = whRes.data.data || whRes.data || []
 
-    const soData = soRes.data.data?.data || soRes.data.data || []
-    salesOrders.value = soData
+    console.log('WAREHOUSES:', warehouses.value)
+
+    const poData = poRes.data.data?.data || poRes.data.data || []
+    productionOrders.value = poData
   } catch (error) {
     console.error(error)
-    showError('Gagal', 'Gagal mengambil data kayu Log / RST / gudang / SO')
+    showError('Gagal', 'Gagal mengambil data log / RST / gudang / Production Order')
   }
 }
 
-const getWarehouseIdByName = (name) => {
-  const wh = warehouses.value.find((w) => w.name === name)
+const handlePoChange = async () => {
+  poTargets.value = []
+  poInfo.value = { buyer_name: null, so_number: null }
+
+  if (!selectedProductionOrderId.value) {
+    return
+  }
+
+  try {
+    const res = await apiClient.get(`/production-orders/${selectedProductionOrderId.value}`)
+    const data = res.data.data || {}
+
+    poInfo.value = {
+      buyer_name: data.sales_order?.buyer_name || null,
+      so_number: data.sales_order?.so_number || null,
+    }
+
+    poTargets.value = data.targets || []
+  } catch (error) {
+    console.error(error)
+    showError('Gagal', 'Gagal mengambil detail Production Order')
+  }
+}
+
+const getWarehouseIdByName = (namePart) => {
+  const wh = warehouses.value.find((w) => w.name.includes(namePart))
   return wh ? wh.id : null
 }
 
@@ -393,22 +442,23 @@ const removeRstRow = (index) => {
 }
 
 const handleSubmit = async () => {
+  console.log('SUBMIT SAWMILL', JSON.stringify(form))
   try {
     if (!form.item_log_id) {
+      console.log('STOP: item_log_id')
       showError('Validasi', 'Item log wajib dipilih')
       return
     }
+
     if (!form.qty_log_pcs || form.qty_log_pcs <= 0) {
+      console.log('STOP: qty_log_pcs')
       showError('Validasi', 'Qty log wajib lebih dari 0')
       return
     }
 
-    if (!selectedSoId.value) {
-      showError('Validasi', 'Sales Order (SO) wajib dipilih')
-      return
-    }
-    if (!selectedProductId.value) {
-      showError('Validasi', 'Produk akhir (target) wajib dipilih')
+    if (!selectedProductionOrderId.value) {
+      console.log('STOP: PO')
+      showError('Validasi', 'Production Order wajib dipilih')
       return
     }
 
@@ -417,6 +467,7 @@ const handleSubmit = async () => {
     )
 
     if (validRsts.length === 0) {
+      console.log('STOP: RST')
       showError('Validasi', 'Minimal satu baris hasil RST wajib diisi')
       return
     }
@@ -425,20 +476,18 @@ const handleSubmit = async () => {
     const warehouseToId = getWarehouseIdByName('Gudang Sanwil')
 
     if (!warehouseFromId || !warehouseToId) {
+      console.log('STOP: GUDANG', { warehouseFromId, warehouseToId })
       showError('Konfigurasi', 'Gudang Log / Gudang Sanwil tidak ditemukan di master')
       return
     }
-
-    const so = salesOrders.value.find((s) => s.id === selectedSoId.value)
-    const refPoId = so?.so_number || null
 
     const payload = {
       date: form.date,
       warehouse_from_id: warehouseFromId,
       warehouse_to_id: warehouseToId,
       notes: form.notes || null,
-      ref_po_id: refPoId,
-      ref_product_id: selectedProductId.value,
+      ref_po_id: Number(selectedProductionOrderId.value),
+      ref_product_id: null,
       logs: [
         {
           item_log_id: form.item_log_id,
@@ -452,12 +501,12 @@ const handleSubmit = async () => {
       })),
     }
 
+    console.log('LEWAT VALIDASI, KIRIM KE BE', payload)
     await apiClient.post('/sawmill-productions', payload)
-
     showSuccess('Sukses', 'Produksi Sawmill berhasil dicatat')
-    router.push({ name: 'StockReportLogs' })
+    router.push({ name: 'SawmillReport' })
   } catch (error) {
-    console.error(error)
+    console.error('ERROR SAWMILL SUBMIT', error)
     const message =
       error.response?.data?.message ||
       (error.response?.data?.errors && JSON.stringify(error.response.data.errors)) ||
