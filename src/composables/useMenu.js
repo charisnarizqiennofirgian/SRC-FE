@@ -71,6 +71,15 @@ export function useMenu() {
             { name: 'Penyesuaian Stok', route: '/stock-adjustment' },
           ],
         },
+        {
+          name: 'Produksi',
+          icon: '🏭',
+          children: [
+            { name: 'Produksi Sawmill', route: '/admin/produksi/sawmill' },
+            { name: 'Produksi Candy', route: '/admin/produksi/candy' },
+            { name: 'Produksi Pembahanan', route: '/admin/produksi/pembahanan' },
+          ],
+        },
       ]
 
       // Auto-open fallback menus

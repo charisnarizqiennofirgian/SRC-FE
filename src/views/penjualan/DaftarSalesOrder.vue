@@ -1,20 +1,79 @@
 <template>
   <DashboardLayout>
-    <div class="page-header">
-      <!-- header lama -->
+    <!-- HEADER -->
+    <div class="page-header-sales">
+      <div class="header-content">
+        <div class="header-left">
+          <div class="icon-badge-sales">
+            <span class="sales-icon">🧾</span>
+          </div>
+          <div class="header-text">
+            <h1 class="page-title">Daftar Pesanan Penjualan</h1>
+            <p class="page-subtitle">
+              Monitoring seluruh Sales Order yang sudah dibuat oleh tim penjualan.
+            </p>
+          </div>
+        </div>
+        <button class="btn-create-so" @click="goToCreatePage">
+          <span class="btn-icon">＋</span>
+          <span class="btn-text">Buat Sales Order</span>
+        </button>
+      </div>
     </div>
 
+    <!-- LOADING -->
     <div v-if="loading" class="loading-container">
-      <!-- loading lama -->
+      <div class="loading-animation">
+        <div class="spinner"></div>
+        <div class="loading-dots"><span></span><span></span><span></span></div>
+      </div>
+      <p class="loading-text">Memuat daftar pesanan penjualan...</p>
     </div>
 
+    <!-- CONTENT -->
     <div v-else class="content-card">
-      <!-- header list + filter lama -->
-
-      <div v-if="paginatedOrders.length === 0" class="empty-state-container">
-        <!-- empty-state lama -->
+      <!-- HEADER LIST + FILTER -->
+      <div class="card-header-list">
+        <div class="list-header-left">
+          <span class="header-icon">📋</span>
+          <div>
+            <h2 class="card-title">Daftar Sales Order</h2>
+            <p class="card-subtitle">
+              Ringkasan pesanan berdasarkan customer, status, dan nilai transaksi.
+            </p>
+          </div>
+        </div>
+        <div class="list-header-right">
+          <div class="filter-inline">
+            <input
+              v-model="filters.search"
+              @input="handleFilterChange"
+              type="text"
+              class="filter-input-search"
+              placeholder="Cari No SO / Customer..."
+            />
+            <button class="btn-filter-clear" @click="clearFilters">
+              <span class="btn-icon">🧹</span>
+              <span class="btn-text">Bersihkan</span>
+            </button>
+          </div>
+        </div>
       </div>
 
+      <!-- EMPTY STATE -->
+      <div v-if="paginatedOrders.length === 0" class="empty-state-container">
+        <div class="empty-state">
+          <span class="empty-icon">📭</span>
+          <p class="empty-title">Belum ada Sales Order</p>
+          <p class="empty-text">Buat Sales Order baru untuk mulai mencatat pesanan penjualan.</p>
+          <button class="btn-create-empty" @click="goToCreatePage">
+            <span class="btn-icon">＋</span>
+            <span class="btn-text">Buat Sales Order</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- TABLE -->
       <div v-else class="card-body-table">
         <div class="table-wrapper">
           <table class="data-table">
@@ -48,15 +107,21 @@
                 <td class="td-customer">
                   <div class="customer-info">
                     <span class="customer-icon">👤</span>
-                    <span class="customer-name">{{ so.buyer?.name || 'N/A' }}</span>
+                    <span class="customer-name">
+                      {{ so.buyer?.name || 'N/A' }}
+                    </span>
                   </div>
                 </td>
-                <td class="td-date">{{ formatDisplayDate(so.so_date) }}</td>
+                <td class="td-date">
+                  {{ formatDisplayDate(so.so_date) }}
+                </td>
                 <td class="td-status">
                   <span :class="getStatusClass(so.status)">{{ so.status }}</span>
                 </td>
                 <td class="td-total">
-                  <span class="total-value">{{ formatCurrency(so.grand_total, so.currency) }}</span>
+                  <span class="total-value">
+                    {{ formatCurrency(so.grand_total, so.currency) }}
+                  </span>
                 </td>
                 <td class="td-actions">
                   <div class="action-buttons-group">
@@ -91,7 +156,40 @@
           </table>
         </div>
 
-        <!-- pagination block lama tetap di sini -->
+        <!-- PAGINATION -->
+        <div class="card-footer-pagination" v-if="pagination.last_page > 1">
+          <div class="pagination-info">
+            Menampilkan {{ pagination.from }} - {{ pagination.to }} dari {{ pagination.total }} data
+          </div>
+          <div class="pagination-controls">
+            <button
+              class="pagination-btn"
+              :disabled="pagination.current_page === 1"
+              @click="goToPage(pagination.current_page - 1)"
+            >
+              ← Prev
+            </button>
+            <button
+              v-for="page in paginationPages"
+              :key="page"
+              :class="[
+                'pagination-btn',
+                { active: page === pagination.current_page, dots: page === '...' },
+              ]"
+              :disabled="page === '...'"
+              @click="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+            <button
+              class="pagination-btn"
+              :disabled="pagination.current_page === pagination.last_page"
+              @click="goToPage(pagination.current_page + 1)"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </DashboardLayout>
@@ -158,9 +256,9 @@ const pagination = computed(() => {
     current_page: currentPage.value,
     last_page: lastPage,
     per_page: perPage.value,
-    total: total,
-    from: from,
-    to: to,
+    total,
+    from,
+    to,
   }
 })
 
@@ -169,9 +267,7 @@ const paginationPages = computed(() => {
   const lastPage = pagination.value.last_page
 
   if (lastPage <= 7) {
-    for (let i = 1; i <= lastPage; i++) {
-      pages.push(i)
-    }
+    for (let i = 1; i <= lastPage; i++) pages.push(i)
   } else {
     const current = currentPage.value
     if (current <= 4) {
@@ -199,7 +295,7 @@ const fetchSalesOrders = async () => {
   try {
     const response = await apiClient.get('/sales-orders')
 
-    if (response.data.data.data) {
+    if (response.data.data?.data) {
       allSalesOrders.value = response.data.data.data
     } else {
       allSalesOrders.value = response.data.data
@@ -284,7 +380,31 @@ const generateProductionOrder = async (id, soNumber) => {
 
   try {
     const { data } = await apiClient.post(`/sales-orders/${id}/production-orders`, {})
+
     toast.success(`PO Produksi ${data.data.po_number} berhasil dibuat untuk ${soNumber}.`)
+
+    const nextStep = await Swal.fire({
+      title: 'Lanjut ke mana?',
+      text: 'Pilih proses lanjutan untuk PO ini.',
+      icon: 'info',
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: 'Ke Sawmill',
+      denyButtonText: 'Ke Pembahanan',
+      cancelButtonText: 'Tutup saja',
+    })
+
+    if (nextStep.isConfirmed) {
+      router.push({
+        name: 'ProduksiSawmill',
+        query: { so_id: id },
+      })
+    } else if (nextStep.isDenied) {
+      router.push({
+        name: 'ProduksiPembahanan',
+        query: { so_id: id },
+      })
+    }
   } catch (error) {
     console.error('Gagal generate PO Produksi:', error)
     toast.error(error.response?.data?.message || 'Gagal membuat PO Produksi.')
@@ -338,12 +458,14 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+/* HEADER */
+.page-header-sales {
+  background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 50%, #4f46e5 100%);
   border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 1.75rem 2rem;
+  margin-bottom: 1.75rem;
+  box-shadow: 0 10px 30px rgba(79, 70, 229, 0.35);
+  color: white;
 }
 
 .header-content {
@@ -363,74 +485,63 @@ onMounted(() => {
 .icon-badge-sales {
   width: 60px;
   height: 60px;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .sales-icon {
   font-size: 2rem;
 }
 
-.header-text {
-  color: white;
-}
-
-.page-title {
-  font-size: 1.75rem;
-  font-weight: 700;
+.header-text .page-title {
+  font-size: 1.8rem;
+  font-weight: 800;
   margin: 0;
-  color: white;
+  letter-spacing: -0.03em;
 }
 
-.page-subtitle {
+.header-text .page-subtitle {
+  margin: 0.25rem 0 0;
   font-size: 0.95rem;
-  margin: 0.25rem 0 0 0;
-  color: rgba(255, 255, 255, 0.9);
+  opacity: 0.95;
 }
 
+/* BUTTON CREATE TOP */
 .btn-create-so {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   background: white;
-  color: #667eea;
+  color: #4f46e5;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 10px;
-  font-weight: 600;
+  padding: 0.7rem 1.4rem;
+  border-radius: 999px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
 }
 
 .btn-create-so:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  background: #f8f9ff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2);
 }
 
 .btn-icon {
   font-size: 1rem;
 }
 
-.btn-text {
-  font-size: 0.9375rem;
-}
-
+/* LOADING */
 .loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
+  padding: 3rem 1.5rem;
   background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .loading-animation {
@@ -442,16 +553,10 @@ onMounted(() => {
 .spinner {
   width: 60px;
   height: 60px;
-  border: 4px solid #f3f4f6;
-  border-top-color: #667eea;
+  border: 4px solid #e5e7eb;
+  border-top-color: #4f46e5;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .loading-dots {
@@ -464,7 +569,7 @@ onMounted(() => {
 .loading-dots span {
   width: 8px;
   height: 8px;
-  background: #667eea;
+  background: #4f46e5;
   border-radius: 50%;
   animation: bounce 1.4s infinite ease-in-out;
 }
@@ -476,6 +581,11 @@ onMounted(() => {
   animation-delay: -0.16s;
 }
 
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 @keyframes bounce {
   0%,
   80%,
@@ -490,23 +600,24 @@ onMounted(() => {
 .loading-text {
   margin-top: 1rem;
   color: #6b7280;
-  font-weight: 500;
 }
 
+/* CARD */
 .content-card {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
   overflow: hidden;
 }
 
+/* LIST HEADER */
 .card-header-list {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 2rem;
-  background: linear-gradient(135deg, #f8f9ff 0%, #e8ecff 100%);
-  border-bottom: 2px solid #e5e7eb;
+  padding: 1.25rem 1.75rem;
+  background: linear-gradient(135deg, #f9fafb 0%, #eef2ff 100%);
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .list-header-left {
@@ -515,175 +626,108 @@ onMounted(() => {
   gap: 0.75rem;
 }
 
-.header-icon {
-  font-size: 1.5rem;
-}
-
 .card-title {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  color: #1f2937;
   margin: 0;
+  color: #111827;
 }
 
-.info-badge {
-  background: #667eea;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.card-filter-section {
-  padding: 1.5rem 2rem;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.filter-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  align-items: end;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.filter-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #374151;
-}
-
-.label-icon {
-  font-size: 1rem;
-}
-
-.filter-input-date,
-.filter-input-search {
-  padding: 0.625rem 0.875rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
-}
-
-.filter-input-date:focus,
-.filter-input-search:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.filter-actions {
-  display: flex;
-  align-items: flex-end;
-}
-
-.btn-filter-clear {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1rem;
-  background: white;
+.card-subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
   color: #6b7280;
+}
+
+.list-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.filter-inline .filter-input-search {
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
+  font-size: 0.85rem;
+  min-width: 220px;
 }
 
-.btn-filter-clear:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
-}
-
+/* EMPTY STATE */
 .empty-state-container {
-  padding: 4rem 2rem;
+  padding: 3rem 1.75rem;
 }
 
 .empty-state {
   text-align: center;
-  max-width: 400px;
+  max-width: 420px;
   margin: 0 auto;
 }
 
 .empty-icon {
-  font-size: 5rem;
-  display: block;
-  margin-bottom: 1rem;
+  font-size: 4rem;
+  margin-bottom: 0.75rem;
 }
 
 .empty-title {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.4rem;
 }
 
 .empty-text {
+  margin: 0 0 1.5rem;
   color: #6b7280;
-  margin: 0 0 1.5rem 0;
 }
 
 .btn-create-empty {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: #667eea;
+  background: #4f46e5;
   color: white;
+  border-radius: 999px;
+  padding: 0.7rem 1.5rem;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 10px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.btn-create-empty:hover {
-  background: #5568d3;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
-}
-
+/* TABLE */
 .card-body-table {
-  padding: 1.5rem;
+  padding: 1.25rem;
 }
 
 .table-wrapper {
   overflow-x: auto;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid #e5e7eb;
 }
 
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
 }
 
 .data-table thead {
   background: #f9fafb;
 }
 
+.data-table th,
+.data-table td {
+  padding: 0.8rem 0.9rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
 .data-table th {
-  text-align: left;
-  padding: 1rem;
   font-weight: 600;
-  color: #374151;
-  border-bottom: 2px solid #e5e7eb;
-  white-space: nowrap;
+  color: #4b5563;
+}
+
+.data-table tbody tr:hover {
+  background: #f9fafb;
 }
 
 .th-no {
@@ -691,36 +735,14 @@ onMounted(() => {
   text-align: center;
 }
 
-.th-so-number {
-  width: 130px;
-}
-
-.th-items {
-  min-width: 250px;
-}
-
 .th-actions {
   width: 150px;
   text-align: center;
 }
 
-.th-total {
+.th-total,
+.td-total {
   text-align: right;
-}
-
-.data-table tbody tr {
-  border-bottom: 1px solid #f3f4f6;
-  transition: background-color 0.15s ease;
-}
-
-.data-table tbody tr:hover {
-  background-color: #f9fafb;
-}
-
-.data-table td {
-  padding: 1rem;
-  color: #4b5563;
-  vertical-align: middle;
 }
 
 .td-no {
@@ -729,280 +751,197 @@ onMounted(() => {
 
 .row-number {
   display: inline-block;
-  min-width: 28px;
-  height: 28px;
-  line-height: 28px;
-  text-align: center;
+  min-width: 26px;
+  height: 26px;
+  line-height: 26px;
+  border-radius: 999px;
   background: #e5e7eb;
-  color: #374151;
-  border-radius: 8px;
+  color: #111827;
+  font-size: 0.75rem;
   font-weight: 600;
-  font-size: 0.8125rem;
 }
 
+/* SO badge */
 .so-badge {
   display: inline-block;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
   color: white;
-  padding: 0.375rem 0.875rem;
-  border-radius: 6px;
+  font-size: 0.8rem;
   font-weight: 600;
-  font-size: 0.8125rem;
 }
 
-.td-items {
-  vertical-align: middle;
-}
-
+/* Items */
 .items-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.375rem;
+  gap: 0.3rem;
 }
 
 .item-tag {
-  display: inline-block;
-  background: linear-gradient(135deg, #e0e7ff 0%, #f0e6ff 100%);
-  color: #667eea;
-  padding: 0.25rem 0.625rem;
+  padding: 0.25rem 0.55rem;
   border-radius: 4px;
+  background: #eef2ff;
+  color: #4f46e5;
   font-size: 0.75rem;
-  font-weight: 500;
-  white-space: nowrap;
 }
 
+/* Customer */
 .customer-info {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 
-.customer-icon {
-  font-size: 1.25rem;
-}
-
-.customer-name {
-  font-weight: 500;
-  color: #1f2937;
-}
-
+/* Status */
 .status-badge {
   display: inline-block;
-  padding: 0.375rem 0.875rem;
-  border-radius: 20px;
-  font-weight: 600;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
   font-size: 0.75rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .status-draft {
   background: #f3f4f6;
   color: #6b7280;
 }
-
 .status-confirmed {
-  background: #10b981;
-  color: white;
+  background: #dcfce7;
+  color: #15803d;
 }
-
 .status-shipped {
-  background: #3b82f6;
-  color: white;
+  background: #dbeafe;
+  color: #1d4ed8;
 }
-
 .status-cancelled {
-  background: #ef4444;
-  color: white;
+  background: #fee2e2;
+  color: #b91c1c;
 }
-
 .status-default {
-  background: #6b7280;
-  color: white;
+  background: #e5e7eb;
+  color: #374151;
 }
 
-.td-total {
-  text-align: right;
-}
-
+/* Total */
 .total-value {
   font-weight: 700;
-  color: #10b981;
-  font-size: 0.9375rem;
+  color: #059669;
 }
 
-.td-actions {
-  text-align: center;
-}
-
+/* ACTION BUTTONS */
 .action-buttons-group {
   display: flex;
-  gap: 0.5rem;
   justify-content: center;
+  gap: 0.4rem;
 }
 
 .btn-action {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: white;
+  cursor: pointer;
+  font-size: 0.95rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
   transition: all 0.2s ease;
-  border: none;
+}
+
+.btn-po {
+  border-color: #0ea5e9;
+  color: #0ea5e9;
 }
 
 .btn-print {
-  background: white;
+  border-color: #8b5cf6;
   color: #8b5cf6;
-  border: 1px solid #8b5cf6;
-}
-
-.btn-print:hover {
-  background: #8b5cf6;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
 }
 
 .btn-edit {
-  background: white;
+  border-color: #3b82f6;
   color: #3b82f6;
-  border: 1px solid #3b82f6;
-}
-
-.btn-edit:hover {
-  background: #3b82f6;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
 .btn-delete {
-  background: white;
+  border-color: #ef4444;
   color: #ef4444;
-  border: 1px solid #ef4444;
 }
 
-.btn-delete:hover {
-  background: #ef4444;
+.btn-action:hover {
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 }
 
+.btn-po:hover {
+  background: #0ea5e9;
+}
+.btn-print:hover {
+  background: #8b5cf6;
+}
+.btn-edit:hover {
+  background: #3b82f6;
+}
+.btn-delete:hover {
+  background: #ef4444;
+}
+
+/* PAGINATION */
 .card-footer-pagination {
+  padding: 1.1rem 1.75rem;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 2rem;
-  background: #f9fafb;
-  border-top: 1px solid #e5e7eb;
+  justify-content: space-between;
   gap: 1rem;
-  flex-wrap: wrap;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
 }
 
 .pagination-info {
+  font-size: 0.85rem;
   color: #6b7280;
-  font-size: 0.875rem;
-  font-weight: 500;
 }
 
 .pagination-controls {
   display: flex;
-  gap: 0.5rem;
-  align-items: center;
+  gap: 0.4rem;
 }
 
 .pagination-btn {
-  padding: 0.5rem 0.875rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
   border: 1px solid #d1d5db;
   background: white;
-  color: #374151;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.8rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 40px;
-}
-
-.pagination-btn:hover:not(:disabled):not(.dots) {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-}
-
-.pagination-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+  transition: all 0.15s ease;
 }
 
 .pagination-btn.active {
-  background: #667eea;
+  background: #4f46e5;
   color: white;
-  border-color: #667eea;
+  border-color: #4f46e5;
 }
 
 .pagination-btn.dots {
-  border: none;
   cursor: default;
 }
 
-.pagination-btn.dots:hover {
-  background: white;
-}
-
+/* RESPONSIVE */
 @media (max-width: 768px) {
-  .page-header {
+  .page-header-sales {
     padding: 1.5rem;
   }
-
   .header-content {
     flex-direction: column;
     align-items: flex-start;
   }
-
-  .page-title {
-    font-size: 1.5rem;
-  }
-
-  .filter-row {
-    grid-template-columns: 1fr;
-  }
-
   .card-body-table {
-    padding: 1rem;
-  }
-
-  .data-table {
-    font-size: 0.8125rem;
-  }
-
-  .data-table th,
-  .data-table td {
-    padding: 0.75rem 0.5rem;
-  }
-
-  .action-buttons-group {
-    gap: 0.375rem;
-  }
-
-  .btn-action {
-    width: 32px;
-    height: 32px;
-    font-size: 0.875rem;
-  }
-
-  .card-footer-pagination {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .pagination-controls {
-    width: 100%;
-    overflow-x: auto;
+    padding: 0.9rem;
   }
 }
 </style>

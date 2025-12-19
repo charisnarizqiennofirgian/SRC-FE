@@ -136,6 +136,7 @@ const menuItems = ref([
       { name: 'BOM', route: { name: 'BomIndex' } },
       { name: 'Produksi Sawmill', route: { name: 'ProduksiSawmill' } },
       { name: 'Produksi Candy', route: { name: 'ProduksiCandy' } },
+      { name: 'Produksi Pembahanan', route: { name: 'ProduksiPembahanan' } },
     ],
   },
   {
@@ -179,15 +180,7 @@ const toggleMenu = (menuName) => {
 }
 
 const isMenuOpen = (menuName) => {
-  const menuItem = menuItems.value.find((item) => item.name === menuName)
-
-  if (menuItem && menuItem.children) {
-    const hasActiveChild = menuItem.children.some((child) => route.path === child.route)
-    if (hasActiveChild) {
-      return true
-    }
-  }
-
+  // Hanya mengembalikan status dari openMenus, tanpa logika tambahan
   return openMenus.value[menuName] || false
 }
 

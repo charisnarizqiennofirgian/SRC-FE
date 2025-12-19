@@ -305,6 +305,12 @@ const router = createRouter({
       meta: { title: 'Produksi Candy', requiresAuth: true },
     },
     {
+      path: '/admin/produksi/pembahanan',
+      name: 'ProduksiPembahanan',
+      component: () => import('../views/produksi/ProduksiPembahanan.vue'),
+      meta: { title: 'Produksi Pembahanan', requiresAuth: true },
+    },
+    {
       path: '/reports/sawmill',
       name: 'SawmillReport',
       component: SawmilReport,
