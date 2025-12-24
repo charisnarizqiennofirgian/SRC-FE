@@ -246,7 +246,7 @@ const autoSelectPoFromSo = () => {
 const fetchPoOnProgress = async () => {
   try {
     const res = await apiClient.get('/production-orders', {
-      params: { status: 'on_progress', per_page: 100 },
+      params: { status_not: 'completed', per_page: 100 },
     })
     const raw = res.data.data?.data || res.data.data || []
     productionOrders.value = raw

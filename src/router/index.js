@@ -299,6 +299,12 @@ const router = createRouter({
       meta: { title: 'Produksi Sawmill' },
     },
     {
+      path: '/admin/produksi/bom',
+      name: 'MasterBom',
+      component: () => import('../views/produksi/MasterBom.vue'),
+      meta: { title: 'Master BOM', requiresAuth: true },
+    },
+    {
       path: '/admin/produksi/candy',
       name: 'ProduksiCandy',
       component: () => import('../views/produksi/ProduksiCandy.vue'),
@@ -309,6 +315,18 @@ const router = createRouter({
       name: 'ProduksiPembahanan',
       component: () => import('../views/produksi/ProduksiPembahanan.vue'),
       meta: { title: 'Produksi Pembahanan', requiresAuth: true },
+    },
+    {
+      path: '/admin/produksi/moulding',
+      name: 'ProduksiMoulding',
+      component: () => import('../views/produksi/ProduksiMoulding.vue'),
+      meta: { title: 'Produksi Moulding', requiresAuth: true },
+    },
+    {
+      path: '/admin/produksi/mesin',
+      name: 'ProduksiMesin',
+      component: () => import('../views/produksi/ProduksiMesin.vue'),
+      meta: { title: 'Produksi Mesin', requiresAuth: true },
     },
     {
       path: '/reports/sawmill',

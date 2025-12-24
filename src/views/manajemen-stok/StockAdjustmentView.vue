@@ -45,6 +45,12 @@
             <span class="btn-icon">🏭</span>
             <span class="btn-text">Upload Produk Jadi</span>
           </button>
+
+          <!-- NEW: BOM Produk -->
+          <button class="btn-upload btn-upload-secondary" @click="showUploadModalBom = true">
+            <span class="btn-icon">🧾</span>
+            <span class="btn-text">Upload BOM Produk</span>
+          </button>
         </div>
       </div>
     </div>
@@ -689,6 +695,83 @@
         </div>
       </div>
     </div>
+
+    <!-- MODAL 5: UPLOAD BOM PRODUK -->
+    <div v-if="showUploadModalBom" class="modal-overlay" @click.self="closeModalBom">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-left">
+            <span class="modal-icon">🧾</span>
+            <h3 class="modal-title">Upload BOM Produk</h3>
+          </div>
+          <button @click="closeModalBom" class="modal-close-btn">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="info-box">
+            <span class="info-icon">ℹ️</span>
+            <div class="info-text">
+              <p class="info-main">
+                Gunakan ini untuk upload <strong>BOM Produk</strong> (relasi Produk Utama &
+                Komponen).
+              </p>
+              <p class="info-sub">
+                Template kolom:
+                <code>Kode Produk Utama, Kode Komponen, Jumlah per Produk</code>.
+              </p>
+            </div>
+          </div>
+
+          <div class="template-download-box">
+            <div class="template-header">
+              <span class="template-icon">📄</span>
+              <p class="template-title">Template BOM Produk</p>
+            </div>
+            <a href="#" @click.prevent="downloadTemplateBom" class="template-link">
+              <span class="download-icon">⬇️</span>
+              Download template (BOM Produk)
+            </a>
+            <p class="template-note">
+              <strong>Penting:</strong> Kode harus sama dengan kolom <code>code</code> di master
+              Item.
+            </p>
+          </div>
+
+          <div class="form-group-upload">
+            <label class="form-label-upload" for="file-upload-bom">
+              <span class="label-icon">📁</span>
+              Pilih File (BOM Produk)
+            </label>
+            <input
+              id="file-upload-bom"
+              type="file"
+              @change="handleFileChangeBom"
+              class="form-control-file"
+              accept=".xlsx, .xls, .csv"
+            />
+            <div v-if="uploadFileBom" class="file-info">
+              <span class="file-icon">✅</span>
+              File dipilih: <strong>{{ uploadFileBom.name }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button @click="closeModalBom" class="btn-secondary">
+            <span class="btn-icon-sec">↩️</span>
+            Batal
+          </button>
+          <button
+            @click="handleUploadBom"
+            class="btn-primary-modal"
+            :disabled="!uploadFileBom || isUploadingBom"
+          >
+            <span class="btn-icon-upload">{{ isUploadingBom ? '⏳' : '📤' }}</span>
+            {{ isUploadingBom ? 'Mengupload...' : 'Upload BOM Produk' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </DashboardLayout>
 </template>
 
@@ -790,6 +873,11 @@ const isUploadingKayu = ref(false)
 const showUploadModalProdukJadi = ref(false)
 const uploadFileProdukJadi = ref(null)
 const isUploadingProdukJadi = ref(false)
+
+// NEW: BOM Produk
+const showUploadModalBom = ref(false)
+const uploadFileBom = ref(null)
+const isUploadingBom = ref(false)
 
 const fetchDaftarKategori = async () => {
   loading.value.kategori = true
@@ -1360,6 +1448,81 @@ const downloadTemplateProdukJadi = async () => {
   } catch (error) {
     console.error('Error downloading template:', error)
     toast.error('Gagal mendownload template produk jadi.')
+  }
+}
+
+// NEW: UPLOAD BOM PRODUK
+const handleFileChangeBom = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    uploadFileBom.value = file
+  }
+}
+
+const closeModalBom = () => {
+  showUploadModalBom.value = false
+  uploadFileBom.value = null
+  isUploadingBom.value = false
+}
+
+const handleUploadBom = async () => {
+  if (!uploadFileBom.value) {
+    toast.error('Silakan pilih file Excel (BOM Produk) terlebih dahulu.')
+    return
+  }
+
+  isUploadingBom.value = true
+  const formData = new FormData()
+  formData.append('file', uploadFileBom.value)
+
+  try {
+    await apiClient.post('/stock-adjustments/upload-bom', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+
+    toast.success('BOM Produk berhasil di-import.')
+    closeModalBom()
+  } catch (error) {
+    const errorMsg = error.response?.data?.message || 'Gagal meng-upload file BOM Produk.'
+    toast.error(errorMsg)
+    console.error('Error Upload BOM Produk:', error.response?.data)
+  } finally {
+    isUploadingBom.value = false
+  }
+}
+
+const downloadTemplateBom = async () => {
+  try {
+    const response = await apiClient.get('/stock-adjustments/template-bom', {
+      responseType: 'blob',
+    })
+
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+
+    let fileName = 'template_bom_produk.xlsx'
+    const contentDisposition = response.headers['content-disposition']
+
+    if (contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename="(.+)"/)
+      if (fileNameMatch && fileNameMatch.length === 2) {
+        fileName = fileNameMatch[1]
+      }
+    }
+
+    link.setAttribute('download', fileName)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+
+    toast.success('Template BOM Produk (Excel) telah diunduh.')
+  } catch (error) {
+    console.error('Error downloading template BOM:', error)
+    toast.error('Gagal mendownload template BOM Produk.')
   }
 }
 </script>

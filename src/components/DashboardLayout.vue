@@ -45,7 +45,7 @@
                   :to="child.route"
                   class="submenu-item"
                   active-class="active"
-                  @click="onNavItemClick"
+                  @click="onSubmenuItemClicked"
                 >
                   {{ child.name }}
                 </router-link>
@@ -137,6 +137,9 @@ const menuItems = ref([
       { name: 'Produksi Sawmill', route: { name: 'ProduksiSawmill' } },
       { name: 'Produksi Candy', route: { name: 'ProduksiCandy' } },
       { name: 'Produksi Pembahanan', route: { name: 'ProduksiPembahanan' } },
+      { name: 'Produksi Moulding', route: { name: 'ProduksiMoulding' } },
+      { name: 'Produksi Mesin', route: { name: 'ProduksiMesin' } },
+      { name: 'Master BOM / Resep', route: { name: 'MasterBom' } },
     ],
   },
   {
@@ -175,12 +178,33 @@ const onNavItemClick = () => {
   }
 }
 
+const onSubmenuItemClicked = () => {
+  if (window.innerWidth <= 768) {
+    closeSidebar()
+  }
+}
+
+// Fungsi untuk menutup semua menu kecuali yang ditentukan
+const closeAllMenusExcept = (menuName) => {
+  Object.keys(openMenus.value).forEach((key) => {
+    if (key !== menuName) {
+      openMenus.value[key] = false
+    }
+  })
+}
+
 const toggleMenu = (menuName) => {
-  openMenus.value[menuName] = !openMenus.value[menuName]
+  // Jika menu yang diklik sedang terbuka, tutup saja
+  if (openMenus.value[menuName]) {
+    openMenus.value[menuName] = false
+  } else {
+    // Jika tidak, tutup semua menu lain dan buka menu ini
+    closeAllMenusExcept(menuName)
+    openMenus.value[menuName] = true
+  }
 }
 
 const isMenuOpen = (menuName) => {
-  // Hanya mengembalikan status dari openMenus, tanpa logika tambahan
   return openMenus.value[menuName] || false
 }
 

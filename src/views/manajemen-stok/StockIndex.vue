@@ -22,7 +22,7 @@
             <div class="stat-content">
               <p class="stat-label">Total Items</p>
               <p class="stat-value">
-                {{ pagination ? pagination.total : reportData.length }}
+                {{ pagination ? pagination.total : filteredReport.length }}
               </p>
             </div>
           </div>
@@ -69,7 +69,7 @@
         <div class="header-right-info">
           <div class="info-badge-count">
             <span class="badge-icon">📦</span>
-            <span class="badge-text">{{ reportData.length }} Items</span>
+            <span class="badge-text">{{ filteredReport.length }} Items</span>
           </div>
         </div>
       </div>
@@ -93,6 +93,15 @@
         </div>
         <div class="filter-right-group">
           <div class="per-page-control">
+            <label class="per-page-label-modern">Gudang:</label>
+            <select v-model="selectedWarehouseId" class="per-page-select-modern">
+              <option :value="null">Semua Gudang</option>
+              <option v-for="wh in warehouses" :key="wh.id" :value="wh.id">
+                {{ wh.name }}
+              </option>
+            </select>
+          </div>
+          <div class="per-page-control">
             <label class="per-page-label-modern">Tampilkan:</label>
             <select v-model="perPage" @change="handlePerPageChange" class="per-page-select-modern">
               <option :value="10">10</option>
@@ -110,7 +119,6 @@
         <div class="table-container-modern">
           <table class="table-stock-modern">
             <thead>
-              <!-- Header khusus Kayu RST -->
               <tr v-if="activeTab === 'rst'">
                 <th class="th-number">No</th>
                 <th class="th-code">Kode</th>
@@ -120,26 +128,22 @@
                 <th class="th-small">T (mm)</th>
                 <th class="th-small">L (mm)</th>
                 <th class="th-small">P (mm)</th>
-                <th class="th-small">Gudang</th>
                 <th class="th-small">Stok</th>
                 <th class="th-small">Kubikasi (m³)</th>
               </tr>
-
-              <!-- Header default kategori lain -->
               <tr v-else>
                 <th class="th-number">No</th>
                 <th class="th-code">Kode Item</th>
                 <th class="th-name">Nama Barang</th>
                 <th class="th-category">Kategori</th>
                 <th class="th-unit">Satuan</th>
-                <th class="th-stock">Stok Per Gudang</th>
+                <th class="th-stock">Stok</th>
               </tr>
             </thead>
 
             <tbody>
-              <!-- EMPTY -->
-              <tr v-if="reportData.length === 0" class="empty-row-modern">
-                <td :colspan="activeTab === 'rst' ? 11 : 6" class="empty-cell-modern">
+              <tr v-if="filteredReport.length === 0" class="empty-row-modern">
+                <td :colspan="activeTab === 'rst' ? 10 : 6" class="empty-cell-modern">
                   <div class="empty-state-content">
                     <div class="empty-icon-wrapper">
                       <span class="empty-icon">📭</span>
@@ -149,7 +153,7 @@
                       {{
                         searchQuery
                           ? 'Tidak ditemukan hasil yang sesuai dengan pencarian Anda'
-                          : 'Belum ada data stok untuk kategori ini'
+                          : 'Belum ada data stok untuk kategori / gudang ini'
                       }}
                     </p>
                   </div>
@@ -159,7 +163,7 @@
               <!-- ROWS KAYU RST -->
               <tr
                 v-else-if="activeTab === 'rst'"
-                v-for="(item, index) in reportData"
+                v-for="(item, index) in filteredReport"
                 :key="item.id"
                 class="data-row-modern"
               >
@@ -204,26 +208,27 @@
                   {{ item.specifications?.p ?? '-' }}
                 </td>
                 <td class="td-small">
-                  <div v-if="item.stocks && item.stocks.length" class="rst-warehouse-cell">
-                    <div v-for="stock in item.stocks" :key="stock.id" class="rst-warehouse-row">
-                      <span class="warehouse-icon">🏢</span>
-                      <span class="warehouse-name">
-                        {{ stock.warehouse?.name || stock.warehouse?.code || 'Gudang' }}
-                      </span>
-                    </div>
+                  <div class="stock-total-inline">
+                    <span class="stock-value">
+                      {{ formatQty(totalQty(filteredStocks(item.stocks))) }}
+                    </span>
+                    <button type="button" class="btn-eye-inline" @click="openDetail(item)">
+                      👁️
+                    </button>
                   </div>
-                  <span v-else>-</span>
                 </td>
                 <td class="td-small">
-                  {{ formatQty(totalQty(item.stocks || [])) }}
-                </td>
-                <td class="td-small">
-                  {{ formatQty(totalKubikasi(item)) }}
+                  {{ formatQty(totalKubikasi(item, filteredStocks(item.stocks))) }}
                 </td>
               </tr>
 
               <!-- ROWS KATEGORI LAIN -->
-              <tr v-else v-for="(item, index) in reportData" :key="item.id" class="data-row-modern">
+              <tr
+                v-else
+                v-for="(item, index) in filteredReport"
+                :key="item.id"
+                class="data-row-modern"
+              >
                 <td class="td-number">
                   <div class="number-badge">
                     {{
@@ -259,25 +264,18 @@
                   <span class="badge-unit-modern">{{ item.unit?.name || 'N/A' }}</span>
                 </td>
                 <td class="td-stock">
-                  <div v-if="item.stocks && item.stocks.length" class="stock-warehouse-list">
-                    <div v-for="stock in item.stocks" :key="stock.id" class="stock-warehouse-item">
-                      <div class="warehouse-info">
-                        <span class="warehouse-icon">🏢</span>
-                        <span class="warehouse-name">
-                          {{ stock.warehouse?.name || stock.warehouse?.code || 'Gudang' }}
-                        </span>
-                      </div>
-                      <div class="stock-qty-box">
-                        <span class="stock-qty">{{ formatQty(stock.quantity) }}</span>
-                      </div>
-                    </div>
-                    <div class="stock-total-box">
-                      <span class="total-label">Total Stok:</span>
-                      <span class="total-value">{{ formatQty(totalQty(item.stocks)) }}</span>
-                    </div>
-                  </div>
-                  <div v-else class="stock-simple">
-                    <span class="stock-value-simple">{{ parseInt(item.stock) }}</span>
+                  <div class="stock-total-inline">
+                    <span class="stock-value">
+                      <!-- LOGIC BARU: kalau tab Bahan Operasional, pakai item.stock -->
+                      {{
+                        activeTab === 'operational'
+                          ? formatQty(item.stock || 0)
+                          : formatQty(totalQty(filteredStocks(item.stocks || [])))
+                      }}
+                    </span>
+                    <button type="button" class="btn-eye-inline" @click="openDetail(item)">
+                      👁️
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -329,6 +327,39 @@
         </div>
       </div>
     </div>
+
+    <!-- MODAL DETAIL STOK -->
+    <div v-if="isDetailOpen" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Rincian Stok Barang</h3>
+          <button class="modal-close-btn" @click="closeDetail">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-item-name">{{ detailItem?.code }} - {{ detailItem?.name }}</p>
+          <table class="modal-table">
+            <thead>
+              <tr>
+                <th>Gudang</th>
+                <th>Qty</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="detailStocks.length === 0">
+                <td colspan="2" class="text-center">Tidak ada stok.</td>
+              </tr>
+              <tr v-for="row in detailStocks" :key="row.id">
+                <td>{{ row.warehouse_name }}</td>
+                <td>{{ formatQty(row.quantity) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-modal-ok" @click="closeDetail">Tutup</button>
+        </div>
+      </div>
+    </div>
   </DashboardLayout>
 </template>
 
@@ -356,20 +387,33 @@ const pagination = ref(null)
 const searchQuery = ref('')
 const perPage = ref(50)
 const currentPage = ref(1)
+const warehouses = ref([])
+const selectedWarehouseId = ref(null)
 let searchTimeout = null
 
-// kategori untuk tampilan (header)
+// state modal detail
+const isDetailOpen = ref(false)
+const detailItem = ref(null)
+const detailStocks = ref([])
+
 const currentCategory = () => {
   return tabs.find((t) => t.key === activeTab.value)?.category ?? 'Kayu Log'
 }
 
-// kategori untuk param API
 const currentCategoryParam = () => {
   if (activeTab.value === 'operational') {
-    // gabung Bahan Operasional + Bahan Penolong
     return 'Bahan Operasional,Bahan Penolong'
   }
   return currentCategory()
+}
+
+const fetchWarehouses = async () => {
+  try {
+    const res = await apiClient.get('/warehouses')
+    warehouses.value = res.data.data || res.data || []
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 const fetchReport = async () => {
@@ -383,23 +427,25 @@ const fetchReport = async () => {
     if (searchQuery.value) {
       params.search = searchQuery.value
     }
-
-    const response = await apiClient.get('/stock-report', { params })
-
-    if (response.data.data?.data) {
-      reportData.value = response.data.data.data
-      pagination.value = {
-        current_page: response.data.data.current_page,
-        last_page: response.data.data.last_page,
-        per_page: response.data.data.per_page,
-        total: response.data.data.total,
-        from: response.data.data.from,
-        to: response.data.data.to,
-      }
-    } else {
-      reportData.value = response.data.data
-      pagination.value = null
+    if (selectedWarehouseId.value) {
+      params.warehouse_id = selectedWarehouseId.value
     }
+    await apiClient.get('/stock-report', { params }).then((response) => {
+      if (response.data.data?.data) {
+        reportData.value = response.data.data.data
+        pagination.value = {
+          current_page: response.data.data.current_page,
+          last_page: response.data.data.last_page,
+          per_page: response.data.data.per_page,
+          total: response.data.data.total,
+          from: response.data.data.from,
+          to: response.data.data.to,
+        }
+      } else {
+        reportData.value = response.data.data
+        pagination.value = null
+      }
+    })
   } catch (e) {
     toast.error('Gagal memuat laporan stok.')
     console.error(e)
@@ -414,6 +460,11 @@ const setTab = (key) => {
 }
 
 watch(activeTab, () => {
+  fetchReport()
+})
+
+watch(selectedWarehouseId, () => {
+  currentPage.value = 1
   fetchReport()
 })
 
@@ -445,7 +496,6 @@ const goToPage = (page) => {
 
 const paginationPages = computed(() => {
   if (!pagination.value) return []
-
   const pages = []
   const currentPageNum = pagination.value.current_page
   const lastPageNum = pagination.value.last_page
@@ -473,6 +523,15 @@ const paginationPages = computed(() => {
   return pages
 })
 
+const filteredStocks = (stocks = []) => {
+  if (!selectedWarehouseId.value) return stocks
+  return stocks.filter((s) => Number(s.warehouse_id) === Number(selectedWarehouseId.value))
+}
+
+const filteredReport = computed(() => {
+  return reportData.value
+})
+
 const formatQty = (val) => {
   if (!val && val !== 0) return 0
   return parseFloat(val).toLocaleString('en-US', {
@@ -485,20 +544,39 @@ const totalQty = (stocks) => {
   return (stocks || []).reduce((sum, s) => sum + parseFloat(s.quantity || 0), 0)
 }
 
-// hitung kubikasi untuk item RST: asumsi T,L,P dalam mm
-const totalKubikasi = (item) => {
+const totalKubikasi = (item, stocksFiltered) => {
   if (!item || !item.specifications) return 0
   const t = Number(item.specifications.t || 0)
   const l = Number(item.specifications.l || 0)
   const p = Number(item.specifications.p || 0)
   if (!t || !l || !p) return 0
-
   const volumePerPcs = (t * l * p) / 1_000_000_000
-  const qty = totalQty(item.stocks || [])
+  const qty = totalQty(stocksFiltered || [])
   return volumePerPcs * qty
 }
 
-onMounted(fetchReport)
+// modal detail stok
+const openDetail = (item) => {
+  detailItem.value = item
+  const stocks = item.stocks || []
+  detailStocks.value = stocks.map((s) => ({
+    id: s.id,
+    warehouse_name: s.warehouse?.name || s.warehouse?.code || 'Gudang',
+    quantity: s.quantity || 0,
+  }))
+  isDetailOpen.value = true
+}
+
+const closeDetail = () => {
+  isDetailOpen.value = false
+  detailItem.value = null
+  detailStocks.value = []
+}
+
+onMounted(() => {
+  fetchWarehouses()
+  fetchReport()
+})
 </script>
 
 <style scoped>
