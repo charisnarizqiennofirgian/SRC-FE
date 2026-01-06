@@ -88,7 +88,6 @@
                 </div>
               </div>
 
-              <!-- KOSONGKAN KOLOM KANAN (dulu Produk Akhir) ATAU BISA BUAT INFO LAIN NANTI -->
               <div class="form-group-modern">
                 <label class="form-label-modern">&nbsp;</label>
                 <div class="input-wrapper-icon">
@@ -103,26 +102,39 @@
               </div>
             </div>
 
-            <!-- KOTAK CONTEKAN TARGET DARI PO -->
+            <!-- KOTAK CONTEKAN TARGET DARI PO (VERSI BARU) -->
             <div v-if="poTargets.length" class="po-hint-box">
               <div class="po-hint-header">
-                <span class="po-hint-icon">📌</span>
-                <div class="po-hint-text">
-                  <div class="po-hint-title">
-                    PO ini butuh:
-                    <span v-if="poInfo.buyer_name"
-                      >({{ poInfo.buyer_name }} - {{ poInfo.so_number }})</span
-                    >
+                <div class="po-hint-title-wrap">
+                  <span class="po-hint-icon">📌</span>
+                  <div>
+                    <div class="po-hint-title">Ringkasan Kebutuhan PO</div>
+                    <div class="po-hint-sub">
+                      {{ poInfo.buyer_name || 'Tanpa buyer' }} •
+                      {{ poInfo.so_number || 'Tanpa SO' }}
+                    </div>
                   </div>
-                  <ul class="po-hint-list">
-                    <li v-for="t in poTargets" :key="t.item_id" class="po-hint-item">
-                      • {{ t.name || t.code || 'Item #' + t.item_id }} ({{
-                        parseInt(t.qty_planned)
-                      }}
-                      unit)
-                    </li>
-                  </ul>
                 </div>
+                <div class="po-hint-badge">{{ poTargets.length }} item</div>
+              </div>
+
+              <div class="po-hint-list-wrapper">
+                <table class="po-hint-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th class="col-qty">Qty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="t in poTargets" :key="t.item_id">
+                      <td class="cell-name">
+                        {{ t.name || t.code || 'Item #' + t.item_id }}
+                      </td>
+                      <td class="cell-qty">{{ parseInt(t.qty_planned) }} unit</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -189,7 +201,6 @@
               </div>
             </div>
 
-            <!-- RST ROWS -->
             <div class="rst-items-container">
               <div v-for="(row, index) in form.rsts" :key="row.local_id" class="rst-item-card">
                 <div class="rst-item-header">
@@ -275,7 +286,6 @@
               </div>
             </div>
 
-            <!-- ADD MORE BUTTON -->
             <div class="add-rst-section">
               <button type="button" class="btn-add-rst" @click="addRstRow">
                 <span class="add-icon">➕</span>
@@ -284,7 +294,6 @@
             </div>
           </div>
 
-          <!-- FORM ACTIONS -->
           <div class="form-actions-modern">
             <button
               type="button"
@@ -355,8 +364,6 @@ const fetchItems = async () => {
     logItems.value = logsRes.data.data?.data || logsRes.data.data || []
     rstItems.value = rstRes.data.data?.data || rstRes.data.data || []
     warehouses.value = whRes.data.data || whRes.data || []
-
-    console.log('WAREHOUSES:', warehouses.value)
 
     const poData = poRes.data.data?.data || poRes.data.data || []
     productionOrders.value = poData
@@ -442,22 +449,18 @@ const removeRstRow = (index) => {
 }
 
 const handleSubmit = async () => {
-  console.log('SUBMIT SAWMILL', JSON.stringify(form))
   try {
     if (!form.item_log_id) {
-      console.log('STOP: item_log_id')
       showError('Validasi', 'Item log wajib dipilih')
       return
     }
 
     if (!form.qty_log_pcs || form.qty_log_pcs <= 0) {
-      console.log('STOP: qty_log_pcs')
       showError('Validasi', 'Qty log wajib lebih dari 0')
       return
     }
 
     if (!selectedProductionOrderId.value) {
-      console.log('STOP: PO')
       showError('Validasi', 'Production Order wajib dipilih')
       return
     }
@@ -467,7 +470,6 @@ const handleSubmit = async () => {
     )
 
     if (validRsts.length === 0) {
-      console.log('STOP: RST')
       showError('Validasi', 'Minimal satu baris hasil RST wajib diisi')
       return
     }
@@ -476,7 +478,6 @@ const handleSubmit = async () => {
     const warehouseToId = getWarehouseIdByName('Gudang Sanwil')
 
     if (!warehouseFromId || !warehouseToId) {
-      console.log('STOP: GUDANG', { warehouseFromId, warehouseToId })
       showError('Konfigurasi', 'Gudang Log / Gudang Sanwil tidak ditemukan di master')
       return
     }
@@ -501,12 +502,10 @@ const handleSubmit = async () => {
       })),
     }
 
-    console.log('LEWAT VALIDASI, KIRIM KE BE', payload)
     await apiClient.post('/sawmill-productions', payload)
     showSuccess('Sukses', 'Produksi Sawmill berhasil dicatat')
     router.push({ name: 'SawmillReport' })
   } catch (error) {
-    console.error('ERROR SAWMILL SUBMIT', error)
     const message =
       error.response?.data?.message ||
       (error.response?.data?.errors && JSON.stringify(error.response.data.errors)) ||
@@ -690,6 +689,118 @@ onMounted(() => {
 }
 
 /* ========================================
+   PO HINT BOX (BARU)
+   ======================================== */
+.po-hint-box {
+  margin-top: 1rem;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #fefce8, #fffbeb);
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 4px 12px rgba(250, 204, 21, 0.12);
+}
+
+.po-hint-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.po-hint-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.po-hint-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: rgba(250, 204, 21, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.po-hint-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #92400e;
+}
+
+.po-hint-sub {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.po-hint-badge {
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.po-hint-list-wrapper {
+  max-height: 180px;
+  overflow-y: auto;
+  margin-top: 0.25rem;
+  border-radius: 12px;
+  border: 1px solid #facc15;
+  background: white;
+}
+
+.po-hint-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.po-hint-table thead {
+  position: sticky;
+  top: 0;
+  background: #fefce8;
+  z-index: 1;
+}
+
+.po-hint-table th,
+.po-hint-table td {
+  padding: 0.45rem 0.75rem;
+}
+
+.po-hint-table th {
+  text-align: left;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  border-bottom: 1px solid #feeeb2;
+}
+
+.po-hint-table .col-qty {
+  width: 80px;
+  text-align: right;
+}
+
+.po-hint-table .cell-name {
+  color: #374151;
+  font-weight: 500;
+}
+
+.po-hint-table .cell-qty {
+  text-align: right;
+  color: #92400e;
+  font-weight: 700;
+}
+
+.po-hint-table tbody tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+/* ========================================
    FORM GRID
    ======================================== */
 .form-grid-2col {
@@ -725,7 +836,6 @@ onMounted(() => {
   margin-left: 0.25rem;
 }
 
-/* INPUT WITH ICON */
 .input-wrapper-icon {
   position: relative;
   display: flex;
@@ -784,7 +894,6 @@ onMounted(() => {
   color: #059669;
 }
 
-/* SELECT WITH ICON */
 .select-wrapper-modern {
   position: relative;
   display: flex;

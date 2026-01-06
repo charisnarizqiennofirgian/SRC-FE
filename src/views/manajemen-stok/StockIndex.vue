@@ -270,7 +270,10 @@
                       {{
                         activeTab === 'operational'
                           ? formatQty(item.stock || 0)
-                          : formatQty(totalQty(filteredStocks(item.stocks || [])))
+                          : formatQty(
+                              item.total_stock_from_stocks ??
+                                totalQty(filteredStocks(item.stocks || [])),
+                            )
                       }}
                     </span>
                     <button type="button" class="btn-eye-inline" @click="openDetail(item)">

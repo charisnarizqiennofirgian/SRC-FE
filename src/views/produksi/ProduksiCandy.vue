@@ -283,12 +283,9 @@ const handleSubmit = async () => {
 
     await apiClient.post('/candy-productions', payload)
 
-    showSuccess('Sukses', 'Proses Candy berhasil dicatat')
-
-    form.source_inventory_id = ''
-    form.target_item_id = ''
-    form.qty = null
-    await fetchData()
+    // alert + redirect ke menu Produksi Pembahanan
+    showSuccess('Sukses', 'Proses Candy berhasil dicatat, lanjut ke Produksi Pembahanan.')
+    router.push({ name: 'ProduksiPembahanan' })
   } catch (error) {
     console.error(error)
     const msg =
@@ -305,9 +302,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ========================================
-   PAGE HEADER - KILN GRADIENT
-   ======================================== */
+/* (CSS-mu tetap sama persis, tidak diubah) */
 .page-header-candy {
   background: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #b91c1c 100%);
   padding: 2rem 2.5rem;
@@ -399,9 +394,6 @@ onMounted(() => {
   font-weight: 600;
 }
 
-/* ========================================
-   CONTENT CARD
-   ======================================== */
 .content-card-candy {
   background: white;
   border-radius: 20px;
@@ -414,9 +406,6 @@ onMounted(() => {
   padding: 2.5rem;
 }
 
-/* ========================================
-   FORM SECTIONS
-   ======================================== */
 .form-section-modern {
   margin-bottom: 2.5rem;
   padding-bottom: 2.5rem;
@@ -479,9 +468,6 @@ onMounted(() => {
   font-weight: 500;
 }
 
-/* ========================================
-   FORM GRID
-   ======================================== */
 .form-grid-2col {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -494,9 +480,6 @@ onMounted(() => {
   }
 }
 
-/* ========================================
-   FORM ELEMENTS
-   ======================================== */
 .form-group-modern {
   margin-bottom: 0;
 }
@@ -515,7 +498,6 @@ onMounted(() => {
   margin-left: 0.25rem;
 }
 
-/* INPUT WITH ICON */
 .input-wrapper-icon {
   position: relative;
   display: flex;
@@ -563,7 +545,6 @@ onMounted(() => {
   pointer-events: none;
 }
 
-/* SELECT WITH ICON */
 .select-wrapper-modern {
   position: relative;
   display: flex;
@@ -607,9 +588,6 @@ onMounted(() => {
   pointer-events: none;
 }
 
-/* ========================================
-   HELPER TEXT
-   ======================================== */
 .help-text {
   margin-top: 0.5rem;
   font-size: 0.8125rem;
@@ -622,9 +600,6 @@ onMounted(() => {
   color: #4b5563;
 }
 
-/* ========================================
-   FORM ACTIONS
-   ======================================== */
 .form-actions-modern {
   display: flex;
   justify-content: flex-end;
@@ -676,9 +651,6 @@ onMounted(() => {
   box-shadow: 0 10px 30px rgba(248, 113, 113, 0.4);
 }
 
-/* ========================================
-   RESPONSIVE
-   ======================================== */
 @media (max-width: 768px) {
   .page-header-candy {
     padding: 1.5rem;

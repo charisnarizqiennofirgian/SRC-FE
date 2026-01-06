@@ -329,6 +329,12 @@ const router = createRouter({
       meta: { title: 'Produksi Mesin', requiresAuth: true },
     },
     {
+      path: '/admin/produksi/assembling',
+      name: 'AssemblingView',
+      component: () => import('../views/produksi/AssemblingView.vue'),
+      meta: { title: 'Assembling', requiresAuth: true },
+    },
+    {
       path: '/reports/sawmill',
       name: 'SawmillReport',
       component: SawmilReport,

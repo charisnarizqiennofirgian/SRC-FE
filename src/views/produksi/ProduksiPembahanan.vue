@@ -52,7 +52,12 @@
               </label>
               <div class="select-wrapper-modern">
                 <span class="select-icon">📄</span>
-                <select v-model="form.po_id" class="form-select-modern" required>
+                <select
+                  v-model="form.po_id"
+                  class="form-select-modern"
+                  required
+                  @change="handlePoChange"
+                >
                   <option value="">-- Pilih PO On Progress --</option>
                   <option v-for="po in productionOrders" :key="po.id" :value="po.id">
                     {{ po.label }}
@@ -62,27 +67,38 @@
               </div>
             </div>
 
-            <!-- PO INFO CARD -->
-            <div v-if="selectedPo" class="po-info-card-modern">
-              <div class="po-header">
-                <span class="po-icon">📋</span>
-                <h4 class="po-title">{{ selectedPo.po_number }}</h4>
+            <!-- HANYA RINGKASAN KEBUTUHAN PO -->
+            <div v-if="poTargets.length" class="po-hint-box">
+              <div class="po-hint-header">
+                <div class="po-hint-title-wrap">
+                  <span class="po-hint-icon">📌</span>
+                  <div>
+                    <div class="po-hint-title">Ringkasan Kebutuhan PO</div>
+                    <div class="po-hint-sub">
+                      {{ poInfo.buyer_name || '-' }} • {{ poInfo.so_number || '-' }}
+                    </div>
+                  </div>
+                </div>
+                <div class="po-hint-badge">{{ poTargets.length }} item</div>
               </div>
-              <div class="po-details-grid">
-                <div class="po-detail">
-                  <span class="detail-label">Buyer</span>
-                  <span class="detail-value">{{ selectedPo.buyer_name || '-' }}</span>
-                </div>
-                <div class="po-detail">
-                  <span class="detail-label">Produk</span>
-                  <span class="detail-value">{{ selectedPo.product_name || '-' }}</span>
-                </div>
-                <div class="po-detail">
-                  <span class="detail-label">Status</span>
-                  <span class="detail-value status-chip">
-                    {{ selectedPo.status }}
-                  </span>
-                </div>
+
+              <div class="po-hint-list-wrapper">
+                <table class="po-hint-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th class="col-qty">Qty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="t in poTargets" :key="t.item_id">
+                      <td class="cell-name">
+                        {{ t.name || t.code || 'Item #' + t.item_id }}
+                      </td>
+                      <td class="cell-qty">{{ parseInt(t.qty_planned) }} unit</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -207,7 +223,6 @@
 </template>
 
 <script setup>
-/* SCRIPT TETAP SAMA PERSIS - TIDAK DIUBAH */
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import apiClient from '../../api/axios'
@@ -232,14 +247,19 @@ const outputItems = ref([])
 
 const selectedPo = computed(() => productionOrders.value.find((po) => po.id === Number(form.po_id)))
 
+const poTargets = ref([])
+const poInfo = ref({
+  buyer_name: null,
+  so_number: null,
+})
+
 const autoSelectPoFromSo = () => {
   const soId = Number(route.query.so_id)
   if (!soId || !productionOrders.value.length) return
-
   const po = productionOrders.value.find((p) => Number(p.sales_order_id) === soId)
-
   if (po) {
     form.po_id = po.id
+    handlePoChange()
   }
 }
 
@@ -254,6 +274,28 @@ const fetchPoOnProgress = async () => {
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil daftar Production Order')
+  }
+}
+
+const handlePoChange = async () => {
+  poTargets.value = []
+  poInfo.value = { buyer_name: null, so_number: null }
+
+  if (!form.po_id) return
+
+  try {
+    const res = await apiClient.get(`/production-orders/${form.po_id}`)
+    const data = res.data.data || {}
+
+    poInfo.value = {
+      buyer_name: data.sales_order?.buyer_name || null,
+      so_number: data.sales_order?.so_number || null,
+    }
+
+    poTargets.value = data.targets || []
+  } catch (error) {
+    console.error(error)
+    showError('Gagal', 'Gagal mengambil detail Production Order')
   }
 }
 
@@ -291,12 +333,9 @@ const handleSubmit = async () => {
     }
 
     await apiClient.post('/produksi/pembahanan', payload)
-    showSuccess('Sukses', 'Proses pembahanan berhasil disimpan')
 
-    form.source_inventory_id = ''
-    form.input_qty = null
-    form.output_item_id = ''
-    form.output_qty = null
+    showSuccess('Sukses', 'Proses pembahanan berhasil disimpan, lanjut ke Produksi Moulding.')
+    router.push({ name: 'ProduksiMoulding' })
   } catch (error) {
     const msg = error.response?.data?.message || 'Gagal menyimpan proses pembahanan'
     showError('Gagal', msg)
@@ -313,7 +352,7 @@ onMounted(() => {
 
 <style scoped>
 /* ========================================
-   PAGE HEADER - ROUGH MILL GRADIENT
+   PAGE HEADER - ROUGH MILL THEME
    ======================================== */
 .page-header-roughmill {
   background: linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%);
@@ -487,79 +526,222 @@ onMounted(() => {
 }
 
 /* ========================================
-   PO INFO CARD
+   PO INFO CARD – MIRIP SAWMILL
    ======================================== */
 .po-info-card-modern {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  margin-top: 1.25rem;
+  border-radius: 18px;
   border: 2px solid #f59e0b;
-  border-radius: 16px;
-  padding: 1.5rem;
-  margin-top: 1.5rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  padding: 1.25rem 1.5rem 1.5rem;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.25);
 }
 
-.po-header {
+.po-row {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) auto;
+  align-items: center;
+  column-gap: 2rem;
+}
+
+.po-main-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.po-main-top {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1rem;
 }
 
-.po-icon {
-  font-size: 1.25rem;
+.po-main-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   background: rgba(245, 158, 11, 0.2);
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 1.25rem;
 }
 
-.po-title {
-  font-size: 1.125rem;
+.po-main-text {
+  flex: 1;
+}
+
+.po-number {
   font-weight: 800;
+  font-size: 1.05rem;
   color: #92400e;
-  margin: 0;
 }
 
-.po-details-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+.po-sub {
+  font-size: 0.85rem;
+  color: #78350f;
 }
 
-.po-detail {
+.po-main-buyer {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
-.detail-label {
-  font-size: 0.8125rem;
+.po-info-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: #92400e;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
-.detail-value {
-  font-size: 0.9375rem;
+.po-info-value {
+  font-size: 0.95rem;
   font-weight: 600;
   color: #111827;
+}
+
+/* kolom tengah & kanan */
+.po-middle-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  justify-self: stretch;
+}
+
+.po-status-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
 }
 
 .status-chip {
   display: inline-flex;
   align-items: center;
-  padding: 0.375rem 0.875rem;
+  padding: 0.35rem 0.9rem;
   border-radius: 999px;
-  font-size: 0.8125rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.85);
+  color: #92400e;
 }
 
 /* ========================================
-   FORM GRID & ELEMENTS
+   RINGKASAN KEBUTUHAN PO (TABEL)
+   ======================================== */
+.po-hint-box {
+  margin-top: 1.5rem;
+  border-radius: 16px;
+  border: 1px solid #facc15;
+  background: linear-gradient(135deg, #fefce8, #fffbeb);
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 4px 12px rgba(250, 204, 21, 0.12);
+}
+
+.po-hint-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.po-hint-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.po-hint-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: rgba(250, 204, 21, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.po-hint-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #92400e;
+}
+
+.po-hint-sub {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.po-hint-badge {
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.po-hint-list-wrapper {
+  max-height: 220px;
+  overflow-y: auto;
+  margin-top: 0.25rem;
+  border-radius: 12px;
+  border: 1px solid #facc15;
+  background: white;
+}
+
+.po-hint-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.po-hint-table thead {
+  position: sticky;
+  top: 0;
+  background: #fefce8;
+  z-index: 1;
+}
+
+.po-hint-table th,
+.po-hint-table td {
+  padding: 0.45rem 0.75rem;
+}
+
+.po-hint-table th {
+  text-align: left;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  border-bottom: 1px solid #feeeb2;
+}
+
+.po-hint-table .col-qty {
+  width: 90px;
+  text-align: right;
+}
+
+.po-hint-table .cell-name {
+  color: #374151;
+  font-weight: 500;
+}
+
+.po-hint-table .cell-qty {
+  text-align: right;
+  color: #92400e;
+  font-weight: 700;
+}
+
+.po-hint-table tbody tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+/* ========================================
+   FORM GRID & FIELDS
    ======================================== */
 .form-grid-2col {
   display: grid;
@@ -676,15 +858,14 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+.btn-icon {
+  font-size: 1.25rem;
+}
+
 .btn-cancel-modern {
   background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
   color: #374151;
   border: 2.5px solid #d1d5db;
-}
-
-.btn-cancel-modern:hover {
-  background: linear-gradient(135deg, #e5e7eb, #d1d5db);
-  transform: translateY(-2px);
 }
 
 .btn-submit-modern {
@@ -692,22 +873,32 @@ onMounted(() => {
   color: white;
 }
 
-.btn-submit-modern:hover {
-  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
-  transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(5, 150, 105, 0.4);
-}
-
 /* ========================================
    RESPONSIVE
    ======================================== */
+@media (max-width: 1024px) {
+  .po-row {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    row-gap: 1rem;
+  }
+
+  .po-status-block {
+    grid-column: 1 / -1;
+    align-items: flex-start;
+  }
+}
+
 @media (max-width: 768px) {
   .form-grid-2col {
     grid-template-columns: 1fr;
   }
 
-  .po-details-grid {
+  .po-row {
     grid-template-columns: 1fr;
+  }
+
+  .po-status-block {
+    align-items: flex-start;
   }
 
   .form-actions-modern {
@@ -716,6 +907,14 @@ onMounted(() => {
 
   .btn-action {
     width: 100%;
+  }
+
+  .page-header-roughmill {
+    padding: 1.5rem;
+  }
+
+  .card-body-roughmill {
+    padding: 1.5rem;
   }
 }
 </style>

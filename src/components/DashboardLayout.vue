@@ -139,6 +139,7 @@ const menuItems = ref([
       { name: 'Produksi Pembahanan', route: { name: 'ProduksiPembahanan' } },
       { name: 'Produksi Moulding', route: { name: 'ProduksiMoulding' } },
       { name: 'Produksi Mesin', route: { name: 'ProduksiMesin' } },
+      { name: 'Assembling', route: { name: 'AssemblingView' } },
       { name: 'Master BOM / Resep', route: { name: 'MasterBom' } },
     ],
   },
