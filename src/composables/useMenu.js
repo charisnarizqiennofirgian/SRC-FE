@@ -55,6 +55,10 @@ export function useMenu() {
           { name: 'Produksi Candy', route: '/admin/produksi/candy' },
           { name: 'Produksi Pembahanan', route: '/admin/produksi/pembahanan' },
           { name: 'Master BOM', route: '/admin/produksi/bom' },
+          { name: 'Sanding', route: '/admin/produksi/sanding' },
+          { name: 'Rustik', route: '/admin/produksi/rustik' },
+          { name: 'Finishing', route: '/admin/produksi/finishing' },
+          { name: 'Packing', route: '/admin/produksi/packing' },
         ],
       },
     ]

@@ -56,7 +56,7 @@
                   v-model="form.po_id"
                   class="form-select-modern"
                   required
-                  @change="fetchSourceInventories"
+                  @change="handlePoChange"
                 >
                   <option value="">-- Pilih PO On Progress --</option>
                   <option v-for="po in productionOrders" :key="po.id" :value="po.id">
@@ -67,139 +67,185 @@
               </div>
             </div>
 
-            <!-- PO INFO CARD – GAYA KUNING PERSIS SAWMILL -->
-            <div v-if="selectedPo" class="po-info-card-simple">
-              <div class="po-line po-number-line">
-                <span class="po-main-icon">📋</span>
-                <span class="po-number-text">{{ selectedPo.po_number }}</span>
+            <!-- RINGKASAN PO -->
+            <div v-if="poTargets.length" class="po-hint-box">
+              <div class="po-hint-header">
+                <div class="po-hint-title-wrap">
+                  <span class="po-hint-icon">📌</span>
+                  <div>
+                    <div class="po-hint-title">Ringkasan Kebutuhan PO</div>
+                    <div class="po-hint-sub">
+                      {{ poInfo.buyer_name || 'Tanpa buyer' }} •
+                      {{ poInfo.so_number || 'Tanpa SO' }}
+                    </div>
+                  </div>
+                </div>
+                <div class="po-hint-badge">{{ poTargets.length }} item</div>
               </div>
-              <div class="po-line">
-                <span class="po-label">Production Order aktif untuk proses moulding</span>
-              </div>
-              <div class="po-line">
-                <span class="po-label">Buyer</span>
-                <span class="po-value">{{ selectedPo.buyer_name || '-' }}</span>
-              </div>
-              <div class="po-line">
-                <span class="po-label">Produk</span>
-                <span class="po-value">{{ selectedPo.product_name || '-' }}</span>
-              </div>
-              <div class="po-line">
-                <span class="po-label">Status</span>
-                <span class="status-chip-simple">{{ selectedPo.status }}</span>
+
+              <div class="po-hint-list-wrapper">
+                <table class="po-hint-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th class="col-qty">Qty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="t in poTargets" :key="t.item_id">
+                      <td class="cell-name">
+                        {{ t.name || t.code || 'Item #' + t.item_id }}
+                      </td>
+                      <td class="cell-qty">{{ parseInt(t.qty_planned) }} unit</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
 
-          <!-- 2. PILIH BARANG SUMBER -->
+          <!-- ✅ 2. MULTIPLE ITEMS INPUT/OUTPUT -->
           <div class="form-section-modern">
-            <div class="section-header">
+            <div class="section-header section-header-items">
               <div class="section-icon-badge source-badge">
                 <span class="section-icon">📦</span>
               </div>
               <div class="section-title-group">
-                <h3 class="section-title">Barang di Gudang Pembahanan</h3>
-                <p class="section-subtitle">Hanya stok milik PO terpilih yang ditampilkan.</p>
+                <h3 class="section-title">Daftar Item Moulding</h3>
+                <p class="section-subtitle">Input dan output stok moulding untuk PO ini</p>
               </div>
+
+              <!-- ✅ TOMBOL TAMBAH ITEM -->
+              <button type="button" @click="addItem" class="btn-add-item" :disabled="!form.po_id">
+                <span class="add-icon">➕</span>
+                <span>Tambah Item</span>
+              </button>
             </div>
 
-            <div class="form-group-modern">
-              <label class="form-label-modern">
-                Barang Sumber <span class="required-star">*</span>
-              </label>
-              <div class="select-wrapper-modern">
-                <span class="select-icon">📦</span>
-                <select v-model="form.source_inventory_id" class="form-select-modern" required>
-                  <option value="">-- Pilih Barang Gudang Pembahanan --</option>
-                  <option v-for="inv in sourceInventories" :key="inv.id" :value="inv.id">
-                    {{ inv.item_name }} | Sisa Stok: {{ Number(inv.available_qty) }} pcs
-                  </option>
-                </select>
-                <span class="select-arrow">▼</span>
-              </div>
-            </div>
-
-            <div v-if="selectedSource" class="info-text-highlight">
-              Maksimal bisa dipindah:
-              <strong>{{ Number(selectedSource.available_qty) }}</strong> pcs
-            </div>
-          </div>
-
-          <!-- 3. INPUT & OUTPUT -->
-          <div class="form-section-modern">
-            <div class="section-header">
-              <div class="section-icon-badge qty-badge">
-                <span class="section-icon">🔢</span>
-              </div>
-              <div class="section-title-group">
-                <h3 class="section-title">Qty & Item Hasil</h3>
-                <p class="section-subtitle">
-                  Tentukan qty yang diambil dan item hasil di Gudang Moulding.
-                </p>
-              </div>
-            </div>
-
-            <div class="form-grid-2col">
-              <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Qty Input (pcs) <span class="required-star">*</span>
-                </label>
-                <div class="input-wrapper-icon">
-                  <span class="input-icon">🔢</span>
-                  <input
-                    v-model.number="form.input_qty"
-                    type="number"
-                    min="1"
-                    class="form-input-modern"
-                    placeholder="Jumlah pcs yang dipindah"
-                    required
-                  />
-                  <span class="input-suffix">pcs</span>
+            <!-- ✅ LOOP UNTUK SETIAP ITEM -->
+            <div v-for="(item, index) in form.items" :key="index" class="item-row-wrapper">
+              <!-- Header Row dengan Nomor dan Tombol Hapus -->
+              <div class="item-row-header">
+                <div class="item-number-badge">
+                  <span class="item-icon">📦</span>
+                  <span class="item-number">Item #{{ index + 1 }}</span>
                 </div>
-                <p v-if="qtyError" class="error-text">
-                  {{ qtyError }}
-                </p>
+                <button
+                  v-if="form.items.length > 1"
+                  type="button"
+                  @click="removeItem(index)"
+                  class="btn-remove-item"
+                >
+                  <span>🗑️</span>
+                  <span>Hapus</span>
+                </button>
               </div>
 
-              <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Item Hasil Moulding <span class="required-star">*</span>
-                </label>
-                <div class="select-wrapper-modern">
-                  <span class="select-icon">📦</span>
-                  <select v-model="form.output_item_id" class="form-select-modern" required>
-                    <option value="">-- Pilih Item Hasil --</option>
-                    <option v-for="item in outputItems" :key="item.id" :value="item.id">
-                      {{ item.code }} - {{ item.name }}
-                    </option>
-                  </select>
-                  <span class="select-arrow">▼</span>
+              <!-- BARANG SUMBER (GUDANG PEMBAHANAN) -->
+              <div class="sub-section-source">
+                <div class="sub-section-title">
+                  <span class="sub-icon">📦</span>
+                  <span>Barang di Gudang Pembahanan</span>
+                </div>
+
+                <div class="form-group-modern">
+                  <label class="form-label-modern">
+                    Barang Sumber <span class="required-star">*</span>
+                  </label>
+                  <div class="select-wrapper-modern">
+                    <span class="select-icon">📦</span>
+                    <select v-model="item.source_inventory_id" class="form-select-modern" required>
+                      <option value="">-- Pilih Barang Gudang Pembahanan --</option>
+                      <option v-for="inv in sourceInventories" :key="inv.id" :value="inv.id">
+                        {{ inv.item_name }} | Sisa Stok: {{ Number(inv.available_qty) }} pcs
+                      </option>
+                    </select>
+                    <span class="select-arrow">▼</span>
+                  </div>
+
+                  <div v-if="getSelectedSource(index)" class="info-text-highlight">
+                    Maksimal bisa dipindah:
+                    <strong>{{ Number(getSelectedSource(index).available_qty) }}</strong> pcs
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="form-group-modern">
-              <label class="form-label-modern">
-                Qty Output (pcs) <span class="required-star">*</span>
-              </label>
-              <div class="input-wrapper-icon">
-                <span class="input-icon">📊</span>
-                <input
-                  v-model.number="form.output_qty"
-                  type="number"
-                  min="1"
-                  class="form-input-modern"
-                  placeholder="Qty hasil moulding"
-                  required
-                />
-                <span class="input-suffix">pcs</span>
+              <!-- QTY INPUT & OUTPUT -->
+              <div class="sub-section-output">
+                <div class="sub-section-title">
+                  <span class="sub-icon">🔢</span>
+                  <span>Qty & Item Hasil</span>
+                </div>
+
+                <div class="form-grid-2col">
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">
+                      Qty Input (pcs) <span class="required-star">*</span>
+                    </label>
+                    <div class="input-wrapper-icon">
+                      <span class="input-icon">🔢</span>
+                      <input
+                        v-model.number="item.input_qty"
+                        type="number"
+                        min="1"
+                        :max="getSelectedSource(index)?.available_qty || 9999"
+                        class="form-input-modern"
+                        placeholder="Jumlah pcs yang dipindah"
+                        required
+                      />
+                      <span class="input-suffix">pcs</span>
+                    </div>
+                    <p v-if="getSelectedSource(index)" class="help-text">
+                      Stok tersedia:
+                      <strong>{{ getSelectedSource(index).available_qty }}</strong> pcs
+                    </p>
+                  </div>
+
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">
+                      Item Hasil Moulding <span class="required-star">*</span>
+                    </label>
+                    <div class="select-wrapper-modern">
+                      <span class="select-icon">📦</span>
+                      <select v-model="item.output_item_id" class="form-select-modern" required>
+                        <option value="">-- Pilih Item Hasil --</option>
+                        <option
+                          v-for="outItem in outputItems"
+                          :key="outItem.id"
+                          :value="outItem.id"
+                        >
+                          {{ outItem.code }} - {{ outItem.name }}
+                        </option>
+                      </select>
+                      <span class="select-arrow">▼</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group-modern">
+                  <label class="form-label-modern">
+                    Qty Output (pcs) <span class="required-star">*</span>
+                  </label>
+                  <div class="input-wrapper-icon">
+                    <span class="input-icon">📊</span>
+                    <input
+                      v-model.number="item.output_qty"
+                      type="number"
+                      min="1"
+                      class="form-input-modern"
+                      placeholder="Qty hasil moulding"
+                      required
+                    />
+                    <span class="input-suffix">pcs</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- AKSI FORM -->
           <div class="form-actions-modern">
-            <button type="button" class="btn-action btn-cancel-modern" @click="router.back()">
+            <button type="button" class="btn-action btn-cancel-modern" @click="router.back">
               <span class="btn-icon">↩️</span>
               <span class="btn-text">Batal</span>
             </button>
@@ -215,7 +261,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
@@ -228,21 +274,46 @@ const productionOrders = ref([])
 const sourceInventories = ref([])
 const outputItems = ref([])
 
+// ✅ FORM DENGAN MULTIPLE ITEMS
 const form = reactive({
   po_id: '',
-  source_inventory_id: '',
-  input_qty: null,
-  output_item_id: '',
-  output_qty: null,
+  items: [
+    {
+      source_inventory_id: '',
+      input_qty: null,
+      output_item_id: '',
+      output_qty: null,
+    },
+  ],
 })
 
-const qtyError = ref('')
+// Data tambahan untuk ringkasan PO
+const poTargets = ref([])
+const poInfo = ref({
+  buyer_name: null,
+  so_number: null,
+})
 
-const selectedPo = computed(() => productionOrders.value.find((po) => po.id === Number(form.po_id)))
+// ✅ FUNCTION: Tambah item baru
+const addItem = () => {
+  form.items.push({
+    source_inventory_id: '',
+    input_qty: null,
+    output_item_id: '',
+    output_qty: null,
+  })
+}
 
-const selectedSource = computed(() =>
-  sourceInventories.value.find((inv) => inv.id === Number(form.source_inventory_id)),
-)
+// ✅ FUNCTION: Hapus item
+const removeItem = (index) => {
+  form.items.splice(index, 1)
+}
+
+// ✅ FUNCTION: Get selected source untuk specific item index
+const getSelectedSource = (index) => {
+  const item = form.items[index]
+  return sourceInventories.value.find((inv) => inv.id === Number(item.source_inventory_id)) || null
+}
 
 const fetchProductionOrders = async () => {
   try {
@@ -261,7 +332,10 @@ const fetchSourceInventories = async () => {
   try {
     if (!form.po_id) {
       sourceInventories.value = []
-      form.source_inventory_id = ''
+      // Reset semua source_inventory_id di items
+      form.items.forEach((item) => {
+        item.source_inventory_id = ''
+      })
       return
     }
 
@@ -270,11 +344,42 @@ const fetchSourceInventories = async () => {
     })
 
     sourceInventories.value = res.data.data || []
-    form.source_inventory_id = ''
+
+    // Reset semua source_inventory_id di items
+    form.items.forEach((item) => {
+      item.source_inventory_id = ''
+    })
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil stok Gudang Pembahanan')
   }
+}
+
+const handlePoChange = async () => {
+  poTargets.value = []
+  poInfo.value = { buyer_name: null, so_number: null }
+
+  if (!form.po_id) {
+    await fetchSourceInventories()
+    return
+  }
+
+  try {
+    const res = await apiClient.get(`/production-orders/${form.po_id}`)
+    const data = res.data.data || {}
+
+    poInfo.value = {
+      buyer_name: data.sales_order?.buyer_name || null,
+      so_number: data.sales_order?.so_number || null,
+    }
+
+    poTargets.value = data.targets || []
+  } catch (error) {
+    console.error(error)
+    showError('Gagal', 'Gagal mengambil detail Production Order')
+  }
+
+  await fetchSourceInventories()
 }
 
 const fetchOutputItems = async () => {
@@ -292,20 +397,42 @@ const fetchOutputItems = async () => {
 
 const handleSubmit = async () => {
   try {
-    qtyError.value = ''
+    // ✅ VALIDASI
+    for (let i = 0; i < form.items.length; i++) {
+      const item = form.items[i]
 
-    if (selectedSource.value && form.input_qty > selectedSource.value.available_qty) {
-      qtyError.value = 'Stok tidak cukup!'
-      return
+      if (!item.source_inventory_id) {
+        showError('Validasi', `Item #${i + 1}: Barang sumber wajib dipilih`)
+        return
+      }
+
+      const selectedSource = getSelectedSource(i)
+      if (!selectedSource) {
+        showError('Validasi', `Item #${i + 1}: Data inventory tidak ditemukan`)
+        return
+      }
+
+      if (item.input_qty > selectedSource.available_qty) {
+        showError(
+          'Validasi',
+          `Item #${i + 1}: Qty input (${item.input_qty} pcs) melebihi stok tersedia (${selectedSource.available_qty} pcs)`,
+        )
+        return
+      }
     }
 
+    // ✅ PAYLOAD BARU (MULTIPLE ITEMS)
     const payload = {
       po_id: Number(form.po_id),
-      source_inventory_id: Number(form.source_inventory_id),
-      input_qty: Number(form.input_qty),
-      output_item_id: Number(form.output_item_id),
-      output_qty: Number(form.output_qty),
+      items: form.items.map((item) => ({
+        source_inventory_id: Number(item.source_inventory_id),
+        input_qty: Number(item.input_qty),
+        output_item_id: Number(item.output_item_id),
+        output_qty: Number(item.output_qty),
+      })),
     }
+
+    console.log('📤 PAYLOAD MOULDING:', payload)
 
     await apiClient.post('/produksi/moulding', payload)
 
@@ -344,78 +471,6 @@ onMounted(() => {
   gap: 2rem;
 }
 
-/* ========================================
-   PO INFO CARD SIMPLE (SAMA SEPERTI GAMBAR)
-   ======================================== */
-.po-info-card-simple {
-  margin-top: 1.25rem;
-  border-radius: 18px;
-  border: 2px solid #f59e0b;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  padding: 1.25rem 1.75rem 1.5rem;
-  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.25);
-  width: 100%;
-}
-
-.po-number-line {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-weight: 800;
-  font-size: 1.05rem;
-  color: #92400e;
-  margin-bottom: 0.75rem;
-}
-
-.po-main-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background: rgba(245, 158, 11, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.po-number-text {
-  font-weight: 800;
-}
-
-.po-line {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.95rem;
-  color: #111827;
-  margin-bottom: 0.25rem;
-}
-
-.po-label {
-  min-width: 70px;
-  font-weight: 600;
-  color: #92400e;
-}
-
-.po-value {
-  font-weight: 600;
-  color: #111827;
-}
-
-.status-chip-simple {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.85rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  background: #ffffff;
-  color: #92400e;
-  box-shadow: 0 2px 4px rgba(148, 163, 184, 0.45);
-}
-
-/* ========================================
-   HEADER
-   ======================================== */
 .header-left-section {
   display: flex;
   align-items: center;
@@ -533,6 +588,10 @@ onMounted(() => {
   border-left: 5px solid #0ea5e9;
 }
 
+.section-header-items {
+  position: relative;
+}
+
 .section-icon-badge {
   width: 56px;
   height: 56px;
@@ -552,11 +611,6 @@ onMounted(() => {
 .section-icon-badge.source-badge {
   background: linear-gradient(135deg, #fee2e2, #fecaca);
   box-shadow: 0 4px 12px rgba(248, 113, 113, 0.28);
-}
-
-.section-icon-badge.qty-badge {
-  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
 }
 
 .section-icon {
@@ -581,75 +635,256 @@ onMounted(() => {
 }
 
 /* ========================================
-   PO INFO CARD (LAMA, MASIH BISA DIPAKAI DI HALAMAN LAIN)
+   TOMBOL TAMBAH ITEM
    ======================================== */
-.po-info-card-modern {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border: 2px solid #f59e0b;
-  border-radius: 16px;
-  padding: 1.5rem;
-  margin-top: 1.5rem;
+.btn-add-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #0ea5e9, #0369a1);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
 }
 
-.po-header {
+.btn-add-item:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0369a1, #0f766e);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.35);
+}
+
+.btn-add-item:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.add-icon {
+  font-size: 1.125rem;
+}
+
+/* ========================================
+   ITEM ROW WRAPPER
+   ======================================== */
+.item-row-wrapper {
+  margin-bottom: 2rem;
+  padding: 1.75rem;
+  background: linear-gradient(135deg, #fafafa, #f5f5f5);
+  border-radius: 16px;
+  border: 2px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.item-row-wrapper:last-child {
+  margin-bottom: 0;
+}
+
+.item-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.item-number-badge {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1rem;
+  padding: 0.65rem 1.25rem;
+  background: linear-gradient(135deg, #0ea5e9, #0369a1);
+  color: white;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1rem;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
 }
 
-.po-icon {
+.item-icon {
   font-size: 1.25rem;
-  background: rgba(245, 158, 11, 0.2);
-  width: 36px;
-  height: 36px;
+}
+
+.item-number {
+  font-weight: 800;
+}
+
+.btn-remove-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+.btn-remove-item:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
+}
+
+/* ========================================
+   SUB-SECTIONS
+   ======================================== */
+.sub-section-source,
+.sub-section-output {
+  margin-bottom: 1.75rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.sub-section-source {
+  background: linear-gradient(135deg, #fef3c7, #fef9c3);
+  border-color: #fde68a;
+}
+
+.sub-section-output {
+  background: linear-gradient(135deg, #dbeafe, #e0f2fe);
+  border-color: #bfdbfe;
+}
+
+.sub-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.sub-icon {
+  font-size: 1.5rem;
+}
+
+/* ========================================
+   PO HINT BOX
+   ======================================== */
+.po-hint-box {
+  margin-top: 1rem;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #fefce8, #fffbeb);
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 4px 12px rgba(250, 204, 21, 0.12);
+}
+
+.po-hint-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.po-hint-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.po-hint-icon {
+  width: 32px;
+  height: 32px;
   border-radius: 999px;
+  background: rgba(250, 204, 21, 0.18);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 1.1rem;
 }
 
-.po-title {
-  font-size: 1.125rem;
-  font-weight: 800;
-  color: #92400e;
-  margin: 0;
-}
-
-.po-details-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-.po-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.detail-label {
-  font-size: 0.8125rem;
-  color: #92400e;
+.po-hint-title {
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 0.95rem;
+  color: #92400e;
 }
 
-.detail-value {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: #111827;
+.po-hint-sub {
+  font-size: 0.8rem;
+  color: #6b7280;
 }
 
-.status-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.375rem 0.875rem;
+.po-hint-badge {
+  padding: 0.3rem 0.75rem;
   border-radius: 999px;
-  font-size: 0.8125rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  background: rgba(255, 255, 255, 0.7);
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.po-hint-list-wrapper {
+  max-height: 180px;
+  overflow-y: auto;
+  margin-top: 0.25rem;
+  border-radius: 12px;
+  border: 1px solid #facc15;
+  background: white;
+}
+
+.po-hint-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.po-hint-table thead {
+  position: sticky;
+  top: 0;
+  background: #fefce8;
+  z-index: 1;
+}
+
+.po-hint-table th,
+.po-hint-table td {
+  padding: 0.45rem 0.75rem;
+}
+
+.po-hint-table th {
+  text-align: left;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  border-bottom: 1px solid #feeeb2;
+}
+
+.po-hint-table .col-qty {
+  width: 80px;
+  text-align: right;
+}
+
+.po-hint-table .cell-name {
+  color: #374151;
+  font-weight: 500;
+}
+
+.po-hint-table .cell-qty {
+  text-align: right;
+  color: #92400e;
+  font-weight: 700;
+}
+
+.po-hint-table tbody tr:nth-child(even) {
+  background: #f9fafb;
 }
 
 /* ========================================
@@ -782,10 +1017,15 @@ onMounted(() => {
   padding: 0.75rem 1rem;
 }
 
-.error-text {
-  margin-top: 0.4rem;
+.help-text {
+  margin-top: 0.5rem;
   font-size: 0.8125rem;
-  color: #b91c1c;
+  color: #6b7280;
+}
+
+.help-text strong {
+  color: #0ea5e9;
+  font-weight: 700;
 }
 
 /* ========================================
@@ -838,6 +1078,7 @@ onMounted(() => {
 }
 
 .btn-submit-modern:hover {
+  background: linear-gradient(135deg, #0369a1 0%, #0f766e 100%);
   transform: translateY(-3px);
   box-shadow: 0 10px 30px rgba(14, 165, 233, 0.45);
 }
@@ -863,10 +1104,6 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 
-  .po-details-grid {
-    grid-template-columns: 1fr;
-  }
-
   .form-actions-modern {
     flex-direction: column;
   }
@@ -877,6 +1114,30 @@ onMounted(() => {
 
   .header-right-section {
     align-items: flex-start;
+  }
+
+  .section-header {
+    flex-wrap: wrap;
+  }
+
+  .btn-add-item {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .item-row-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .btn-remove-item {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .item-row-wrapper {
+    padding: 1.25rem;
   }
 }
 </style>

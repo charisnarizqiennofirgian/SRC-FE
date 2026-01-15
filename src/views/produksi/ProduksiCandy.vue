@@ -75,7 +75,7 @@
             </div>
           </div>
 
-          <!-- SUMBER STOK (GUDANG SAWMILL) -->
+          <!-- ✅ SUMBER STOK (GUDANG SAWMILL) - MULTIPLE ITEMS -->
           <div class="form-section-modern">
             <div class="section-header">
               <div class="section-icon-badge log-badge">
@@ -84,74 +84,111 @@
               <div class="section-title-group">
                 <h3 class="section-title">Sumber Stok (Gudang Sawmill)</h3>
                 <p class="section-subtitle">
-                  Pilih stok RST basah berdasarkan item, qty, dan referensi PO.
-                </p>
-              </div>
-            </div>
-
-            <div class="form-group-modern">
-              <label class="form-label-modern">
-                Pilih Stok RST Basah <span class="required-star">*</span>
-              </label>
-              <div class="select-wrapper-modern">
-                <span class="select-icon">📦</span>
-                <select v-model="form.source_inventory_id" class="form-select-modern" required>
-                  <option value="">-- Pilih Stok di Gudang Sawmill --</option>
-                  <option v-for="inv in sanwilInventories" :key="inv.id" :value="inv.id">
-                    {{ inv.item.code }} - {{ inv.item.name }} ({{ inv.qty }} pcs) • PO:
-                    {{ inv.ref_po_id || '-' }}
-                  </option>
-                </select>
-                <span class="select-arrow">▼</span>
-              </div>
-              <p v-if="selectedInventory" class="helper-inline">
-                Gudang: {{ selectedInventory.warehouse?.name || 'Gudang Sawmill' }} • Produk:
-                {{ selectedInventory.item?.name }}
-              </p>
-            </div>
-
-            <div v-if="selectedInventory" class="form-grid-2col">
-              <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Qty yang Dioven (pcs) <span class="required-star">*</span>
-                </label>
-                <div class="input-wrapper-icon">
-                  <span class="input-icon">🔢</span>
-                  <input
-                    v-model.number="form.qty"
-                    type="number"
-                    min="1"
-                    :max="selectedInventory.qty"
-                    step="1"
-                    class="form-input-modern"
-                    placeholder="Jumlah pcs yang masuk oven"
-                    required
-                  />
-                  <span class="input-suffix">pcs</span>
-                </div>
-                <p class="help-text">
-                  Stok tersedia: <strong>{{ selectedInventory.qty }}</strong> pcs
+                  Pilih stok RST basah berdasarkan item dan qty total tersedia.
                 </p>
               </div>
 
-              <!-- TARGET ITEM KERING -->
+              <!-- ✅ TOMBOL TAMBAH ITEM -->
+              <button type="button" @click="addItem" class="btn-add-item">
+                <span class="add-icon">➕</span> Tambah Item
+              </button>
+            </div>
+
+            <!-- ✅ LOOP UNTUK SETIAP ITEM -->
+            <div v-for="(item, index) in form.items" :key="index" class="item-row-wrapper">
+              <!-- Header Row dengan Nomor dan Tombol Hapus -->
+              <div class="item-row-header">
+                <h4 class="item-number">📦 Item #{{ index + 1 }}</h4>
+                <button
+                  v-if="form.items.length > 1"
+                  type="button"
+                  @click="removeItem(index)"
+                  class="btn-remove-item"
+                >
+                  🗑️ Hapus
+                </button>
+              </div>
+
+              <!-- ✅ PILIH STOK RST BASAH -->
               <div class="form-group-modern">
                 <label class="form-label-modern">
-                  Jadikan Barang Kering <span class="required-star">*</span>
+                  Pilih Stok RST Basah <span class="required-star">*</span>
                 </label>
                 <div class="select-wrapper-modern">
-                  <span class="select-icon">🎯</span>
-                  <select v-model="form.target_item_id" class="form-select-modern" required>
-                    <option value="">-- Pilih Item RST Kering --</option>
-                    <option v-for="item in dryItems" :key="item.id" :value="item.id">
-                      {{ item.code }} - {{ item.name }}
+                  <span class="select-icon">📦</span>
+                  <select
+                    v-model="item.item_id"
+                    @change="item.warehouse_id = getWarehouseIdByName('Gudang Sanwil (RST Basah)')"
+                    class="form-select-modern"
+                    required
+                  >
+                    <option value="">-- Pilih Stok di Gudang Sawmill --</option>
+                    <option
+                      v-for="inv in sanwilInventories"
+                      :key="`wh${inv.warehouse_id}_item${inv.item_id}`"
+                      :value="inv.item_id"
+                    >
+                      {{ inv.item?.code || 'N/A' }} - {{ inv.item?.name || 'N/A' }} ({{
+                        inv.qty
+                      }}
+                      pcs)
                     </option>
                   </select>
                   <span class="select-arrow">▼</span>
                 </div>
-                <p v-if="form.target_item_id" class="help-text">
-                  Item tujuan akan menerima stok kering di Gudang Candy.
+
+                <p v-if="getSelectedInventory(index)" class="helper-inline">
+                  Gudang: {{ getSelectedInventory(index).warehouse?.name || 'Gudang Sawmill' }} •
+                  Produk: {{ getSelectedInventory(index).item?.name }} • Total Stok:
+                  <strong>{{ getSelectedInventory(index).qty }} pcs</strong>
                 </p>
+              </div>
+
+              <!-- Qty dan Target Item (2 kolom) -->
+              <div v-if="getSelectedInventory(index)" class="form-grid-2col">
+                <!-- Qty yang Dioven -->
+                <div class="form-group-modern">
+                  <label class="form-label-modern">
+                    Qty yang Dioven (pcs) <span class="required-star">*</span>
+                  </label>
+                  <div class="input-wrapper-icon">
+                    <span class="input-icon">🔢</span>
+                    <input
+                      v-model.number="item.qty"
+                      type="number"
+                      min="1"
+                      :max="getSelectedInventory(index).qty"
+                      step="1"
+                      class="form-input-modern"
+                      placeholder="Jumlah pcs"
+                      required
+                    />
+                    <span class="input-suffix">pcs</span>
+                  </div>
+                  <p class="help-text">
+                    Stok tersedia: <strong>{{ getSelectedInventory(index).qty }}</strong> pcs
+                  </p>
+                </div>
+
+                <!-- Target Item Kering -->
+                <div class="form-group-modern">
+                  <label class="form-label-modern">
+                    Jadikan Barang Kering <span class="required-star">*</span>
+                  </label>
+                  <div class="select-wrapper-modern">
+                    <span class="select-icon">🎯</span>
+                    <select v-model="item.target_item_id" class="form-select-modern" required>
+                      <option value="">-- Pilih Item RST Kering --</option>
+                      <option v-for="dryItem in dryItems" :key="dryItem.id" :value="dryItem.id">
+                        {{ dryItem.code }} - {{ dryItem.name }}
+                      </option>
+                    </select>
+                    <span class="select-arrow">▼</span>
+                  </div>
+                  <p v-if="item.target_item_id" class="help-text">
+                    Item tujuan akan menerima stok kering di Gudang Candy.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -178,7 +215,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, reactive } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
@@ -190,22 +227,52 @@ const { showSuccess, showError } = useNotification()
 const form = reactive({
   date: new Date().toISOString().slice(0, 10),
   notes: '',
-  source_inventory_id: '',
-  target_item_id: '',
-  qty: null,
+  items: [
+    {
+      item_id: '',
+      warehouse_id: '',
+      target_item_id: '',
+      qty: null,
+    },
+  ],
 })
 
 const warehouses = ref([])
 const sanwilInventories = ref([])
 const dryItems = ref([])
 
-const selectedInventory = computed(
-  () => sanwilInventories.value.find((inv) => inv.id === form.source_inventory_id) || null,
-)
+const getSelectedInventory = (index) => {
+  const item = form.items[index]
+  return (
+    sanwilInventories.value.find(
+      (inv) => inv.item_id === item.item_id && inv.warehouse_id === item.warehouse_id,
+    ) || null
+  )
+}
 
 const getWarehouseIdByName = (name) => {
   const wh = warehouses.value.find((w) => w.name === name)
   return wh ? wh.id : null
+}
+
+const addItem = () => {
+  const sanwilId = getWarehouseIdByName('Gudang Sanwil (RST Basah)')
+  form.items.push({
+    item_id: '',
+    warehouse_id: sanwilId || '',
+    target_item_id: '',
+    qty: null,
+  })
+  showSuccess('Berhasil', 'Item baru ditambahkan')
+}
+
+const removeItem = (index) => {
+  if (form.items.length > 1) {
+    form.items.splice(index, 1)
+    showSuccess('Berhasil', `Item #${index + 1} dihapus`)
+  } else {
+    showError('Validasi', 'Minimal harus ada 1 item')
+  }
 }
 
 const fetchData = async () => {
@@ -216,78 +283,121 @@ const fetchData = async () => {
     const sanwilId = getWarehouseIdByName('Gudang Sanwil (RST Basah)')
     if (!sanwilId) {
       showError('Konfigurasi', 'Gudang Sawmill tidak ditemukan di master')
-      console.log('WAREHOUSES', warehouses.value)
+      console.log('❌ WAREHOUSES:', warehouses.value)
       return
     }
+
+    console.log('✅ Gudang Sanwil ID:', sanwilId)
 
     const invRes = await apiClient.get('/inventories', {
       params: {
         warehouse_id: sanwilId,
-        per_page: 200,
+        per_page: 9999,
       },
     })
 
     const raw = invRes.data.data?.data || invRes.data.data || []
 
-    sanwilInventories.value = raw.map((inv) => ({
-      id: inv.id,
-      warehouse_id: inv.warehouse_id,
-      item_id: inv.item_id,
-      qty: Number(inv.qty),
-      ref_po_id: inv.ref_po_id,
-      ref_product_id: inv.ref_product_id,
-      item: inv.item,
-      warehouse: inv.warehouse,
-    }))
+    console.log('📦 RAW INVENTORIES dari API:', raw)
+    console.log('📦 Total baris inventory:', raw.length)
+
+    // ✅ GROUP BY item_id + warehouse_id dan SUM qty
+    const groupedMap = {}
+
+    raw.forEach((inv) => {
+      const key = `${inv.warehouse_id}_${inv.item_id}`
+
+      if (!groupedMap[key]) {
+        groupedMap[key] = {
+          warehouse_id: inv.warehouse_id,
+          item_id: inv.item_id,
+          qty: 0,
+          item: inv.item,
+          warehouse: inv.warehouse,
+          inventory_ids: [],
+        }
+      }
+
+      // Sum qty
+      groupedMap[key].qty += Number(inv.qty || 0)
+      groupedMap[key].inventory_ids.push(inv.id)
+
+      console.log(
+        `➕ Menambahkan ${inv.qty} pcs ke item_id ${inv.item_id}, total sekarang: ${groupedMap[key].qty}`,
+      )
+    })
+
+    sanwilInventories.value = Object.values(groupedMap)
+
+    console.log('✅ SANWIL INVENTORIES (GROUPED):', sanwilInventories.value)
+    console.log('✅ Total item setelah grouping:', sanwilInventories.value.length)
+
+    // Set default warehouse_id untuk item pertama
+    if (form.items.length > 0 && !form.items[0].warehouse_id) {
+      form.items[0].warehouse_id = sanwilId
+    }
 
     const dryRes = await apiClient.get('/materials', {
       params: { category_name: 'Kayu RST', per_page: 200 },
     })
     dryItems.value = dryRes.data.data?.data || dryRes.data.data || []
 
-    console.log('WAREHOUSES', warehouses.value)
-    console.log('SANWIL INVENTORIES', sanwilInventories.value)
-    console.log('DRY ITEMS', dryItems.value)
+    console.log('✅ DRY ITEMS:', dryItems.value.length, 'items')
   } catch (error) {
-    console.error(error)
-    showError('Gagal', 'Gagal mengambil data gudang / inventory Sawmill / item kering')
+    console.error('❌ ERROR fetchData:', error)
+    showError('Gagal', 'Gagal mengambil data gudang / inventory')
   }
 }
 
 const handleSubmit = async () => {
   try {
-    if (!selectedInventory.value) {
-      showError('Validasi', 'Stok sumber wajib dipilih')
-      return
-    }
-    if (!form.target_item_id) {
-      showError('Validasi', 'Barang kering tujuan wajib dipilih')
-      return
-    }
-    if (!form.qty || form.qty <= 0) {
-      showError('Validasi', 'Qty pcs wajib lebih dari 0')
-      return
-    }
-    if (form.qty > selectedInventory.value.qty) {
-      showError('Validasi', 'Qty pcs melebihi stok di Gudang Sawmill')
-      return
+    // Validasi setiap item
+    for (let i = 0; i < form.items.length; i++) {
+      const item = form.items[i]
+      const selectedInv = getSelectedInventory(i)
+
+      if (!item.item_id) {
+        showError('Validasi', `Item #${i + 1}: Stok sumber wajib dipilih`)
+        return
+      }
+      if (!item.target_item_id) {
+        showError('Validasi', `Item #${i + 1}: Barang kering tujuan wajib dipilih`)
+        return
+      }
+      if (!item.qty || item.qty <= 0) {
+        showError('Validasi', `Item #${i + 1}: Qty wajib lebih dari 0`)
+        return
+      }
+      if (selectedInv && item.qty > selectedInv.qty) {
+        showError(
+          'Validasi',
+          `Item #${i + 1}: Qty (${item.qty} pcs) melebihi stok tersedia (${selectedInv.qty} pcs)`,
+        )
+        return
+      }
     }
 
     const payload = {
       date: form.date,
       notes: form.notes || null,
-      source_inventory_id: form.source_inventory_id,
-      target_item_id: form.target_item_id,
-      qty: form.qty,
+      items: form.items.map((item) => ({
+        warehouse_id: item.warehouse_id,
+        item_id: item.item_id,
+        target_item_id: item.target_item_id,
+        qty: item.qty,
+      })),
     }
 
-    await apiClient.post('/candy-productions', payload)
+    console.log('📤 PAYLOAD YANG DIKIRIM:', payload)
 
-    // alert + redirect ke menu Produksi Pembahanan
-    showSuccess('Sukses', 'Proses Candy berhasil dicatat, lanjut ke Produksi Pembahanan.')
+    const response = await apiClient.post('/candy-productions', payload)
+
+    console.log('✅ RESPONSE DARI SERVER:', response.data)
+
+    showSuccess('Sukses', `Proses Candy berhasil dicatat untuk ${form.items.length} item.`)
     router.push({ name: 'ProduksiPembahanan' })
   } catch (error) {
-    console.error(error)
+    console.error('❌ ERROR SUBMIT:', error)
     const msg =
       error.response?.data?.message ||
       (error.response?.data?.errors && JSON.stringify(error.response.data.errors)) ||
@@ -302,7 +412,9 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* (CSS-mu tetap sama persis, tidak diubah) */
+/* ========================================
+   EXISTING STYLES (TETAP SAMA)
+   ======================================== */
 .page-header-candy {
   background: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #b91c1c 100%);
   padding: 2rem 2.5rem;
@@ -598,6 +710,7 @@ onMounted(() => {
   margin-top: 0.5rem;
   font-size: 0.8125rem;
   color: #4b5563;
+  font-weight: 600;
 }
 
 .form-actions-modern {
@@ -651,6 +764,95 @@ onMounted(() => {
   box-shadow: 0 10px 30px rgba(248, 113, 113, 0.4);
 }
 
+/* ========================================
+   ✅ NEW STYLES FOR MULTIPLE ITEMS
+   ======================================== */
+
+/* Tombol Tambah Item */
+.btn-add-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.875rem 1.5rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  margin-left: auto;
+}
+
+.btn-add-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.add-icon {
+  font-size: 1.125rem;
+}
+
+/* Item Row Wrapper */
+.item-row-wrapper {
+  margin-bottom: 2rem;
+  padding: 1.75rem;
+  border: 2.5px solid #e5e7eb;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ffffff, #fafafa);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.item-row-wrapper:hover {
+  border-color: #f97316;
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.15);
+}
+
+.item-row-wrapper:last-child {
+  margin-bottom: 0;
+}
+
+/* Item Row Header */
+.item-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px dashed #e5e7eb;
+}
+
+.item-number {
+  margin: 0;
+  color: #111827;
+  font-weight: 700;
+  font-size: 1.125rem;
+  letter-spacing: -0.25px;
+}
+
+/* Tombol Hapus Item */
+.btn-remove-item {
+  background: linear-gradient(135deg, #ff4444, #cc0000);
+  color: white;
+  border: none;
+  padding: 0.625rem 1.125rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(255, 68, 68, 0.3);
+}
+
+.btn-remove-item:hover {
+  background: linear-gradient(135deg, #cc0000, #990000);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 68, 68, 0.5);
+}
+
 @media (max-width: 768px) {
   .page-header-candy {
     padding: 1.5rem;
@@ -675,6 +877,27 @@ onMounted(() => {
 
   .header-right-section {
     align-items: flex-start;
+  }
+
+  .btn-add-item {
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+    margin-top: 1rem;
+  }
+
+  .item-row-wrapper {
+    padding: 1.25rem;
+  }
+
+  .item-row-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .btn-remove-item {
+    width: 100%;
   }
 }
 </style>

@@ -103,99 +103,152 @@
             </div>
           </div>
 
-          <!-- BLOK 2: SUMBER STOK -->
+          <!-- ✅ BLOK 2: MULTIPLE ITEMS INPUT/OUTPUT -->
           <div class="form-section-modern">
-            <div class="section-header">
+            <div class="section-header section-header-items">
               <div class="section-icon-badge candy-badge">
                 <span class="section-icon">📦</span>
               </div>
               <div class="section-title-group">
-                <h3 class="section-title">Sumber Stok Gudang Candy</h3>
-                <p class="section-subtitle">Stok kayu kering yang siap diproses pembahanan</p>
+                <h3 class="section-title">Daftar Item Pembahanan</h3>
+                <p class="section-subtitle">Input dan output stok pembahanan</p>
               </div>
+
+              <!-- ✅ TOMBOL TAMBAH ITEM -->
+              <button type="button" @click="addItem" class="btn-add-item">
+                <span class="add-icon">➕</span>
+                <span>Tambah Item</span>
+              </button>
             </div>
 
-            <div class="form-grid-2col">
-              <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Sumber Inventory <span class="required-star">*</span>
-                </label>
-                <div class="select-wrapper-modern">
-                  <span class="select-icon">📦</span>
-                  <select v-model="form.source_inventory_id" class="form-select-modern" required>
-                    <option value="">-- Pilih Stok Gudang Candy --</option>
-                    <option v-for="inv in sourceInventories" :key="inv.id" :value="inv.id">
-                      {{ inv.item.name }} | {{ Number(inv.qty) }} Pcs
-                    </option>
-                  </select>
-                  <span class="select-arrow">▼</span>
+            <!-- ✅ LOOP UNTUK SETIAP ITEM -->
+            <div v-for="(item, index) in form.items" :key="index" class="item-row-wrapper">
+              <!-- Header Row dengan Nomor dan Tombol Hapus -->
+              <div class="item-row-header">
+                <div class="item-number-badge">
+                  <span class="item-icon">📦</span>
+                  <span class="item-number">Item #{{ index + 1 }}</span>
+                </div>
+                <button
+                  v-if="form.items.length > 1"
+                  type="button"
+                  @click="removeItem(index)"
+                  class="btn-remove-item"
+                >
+                  <span>🗑️</span>
+                  <span>Hapus</span>
+                </button>
+              </div>
+
+              <!-- SUMBER STOK GUDANG CANDY -->
+              <div class="sub-section-candy">
+                <div class="sub-section-title">
+                  <span class="sub-icon">🔥</span>
+                  <span>Sumber Stok Gudang Candy</span>
+                </div>
+
+                <div class="form-grid-2col">
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">
+                      Sumber Inventory <span class="required-star">*</span>
+                    </label>
+                    <div class="select-wrapper-modern">
+                      <span class="select-icon">📦</span>
+                      <select
+                        v-model="item.item_id"
+                        @change="item.warehouse_id = getWarehouseIdByName('Gudang Candy')"
+                        class="form-select-modern"
+                        required
+                      >
+                        <option value="">-- Pilih Stok Gudang Candy --</option>
+                        <option
+                          v-for="inv in candyInventories"
+                          :key="`wh${inv.warehouse_id}_item${inv.item_id}`"
+                          :value="inv.item_id"
+                        >
+                          {{ inv.item?.code || 'N/A' }} - {{ inv.item?.name || 'N/A' }} ({{
+                            inv.qty
+                          }}
+                          pcs)
+                        </option>
+                      </select>
+                      <span class="select-arrow">▼</span>
+                    </div>
+                    <p v-if="getSelectedInventory(index)" class="helper-inline">
+                      Produk: {{ getSelectedInventory(index).item?.name }} • Total Stok:
+                      <strong>{{ getSelectedInventory(index).qty }} pcs</strong>
+                    </p>
+                  </div>
+
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">
+                      Qty Input Pembahanan <span class="required-star">*</span>
+                    </label>
+                    <div class="input-wrapper-icon">
+                      <span class="input-icon">🔢</span>
+                      <input
+                        v-model.number="item.input_qty"
+                        type="number"
+                        min="1"
+                        :max="getSelectedInventory(index)?.qty || 9999"
+                        class="form-input-modern"
+                        placeholder="Jumlah pcs"
+                        required
+                      />
+                      <span class="input-suffix">pcs</span>
+                    </div>
+                    <p v-if="getSelectedInventory(index)" class="help-text">
+                      Stok tersedia: <strong>{{ getSelectedInventory(index).qty }}</strong> pcs
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Qty Input Pembahanan <span class="required-star">*</span>
-                </label>
-                <div class="input-wrapper-icon">
-                  <span class="input-icon">🔢</span>
-                  <input
-                    v-model.number="form.input_qty"
-                    type="number"
-                    min="1"
-                    class="form-input-modern"
-                    placeholder="Jumlah pcs"
-                    required
-                  />
-                  <span class="input-suffix">pcs</span>
+              <!-- HASIL OUTPUT RST KERING -->
+              <div class="sub-section-output">
+                <div class="sub-section-title">
+                  <span class="sub-icon">✅</span>
+                  <span>Hasil Output RST Kering</span>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          <!-- BLOK 3: OUTPUT RST -->
-          <div class="form-section-modern">
-            <div class="section-header">
-              <div class="section-icon-badge output-badge">
-                <span class="section-icon">✅</span>
-              </div>
-              <div class="section-title-group">
-                <h3 class="section-title">Hasil Output RST Kering</h3>
-                <p class="section-subtitle">Item dan quantity hasil dari proses pembahanan</p>
-              </div>
-            </div>
+                <div class="form-grid-2col">
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">
+                      Item RST Hasil <span class="required-star">*</span>
+                    </label>
+                    <div class="select-wrapper-modern">
+                      <span class="select-icon">📦</span>
+                      <select v-model="item.output_item_id" class="form-select-modern" required>
+                        <option value="">-- Pilih Item RST Kering --</option>
+                        <option
+                          v-for="outItem in outputItems"
+                          :key="outItem.id"
+                          :value="outItem.id"
+                        >
+                          {{ outItem.code }} - {{ outItem.name }}
+                        </option>
+                      </select>
+                      <span class="select-arrow">▼</span>
+                    </div>
+                  </div>
 
-            <div class="form-grid-2col">
-              <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Item RST Hasil <span class="required-star">*</span>
-                </label>
-                <div class="select-wrapper-modern">
-                  <span class="select-icon">📦</span>
-                  <select v-model="form.output_item_id" class="form-select-modern" required>
-                    <option value="">-- Pilih Item RST Kering --</option>
-                    <option v-for="item in outputItems" :key="item.id" :value="item.id">
-                      {{ item.code }} - {{ item.name }}
-                    </option>
-                  </select>
-                  <span class="select-arrow">▼</span>
-                </div>
-              </div>
-
-              <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Qty Output (pcs) <span class="required-star">*</span>
-                </label>
-                <div class="input-wrapper-icon">
-                  <span class="input-icon">📊</span>
-                  <input
-                    v-model.number="form.output_qty"
-                    type="number"
-                    min="1"
-                    class="form-input-modern"
-                    placeholder="Hasil pcs"
-                    required
-                  />
-                  <span class="input-suffix">pcs</span>
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">
+                      Qty Output (pcs) <span class="required-star">*</span>
+                    </label>
+                    <div class="input-wrapper-icon">
+                      <span class="input-icon">📊</span>
+                      <input
+                        v-model.number="item.output_qty"
+                        type="number"
+                        min="1"
+                        class="form-input-modern"
+                        placeholder="Hasil pcs"
+                        required
+                      />
+                      <span class="input-suffix">pcs</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -223,7 +276,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
@@ -233,25 +286,62 @@ const router = useRouter()
 const route = useRoute()
 const { showSuccess, showError } = useNotification()
 
+// ✅ FORM DENGAN MULTIPLE ITEMS
 const form = reactive({
   po_id: '',
-  source_inventory_id: '',
-  input_qty: null,
-  output_item_id: '',
-  output_qty: null,
+  items: [
+    {
+      warehouse_id: '',
+      item_id: '',
+      input_qty: null,
+      output_item_id: '',
+      output_qty: null,
+    },
+  ],
 })
 
 const productionOrders = ref([])
-const sourceInventories = ref([])
+const candyInventories = ref([])
 const outputItems = ref([])
-
-const selectedPo = computed(() => productionOrders.value.find((po) => po.id === Number(form.po_id)))
+const warehouses = ref([])
 
 const poTargets = ref([])
 const poInfo = ref({
   buyer_name: null,
   so_number: null,
 })
+
+// ✅ FUNCTION: Tambah item baru
+const addItem = () => {
+  form.items.push({
+    warehouse_id: '',
+    item_id: '',
+    input_qty: null,
+    output_item_id: '',
+    output_qty: null,
+  })
+}
+
+// ✅ FUNCTION: Hapus item
+const removeItem = (index) => {
+  form.items.splice(index, 1)
+}
+
+// ✅ FUNCTION: Get warehouse_id by name
+const getWarehouseIdByName = (name) => {
+  const wh = warehouses.value.find((w) => w.name.toLowerCase().includes(name.toLowerCase()))
+  return wh ? wh.id : null
+}
+
+// ✅ FUNCTION: Get selected inventory for specific item index
+const getSelectedInventory = (index) => {
+  const item = form.items[index]
+  return (
+    candyInventories.value.find(
+      (inv) => inv.item_id === item.item_id && inv.warehouse_id === item.warehouse_id,
+    ) || null
+  )
+}
 
 const autoSelectPoFromSo = () => {
   const soId = Number(route.query.so_id)
@@ -299,10 +389,53 @@ const handlePoChange = async () => {
   }
 }
 
-const fetchSourceInventories = async () => {
+const fetchCandyInventories = async () => {
   try {
-    const res = await apiClient.get('/produksi/pembahanan/source-inventories')
-    sourceInventories.value = res.data.data || []
+    // 1. Fetch warehouses
+    const whRes = await apiClient.get('/warehouses')
+    warehouses.value = whRes.data.data || whRes.data || []
+
+    const candyId = getWarehouseIdByName('Gudang Candy')
+    if (!candyId) {
+      showError('Konfigurasi', 'Gudang Candy tidak ditemukan di master')
+      return
+    }
+
+    // 2. Fetch inventories dari Gudang Candy
+    const invRes = await apiClient.get('/inventories', {
+      params: {
+        warehouse_id: candyId,
+        per_page: 9999,
+      },
+    })
+
+    const raw = invRes.data.data?.data || invRes.data.data || []
+
+    // ✅ GROUP BY item_id + warehouse_id dan SUM qty
+    const groupedMap = {}
+
+    raw.forEach((inv) => {
+      const key = `${inv.warehouse_id}_${inv.item_id}`
+
+      if (!groupedMap[key]) {
+        groupedMap[key] = {
+          warehouse_id: inv.warehouse_id,
+          item_id: inv.item_id,
+          qty: 0,
+          item: inv.item,
+          warehouse: inv.warehouse,
+        }
+      }
+
+      groupedMap[key].qty += Number(inv.qty || 0)
+    })
+
+    candyInventories.value = Object.values(groupedMap)
+
+    // Set default warehouse_id untuk item pertama
+    if (form.items.length > 0 && !form.items[0].warehouse_id) {
+      form.items[0].warehouse_id = candyId
+    }
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil daftar stok Gudang Candy')
@@ -324,13 +457,43 @@ const fetchOutputItems = async () => {
 
 const handleSubmit = async () => {
   try {
+    // ✅ VALIDASI
+    for (let i = 0; i < form.items.length; i++) {
+      const item = form.items[i]
+
+      if (!item.item_id) {
+        showError('Validasi', `Item #${i + 1}: Sumber stok wajib dipilih`)
+        return
+      }
+
+      const selectedInv = getSelectedInventory(i)
+      if (!selectedInv) {
+        showError('Validasi', `Item #${i + 1}: Data inventory tidak ditemukan`)
+        return
+      }
+
+      if (item.input_qty > selectedInv.qty) {
+        showError(
+          'Validasi',
+          `Item #${i + 1}: Qty input (${item.input_qty} pcs) melebihi stok tersedia (${selectedInv.qty} pcs)`,
+        )
+        return
+      }
+    }
+
+    // ✅ PAYLOAD BARU (MULTIPLE ITEMS)
     const payload = {
       po_id: Number(form.po_id),
-      source_inventory_id: Number(form.source_inventory_id),
-      input_qty: Number(form.input_qty),
-      output_item_id: Number(form.output_item_id),
-      output_qty: Number(form.output_qty),
+      items: form.items.map((item) => ({
+        warehouse_id: item.warehouse_id,
+        item_id: item.item_id,
+        input_qty: Number(item.input_qty),
+        output_item_id: Number(item.output_item_id),
+        output_qty: Number(item.output_qty),
+      })),
     }
+
+    console.log('📤 PAYLOAD PEMBAHANAN:', payload)
 
     await apiClient.post('/produksi/pembahanan', payload)
 
@@ -345,7 +508,7 @@ const handleSubmit = async () => {
 
 onMounted(() => {
   fetchPoOnProgress()
-  fetchSourceInventories()
+  fetchCandyInventories()
   fetchOutputItems()
 })
 </script>
@@ -482,6 +645,10 @@ onMounted(() => {
   border-left: 5px solid #059669;
 }
 
+.section-header-items {
+  position: relative;
+}
+
 .section-icon-badge {
   width: 56px;
   height: 56px;
@@ -498,10 +665,6 @@ onMounted(() => {
 
 .section-icon-badge.candy-badge {
   background: linear-gradient(135deg, #fee2e2, #fecaca);
-}
-
-.section-icon-badge.output-badge {
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
 }
 
 .section-icon {
@@ -526,106 +689,138 @@ onMounted(() => {
 }
 
 /* ========================================
-   PO INFO CARD – MIRIP SAWMILL
+   TOMBOL TAMBAH ITEM
    ======================================== */
-.po-info-card-modern {
-  margin-top: 1.25rem;
-  border-radius: 18px;
-  border: 2px solid #f59e0b;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  padding: 1.25rem 1.5rem 1.5rem;
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.25);
-}
-
-.po-row {
-  display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) auto;
-  align-items: center;
-  column-gap: 2rem;
-}
-
-.po-main-block {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.po-main-top {
+.btn-add-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-}
-
-.po-main-icon {
-  width: 40px;
-  height: 40px;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #059669, #047857);
+  color: white;
+  border: none;
   border-radius: 12px;
-  background: rgba(245, 158, 11, 0.2);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+}
+
+.btn-add-item:hover {
+  background: linear-gradient(135deg, #047857, #065f46);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.35);
+}
+
+.add-icon {
+  font-size: 1.125rem;
+}
+
+/* ========================================
+   ITEM ROW WRAPPER
+   ======================================== */
+.item-row-wrapper {
+  margin-bottom: 2rem;
+  padding: 1.75rem;
+  background: linear-gradient(135deg, #fafafa, #f5f5f5);
+  border-radius: 16px;
+  border: 2px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.item-row-wrapper:last-child {
+  margin-bottom: 0;
+}
+
+.item-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.item-number-badge {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1.25rem;
+  background: linear-gradient(135deg, #059669, #047857);
+  color: white;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1rem;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+}
+
+.item-icon {
   font-size: 1.25rem;
 }
 
-.po-main-text {
-  flex: 1;
-}
-
-.po-number {
+.item-number {
   font-weight: 800;
-  font-size: 1.05rem;
-  color: #92400e;
 }
 
-.po-sub {
-  font-size: 0.85rem;
-  color: #78350f;
-}
-
-.po-main-buyer {
+.btn-remove-item {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.po-info-label {
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #92400e;
-  font-weight: 700;
-}
-
-.po-info-value {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #111827;
-}
-
-/* kolom tengah & kanan */
-.po-middle-block {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  justify-self: stretch;
-}
-
-.po-status-block {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.35rem;
-}
-
-.status-chip {
-  display: inline-flex;
   align-items: center;
-  padding: 0.35rem 0.9rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.875rem;
   font-weight: 700;
-  background: rgba(255, 255, 255, 0.85);
-  color: #92400e;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+.btn-remove-item:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
+}
+
+/* ========================================
+   SUB-SECTIONS
+   ======================================== */
+.sub-section-candy,
+.sub-section-output {
+  margin-bottom: 1.75rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.sub-section-candy {
+  background: linear-gradient(135deg, #fef3c7, #fef9c3);
+  border-color: #fde68a;
+}
+
+.sub-section-output {
+  background: linear-gradient(135deg, #dbeafe, #e0f2fe);
+  border-color: #bfdbfe;
+}
+
+.sub-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.sub-icon {
+  font-size: 1.5rem;
 }
 
 /* ========================================
@@ -749,6 +944,10 @@ onMounted(() => {
   gap: 1.75rem;
 }
 
+.form-group-modern {
+  margin-bottom: 0;
+}
+
 .form-label-modern {
   display: block;
   font-size: 0.9375rem;
@@ -831,6 +1030,19 @@ onMounted(() => {
   color: #6b7280;
 }
 
+.helper-inline,
+.help-text {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.helper-inline strong,
+.help-text strong {
+  color: #059669;
+  font-weight: 700;
+}
+
 /* ========================================
    FORM ACTIONS
    ======================================== */
@@ -868,37 +1080,29 @@ onMounted(() => {
   border: 2.5px solid #d1d5db;
 }
 
+.btn-cancel-modern:hover {
+  background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
 .btn-submit-modern {
   background: linear-gradient(135deg, #059669 0%, #047857 100%);
   color: white;
 }
 
+.btn-submit-modern:hover {
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.35);
+}
+
 /* ========================================
    RESPONSIVE
    ======================================== */
-@media (max-width: 1024px) {
-  .po-row {
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    row-gap: 1rem;
-  }
-
-  .po-status-block {
-    grid-column: 1 / -1;
-    align-items: flex-start;
-  }
-}
-
 @media (max-width: 768px) {
   .form-grid-2col {
     grid-template-columns: 1fr;
-  }
-
-  .po-row {
-    grid-template-columns: 1fr;
-  }
-
-  .po-status-block {
-    align-items: flex-start;
   }
 
   .form-actions-modern {
@@ -915,6 +1119,30 @@ onMounted(() => {
 
   .card-body-roughmill {
     padding: 1.5rem;
+  }
+
+  .item-row-wrapper {
+    padding: 1.25rem;
+  }
+
+  .section-header {
+    flex-wrap: wrap;
+  }
+
+  .btn-add-item {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .item-row-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .btn-remove-item {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import StockAdjustmentView from '../views/manajemen-stok/StockAdjustmentView.vue'
 import StockIndex from '../views/manajemen-stok/StockIndex.vue'
+import LaporanMutasiView from '../views/manajemen-stok/LaporanMutasiView.vue'
 // LAPORAN STOK LAMA DIHAPUS DARI ROUTER SESUAI ARAHAN PM
 // import LaporanOperasional from '../views/manajemen-stok/LaporanOperasional.vue'
 // import LaporanProdukJadi from '../views/manajemen-stok/LaporanProdukJadi.vue'
@@ -33,6 +34,11 @@ import CetakPengiriman from '../views/penjualan/CetakPengiriman.vue'
 import BomIndex from '../views/produksi/BomIndex.vue'
 import BomForm from '../views/produksi/BomForm.vue'
 import SawmilReport from '../views/produksi/SawmilReport.vue'
+import SandingView from '../views/produksi/SandingView.vue'
+import RustikView from '../views/produksi/RustikView.vue'
+import FinishingView from '../views/produksi/FinishingView.vue'
+import PackingView from '../views/produksi/PackingView.vue'
+import MaterialUsageView from '../views/produksi/MaterialUsageView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -335,6 +341,42 @@ const router = createRouter({
       meta: { title: 'Assembling', requiresAuth: true },
     },
     {
+      path: '/admin/produksi/sanding',
+      name: 'SandingView',
+      component: SandingView,
+      meta: { title: 'Sanding', requiresAuth: true },
+    },
+    {
+      path: '/admin/produksi/rustik',
+      name: 'RustikView',
+      component: RustikView,
+      meta: { title: 'Rustik', requiresAuth: true },
+    },
+    {
+      path: '/admin/produksi/finishing',
+      name: 'FinishingView',
+      component: FinishingView,
+      meta: { title: 'Finishing', requiresAuth: true },
+    },
+    {
+      path: '/admin/produksi/packing',
+      name: 'PackingView',
+      component: PackingView,
+      meta: { title: 'Packing', requiresAuth: true },
+    },
+    {
+      path: '/admin/produksi/material-usage',
+      name: 'MaterialUsageView',
+      component: MaterialUsageView,
+      meta: { title: 'Pemakaian Bahan', requiresAuth: true },
+    },
+    {
+      path: '/admin/produksi/monitoring',
+      name: 'ProductionMonitoring',
+      component: () => import('../views/produksi/ProductionMonitoringView.vue'),
+      meta: { title: 'Monitoring Produksi', requiresAuth: true },
+    },
+    {
       path: '/reports/sawmill',
       name: 'SawmillReport',
       component: SawmilReport,
@@ -353,6 +395,12 @@ const router = createRouter({
       name: 'StockAdjustment',
       component: StockAdjustmentView,
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/laporan-mutasi',
+      name: 'LaporanMutasi',
+      component: LaporanMutasiView,
+      meta: { title: 'Laporan Mutasi', requiresAuth: true },
     },
 
     // ROUTE LAPORAN STOK LAMA DIHAPUS DARI NAVIGASI, BISA DIHAPUS TOTAL JIKA SUDAH YAKIN

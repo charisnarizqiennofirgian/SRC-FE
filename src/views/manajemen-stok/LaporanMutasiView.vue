@@ -1,70 +1,27 @@
 <template>
   <DashboardLayout>
     <!-- PAGE HEADER -->
-    <div class="page-header-mutation">
+    <div class="page-header-report">
       <div class="header-content-wrapper">
         <div class="header-left-section">
-          <div class="icon-badge-mutation">
-            <span class="mutation-icon">📊</span>
+          <div class="icon-badge-report">
+            <span class="report-icon">📊</span>
           </div>
           <div class="header-text-content">
-            <h1 class="page-title-mutation">Laporan Mutasi Stok</h1>
-            <p class="page-subtitle-mutation">
-              Pantau riwayat keluar masuk barang dari semua transaksi dengan detail lengkap.
+            <h1 class="page-title-report">Laporan Mutasi Stok</h1>
+            <p class="page-subtitle-report">
+              Pantau pergerakan stok barang dengan detail transaksi masuk dan keluar yang lengkap.
             </p>
           </div>
         </div>
         <div class="header-right-section">
-          <div class="period-badge">
-            <span class="period-icon">📅</span>
-            <div class="period-content">
-              <div class="period-label">Periode</div>
-              <div class="period-value">{{ formatDateRange() }}</div>
+          <div class="stats-badge">
+            <span class="stats-icon">📦</span>
+            <div class="stats-content">
+              <div class="stats-value">{{ pagination.total }}</div>
+              <div class="stats-label">Total Transaksi</div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SUMMARY CARDS -->
-    <div class="summary-cards-grid">
-      <div class="summary-card card-in">
-        <div class="summary-icon-wrapper icon-in">
-          <span class="summary-icon">📥</span>
-        </div>
-        <div class="summary-content">
-          <div class="summary-label">Total Masuk</div>
-          <div class="summary-value value-in">+{{ formatNumber(summary.total_masuk) }}</div>
-        </div>
-      </div>
-
-      <div class="summary-card card-out">
-        <div class="summary-icon-wrapper icon-out">
-          <span class="summary-icon">📤</span>
-        </div>
-        <div class="summary-content">
-          <div class="summary-label">Total Keluar</div>
-          <div class="summary-value value-out">-{{ formatNumber(summary.total_keluar) }}</div>
-        </div>
-      </div>
-
-      <div v-if="showSaldo" class="summary-card card-balance">
-        <div class="summary-icon-wrapper icon-balance">
-          <span class="summary-icon">💰</span>
-        </div>
-        <div class="summary-content">
-          <div class="summary-label">Saldo Awal Periode</div>
-          <div class="summary-value value-balance">{{ formatNumber(summary.saldo_awal) }}</div>
-        </div>
-      </div>
-
-      <div v-else class="summary-card card-total">
-        <div class="summary-icon-wrapper icon-total">
-          <span class="summary-icon">📦</span>
-        </div>
-        <div class="summary-content">
-          <div class="summary-label">Total Transaksi</div>
-          <div class="summary-value value-total">{{ pagination.total || 0 }}</div>
         </div>
       </div>
     </div>
@@ -77,25 +34,40 @@
       </div>
 
       <div class="filter-grid">
-        <!-- TANGGAL MULAI -->
+        <!-- SEARCH BY PRODUK/CODE -->
+        <div class="filter-group full-width">
+          <label class="filter-label">Cari Produk / Kode</label>
+          <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              v-model="filters.search"
+              @input="onSearchChange"
+              class="search-input"
+              placeholder="Ketik nama atau kode produk..."
+            />
+            <button v-if="filters.search" @click="clearSearch" class="btn-clear-search">✕</button>
+          </div>
+        </div>
+
+        <!-- DATE RANGE -->
         <div class="filter-group">
-          <label class="filter-label">Tanggal Mulai</label>
+          <label class="filter-label">Dari Tanggal</label>
           <div class="input-wrapper-icon">
             <span class="input-icon">📅</span>
             <input type="date" v-model="filters.start_date" class="form-input-modern" />
           </div>
         </div>
 
-        <!-- TANGGAL AKHIR -->
         <div class="filter-group">
-          <label class="filter-label">Tanggal Akhir</label>
+          <label class="filter-label">Sampai Tanggal</label>
           <div class="input-wrapper-icon">
             <span class="input-icon">📅</span>
             <input type="date" v-model="filters.end_date" class="form-input-modern" />
           </div>
         </div>
 
-        <!-- GUDANG -->
+        <!-- WAREHOUSE FILTER -->
         <div class="filter-group">
           <label class="filter-label">Gudang</label>
           <div class="select-wrapper-modern">
@@ -110,7 +82,7 @@
           </div>
         </div>
 
-        <!-- TIPE TRANSAKSI -->
+        <!-- TRANSACTION TYPE -->
         <div class="filter-group">
           <label class="filter-label">Tipe Transaksi</label>
           <div class="select-wrapper-modern">
@@ -122,38 +94,6 @@
               </option>
             </select>
             <span class="select-arrow">▼</span>
-          </div>
-        </div>
-
-        <!-- BARANG SEARCH -->
-        <div class="filter-group">
-          <label class="filter-label">Barang</label>
-          <div class="search-wrapper-item">
-            <span class="search-icon">🔍</span>
-            <input
-              type="text"
-              v-model="itemSearch"
-              @input="onItemSearch"
-              @focus="showItemDropdown = true"
-              class="search-input-item"
-              placeholder="Ketik nama barang..."
-            />
-            <button v-if="filters.item_id" @click="clearItemFilter" class="btn-clear-item">
-              ✕
-            </button>
-
-            <!-- DROPDOWN SEARCH RESULTS -->
-            <div v-if="showItemDropdown && itemOptions.length > 0" class="item-dropdown">
-              <div
-                v-for="item in itemOptions"
-                :key="item.id"
-                class="item-option"
-                @click="selectItem(item)"
-              >
-                <span class="item-code">[{{ item.code }}]</span>
-                <span class="item-name">{{ item.name }}</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -184,8 +124,7 @@
           <h3 class="table-title">Data Mutasi Stok</h3>
         </div>
         <div class="pagination-info">
-          {{ pagination.from || 0 }} - {{ pagination.to || 0 }} dari {{ pagination.total || 0 }}
-          data
+          Menampilkan {{ pagination.from }} - {{ pagination.to }} dari {{ pagination.total }} data
         </div>
       </div>
 
@@ -202,27 +141,23 @@
               <th>Tanggal</th>
               <th>No. Bukti</th>
               <th>Nama Item</th>
-              <th class="col-center">Tipe</th>
+              <th>Kode</th>
+              <th>Tipe</th>
               <th>Gudang</th>
               <th class="col-center">Masuk</th>
               <th class="col-center">Keluar</th>
-              <th v-if="showSaldo" class="col-center">Saldo</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="log in logs" :key="log.id">
               <td class="cell-date">{{ log.tanggal }}</td>
-              <td class="cell-bukti">
-                <span class="bukti-badge">{{ log.no_bukti }}</span>
-              </td>
+              <td class="cell-bukti">{{ log.no_bukti }}</td>
               <td class="cell-product">
-                <div class="product-info">
-                  <span class="product-dot"></span>
-                  <div>
-                    <div class="product-name">{{ log.nama_item }}</div>
-                    <div class="product-code">{{ log.kode_item }}</div>
-                  </div>
-                </div>
+                <span class="product-dot"></span>
+                {{ log.nama_item }}
+              </td>
+              <td class="cell-code">
+                <span class="code-badge">{{ log.kode_item || '-' }}</span>
               </td>
               <td class="cell-type">
                 <span :class="getTipeBadgeClass(log.tipe)">
@@ -231,15 +166,12 @@
               </td>
               <td class="cell-warehouse">{{ log.gudang }}</td>
               <td class="cell-in">
-                <span v-if="log.masuk" class="qty-badge-in">+{{ formatNumber(log.masuk) }}</span>
+                <span v-if="log.masuk" class="qty-badge-in">+{{ log.masuk }}</span>
                 <span v-else class="qty-empty">-</span>
               </td>
               <td class="cell-out">
-                <span v-if="log.keluar" class="qty-badge-out">-{{ formatNumber(log.keluar) }}</span>
+                <span v-if="log.keluar" class="qty-badge-out">-{{ log.keluar }}</span>
                 <span v-else class="qty-empty">-</span>
-              </td>
-              <td v-if="showSaldo" class="cell-saldo">
-                <span class="saldo-value">{{ formatNumber(log.saldo) }}</span>
               </td>
             </tr>
           </tbody>
@@ -249,8 +181,7 @@
       <!-- PAGINATION -->
       <div v-if="logs.length > 0" class="table-footer">
         <div class="pagination-summary">
-          {{ pagination.from || 0 }} - {{ pagination.to || 0 }} dari {{ pagination.total || 0 }}
-          data
+          {{ pagination.from }} - {{ pagination.to }} dari {{ pagination.total }} data
         </div>
         <div class="pagination-controls">
           <button
@@ -284,32 +215,16 @@ import DashboardLayout from '@/components/DashboardLayout.vue'
 const logs = ref([])
 const warehouses = ref([])
 const transactionTypes = ref([])
-const itemOptions = ref([])
 const isLoading = ref(false)
-const showSaldo = ref(false)
-const showItemDropdown = ref(false)
-const itemSearch = ref('')
-const selectedItemName = ref('')
 
-// Default: Awal bulan ini sampai hari ini
-const today = new Date()
-const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-  .toISOString()
-  .split('T')[0]
-const todayStr = today.toISOString().split('T')[0]
+const today = new Date().toISOString().split('T')[0]
 
 const filters = reactive({
-  start_date: firstDayOfMonth,
-  end_date: todayStr,
+  start_date: today,
+  end_date: today,
   warehouse_id: '',
   transaction_type: '',
-  item_id: '',
-})
-
-const summary = reactive({
-  total_masuk: 0,
-  total_keluar: 0,
-  saldo_awal: null,
+  search: '', // ✅ NEW: Search field
 })
 
 const pagination = reactive({
@@ -320,30 +235,23 @@ const pagination = reactive({
   total: 0,
 })
 
-const formatDateRange = () => {
-  if (!filters.start_date || !filters.end_date) return '-'
-  const start = new Date(filters.start_date).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-  const end = new Date(filters.end_date).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-  return `${start} - ${end}`
+let searchTimeout = null
+
+const onSearchChange = () => {
+  // Debounce search
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    fetchLogs(1)
+  }, 500)
 }
 
-const formatNumber = (num) => {
-  if (num === null || num === undefined) return '0'
-  const number = parseFloat(num)
-  return number.toLocaleString('id-ID')
+const clearSearch = () => {
+  filters.search = ''
+  fetchLogs(1)
 }
 
 const fetchLogs = async (page = 1) => {
   isLoading.value = true
-  showItemDropdown.value = false
 
   try {
     const params = {
@@ -352,6 +260,7 @@ const fetchLogs = async (page = 1) => {
       ...filters,
     }
 
+    // Remove empty params
     Object.keys(params).forEach((key) => {
       if (params[key] === '') delete params[key]
     })
@@ -361,11 +270,6 @@ const fetchLogs = async (page = 1) => {
     if (response.data.success) {
       const data = response.data.data
       logs.value = data.data || []
-      showSaldo.value = response.data.show_saldo || false
-
-      summary.total_masuk = response.data.summary?.total_masuk || 0
-      summary.total_keluar = response.data.summary?.total_keluar || 0
-      summary.saldo_awal = response.data.summary?.saldo_awal || null
 
       pagination.currentPage = data.current_page
       pagination.lastPage = data.last_page
@@ -402,49 +306,12 @@ const fetchTransactionTypes = async () => {
   }
 }
 
-const onItemSearch = async () => {
-  showItemDropdown.value = true
-
-  if (itemSearch.value.length < 1) {
-    itemOptions.value = []
-    return
-  }
-
-  try {
-    const response = await axios.get('/inventory-logs/items', {
-      params: { search: itemSearch.value },
-    })
-    if (response.data.success) {
-      itemOptions.value = response.data.data
-    }
-  } catch (error) {
-    console.error('Error searching items:', error)
-  }
-}
-
-const selectItem = (item) => {
-  filters.item_id = item.id
-  itemSearch.value = `[${item.code}] ${item.name}`
-  selectedItemName.value = item.name
-  showItemDropdown.value = false
-  itemOptions.value = []
-}
-
-const clearItemFilter = () => {
-  filters.item_id = ''
-  itemSearch.value = ''
-  selectedItemName.value = ''
-  itemOptions.value = []
-}
-
 const resetFilters = () => {
-  filters.start_date = firstDayOfMonth
-  filters.end_date = todayStr
+  filters.start_date = today
+  filters.end_date = today
   filters.warehouse_id = ''
   filters.transaction_type = ''
-  filters.item_id = ''
-  itemSearch.value = ''
-  selectedItemName.value = ''
+  filters.search = ''
   fetchLogs(1)
 }
 
@@ -467,29 +334,21 @@ const getTipeBadgeClass = (tipe) => {
   return classes[tipe] || 'type-badge-gray'
 }
 
-// Close dropdown when clicking outside
-const handleClickOutside = (event) => {
-  if (!event.target.closest('.search-wrapper-item')) {
-    showItemDropdown.value = false
-  }
-}
-
 onMounted(() => {
   fetchWarehouses()
   fetchTransactionTypes()
   fetchLogs()
-  document.addEventListener('click', handleClickOutside)
 })
 </script>
 
 <style scoped>
 /* ========== HEADER ========== */
-.page-header-mutation {
-  background: linear-gradient(135deg, #10b981 0%, #14b8a6 50%, #06b6d4 100%);
+.page-header-report {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
   padding: 2.5rem 3rem;
   border-radius: 24px;
   margin-bottom: 2.5rem;
-  box-shadow: 0 12px 48px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 12px 48px rgba(99, 102, 241, 0.35);
 }
 
 .header-content-wrapper {
@@ -506,7 +365,7 @@ onMounted(() => {
   flex: 1;
 }
 
-.icon-badge-mutation {
+.icon-badge-report {
   width: 80px;
   height: 80px;
   border-radius: 20px;
@@ -518,7 +377,7 @@ onMounted(() => {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
-.mutation-icon {
+.report-icon {
   font-size: 2.75rem;
 }
 
@@ -526,7 +385,7 @@ onMounted(() => {
   flex: 1;
 }
 
-.page-title-mutation {
+.page-title-report {
   font-size: 2.25rem;
   font-weight: 900;
   color: #ffffff;
@@ -534,7 +393,7 @@ onMounted(() => {
   letter-spacing: -0.6px;
 }
 
-.page-subtitle-mutation {
+.page-subtitle-report {
   color: rgba(255, 255, 255, 0.95);
   font-size: 1.05rem;
   margin: 0;
@@ -548,7 +407,7 @@ onMounted(() => {
   align-items: flex-end;
 }
 
-.period-badge {
+.stats-badge {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -560,121 +419,26 @@ onMounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.period-icon {
+.stats-icon {
   font-size: 2rem;
 }
 
-.period-content {
+.stats-content {
   text-align: left;
 }
 
-.period-label {
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.85);
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-}
-
-.period-value {
-  font-size: 0.95rem;
+.stats-value {
+  font-size: 1.75rem;
   font-weight: 900;
   color: #ffffff;
   line-height: 1;
 }
 
-/* ========== SUMMARY CARDS ========== */
-.summary-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2.5rem;
-}
-
-.summary-card {
-  background: white;
-  border-radius: 20px;
-  padding: 1.75rem 2rem;
-  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
-  border: 2px solid #f3f4f6;
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  transition: all 0.3s ease;
-}
-
-.summary-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.15);
-}
-
-.card-in:hover {
-  border-color: #10b981;
-}
-
-.card-out:hover {
-  border-color: #ef4444;
-}
-
-.card-balance:hover,
-.card-total:hover {
-  border-color: #3b82f6;
-}
-
-.summary-icon-wrapper {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.icon-in {
-  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-}
-
-.icon-out {
-  background: linear-gradient(135deg, #fee2e2, #fecaca);
-}
-
-.icon-balance,
-.icon-total {
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-}
-
-.summary-icon {
-  font-size: 2rem;
-}
-
-.summary-content {
-  flex: 1;
-}
-
-.summary-label {
-  font-size: 0.9rem;
-  color: #6b7280;
+.stats-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
   font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.summary-value {
-  font-size: 2rem;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.value-in {
-  color: #10b981;
-}
-
-.value-out {
-  color: #ef4444;
-}
-
-.value-balance,
-.value-total {
-  color: #3b82f6;
+  margin-top: 0.25rem;
 }
 
 /* ========== FILTER CARD ========== */
@@ -709,7 +473,7 @@ onMounted(() => {
 
 .filter-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1.5rem;
   margin-bottom: 1.75rem;
 }
@@ -719,12 +483,73 @@ onMounted(() => {
   flex-direction: column;
 }
 
+.filter-group.full-width {
+  grid-column: 1 / -1;
+}
+
 .filter-label {
   display: block;
   font-size: 0.95rem;
   font-weight: 800;
   color: #111827;
   margin-bottom: 0.75rem;
+}
+
+/* SEARCH INPUT */
+.search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1.25rem;
+  font-size: 1.2rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.search-input {
+  width: 100%;
+  padding: 1rem 3.5rem 1rem 3.5rem;
+  border: 2.5px solid #e5e7eb;
+  border-radius: 14px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  background: white;
+  color: #111827;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+  transform: translateY(-1px);
+}
+
+.btn-clear-search {
+  position: absolute;
+  right: 1.25rem;
+  padding: 0.35rem 0.6rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  border-radius: 6px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.btn-clear-search:hover {
+  background: #fecaca;
+  transform: scale(1.1);
 }
 
 /* FORM INPUTS */
@@ -756,8 +581,8 @@ onMounted(() => {
 
 .form-input-modern:focus {
   outline: none;
-  border-color: #10b981;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
   transform: translateY(-1px);
 }
 
@@ -791,8 +616,8 @@ onMounted(() => {
 
 .form-select-modern:focus {
   outline: none;
-  border-color: #10b981;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
   transform: translateY(-1px);
 }
 
@@ -802,111 +627,6 @@ onMounted(() => {
   font-size: 0.8rem;
   color: #6b7280;
   pointer-events: none;
-}
-
-/* ITEM SEARCH */
-.search-wrapper-item {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.search-icon {
-  position: absolute;
-  left: 1.25rem;
-  font-size: 1.2rem;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.search-input-item {
-  width: 100%;
-  padding: 1rem 3.5rem 1rem 3.5rem;
-  border: 2.5px solid #e5e7eb;
-  border-radius: 14px;
-  font-size: 1.05rem;
-  font-weight: 600;
-  transition: all 0.25s ease;
-  background: white;
-  color: #111827;
-}
-
-.search-input-item::placeholder {
-  color: #9ca3af;
-}
-
-.search-input-item:focus {
-  outline: none;
-  border-color: #10b981;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
-  transform: translateY(-1px);
-}
-
-.btn-clear-item {
-  position: absolute;
-  right: 1.25rem;
-  padding: 0.35rem 0.6rem;
-  background: #fee2e2;
-  color: #dc2626;
-  border: none;
-  border-radius: 6px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.9rem;
-  z-index: 2;
-}
-
-.btn-clear-item:hover {
-  background: #fecaca;
-  transform: scale(1.1);
-}
-
-.item-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  margin-top: 0.5rem;
-  background: white;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
-  max-height: 300px;
-  overflow-y: auto;
-  z-index: 10;
-}
-
-.item-option {
-  padding: 0.85rem 1.25rem;
-  cursor: pointer;
-  border-bottom: 1px solid #f3f4f6;
-  transition: all 0.15s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.item-option:last-child {
-  border-bottom: none;
-}
-
-.item-option:hover {
-  background: #d1fae5;
-}
-
-.item-code {
-  font-weight: 800;
-  color: #10b981;
-  font-size: 0.9rem;
-  font-family: monospace;
-}
-
-.item-name {
-  font-weight: 700;
-  color: #111827;
-  font-size: 0.95rem;
-  flex: 1;
 }
 
 /* FILTER ACTIONS */
@@ -950,14 +670,14 @@ onMounted(() => {
 }
 
 .btn-apply-filter {
-  background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: white;
 }
 
 .btn-apply-filter:hover {
-  background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.4);
 }
 
 /* ========== LOADING ========== */
@@ -1098,7 +818,7 @@ onMounted(() => {
 }
 
 .report-table tbody tr:hover {
-  background: #f0fdf4;
+  background: #fafafa;
 }
 
 .cell-date {
@@ -1109,49 +829,40 @@ onMounted(() => {
 }
 
 .cell-bukti {
-  text-align: left;
-}
-
-.bukti-badge {
-  display: inline-block;
-  padding: 0.4rem 0.85rem;
-  background: #f3f4f6;
   color: #374151;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 800;
-  font-family: monospace;
+  font-weight: 700;
+  font-size: 0.9rem;
 }
 
 .cell-product {
-  max-width: 300px;
-}
-
-.product-info {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
+  font-weight: 700;
+  color: #111827;
 }
 
 .product-dot {
   width: 9px;
   height: 9px;
   border-radius: 999px;
-  background: #10b981;
+  background: #6366f1;
   flex-shrink: 0;
 }
 
-.product-name {
-  font-weight: 800;
-  color: #111827;
-  font-size: 0.95rem;
-  margin-bottom: 0.25rem;
+.cell-code {
+  text-align: center;
 }
 
-.product-code {
+.code-badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  background: #f3f4f6;
+  color: #374151;
+  border-radius: 8px;
   font-size: 0.85rem;
-  color: #6b7280;
-  font-weight: 600;
+  font-weight: 800;
+  font-family: monospace;
 }
 
 .cell-type {
@@ -1246,8 +957,7 @@ onMounted(() => {
 }
 
 .cell-in,
-.cell-out,
-.cell-saldo {
+.cell-out {
   text-align: center;
 }
 
@@ -1274,12 +984,6 @@ onMounted(() => {
 .qty-empty {
   color: #d1d5db;
   font-weight: 700;
-}
-
-.saldo-value {
-  font-weight: 900;
-  color: #3b82f6;
-  font-size: 0.95rem;
 }
 
 /* PAGINATION */
@@ -1317,8 +1021,8 @@ onMounted(() => {
 
 .btn-page:hover:not(:disabled) {
   background: #f3f4f6;
-  border-color: #10b981;
-  color: #10b981;
+  border-color: #6366f1;
+  color: #6366f1;
 }
 
 .btn-page:disabled {
@@ -1334,17 +1038,13 @@ onMounted(() => {
 
 /* ========== RESPONSIVE ========== */
 @media (max-width: 900px) {
-  .page-header-mutation {
+  .page-header-report {
     padding: 2rem;
   }
 
   .header-content-wrapper {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .summary-cards-grid {
-    grid-template-columns: 1fr;
   }
 
   .filter-card {

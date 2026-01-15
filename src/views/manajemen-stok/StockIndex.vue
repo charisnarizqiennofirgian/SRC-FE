@@ -543,8 +543,9 @@ const formatQty = (val) => {
   })
 }
 
+// ✅ GANTI quantity → qty
 const totalQty = (stocks) => {
-  return (stocks || []).reduce((sum, s) => sum + parseFloat(s.quantity || 0), 0)
+  return (stocks || []).reduce((sum, s) => sum + parseFloat(s.qty || 0), 0)
 }
 
 const totalKubikasi = (item, stocksFiltered) => {
@@ -558,14 +559,14 @@ const totalKubikasi = (item, stocksFiltered) => {
   return volumePerPcs * qty
 }
 
-// modal detail stok
+// ✅ GANTI quantity → qty
 const openDetail = (item) => {
   detailItem.value = item
   const stocks = item.stocks || []
   detailStocks.value = stocks.map((s) => ({
     id: s.id,
     warehouse_name: s.warehouse?.name || s.warehouse?.code || 'Gudang',
-    quantity: s.quantity || 0,
+    quantity: s.qty || 0, // ✅ Ganti s.quantity → s.qty
   }))
   isDetailOpen.value = true
 }

@@ -65,27 +65,39 @@
               </div>
             </div>
 
-            <!-- PO + CONTEKAN TARGET -->
+            <!-- ✅ PO SEARCHABLE SELECT (BUYER + SO) -->
             <div class="form-grid-2col">
               <div class="form-group-modern">
                 <label class="form-label-modern">
                   Pilih Production Order <span class="required-star">*</span>
                 </label>
-                <div class="select-wrapper-modern">
-                  <span class="select-icon">🧾</span>
-                  <select
-                    v-model="selectedProductionOrderId"
-                    class="form-select-modern"
-                    required
-                    @change="handlePoChange"
-                  >
-                    <option value="">-- Pilih Production Order --</option>
-                    <option v-for="po in productionOrders" :key="po.id" :value="po.id">
-                      {{ po.label }}
-                    </option>
-                  </select>
-                  <span class="select-arrow">▼</span>
-                </div>
+
+                <vue-select
+                  v-model="selectedProductionOrderId"
+                  :options="productionOrdersForSelect"
+                  :reduce="(option) => option.id"
+                  label="label"
+                  placeholder="🔍 Cari Production Order..."
+                  :filterable="true"
+                  :clearable="true"
+                  class="vue-select-po"
+                  @option:selected="handlePoChange"
+                  @option:deselected="handlePoDeselect"
+                >
+                  <template #no-options="{ search }">
+                    <span v-if="search">Tidak ditemukan "{{ search }}"</span>
+                    <span v-else>Ketik untuk mencari PO...</span>
+                  </template>
+
+                  <!-- ✅ TAMPILKAN: BUYER - SO NUMBER -->
+                  <template #option="option">
+                    {{ option.display_name }}
+                  </template>
+
+                  <template #selected-option="option">
+                    {{ option.display_name }}
+                  </template>
+                </vue-select>
               </div>
 
               <div class="form-group-modern">
@@ -102,7 +114,7 @@
               </div>
             </div>
 
-            <!-- KOTAK CONTEKAN TARGET DARI PO (VERSI BARU) -->
+            <!-- KOTAK CONTEKAN TARGET DARI PO -->
             <div v-if="poTargets.length" class="po-hint-box">
               <div class="po-hint-header">
                 <div class="po-hint-title-wrap">
@@ -139,7 +151,7 @@
             </div>
           </div>
 
-          <!-- SECTION 2: BAHAN BAKU -->
+          <!-- ✅ SECTION 2: BAHAN BAKU (MULTIPLE LOGS WITH SEARCHABLE SELECT) -->
           <div class="form-section-modern">
             <div class="section-header">
               <div class="section-icon-badge log-badge">
@@ -151,45 +163,89 @@
               </div>
             </div>
 
-            <div class="form-grid-2col">
-              <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Item Kayu Log <span class="required-star">*</span>
-                </label>
-                <div class="select-wrapper-modern">
-                  <span class="select-icon">🪵</span>
-                  <select v-model="form.item_log_id" class="form-select-modern" required>
-                    <option value="">-- Pilih Kayu Log --</option>
-                    <option v-for="item in logItems" :key="item.id" :value="item.id">
-                      {{ item.code }} - {{ item.name }}
-                    </option>
-                  </select>
-                  <span class="select-arrow">▼</span>
+            <!-- ✅ MULTIPLE LOGS CONTAINER -->
+            <div class="log-items-container">
+              <div v-for="(log, index) in form.logs" :key="log.local_id" class="log-item-card">
+                <div class="log-item-header">
+                  <div class="log-item-number">
+                    <span class="item-number-badge">{{ index + 1 }}</span>
+                    <span class="item-number-text">Kayu Log</span>
+                  </div>
+                  <button
+                    v-if="form.logs.length > 1"
+                    type="button"
+                    class="btn-remove-log"
+                    @click="removeLogRow(index)"
+                  >
+                    <span class="remove-icon">🗑️</span>
+                    <span class="remove-text">Hapus</span>
+                  </button>
                 </div>
-              </div>
 
-              <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Jumlah Log <span class="required-star">*</span>
-                </label>
-                <div class="input-wrapper-icon">
-                  <span class="input-icon">🔢</span>
-                  <input
-                    v-model.number="form.qty_log_pcs"
-                    type="number"
-                    min="1"
-                    step="1"
-                    class="form-input-modern"
-                    placeholder="Masukkan jumlah batang"
-                    required
-                  />
-                  <span class="input-suffix">batang</span>
+                <div class="log-item-body">
+                  <!-- ✅ SEARCHABLE SELECT untuk Kayu Log -->
+                  <div class="form-group-modern log-select-group">
+                    <label class="form-label-modern">
+                      Pilih Kayu Log <span class="required-star">*</span>
+                    </label>
+
+                    <vue-select
+                      v-model="log.item_log_id"
+                      :options="logItemsForSelect"
+                      :reduce="(option) => option.id"
+                      label="label"
+                      placeholder="🔍 Cari atau pilih kayu log..."
+                      :filterable="true"
+                      :clearable="true"
+                      class="vue-select-log"
+                    >
+                      <template #no-options="{ search }">
+                        <span v-if="search">Tidak ditemukan "{{ search }}"</span>
+                        <span v-else>Ketik untuk mencari kayu log...</span>
+                      </template>
+
+                      <template #option="option">
+                        <div class="log-option-item">
+                          <div class="log-option-code">{{ option.code }}</div>
+                          <div class="log-option-name">{{ option.name }}</div>
+                        </div>
+                      </template>
+                    </vue-select>
+                  </div>
+
+                  <!-- QTY LOG -->
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">
+                      Jumlah Log <span class="required-star">*</span>
+                    </label>
+                    <div class="input-wrapper-icon">
+                      <span class="input-icon">🔢</span>
+                      <input
+                        v-model.number="log.qty_log_pcs"
+                        type="number"
+                        min="1"
+                        step="1"
+                        class="form-input-modern"
+                        placeholder="Masukkan jumlah batang"
+                        required
+                      />
+                      <span class="input-suffix">batang</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+
+            <!-- ✅ TOMBOL TAMBAH LOG -->
+            <div class="add-log-section">
+              <button type="button" class="btn-add-log" @click="addLogRow">
+                <span class="add-icon">➕</span>
+                <span class="add-text">Tambah Kayu Log Lainnya</span>
+              </button>
+            </div>
           </div>
 
-          <!-- SECTION 3: HASIL PRODUKSI -->
+          <!-- SECTION 3: HASIL PRODUKSI dengan SEARCHABLE SELECT -->
           <div class="form-section-modern">
             <div class="section-header">
               <div class="section-icon-badge rst-badge">
@@ -220,25 +276,38 @@
                 </div>
 
                 <div class="rst-item-body">
+                  <!-- ✅ SEARCHABLE SELECT untuk RST -->
                   <div class="form-group-modern rst-select-group">
                     <label class="form-label-modern">
                       Pilih Barang RST <span class="required-star">*</span>
                     </label>
-                    <div class="select-wrapper-modern">
-                      <span class="select-icon">📦</span>
-                      <select
-                        v-model="row.item_rst_id"
-                        class="form-select-modern"
-                        @change="updateRstVolume(index)"
-                        required
-                      >
-                        <option value="">-- Pilih Kayu RST Basah --</option>
-                        <option v-for="item in rstItems" :key="item.id" :value="item.id">
-                          {{ item.code }} - {{ item.name }}
-                        </option>
-                      </select>
-                      <span class="select-arrow">▼</span>
-                    </div>
+
+                    <vue-select
+                      v-model="row.item_rst_id"
+                      :options="rstItemsForSelect"
+                      :reduce="(option) => option.id"
+                      label="label"
+                      placeholder="🔍 Cari atau pilih item RST..."
+                      :filterable="true"
+                      :clearable="true"
+                      class="vue-select-rst"
+                      @option:selected="updateRstVolume(index)"
+                      @option:deselected="updateRstVolume(index)"
+                    >
+                      <template #no-options="{ search }">
+                        <span v-if="search">Tidak ditemukan "{{ search }}"</span>
+                        <span v-else>Ketik untuk mencari item RST...</span>
+                      </template>
+
+                      <template #option="option">
+                        <div class="rst-option-item">
+                          <div class="rst-option-code">{{ option.code }}</div>
+                          <div class="rst-option-name">{{ option.name }}</div>
+                        </div>
+                      </template>
+                    </vue-select>
+
+                    <!-- Dimension info -->
                     <div v-if="row.item_rst_id" class="dimension-info">
                       <span class="dimension-icon">📐</span>
                       <span class="dimension-text">
@@ -315,11 +384,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import { useNotification } from '../../composables/useNotification.js'
+import VueSelect from 'vue-select'
+import 'vue-select/dist/vue-select.css'
 
 const router = useRouter()
 const { showSuccess, showError } = useNotification()
@@ -327,12 +398,17 @@ const { showSuccess, showError } = useNotification()
 const form = reactive({
   date: new Date().toISOString().slice(0, 10),
   notes: '',
-  item_log_id: '',
-  qty_log_pcs: null,
-  rsts: [
+  logs: [
     {
       local_id: Date.now(),
-      item_rst_id: '',
+      item_log_id: null,
+      qty_log_pcs: null,
+    },
+  ],
+  rsts: [
+    {
+      local_id: Date.now() + 1,
+      item_rst_id: null,
       qty_rst_pcs: null,
       volume_rst_m3: 0,
     },
@@ -352,13 +428,57 @@ const poInfo = ref({
   so_number: null,
 })
 
+// ✅ COMPUTED: Format PO untuk vue-select (BUYER - SO NUMBER)
+const productionOrdersForSelect = computed(() => {
+  return productionOrders.value.map((po) => {
+    // Gunakan label dari backend jika ada, karena formatnya sudah benar (Buyer - SO)
+    // Fallback ke logika lama jika label tidak ada (untuk safety)
+    const displayName = po.label || po.po_number
+
+    return {
+      id: po.id,
+      po_number: po.po_number,
+      display_name: displayName,
+      label: displayName,
+    }
+  })
+})
+
+// ✅ COMPUTED: Format LOG items untuk vue-select
+const logItemsForSelect = computed(() => {
+  return logItems.value.map((item) => ({
+    id: item.id,
+    code: item.code,
+    name: item.name,
+    label: `${item.code} - ${item.name}`,
+  }))
+})
+
+// ✅ COMPUTED: Format RST items untuk vue-select
+const rstItemsForSelect = computed(() => {
+  return rstItems.value.map((item) => ({
+    id: item.id,
+    code: item.code,
+    name: item.name,
+    volume_m3: item.volume_m3 || 0,
+    specifications: item.specifications || {},
+    label: `${item.code} - ${item.name}`,
+  }))
+})
+
 const fetchItems = async () => {
   try {
     const [logsRes, rstRes, whRes, poRes] = await Promise.all([
-      apiClient.get('/materials', { params: { category_name: 'Kayu Log', per_page: 100 } }),
-      apiClient.get('/materials', { params: { category_name: 'Kayu RST', per_page: 100 } }),
+      apiClient.get('/materials', { params: { category_name: 'Kayu Log', per_page: 500 } }),
+      apiClient.get('/materials', { params: { category_name: 'Kayu RST', per_page: 500 } }),
       apiClient.get('/warehouses'),
-      apiClient.get('/production-orders', { params: { status_not: 'completed' } }),
+      // ✅ TAMBAHKAN: include=sales_order
+      apiClient.get('/production-orders', {
+        params: {
+          status_not: 'completed',
+          include: 'sales_order', // ✅ PENTING!
+        },
+      }),
     ])
 
     logItems.value = logsRes.data.data?.data || logsRes.data.data || []
@@ -367,6 +487,11 @@ const fetchItems = async () => {
 
     const poData = poRes.data.data?.data || poRes.data.data || []
     productionOrders.value = poData
+
+    console.log('✅ LOG Items loaded:', logItems.value.length)
+    console.log('✅ RST Items loaded:', rstItems.value.length)
+    console.log('✅ PO loaded:', productionOrders.value.length)
+    console.log('🔍 Sample PO:', productionOrders.value[0]) // ✅ DEBUG
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil data log / RST / gudang / Production Order')
@@ -395,6 +520,11 @@ const handlePoChange = async () => {
     console.error(error)
     showError('Gagal', 'Gagal mengambil detail Production Order')
   }
+}
+
+const handlePoDeselect = () => {
+  poTargets.value = []
+  poInfo.value = { buyer_name: null, so_number: null }
 }
 
 const getWarehouseIdByName = (namePart) => {
@@ -435,10 +565,24 @@ const updateRstVolume = (index) => {
   row.volume_rst_m3 = Number((row.qty_rst_pcs * Number(item.volume_m3)).toFixed(4))
 }
 
+// ✅ ADD/REMOVE LOG ROWS
+const addLogRow = () => {
+  form.logs.push({
+    local_id: Date.now() + Math.random(),
+    item_log_id: null,
+    qty_log_pcs: null,
+  })
+}
+
+const removeLogRow = (index) => {
+  form.logs.splice(index, 1)
+}
+
+// ✅ ADD/REMOVE RST ROWS
 const addRstRow = () => {
   form.rsts.push({
     local_id: Date.now() + Math.random(),
-    item_rst_id: '',
+    item_rst_id: null,
     qty_rst_pcs: null,
     volume_rst_m3: 0,
   })
@@ -450,21 +594,22 @@ const removeRstRow = (index) => {
 
 const handleSubmit = async () => {
   try {
-    if (!form.item_log_id) {
-      showError('Validasi', 'Item log wajib dipilih')
-      return
-    }
-
-    if (!form.qty_log_pcs || form.qty_log_pcs <= 0) {
-      showError('Validasi', 'Qty log wajib lebih dari 0')
-      return
-    }
-
     if (!selectedProductionOrderId.value) {
       showError('Validasi', 'Production Order wajib dipilih')
       return
     }
 
+    // ✅ Validate LOGS
+    const validLogs = form.logs.filter(
+      (log) => log.item_log_id && log.qty_log_pcs && log.qty_log_pcs > 0,
+    )
+
+    if (validLogs.length === 0) {
+      showError('Validasi', 'Minimal satu baris kayu log wajib diisi')
+      return
+    }
+
+    // ✅ Validate RSTS
     const validRsts = form.rsts.filter(
       (row) => row.item_rst_id && row.qty_rst_pcs && row.qty_rst_pcs > 0,
     )
@@ -489,18 +634,18 @@ const handleSubmit = async () => {
       notes: form.notes || null,
       ref_po_id: Number(selectedProductionOrderId.value),
       ref_product_id: null,
-      logs: [
-        {
-          item_log_id: form.item_log_id,
-          qty_log_pcs: form.qty_log_pcs,
-        },
-      ],
+      logs: validLogs.map((log) => ({
+        item_log_id: log.item_log_id,
+        qty_log_pcs: log.qty_log_pcs,
+      })),
       rsts: validRsts.map((row) => ({
         item_rst_id: row.item_rst_id,
         qty_rst_pcs: row.qty_rst_pcs,
         volume_rst_m3: row.volume_rst_m3,
       })),
     }
+
+    console.log('📤 PAYLOAD:', payload)
 
     await apiClient.post('/sawmill-productions', payload)
     showSuccess('Sukses', 'Produksi Sawmill berhasil dicatat')
@@ -520,6 +665,101 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* ========================================
+   VUE-SELECT CUSTOM STYLE (TAMBAHAN BARU)
+   ======================================== */
+.vue-select-rst {
+  --vs-border-color: #e5e7eb;
+  --vs-border-width: 2.5px;
+  --vs-border-radius: 12px;
+  --vs-dropdown-max-height: 300px;
+}
+
+.vue-select-rst :deep(.vs__dropdown-toggle) {
+  padding: 0.875rem 1.25rem;
+  border: var(--vs-border-width) solid var(--vs-border-color);
+  border-radius: var(--vs-border-radius);
+  transition: all 0.3s ease;
+  background: white;
+  min-height: 54px;
+}
+
+.vue-select-rst :deep(.vs__dropdown-toggle):hover {
+  border-color: #d1d5db;
+}
+
+.vue-select-rst.vs--open :deep(.vs__dropdown-toggle) {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
+}
+
+.vue-select-rst :deep(.vs__search) {
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0;
+  margin: 0;
+}
+
+.vue-select-rst :deep(.vs__search::placeholder) {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.vue-select-rst :deep(.vs__dropdown-menu) {
+  border: 2.5px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  max-height: var(--vs-dropdown-max-height);
+  margin-top: 0.5rem;
+}
+
+.vue-select-rst :deep(.vs__dropdown-option) {
+  padding: 0;
+  transition: all 0.2s;
+}
+
+.vue-select-rst :deep(.vs__dropdown-option--highlight) {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.vue-select-rst :deep(.vs__selected) {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  padding: 0;
+}
+
+.vue-select-rst :deep(.vs__clear),
+.vue-select-rst :deep(.vs__open-indicator) {
+  fill: #6b7280;
+}
+
+.vue-select-rst :deep(.vs__actions) {
+  padding-top: 0;
+}
+
+/* Custom option template */
+.rst-option-item {
+  padding: 0.875rem 1.125rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.rst-option-code {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #f59e0b;
+}
+
+.rst-option-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+}
+
 /* ========================================
    PAGE HEADER - GRADIENT
    ======================================== */
@@ -689,7 +929,7 @@ onMounted(() => {
 }
 
 /* ========================================
-   PO HINT BOX (BARU)
+   PO HINT BOX
    ======================================== */
 .po-hint-box {
   margin-top: 1rem;
