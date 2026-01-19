@@ -11,13 +11,32 @@
         <p class="text-gray-600 mt-1">Semua Sales Order aktif dan progress di setiap gudang</p>
       </div>
 
+      <!-- LEGEND -->
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+        <div class="flex items-center gap-6 flex-wrap text-sm">
+          <span class="font-semibold text-yellow-800">Keterangan Status:</span>
+          <span class="flex items-center gap-1">
+            <span class="text-lg">🔴</span>
+            <span class="text-gray-600">Waiting (Belum ada aktivitas)</span>
+          </span>
+          <span class="flex items-center gap-1">
+            <span class="text-lg">🟡</span>
+            <span class="text-gray-600">In Progress (Ada sisa)</span>
+          </span>
+          <span class="flex items-center gap-1">
+            <span class="text-lg">✅</span>
+            <span class="text-gray-600">Done (Semua sudah keluar)</span>
+          </span>
+        </div>
+      </div>
+
       <!-- FILTER -->
       <div class="bg-white shadow-md rounded-lg p-4 mb-6">
         <div class="flex gap-4 items-end flex-wrap">
           <div class="flex-1 min-w-[250px]">
-            <label class="block text-sm font-medium text-gray-700 mb-1"
-              >Cari No. SO / Nama Buyer</label
-            >
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Cari No. SO / Nama Buyer
+            </label>
             <input
               type="text"
               v-model="search"
@@ -49,28 +68,77 @@
       <!-- TABLE -->
       <div v-else class="bg-white shadow-md rounded-lg overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="w-full min-w-[1100px]">
-            <thead class="bg-gray-100">
-              <tr>
-                <th class="px-4 py-3 text-left text-gray-700 font-medium">No. SO</th>
-                <th class="px-4 py-3 text-left text-gray-700 font-medium">Buyer</th>
-                <th class="px-4 py-3 text-left text-gray-700 font-medium">Nama Barang</th>
-                <th class="px-4 py-3 text-right text-gray-700 font-medium">Target</th>
-                <th class="px-4 py-3 text-right text-gray-700 font-medium bg-blue-50">
+          <table class="w-full min-w-[1400px]">
+            <thead>
+              <tr class="bg-gray-100">
+                <th class="px-3 py-3 text-left text-gray-700 font-medium text-sm" rowspan="2">
+                  No. SO
+                </th>
+                <th class="px-3 py-3 text-left text-gray-700 font-medium text-sm" rowspan="2">
+                  Item
+                </th>
+                <th class="px-3 py-3 text-left text-gray-700 font-medium text-sm" rowspan="2">
+                  Buyer
+                </th>
+                <th class="px-3 py-3 text-right text-gray-700 font-medium text-sm" rowspan="2">
+                  Target
+                </th>
+                <!-- Zona Hulu -->
+                <th
+                  colspan="5"
+                  class="px-3 py-2 text-center text-gray-600 font-semibold text-xs bg-gray-200 border-b-2 border-gray-300"
+                >
+                  Persiapan Bahan
+                </th>
+                <!-- Zona Hilir -->
+                <th
+                  colspan="5"
+                  class="px-3 py-2 text-center text-blue-700 font-semibold text-xs bg-blue-100 border-b-2 border-blue-300"
+                >
+                  Produksi
+                </th>
+                <th class="px-3 py-3 text-right text-gray-700 font-medium text-sm" rowspan="2">
+                  Sisa
+                </th>
+              </tr>
+              <tr class="bg-gray-50">
+                <!-- Hulu -->
+                <th class="px-2 py-2 text-center text-gray-600 font-medium text-xs bg-gray-100">
+                  Sanwil
+                </th>
+                <th class="px-2 py-2 text-center text-gray-600 font-medium text-xs bg-gray-100">
+                  KD
+                </th>
+                <th class="px-2 py-2 text-center text-gray-600 font-medium text-xs bg-gray-100">
+                  Pembahanan
+                </th>
+                <th class="px-2 py-2 text-center text-gray-600 font-medium text-xs bg-gray-100">
+                  Moulding
+                </th>
+                <th class="px-2 py-2 text-center text-gray-600 font-medium text-xs bg-gray-100">
+                  Mesin
+                </th>
+                <!-- Hilir -->
+                <th class="px-2 py-2 text-center text-blue-700 font-medium text-xs bg-blue-50">
                   Assembling
                 </th>
-                <th class="px-4 py-3 text-right text-gray-700 font-medium bg-yellow-50">Sanding</th>
-                <th class="px-4 py-3 text-right text-gray-700 font-medium bg-orange-50">Rustik</th>
-                <th class="px-4 py-3 text-right text-gray-700 font-medium bg-purple-50">
+                <th class="px-2 py-2 text-center text-orange-700 font-medium text-xs bg-orange-50">
+                  Rustik
+                </th>
+                <th class="px-2 py-2 text-center text-yellow-700 font-medium text-xs bg-yellow-50">
+                  Sanding
+                </th>
+                <th class="px-2 py-2 text-center text-purple-700 font-medium text-xs bg-purple-50">
                   Finishing
                 </th>
-                <th class="px-4 py-3 text-right text-gray-700 font-medium bg-green-50">Packing</th>
-                <th class="px-4 py-3 text-right text-gray-700 font-medium">Sisa</th>
+                <th class="px-2 py-2 text-center text-green-700 font-medium text-xs bg-green-50">
+                  Packing
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="data.length === 0">
-                <td colspan="10" class="px-4 py-8 text-center text-gray-500">
+                <td colspan="15" class="px-4 py-8 text-center text-gray-500">
                   Tidak ada data Sales Order aktif.
                 </td>
               </tr>
@@ -80,59 +148,86 @@
                 class="border-t hover:bg-gray-50"
                 :class="{ 'bg-green-50': row.is_done }"
               >
-                <td class="px-4 py-3">
-                  <span class="font-medium block">{{ row.so_number }}</span>
+                <td class="px-3 py-3">
+                  <span class="font-medium block text-sm">{{ row.so_number }}</span>
                   <span class="text-xs text-gray-500">{{ row.so_date }}</span>
                 </td>
-                <td class="px-4 py-3">{{ row.buyer_name }}</td>
-                <td class="px-4 py-3">
-                  <div class="font-medium">{{ row.item_name }}</div>
-                  <div class="text-sm text-gray-500">{{ row.item_code }}</div>
+                <td class="px-3 py-3">
+                  <div class="font-medium text-sm">{{ row.item_name }}</div>
+                  <div class="text-xs text-gray-500">{{ row.item_code }}</div>
                 </td>
-                <td class="px-4 py-3 text-right font-medium">{{ formatNumber(row.target) }}</td>
-                <td class="px-4 py-3 text-right bg-blue-50">
+                <td class="px-3 py-3 text-sm">{{ row.buyer_name }}</td>
+                <td class="px-3 py-3 text-right font-medium text-sm">
+                  {{ formatNumber(row.target) }}
+                </td>
+
+                <!-- Zona Hulu (Status 3 Level) -->
+                <td class="px-2 py-3 text-center bg-gray-50">
+                  <span class="text-lg">{{ getStatusIcon(row.status_sanwil) }}</span>
+                </td>
+                <td class="px-2 py-3 text-center bg-gray-50">
+                  <span class="text-lg">{{ getStatusIcon(row.status_kd) }}</span>
+                </td>
+                <td class="px-2 py-3 text-center bg-gray-50">
+                  <span class="text-lg">{{ getStatusIcon(row.status_pembahanan) }}</span>
+                </td>
+                <td class="px-2 py-3 text-center bg-gray-50">
+                  <span class="text-lg">{{ getStatusIcon(row.status_moulding) }}</span>
+                </td>
+                <td class="px-2 py-3 text-center bg-gray-50">
+                  <span class="text-lg">{{ getStatusIcon(row.status_mesin) }}</span>
+                </td>
+
+                <!-- Zona Hilir (Angka) -->
+                <td class="px-2 py-3 text-center bg-blue-50">
                   <span
-                    :class="row.qty_assembling > 0 ? 'text-blue-600 font-medium' : 'text-gray-400'"
+                    :class="
+                      row.qty_assembling > 0 ? 'text-blue-600 font-semibold' : 'text-gray-400'
+                    "
                   >
                     {{ formatNumber(row.qty_assembling) }}
                   </span>
                 </td>
-                <td class="px-4 py-3 text-right bg-yellow-50">
+                <td class="px-2 py-3 text-center bg-orange-50">
                   <span
-                    :class="row.qty_sanding > 0 ? 'text-yellow-600 font-medium' : 'text-gray-400'"
-                  >
-                    {{ formatNumber(row.qty_sanding) }}
-                  </span>
-                </td>
-                <td class="px-4 py-3 text-right bg-orange-50">
-                  <span
-                    :class="row.qty_rustik > 0 ? 'text-orange-600 font-medium' : 'text-gray-400'"
+                    :class="row.qty_rustik > 0 ? 'text-orange-600 font-semibold' : 'text-gray-400'"
                   >
                     {{ formatNumber(row.qty_rustik) }}
                   </span>
                 </td>
-                <td class="px-4 py-3 text-right bg-purple-50">
+                <td class="px-2 py-3 text-center bg-yellow-50">
                   <span
-                    :class="row.qty_finishing > 0 ? 'text-purple-600 font-medium' : 'text-gray-400'"
+                    :class="row.qty_sanding > 0 ? 'text-yellow-600 font-semibold' : 'text-gray-400'"
+                  >
+                    {{ formatNumber(row.qty_sanding) }}
+                  </span>
+                </td>
+                <td class="px-2 py-3 text-center bg-purple-50">
+                  <span
+                    :class="
+                      row.qty_finishing > 0 ? 'text-purple-600 font-semibold' : 'text-gray-400'
+                    "
                   >
                     {{ formatNumber(row.qty_finishing) }}
                   </span>
                 </td>
-                <td class="px-4 py-3 text-right bg-green-50">
+                <td class="px-2 py-3 text-center bg-green-50">
                   <span
-                    :class="row.qty_packing > 0 ? 'text-green-600 font-medium' : 'text-gray-400'"
+                    :class="row.qty_packing > 0 ? 'text-green-600 font-semibold' : 'text-gray-400'"
                   >
                     {{ formatNumber(row.qty_packing) }}
                   </span>
                 </td>
-                <td class="px-4 py-3 text-right">
+
+                <!-- Sisa -->
+                <td class="px-3 py-3 text-right">
                   <span
                     v-if="row.is_done"
                     class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium"
                   >
                     DONE
                   </span>
-                  <span v-else class="text-red-600 font-medium">
+                  <span v-else class="text-red-600 font-semibold text-sm">
                     {{ formatNumber(row.sisa) }}
                   </span>
                 </td>
@@ -209,7 +304,6 @@ const fetchData = async () => {
     if (search.value) {
       params.search = search.value
     }
-    // Tanpa limit untuk halaman full
 
     const response = await axios.get('/production-monitoring', { params })
 
@@ -235,6 +329,19 @@ const formatNumber = (num) => {
     return number.toLocaleString('id-ID')
   }
   return number.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+}
+
+// ✅ Helper untuk status 3 level
+const getStatusIcon = (status) => {
+  switch (status) {
+    case 'done':
+      return '✅'
+    case 'in_progress':
+      return '🟡'
+    case 'waiting':
+    default:
+      return '🔴'
+  }
 }
 
 // Pagination computed

@@ -128,6 +128,7 @@ const menuItems = ref([
       { name: 'Stock Index', route: { name: 'StockIndex' } },
       { name: 'Stock Adjustment', route: '/stock-adjustment' },
       { name: 'Laporan Mutasi', route: { name: 'LaporanMutasi' } },
+      { name: 'Monitoring Produksi', route: { name: 'ProductionMonitoring' } },
     ],
   },
   {
@@ -135,13 +136,12 @@ const menuItems = ref([
     icon: '🏭',
     children: [
       { name: 'Produksi Sawmill', route: { name: 'ProduksiSawmill' } },
-      { name: 'Produksi Candy', route: { name: 'ProduksiCandy' } },
+      { name: 'Produksi KD', route: { name: 'ProduksiCandy' } },
       { name: 'Produksi Pembahanan', route: { name: 'ProduksiPembahanan' } },
       { name: 'Produksi Moulding', route: { name: 'ProduksiMoulding' } },
       { name: 'Produksi Mesin', route: { name: 'ProduksiMesin' } },
       { name: 'Assembling', route: { name: 'AssemblingView' } },
       { name: 'Pemakaian Bahan', route: { name: 'MaterialUsageView' } },
-      { name: 'Monitoring Produksi', route: { name: 'ProductionMonitoring' } },
       { name: 'Sanding', route: { name: 'SandingView' } },
       { name: 'Rustik', route: { name: 'RustikView' } },
       { name: 'Finishing', route: { name: 'FinishingView' } },

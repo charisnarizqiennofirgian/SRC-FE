@@ -1,8 +1,5 @@
-<template>
+﻿<template>
   <DashboardLayout>
-    <!-- ========================================
-         PAGE HEADER - ROUGH MILL THEME
-         ======================================== -->
     <div class="page-header-roughmill">
       <div class="header-content-wrapper">
         <div class="header-left-section">
@@ -12,8 +9,8 @@
           <div class="header-text-content">
             <h1 class="page-title-roughmill">Produksi Pembahanan</h1>
             <p class="page-subtitle-roughmill">
-              Alokasikan stok kayu kering dari Gudang Candy ke Production Order tertentu untuk
-              proses Rough Mill.
+              Alokasikan stok kayu kering dari Gudang KD ke Production Order tertentu untuk proses
+              Rough Mill.
             </p>
           </div>
         </div>
@@ -28,13 +25,9 @@
       </div>
     </div>
 
-    <!-- ========================================
-         FORM CARD
-         ======================================== -->
     <div class="content-card-roughmill">
       <div class="card-body-roughmill">
         <form @submit.prevent="handleSubmit">
-          <!-- BLOK 1: TARGET PO -->
           <div class="form-section-modern">
             <div class="section-header">
               <div class="section-icon-badge po-badge">
@@ -50,24 +43,28 @@
               <label class="form-label-modern">
                 Production Order <span class="required-star">*</span>
               </label>
-              <div class="select-wrapper-modern">
+              <div class="select-wrapper-modern box-auto">
                 <span class="select-icon">📄</span>
-                <select
+                <v-select
                   v-model="form.po_id"
-                  class="form-select-modern"
-                  required
-                  @change="handlePoChange"
+                  :options="productionOrders"
+                  :reduce="(po) => po.id"
+                  label="label"
+                  placeholder="-- Pilih PO On Progress --"
+                  class="form-select-modern-search"
+                  @option:selected="handlePoChange"
                 >
-                  <option value="">-- Pilih PO On Progress --</option>
-                  <option v-for="po in productionOrders" :key="po.id" :value="po.id">
-                    {{ po.label }}
-                  </option>
-                </select>
-                <span class="select-arrow">▼</span>
+                  <template #no-options="{ search, searching }">
+                    <template v-if="searching">
+                      Tidak ada hasil untuk <em>{{ search }}</em
+                      >.
+                    </template>
+                    <em v-else>Ketik untuk mencari PO...</em>
+                  </template>
+                </v-select>
               </div>
             </div>
 
-            <!-- HANYA RINGKASAN KEBUTUHAN PO -->
             <div v-if="poTargets.length" class="po-hint-box">
               <div class="po-hint-header">
                 <div class="po-hint-title-wrap">
@@ -103,7 +100,6 @@
             </div>
           </div>
 
-          <!-- ✅ BLOK 2: MULTIPLE ITEMS INPUT/OUTPUT -->
           <div class="form-section-modern">
             <div class="section-header section-header-items">
               <div class="section-icon-badge candy-badge">
@@ -114,16 +110,13 @@
                 <p class="section-subtitle">Input dan output stok pembahanan</p>
               </div>
 
-              <!-- ✅ TOMBOL TAMBAH ITEM -->
               <button type="button" @click="addItem" class="btn-add-item">
                 <span class="add-icon">➕</span>
                 <span>Tambah Item</span>
               </button>
             </div>
 
-            <!-- ✅ LOOP UNTUK SETIAP ITEM -->
             <div v-for="(item, index) in form.items" :key="index" class="item-row-wrapper">
-              <!-- Header Row dengan Nomor dan Tombol Hapus -->
               <div class="item-row-header">
                 <div class="item-number-badge">
                   <span class="item-icon">📦</span>
@@ -140,11 +133,10 @@
                 </button>
               </div>
 
-              <!-- SUMBER STOK GUDANG CANDY -->
               <div class="sub-section-candy">
                 <div class="sub-section-title">
                   <span class="sub-icon">🔥</span>
-                  <span>Sumber Stok Gudang Candy</span>
+                  <span>Sumber Stok Gudang KD</span>
                 </div>
 
                 <div class="form-grid-2col">
@@ -152,31 +144,35 @@
                     <label class="form-label-modern">
                       Sumber Inventory <span class="required-star">*</span>
                     </label>
-                    <div class="select-wrapper-modern">
+                    <div class="select-wrapper-modern box-auto">
                       <span class="select-icon">📦</span>
-                      <select
+                      <v-select
                         v-model="item.item_id"
-                        @change="item.warehouse_id = getWarehouseIdByName('Gudang Candy')"
-                        class="form-select-modern"
-                        required
+                        :options="kdInventories"
+                        :reduce="(inv) => inv.item_id"
+                        label="label"
+                        :get-option-label="(opt) => getInventoryLabel(opt)"
+                        placeholder="-- Pilih Stok Gudang KD --"
+                        class="form-select-modern-search"
+                        @option:selected="onItemSelect(index)"
                       >
-                        <option value="">-- Pilih Stok Gudang Candy --</option>
-                        <option
-                          v-for="inv in candyInventories"
-                          :key="`wh${inv.warehouse_id}_item${inv.item_id}`"
-                          :value="inv.item_id"
-                        >
-                          {{ inv.item?.code || 'N/A' }} - {{ inv.item?.name || 'N/A' }} ({{
-                            inv.qty
-                          }}
-                          pcs)
-                        </option>
-                      </select>
-                      <span class="select-arrow">▼</span>
+                        <template #option="{ item, qty }">
+                          <strong>{{ item?.code }}</strong> - {{ item?.name }}
+                          <br />
+                          <small>Stok: {{ qty }} pcs</small>
+                        </template>
+                        <template #no-options="{ search, searching }">
+                          <template v-if="searching">
+                            Tidak ada hasil untuk <em>{{ search }}</em
+                            >.
+                          </template>
+                          <em v-else>Ketik untuk mencari stok...</em>
+                        </template>
+                      </v-select>
                     </div>
                     <p v-if="getSelectedInventory(index)" class="helper-inline">
-                      Produk: {{ getSelectedInventory(index).item?.name }} • Total Stok:
-                      <strong>{{ getSelectedInventory(index).qty }} pcs</strong>
+                      Produk: {{ getSelectedInventory(index)?.item?.name }} • Total Stok:
+                      <strong>{{ getSelectedInventory(index)?.qty }} pcs</strong>
                     </p>
                   </div>
 
@@ -204,7 +200,6 @@
                 </div>
               </div>
 
-              <!-- HASIL OUTPUT RST KERING -->
               <div class="sub-section-output">
                 <div class="sub-section-title">
                   <span class="sub-icon">✅</span>
@@ -216,19 +211,25 @@
                     <label class="form-label-modern">
                       Item RST Hasil <span class="required-star">*</span>
                     </label>
-                    <div class="select-wrapper-modern">
+                    <div class="select-wrapper-modern box-auto">
                       <span class="select-icon">📦</span>
-                      <select v-model="item.output_item_id" class="form-select-modern" required>
-                        <option value="">-- Pilih Item RST Kering --</option>
-                        <option
-                          v-for="outItem in outputItems"
-                          :key="outItem.id"
-                          :value="outItem.id"
-                        >
-                          {{ outItem.code }} - {{ outItem.name }}
-                        </option>
-                      </select>
-                      <span class="select-arrow">▼</span>
+                      <v-select
+                        v-model="item.output_item_id"
+                        :options="outputItems"
+                        :reduce="(out) => out.id"
+                        label="name"
+                        :get-option-label="(opt) => `${opt.code} - ${opt.name}`"
+                        placeholder="-- Pilih Item RST Kering --"
+                        class="form-select-modern-search"
+                      >
+                        <template #no-options="{ search, searching }">
+                          <template v-if="searching">
+                            Tidak ada hasil untuk <em>{{ search }}</em
+                            >.
+                          </template>
+                          <em v-else>Ketik untuk mencari item...</em>
+                        </template>
+                      </v-select>
                     </div>
                   </div>
 
@@ -254,7 +255,6 @@
             </div>
           </div>
 
-          <!-- FORM ACTIONS -->
           <div class="form-actions-modern">
             <button
               type="button"
@@ -264,9 +264,11 @@
               <span class="btn-icon">↩️</span>
               <span class="btn-text">Batal</span>
             </button>
-            <button type="submit" class="btn-action btn-submit-modern">
+            <button type="submit" class="btn-action btn-submit-modern" :disabled="isSubmitting">
               <span class="btn-icon">💾</span>
-              <span class="btn-text">Simpan Pembahanan</span>
+              <span class="btn-text">{{
+                isSubmitting ? 'Menyimpan...' : 'Simpan Pembahanan'
+              }}</span>
             </button>
           </div>
         </form>
@@ -281,12 +283,12 @@ import { useRouter, useRoute } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import { useNotification } from '../../composables/useNotification.js'
+import vSelect from 'vue-select'
 
 const router = useRouter()
 const route = useRoute()
 const { showSuccess, showError } = useNotification()
 
-// ✅ FORM DENGAN MULTIPLE ITEMS
 const form = reactive({
   po_id: '',
   items: [
@@ -301,9 +303,11 @@ const form = reactive({
 })
 
 const productionOrders = ref([])
-const candyInventories = ref([])
+const kdInventories = ref([])
 const outputItems = ref([])
 const warehouses = ref([])
+const kdWarehouseId = ref(null)
+const isSubmitting = ref(false)
 
 const poTargets = ref([])
 const poInfo = ref({
@@ -311,10 +315,9 @@ const poInfo = ref({
   so_number: null,
 })
 
-// ✅ FUNCTION: Tambah item baru
 const addItem = () => {
   form.items.push({
-    warehouse_id: '',
+    warehouse_id: kdWarehouseId.value || '',
     item_id: '',
     input_qty: null,
     output_item_id: '',
@@ -322,25 +325,33 @@ const addItem = () => {
   })
 }
 
-// ✅ FUNCTION: Hapus item
 const removeItem = (index) => {
   form.items.splice(index, 1)
 }
 
-// ✅ FUNCTION: Get warehouse_id by name
-const getWarehouseIdByName = (name) => {
-  const wh = warehouses.value.find((w) => w.name.toLowerCase().includes(name.toLowerCase()))
+const getWarehouseIdByCode = (code) => {
+  const wh = warehouses.value.find((w) => w.code === code)
   return wh ? wh.id : null
 }
 
-// ✅ FUNCTION: Get selected inventory for specific item index
+const onItemSelect = (index) => {
+  form.items[index].warehouse_id = kdWarehouseId.value
+}
+
 const getSelectedInventory = (index) => {
   const item = form.items[index]
+  // Handle if item_id is null or object (though reduce prevents object)
+  if (!item.item_id) return null
   return (
-    candyInventories.value.find(
-      (inv) => inv.item_id === item.item_id && inv.warehouse_id === item.warehouse_id,
+    kdInventories.value.find(
+      (inv) => inv.item_id === item.item_id && inv.warehouse_id === kdWarehouseId.value,
     ) || null
   )
+}
+
+const getInventoryLabel = (opt) => {
+  if (!opt || !opt.item) return ''
+  return `${opt.item.code || ''} - ${opt.item.name || ''} (${opt.qty} pcs)`
 }
 
 const autoSelectPoFromSo = () => {
@@ -359,7 +370,10 @@ const fetchPoOnProgress = async () => {
       params: { status_not: 'completed', per_page: 100 },
     })
     const raw = res.data.data?.data || res.data.data || []
-    productionOrders.value = raw
+    productionOrders.value = raw.map((p) => ({
+      ...p,
+      label: p.label || `${p.po_number} - ${p.buyer?.name || '-'}`, // Ensure label exists
+    }))
     autoSelectPoFromSo()
   } catch (error) {
     console.error(error)
@@ -374,7 +388,10 @@ const handlePoChange = async () => {
   if (!form.po_id) return
 
   try {
-    const res = await apiClient.get(`/production-orders/${form.po_id}`)
+    // If form.po_id is object (from v-select without reduce), handle it
+    const id = typeof form.po_id === 'object' ? form.po_id?.id : form.po_id
+
+    const res = await apiClient.get(`/production-orders/${id}`)
     const data = res.data.data || {}
 
     poInfo.value = {
@@ -389,29 +406,28 @@ const handlePoChange = async () => {
   }
 }
 
-const fetchCandyInventories = async () => {
+const fetchKdInventories = async () => {
   try {
-    // 1. Fetch warehouses
     const whRes = await apiClient.get('/warehouses')
     warehouses.value = whRes.data.data || whRes.data || []
 
-    const candyId = getWarehouseIdByName('Gudang Candy')
-    if (!candyId) {
-      showError('Konfigurasi', 'Gudang Candy tidak ditemukan di master')
+    const kdId = getWarehouseIdByCode('RSTK')
+    if (!kdId) {
+      showError('Konfigurasi', 'Gudang KD (RST Kering) tidak ditemukan di master')
       return
     }
 
-    // 2. Fetch inventories dari Gudang Candy
+    kdWarehouseId.value = kdId
+
     const invRes = await apiClient.get('/inventories', {
       params: {
-        warehouse_id: candyId,
+        warehouse_id: kdId,
         per_page: 9999,
       },
     })
 
     const raw = invRes.data.data?.data || invRes.data.data || []
 
-    // ✅ GROUP BY item_id + warehouse_id dan SUM qty
     const groupedMap = {}
 
     raw.forEach((inv) => {
@@ -430,15 +446,14 @@ const fetchCandyInventories = async () => {
       groupedMap[key].qty += Number(inv.qty || 0)
     })
 
-    candyInventories.value = Object.values(groupedMap)
+    kdInventories.value = Object.values(groupedMap)
 
-    // Set default warehouse_id untuk item pertama
     if (form.items.length > 0 && !form.items[0].warehouse_id) {
-      form.items[0].warehouse_id = candyId
+      form.items[0].warehouse_id = kdId
     }
   } catch (error) {
     console.error(error)
-    showError('Gagal', 'Gagal mengambil daftar stok Gudang Candy')
+    showError('Gagal', 'Gagal mengambil daftar stok Gudang KD')
   }
 }
 
@@ -457,7 +472,6 @@ const fetchOutputItems = async () => {
 
 const handleSubmit = async () => {
   try {
-    // ✅ VALIDASI
     for (let i = 0; i < form.items.length; i++) {
       const item = form.items[i]
 
@@ -481,7 +495,8 @@ const handleSubmit = async () => {
       }
     }
 
-    // ✅ PAYLOAD BARU (MULTIPLE ITEMS)
+    isSubmitting.value = true
+
     const payload = {
       po_id: Number(form.po_id),
       items: form.items.map((item) => ({
@@ -503,12 +518,14 @@ const handleSubmit = async () => {
     const msg = error.response?.data?.message || 'Gagal menyimpan proses pembahanan'
     showError('Gagal', msg)
     console.error(error)
+  } finally {
+    isSubmitting.value = false
   }
 }
 
 onMounted(() => {
   fetchPoOnProgress()
-  fetchCandyInventories()
+  fetchKdInventories()
   fetchOutputItems()
 })
 </script>
@@ -993,6 +1010,7 @@ onMounted(() => {
   font-weight: 500;
   transition: all 0.3s ease;
   background: white;
+  box-sizing: border-box; /* Fix for overflow */
 }
 
 .form-select-modern {
@@ -1018,7 +1036,8 @@ onMounted(() => {
   top: 50%;
   transform: translateY(-50%);
   font-size: 1.125rem;
-  z-index: 1;
+  z-index: 2; /* Increased z-index */
+  pointer-events: none; /* Ensure clicks pass through */
 }
 
 .select-arrow {
@@ -1144,5 +1163,45 @@ onMounted(() => {
     width: 100%;
     justify-content: center;
   }
+}
+
+/* V-SELECT CUSTOMIZATION */
+.form-select-modern-search {
+  background: white;
+  border-radius: 12px;
+  box-sizing: border-box; /* Fix for overflow */
+  width: 100%;
+}
+:deep(.form-select-modern-search .vs__dropdown-toggle) {
+  border: 2.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.4rem 0.5rem 0.4rem 3.5rem; /* Increased padding-left to clear icon */
+  min-height: 54px;
+  background: white;
+}
+:deep(.form-select-modern-search.vs--open .vs__dropdown-toggle) {
+  border-color: #059669;
+}
+:deep(.form-select-modern-search .vs__search::placeholder) {
+  color: #9ca3af;
+}
+:deep(.form-select-modern-search .vs__selected) {
+  margin-top: 4px; /* Adjust alignment if needed */
+  padding-left: 0;
+}
+:deep(.form-select-modern-search .vs__dropdown-menu) {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem;
+  z-index: 999;
+}
+:deep(.form-select-modern-search .vs__dropdown-option) {
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+:deep(.form-select-modern-search .vs__dropdown-option--highlight) {
+  background: #059669;
+  color: white;
 }
 </style>

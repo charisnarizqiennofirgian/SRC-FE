@@ -1,6 +1,5 @@
 <template>
   <DashboardLayout>
-    <!-- PAGE HEADER -->
     <div class="page-header-material">
       <div class="header-content-wrapper">
         <div class="header-left-section">
@@ -10,8 +9,8 @@
           <div class="header-text-content">
             <h1 class="page-title-material">Form Pemakaian Bahan</h1>
             <p class="page-subtitle-material">
-              Catat pengambilan bahan pendukung (lem, sekrup, paku, dll) dengan tracking yang
-              akurat.
+              Catat pengambilan bahan pendukung (lem, sekrup, paku, karton box, dll) dengan tracking
+              yang akurat.
             </p>
           </div>
         </div>
@@ -26,7 +25,6 @@
       </div>
     </div>
 
-    <!-- ALERT -->
     <div
       v-if="alert.show"
       :class="['alert-box', alert.type === 'success' ? 'alert-success' : 'alert-error']"
@@ -37,11 +35,9 @@
       <span class="alert-message">{{ alert.message }}</span>
     </div>
 
-    <!-- FORM CARD -->
     <div class="content-card-material">
       <div class="card-body-material">
         <form @submit.prevent="submitForm">
-          <!-- SECTION: PILIH BARANG -->
           <div class="form-section-modern">
             <div class="section-header section-header-item">
               <div class="section-icon-badge material-item-badge">
@@ -49,71 +45,120 @@
               </div>
               <div class="section-title-group">
                 <h3 class="section-title">Pilih Barang</h3>
-                <p class="section-subtitle">Cari dan tambahkan barang yang akan digunakan.</p>
+                <p class="section-subtitle">
+                  Filter kategori, cari dan tambahkan barang yang akan digunakan.
+                </p>
               </div>
             </div>
 
-            <!-- SEARCH BARANG -->
-            <div class="form-group-modern">
-              <label class="form-label-modern">Cari Barang</label>
-              <div class="search-wrapper">
-                <span class="search-icon">🔍</span>
-                <input
-                  type="text"
-                  v-model="searchQuery"
-                  @input="onSearchInput"
-                  @focus="showDropdown = true"
-                  class="search-input"
-                  placeholder="Ketik nama atau kode barang..."
-                />
-              </div>
-
-              <!-- DROPDOWN SEARCH RESULTS -->
-              <div v-if="showDropdown && filteredItems.length > 0" class="search-dropdown">
-                <div
-                  v-for="item in filteredItems"
-                  :key="item.id"
-                  class="search-item"
-                  @click="addItemToList(item)"
-                >
-                  <div class="search-item-main">
-                    <span class="search-item-name">
-                      {{ item.code ? `[${item.code}]` : '' }} {{ item.name }}
-                    </span>
-                    <span class="search-item-unit">{{ item.unit?.name }}</span>
-                  </div>
-                  <div class="search-item-sub">Stok: {{ formatNumber(item.stock) }}</div>
+            <div class="filter-row">
+              <div class="form-group-modern filter-category">
+                <label class="form-label-modern">Filter Kategori</label>
+                <div class="select-wrapper-modern">
+                  <span class="select-icon">📁</span>
+                  <select
+                    v-model="selectedCategory"
+                    @change="onCategoryChange"
+                    class="form-select-modern"
+                  >
+                    <option value="">-- Semua Kategori --</option>
+                    <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                      {{ cat.name }}
+                    </option>
+                  </select>
+                  <span class="select-arrow">▼</span>
                 </div>
               </div>
 
-              <div
-                v-if="showDropdown && searchQuery && filteredItems.length === 0"
-                class="search-dropdown-empty"
-              >
-                <span class="empty-icon">🔍</span>
-                <span>Barang tidak ditemukan</span>
+              <div class="form-group-modern filter-search">
+                <label class="form-label-modern">Cari Barang</label>
+                <div class="search-wrapper">
+                  <span class="search-icon">🔍</span>
+                  <input
+                    type="text"
+                    v-model="searchQuery"
+                    @input="onSearchInput"
+                    @focus="showDropdown = true"
+                    class="search-input"
+                    placeholder="Ketik nama atau kode barang..."
+                  />
+                  <button
+                    v-if="searchQuery"
+                    type="button"
+                    class="clear-search-btn"
+                    @click="clearSearch"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div v-if="showDropdown && filteredItems.length > 0" class="search-dropdown">
+                  <div
+                    v-for="item in filteredItems"
+                    :key="item.id"
+                    class="search-item"
+                    @click="addItemToList(item)"
+                  >
+                    <div class="search-item-main">
+                      <span class="search-item-name">
+                        {{ item.code ? `[${item.code}]` : '' }} {{ item.name }}
+                      </span>
+                      <div class="search-item-badges">
+                        <span class="search-item-category">{{ item.category?.name }}</span>
+                        <span class="search-item-unit">{{ item.unit?.name }}</span>
+                      </div>
+                    </div>
+                    <div class="search-item-sub">
+                      Stok: <strong>{{ formatNumber(item.stock) }}</strong> {{ item.unit?.name }}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  v-if="
+                    showDropdown && searchQuery && filteredItems.length === 0 && !isLoadingItems
+                  "
+                  class="search-dropdown-empty"
+                >
+                  <span class="empty-icon">🔍</span>
+                  <span>Barang tidak ditemukan</span>
+                </div>
+
+                <div v-if="isLoadingItems" class="search-dropdown-loading">
+                  <span>⏳ Memuat data...</span>
+                </div>
               </div>
             </div>
 
-            <!-- LIST BARANG YANG DIPILIH -->
             <div v-if="selectedItems.length > 0" class="selected-items-section">
               <div class="selected-items-header">
                 <span class="selected-icon">📋</span>
                 <span class="selected-title">Barang yang Dipilih ({{ selectedItems.length }})</span>
+                <button type="button" class="btn-clear-all" @click="clearAllItems">
+                  🗑️ Hapus Semua
+                </button>
               </div>
 
               <div class="selected-items-list">
                 <div v-for="(item, index) in selectedItems" :key="index" class="selected-item-card">
                   <div class="selected-item-header">
                     <div class="selected-item-info">
-                      <span class="item-dot"></span>
+                      <span
+                        class="item-dot"
+                        :class="getCategoryColorClass(item.category_id)"
+                      ></span>
                       <div>
                         <div class="item-name">
                           {{ item.code ? `[${item.code}]` : '' }} {{ item.name }}
                         </div>
-                        <div class="item-stock">
-                          Stok: <strong>{{ formatNumber(item.stock) }}</strong>
-                          {{ item.unit?.name }}
+                        <div class="item-meta">
+                          <span class="item-category-badge">{{
+                            item.category?.name || 'Umum'
+                          }}</span>
+                          <span class="item-stock">
+                            Stok: <strong>{{ formatNumber(item.stock) }}</strong>
+                            {{ item.unit?.name }}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -128,7 +173,9 @@
 
                   <div class="selected-item-body">
                     <div class="input-qty-wrapper">
-                      <label class="qty-label">Jumlah <span class="required-star">*</span></label>
+                      <label class="qty-label"
+                        >Jumlah Pemakaian <span class="required-star">*</span></label
+                      >
                       <div class="input-wrapper-icon slim">
                         <span class="input-icon">🔢</span>
                         <input
@@ -146,14 +193,24 @@
                       <p v-if="item.qty > item.stock" class="input-hint error-hint">
                         ⚠️ Jumlah melebihi stok tersedia!
                       </p>
+                      <p v-else-if="item.qty > 0" class="input-hint success-hint">
+                        ✅ Sisa stok setelah pemakaian: {{ formatNumber(item.stock - item.qty) }}
+                        {{ item.unit?.name }}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            <div v-else class="empty-selection-hint">
+              <div class="hint-icon">👆</div>
+              <div class="hint-text">
+                Pilih barang dari dropdown di atas untuk memulai pencatatan
+              </div>
+            </div>
           </div>
 
-          <!-- SECTION: DETAIL PEMAKAIAN -->
           <div v-if="selectedItems.length > 0" class="form-section-modern">
             <div class="section-header section-header-qty">
               <div class="section-icon-badge material-qty-badge">
@@ -165,25 +222,27 @@
               </div>
             </div>
 
-            <div class="form-group-modern">
-              <label class="form-label-modern"> Divisi <span class="required-star">*</span> </label>
-              <div class="select-wrapper-modern">
-                <span class="select-icon">🏢</span>
-                <select v-model="form.division" class="form-select-modern" required>
-                  <option value="">-- Pilih Divisi --</option>
-                  <option v-for="div in divisions" :key="div.id" :value="div.name">
-                    {{ div.name }}
-                  </option>
-                </select>
-                <span class="select-arrow">▼</span>
+            <div class="form-grid-2col">
+              <div class="form-group-modern">
+                <label class="form-label-modern">Divisi <span class="required-star">*</span></label>
+                <div class="select-wrapper-modern">
+                  <span class="select-icon">🏢</span>
+                  <select v-model="form.division" class="form-select-modern" required>
+                    <option value="">-- Pilih Divisi --</option>
+                    <option v-for="div in divisions" :key="div.id" :value="div.name">
+                      {{ div.name }}
+                    </option>
+                  </select>
+                  <span class="select-arrow">▼</span>
+                </div>
               </div>
-            </div>
 
-            <div class="form-group-modern">
-              <label class="form-label-modern">Tanggal</label>
-              <div class="input-wrapper-icon">
-                <span class="input-icon">📅</span>
-                <input type="date" v-model="form.date" class="form-input-modern" />
+              <div class="form-group-modern">
+                <label class="form-label-modern">Tanggal</label>
+                <div class="input-wrapper-icon">
+                  <span class="input-icon">📅</span>
+                  <input type="date" v-model="form.date" class="form-input-modern" />
+                </div>
               </div>
             </div>
 
@@ -198,8 +257,16 @@
             </div>
           </div>
 
-          <!-- SUBMIT BUTTON -->
           <div v-if="selectedItems.length > 0" class="form-actions-modern">
+            <div class="summary-box">
+              <div class="summary-title">Ringkasan Pemakaian</div>
+              <div class="summary-content">
+                <span class="summary-item">📦 {{ selectedItems.length }} jenis barang</span>
+                <span class="summary-item">🏢 {{ form.division || '-' }}</span>
+                <span class="summary-item">📅 {{ formatDate(form.date) }}</span>
+              </div>
+            </div>
+
             <button
               type="submit"
               :disabled="isSubmitting || !isFormValid"
@@ -219,7 +286,6 @@
       </div>
     </div>
 
-    <!-- RIWAYAT PEMAKAIAN -->
     <div class="history-section">
       <div class="history-header">
         <div class="history-title-wrapper">
@@ -269,12 +335,14 @@ import axios from '@/api/axios'
 import DashboardLayout from '@/components/DashboardLayout.vue'
 
 const items = ref([])
+const categories = ref([])
 const divisions = ref([])
 const isSubmitting = ref(false)
+const isLoadingItems = ref(false)
 const recentLogs = ref([])
 
-// Search state
 const searchQuery = ref('')
+const selectedCategory = ref('')
 const showDropdown = ref(false)
 const selectedItems = ref([])
 
@@ -290,19 +358,25 @@ const alert = reactive({
   message: '',
 })
 
-// Filter items berdasarkan search
 const filteredItems = computed(() => {
-  if (!searchQuery.value) return items.value
+  let result = items.value
 
-  const query = searchQuery.value.toLowerCase()
-  return items.value
-    .filter((item) => {
+  if (selectedCategory.value) {
+    result = result.filter((item) => item.category_id === selectedCategory.value)
+  }
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter((item) => {
       const nameMatch = item.name?.toLowerCase().includes(query)
       const codeMatch = item.code?.toLowerCase().includes(query)
-      const alreadySelected = selectedItems.value.some((selected) => selected.id === item.id)
-      return (nameMatch || codeMatch) && !alreadySelected
+      return nameMatch || codeMatch
     })
-    .slice(0, 10) // limit 10 hasil
+  }
+
+  result = result.filter((item) => !selectedItems.value.some((selected) => selected.id === item.id))
+
+  return result.slice(0, 15)
 })
 
 const isFormValid = computed(() => {
@@ -311,14 +385,33 @@ const isFormValid = computed(() => {
 })
 
 const fetchItems = async () => {
+  isLoadingItems.value = true
   try {
-    const response = await axios.get('/material-usages/consumables')
+    const params = {}
+    if (selectedCategory.value) {
+      params.category_id = selectedCategory.value
+    }
+
+    const response = await axios.get('/material-usages/consumables', { params })
     if (response.data.success) {
       items.value = response.data.data
     }
   } catch (error) {
     console.error('Error fetching items:', error)
     showAlert('error', 'Gagal mengambil data barang.')
+  } finally {
+    isLoadingItems.value = false
+  }
+}
+
+const fetchCategories = async () => {
+  try {
+    const response = await axios.get('/material-usages/categories')
+    if (response.data.success) {
+      categories.value = response.data.data
+    }
+  } catch (error) {
+    console.error('Error fetching categories:', error)
   }
 }
 
@@ -350,8 +443,16 @@ const onSearchInput = () => {
   showDropdown.value = true
 }
 
+const onCategoryChange = () => {
+  fetchItems()
+}
+
+const clearSearch = () => {
+  searchQuery.value = ''
+  showDropdown.value = false
+}
+
 const addItemToList = (item) => {
-  // Cek apakah sudah ada di list
   const exists = selectedItems.value.find((i) => i.id === item.id)
   if (exists) {
     showAlert('error', 'Barang sudah ada dalam daftar!')
@@ -363,6 +464,8 @@ const addItemToList = (item) => {
     name: item.name,
     code: item.code,
     unit: item.unit,
+    category: item.category,
+    category_id: item.category_id,
     stock: item.stock,
     qty: 0,
   })
@@ -375,13 +478,25 @@ const removeItemFromList = (index) => {
   selectedItems.value.splice(index, 1)
 }
 
+const clearAllItems = () => {
+  selectedItems.value = []
+}
+
+const getCategoryColorClass = (categoryId) => {
+  const colors = {
+    7: 'dot-orange',
+    8: 'dot-blue',
+    9: 'dot-purple',
+  }
+  return colors[categoryId] || 'dot-gray'
+}
+
 const submitForm = async () => {
   if (!isFormValid.value) return
 
   isSubmitting.value = true
 
   try {
-    // Submit setiap item
     for (const item of selectedItems.value) {
       await axios.post('/material-usages', {
         item_id: item.id,
@@ -394,7 +509,6 @@ const submitForm = async () => {
 
     showAlert('success', `Berhasil menyimpan ${selectedItems.value.length} pemakaian bahan!`)
 
-    // Reset form
     selectedItems.value = []
     form.division = ''
     form.notes = ''
@@ -438,31 +552,22 @@ const formatNumber = (num) => {
   return number.toFixed(2).replace(/\.?0+$/, '')
 }
 
-// Close dropdown when click outside
 const handleClickOutside = (event) => {
-  if (!event.target.closest('.search-wrapper') && !event.target.closest('.search-dropdown')) {
+  if (!event.target.closest('.filter-search')) {
     showDropdown.value = false
   }
 }
 
 onMounted(() => {
   fetchItems()
+  fetchCategories()
   fetchDivisions()
   fetchRecentLogs()
   document.addEventListener('click', handleClickOutside)
 })
-
-// Cleanup event listener
-watch(
-  () => {},
-  () => {
-    document.removeEventListener('click', handleClickOutside)
-  },
-)
 </script>
 
 <style scoped>
-/* ========== HEADER ========== */
 .page-header-material {
   background: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #fb923c 100%);
   padding: 2.5rem 3rem;
@@ -556,7 +661,6 @@ watch(
   font-weight: 700;
 }
 
-/* ========== ALERT ========== */
 .alert-box {
   display: flex;
   align-items: center;
@@ -600,7 +704,6 @@ watch(
   }
 }
 
-/* ========== CONTENT CARD ========== */
 .content-card-material {
   background: white;
   border-radius: 24px;
@@ -614,7 +717,6 @@ watch(
   padding: 3rem;
 }
 
-/* ========== FORM SECTIONS ========== */
 .form-section-modern {
   margin-bottom: 3rem;
   padding-bottom: 3rem;
@@ -653,7 +755,6 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.25);
 }
 
 .material-item-badge {
@@ -687,7 +788,13 @@ watch(
   margin: 0;
 }
 
-/* ========== SEARCH ========== */
+.filter-row {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
 .form-group-modern {
   margin-bottom: 1.75rem;
   position: relative;
@@ -708,6 +815,48 @@ watch(
 .required-star {
   color: #ef4444;
   margin-left: 0.2rem;
+}
+
+.select-wrapper-modern {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.select-icon {
+  position: absolute;
+  left: 1.25rem;
+  font-size: 1.2rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.form-select-modern {
+  width: 100%;
+  padding: 1rem 3.5rem 1rem 3.5rem;
+  border: 2.5px solid #e5e7eb;
+  border-radius: 14px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  transition: all 0.25s ease;
+  background: white;
+  color: #111827;
+  appearance: none;
+  cursor: pointer;
+}
+
+.form-select-modern:focus {
+  outline: none;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
+}
+
+.select-arrow {
+  position: absolute;
+  right: 1.25rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+  pointer-events: none;
 }
 
 .search-wrapper {
@@ -744,7 +893,28 @@ watch(
   outline: none;
   border-color: #f59e0b;
   box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
-  transform: translateY(-1px);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 1rem;
+  background: #fee2e2;
+  border: none;
+  color: #dc2626;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.clear-search-btn:hover {
+  background: #fecaca;
+  transform: scale(1.1);
 }
 
 .search-dropdown {
@@ -757,13 +927,13 @@ watch(
   border: 1.5px solid #e5e7eb;
   border-radius: 14px;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
-  max-height: 300px;
+  max-height: 350px;
   overflow-y: auto;
-  z-index: 10;
+  z-index: 100;
 }
 
 .search-item {
-  padding: 0.85rem 1.25rem;
+  padding: 1rem 1.25rem;
   cursor: pointer;
   border-bottom: 1px solid #f3f4f6;
   transition: all 0.15s ease;
@@ -782,6 +952,8 @@ watch(
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.35rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .search-item-name {
@@ -790,8 +962,22 @@ watch(
   font-size: 0.95rem;
 }
 
+.search-item-badges {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-item-category {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1e40af;
+  font-weight: 700;
+}
+
 .search-item-unit {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
   background: #fef3c7;
@@ -800,25 +986,42 @@ watch(
 }
 
 .search-item-sub {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: #6b7280;
   font-weight: 600;
 }
 
-.search-dropdown-empty {
+.search-item-sub strong {
+  color: #111827;
+}
+
+.search-dropdown-empty,
+.search-dropdown-loading {
   padding: 2rem;
   text-align: center;
   color: #9ca3af;
   font-weight: 600;
 }
 
-.empty-icon {
-  font-size: 2rem;
-  display: block;
-  margin-bottom: 0.5rem;
+.empty-selection-hint {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+  border-radius: 16px;
+  border: 2px dashed #d1d5db;
 }
 
-/* ========== SELECTED ITEMS ========== */
+.hint-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.hint-text {
+  font-size: 1.1rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+
 .selected-items-section {
   margin-top: 2rem;
 }
@@ -842,6 +1045,23 @@ watch(
   font-size: 1.05rem;
   font-weight: 800;
   color: #1e40af;
+  flex: 1;
+}
+
+.btn-clear-all {
+  padding: 0.5rem 1rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-clear-all:hover {
+  background: #fecaca;
 }
 
 .selected-items-list {
@@ -872,17 +1092,34 @@ watch(
 
 .selected-item-info {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
   flex: 1;
 }
 
 .item-dot {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 999px;
   background: #f59e0b;
   flex-shrink: 0;
+  margin-top: 0.3rem;
+}
+
+.item-dot.dot-orange {
+  background: #f59e0b;
+}
+
+.item-dot.dot-blue {
+  background: #3b82f6;
+}
+
+.item-dot.dot-purple {
+  background: #8b5cf6;
+}
+
+.item-dot.dot-gray {
+  background: #6b7280;
 }
 
 .item-name {
@@ -890,6 +1127,22 @@ watch(
   font-weight: 800;
   color: #111827;
   margin-bottom: 0.35rem;
+}
+
+.item-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.item-category-badge {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: #e0e7ff;
+  color: #4338ca;
+  font-weight: 700;
 }
 
 .item-stock {
@@ -934,50 +1187,6 @@ watch(
   font-weight: 800;
   color: #111827;
   margin-bottom: 0.65rem;
-}
-
-/* ========== FORM INPUTS (REUSE) ========== */
-.select-wrapper-modern {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.select-icon {
-  position: absolute;
-  left: 1.25rem;
-  font-size: 1.2rem;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.form-select-modern {
-  width: 100%;
-  padding: 1rem 3.5rem 1rem 3.5rem;
-  border: 2.5px solid #e5e7eb;
-  border-radius: 14px;
-  font-size: 1.05rem;
-  font-weight: 700;
-  transition: all 0.25s ease;
-  background: white;
-  color: #111827;
-  appearance: none;
-  cursor: pointer;
-}
-
-.form-select-modern:focus {
-  outline: none;
-  border-color: #f59e0b;
-  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
-  transform: translateY(-1px);
-}
-
-.select-arrow {
-  position: absolute;
-  right: 1.25rem;
-  font-size: 0.8rem;
-  color: #6b7280;
-  pointer-events: none;
 }
 
 .input-wrapper-icon {
@@ -1027,7 +1236,6 @@ watch(
   outline: none;
   border-color: #f59e0b;
   box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
-  transform: translateY(-1px);
 }
 
 .form-textarea-modern {
@@ -1051,7 +1259,6 @@ watch(
   outline: none;
   border-color: #f59e0b;
   box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
-  transform: translateY(-1px);
 }
 
 .input-hint {
@@ -1065,11 +1272,49 @@ watch(
   color: #dc2626;
 }
 
-/* ========== BUTTONS ========== */
+.input-hint.success-hint {
+  color: #059669;
+}
+
+.form-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
 .form-actions-modern {
   margin-top: 2.5rem;
   padding-top: 2.5rem;
   border-top: 2px solid #f3f4f6;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.summary-box {
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border: 2px solid #86efac;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+}
+
+.summary-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #166534;
+  margin-bottom: 0.75rem;
+}
+
+.summary-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.summary-item {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #15803d;
 }
 
 .btn-action {
@@ -1109,7 +1354,6 @@ watch(
   box-shadow: 0 10px 32px rgba(245, 158, 11, 0.4);
 }
 
-/* ========== HISTORY (REUSE DARI SEBELUMNYA) ========== */
 .history-section {
   margin-top: 2.5rem;
 }
@@ -1143,7 +1387,7 @@ watch(
   border: 1.5px solid #d1d5db;
 }
 
-.empty-icon {
+.empty-state-card .empty-icon {
   font-size: 3.5rem;
   margin-bottom: 1rem;
 }
@@ -1232,7 +1476,6 @@ watch(
   font-weight: 600;
 }
 
-/* ========== RESPONSIVE ========== */
 @media (max-width: 900px) {
   .page-header-material {
     padding: 2rem;
@@ -1249,6 +1492,14 @@ watch(
 
   .header-right-section {
     align-items: flex-start;
+  }
+
+  .filter-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid-2col {
+    grid-template-columns: 1fr;
   }
 
   .selected-item-header {

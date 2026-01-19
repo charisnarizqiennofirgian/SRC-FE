@@ -50,20 +50,25 @@
               <label class="form-label-modern">
                 Production Order <span class="required-star">*</span>
               </label>
-              <div class="select-wrapper-modern">
+              <div class="select-wrapper-modern box-auto">
                 <span class="select-icon">📄</span>
-                <select
+                <v-select
                   v-model="form.po_id"
-                  class="form-select-modern"
-                  required
-                  @change="handlePoChange"
+                  :options="productionOrders"
+                  :reduce="(po) => po.id"
+                  label="label"
+                  placeholder="-- Pilih PO On Progress --"
+                  class="form-select-modern-search"
+                  @option:selected="handlePoChange"
                 >
-                  <option value="">-- Pilih PO On Progress --</option>
-                  <option v-for="po in productionOrders" :key="po.id" :value="po.id">
-                    {{ po.label }}
-                  </option>
-                </select>
-                <span class="select-arrow">▼</span>
+                  <template #no-options="{ search, searching }">
+                    <template v-if="searching">
+                      Tidak ada hasil untuk <em>{{ search }}</em
+                      >.
+                    </template>
+                    <em v-else>Ketik untuk mencari PO...</em>
+                  </template>
+                </v-select>
               </div>
             </div>
 
@@ -152,15 +157,26 @@
                   <label class="form-label-modern">
                     Barang Sumber <span class="required-star">*</span>
                   </label>
-                  <div class="select-wrapper-modern">
+                  <div class="select-wrapper-modern box-auto">
                     <span class="select-icon">📦</span>
-                    <select v-model="item.source_inventory_id" class="form-select-modern" required>
-                      <option value="">-- Pilih Barang Gudang Pembahanan --</option>
-                      <option v-for="inv in sourceInventories" :key="inv.id" :value="inv.id">
-                        {{ inv.item_name }} | Sisa Stok: {{ Number(inv.available_qty) }} pcs
-                      </option>
-                    </select>
-                    <span class="select-arrow">▼</span>
+                    <v-select
+                      v-model="item.source_inventory_id"
+                      :options="sourceInventories"
+                      :reduce="(inv) => inv.id"
+                      :get-option-label="
+                        (inv) => `${inv.item_name} | Sisa Stok: ${Number(inv.available_qty)} pcs`
+                      "
+                      placeholder="-- Pilih Barang Gudang Pembahanan --"
+                      class="form-select-modern-search"
+                    >
+                      <template #no-options="{ search, searching }">
+                        <template v-if="searching">
+                          Tidak ada hasil untuk <em>{{ search }}</em
+                          >.
+                        </template>
+                        <em v-else>Ketik untuk mencari barang...</em>
+                      </template>
+                    </v-select>
                   </div>
 
                   <div v-if="getSelectedSource(index)" class="info-text-highlight">
@@ -205,19 +221,24 @@
                     <label class="form-label-modern">
                       Item Hasil Moulding <span class="required-star">*</span>
                     </label>
-                    <div class="select-wrapper-modern">
+                    <div class="select-wrapper-modern box-auto">
                       <span class="select-icon">📦</span>
-                      <select v-model="item.output_item_id" class="form-select-modern" required>
-                        <option value="">-- Pilih Item Hasil --</option>
-                        <option
-                          v-for="outItem in outputItems"
-                          :key="outItem.id"
-                          :value="outItem.id"
-                        >
-                          {{ outItem.code }} - {{ outItem.name }}
-                        </option>
-                      </select>
-                      <span class="select-arrow">▼</span>
+                      <v-select
+                        v-model="item.output_item_id"
+                        :options="outputItems"
+                        :reduce="(out) => out.id"
+                        :get-option-label="(opt) => `${opt.code} - ${opt.name}`"
+                        placeholder="-- Pilih Item Hasil --"
+                        class="form-select-modern-search"
+                      >
+                        <template #no-options="{ search, searching }">
+                          <template v-if="searching">
+                            Tidak ada hasil untuk <em>{{ search }}</em
+                            >.
+                          </template>
+                          <em v-else>Ketik untuk mencari item...</em>
+                        </template>
+                      </v-select>
                     </div>
                   </div>
                 </div>
@@ -266,6 +287,7 @@ import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import { useNotification } from '../../composables/useNotification.js'
+import vSelect from 'vue-select'
 
 const router = useRouter()
 const { showSuccess, showError } = useNotification()
@@ -321,7 +343,10 @@ const fetchProductionOrders = async () => {
       params: { status: 'on_progress', per_page: 100 },
     })
     const raw = res.data.data?.data || res.data.data || []
-    productionOrders.value = raw
+    productionOrders.value = raw.map((p) => ({
+      ...p,
+      label: p.label || `${p.po_number} - ${p.buyer?.name || '-'}`,
+    }))
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil daftar Production Order')
@@ -1139,5 +1164,60 @@ onMounted(() => {
   .item-row-wrapper {
     padding: 1.25rem;
   }
+}
+
+/* V-SELECT CUSTOMIZATION */
+.form-select-modern-search {
+  background: white;
+  border-radius: 12px;
+  box-sizing: border-box;
+  width: 100%;
+}
+:deep(.form-select-modern-search .vs__dropdown-toggle) {
+  border: 2.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.4rem 0.5rem 0.4rem 3.5rem;
+  min-height: 54px;
+  background: white;
+}
+:deep(.form-select-modern-search.vs--open .vs__dropdown-toggle) {
+  border-color: #0ea5e9;
+}
+:deep(.form-select-modern-search .vs__search::placeholder) {
+  color: #9ca3af;
+}
+:deep(.form-select-modern-search .vs__selected) {
+  margin-top: 4px;
+  padding-left: 0;
+}
+:deep(.form-select-modern-search .vs__dropdown-menu) {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem;
+  z-index: 999;
+}
+:deep(.form-select-modern-search .vs__dropdown-option) {
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+:deep(.form-select-modern-search .vs__dropdown-option--highlight) {
+  background: #0ea5e9;
+  color: white;
+}
+
+.select-icon {
+  position: absolute;
+  left: 1.125rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.125rem;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.form-input-modern,
+.form-select-modern {
+  box-sizing: border-box;
 }
 </style>

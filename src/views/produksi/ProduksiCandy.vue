@@ -1,8 +1,5 @@
 <template>
   <DashboardLayout>
-    <!-- ========================================
-         PAGE HEADER - GRADIENT KILN
-         ======================================== -->
     <div class="page-header-candy">
       <div class="header-content-wrapper">
         <div class="header-left-section">
@@ -10,10 +7,10 @@
             <span class="candy-icon">🔥</span>
           </div>
           <div class="header-text-content">
-            <h1 class="page-title-candy">Produksi Oven / Candy</h1>
+            <h1 class="page-title-candy">Produksi Oven / KD</h1>
             <p class="page-subtitle-candy">
-              Pindahkan stok RST basah dari Gudang Sawmill ke Gudang Candy (kering) dengan tracking
-              yang rapi.
+              Pindahkan stok RST basah dari Gudang Sanwil ke Gudang KD (kering) dengan tracking yang
+              rapi.
             </p>
           </div>
         </div>
@@ -31,13 +28,9 @@
       </div>
     </div>
 
-    <!-- ========================================
-         FORM CARD
-         ======================================== -->
     <div class="content-card-candy">
       <div class="card-body-candy">
         <form @submit.prevent="handleSubmit">
-          <!-- INFO UMUM -->
           <div class="form-section-modern">
             <div class="section-header">
               <div class="section-icon-badge">
@@ -45,7 +38,7 @@
               </div>
               <div class="section-title-group">
                 <h3 class="section-title">Informasi Umum</h3>
-                <p class="section-subtitle">Tanggal dan catatan proses oven / kiln</p>
+                <p class="section-subtitle">Tanggal, Production Order, dan catatan proses oven</p>
               </div>
             </div>
 
@@ -61,42 +54,63 @@
               </div>
 
               <div class="form-group-modern">
-                <label class="form-label-modern">Catatan</label>
-                <div class="input-wrapper-icon">
-                  <span class="input-icon">📝</span>
-                  <input
-                    v-model="form.notes"
-                    type="text"
-                    class="form-input-modern"
-                    placeholder="Contoh: Oven batch #1, Kiln A"
-                  />
+                <label class="form-label-modern">
+                  Production Order <span class="required-star">*</span>
+                </label>
+                <div class="select-wrapper-modern">
+                  <span class="select-icon">📋</span>
+                  <select
+                    v-model="form.ref_po_id"
+                    @change="onPoChange"
+                    class="form-select-modern"
+                    required
+                  >
+                    <option value="">-- Pilih Production Order --</option>
+                    <option v-for="po in productionOrders" :key="po.id" :value="po.id">
+                      {{ po.label }}
+                    </option>
+                  </select>
+                  <span class="select-arrow">▼</span>
                 </div>
+                <p v-if="selectedPO" class="helper-inline">
+                  Buyer: {{ selectedPO.buyer_name || '-' }} • SO:
+                  {{ selectedPO.so_number || '-' }} • Product: {{ selectedPO.product_name || '-' }}
+                </p>
+              </div>
+            </div>
+
+            <div class="form-group-modern">
+              <label class="form-label-modern">Catatan</label>
+              <div class="input-wrapper-icon">
+                <span class="input-icon">📝</span>
+                <input
+                  v-model="form.notes"
+                  type="text"
+                  class="form-input-modern"
+                  placeholder="Contoh: Oven batch #1, Kiln A"
+                />
               </div>
             </div>
           </div>
 
-          <!-- ✅ SUMBER STOK (GUDANG SAWMILL) - MULTIPLE ITEMS -->
           <div class="form-section-modern">
             <div class="section-header">
               <div class="section-icon-badge log-badge">
                 <span class="section-icon">📦</span>
               </div>
               <div class="section-title-group">
-                <h3 class="section-title">Sumber Stok (Gudang Sawmill)</h3>
+                <h3 class="section-title">Sumber Stok (Gudang Sanwil)</h3>
                 <p class="section-subtitle">
                   Pilih stok RST basah berdasarkan item dan qty total tersedia.
                 </p>
               </div>
 
-              <!-- ✅ TOMBOL TAMBAH ITEM -->
               <button type="button" @click="addItem" class="btn-add-item">
                 <span class="add-icon">➕</span> Tambah Item
               </button>
             </div>
 
-            <!-- ✅ LOOP UNTUK SETIAP ITEM -->
             <div v-for="(item, index) in form.items" :key="index" class="item-row-wrapper">
-              <!-- Header Row dengan Nomor dan Tombol Hapus -->
               <div class="item-row-header">
                 <h4 class="item-number">📦 Item #{{ index + 1 }}</h4>
                 <button
@@ -109,44 +123,73 @@
                 </button>
               </div>
 
-              <!-- ✅ PILIH STOK RST BASAH -->
+              <!-- ✅ SEARCH PRODUK -->
               <div class="form-group-modern">
                 <label class="form-label-modern">
-                  Pilih Stok RST Basah <span class="required-star">*</span>
+                  Cari Produk <span class="required-star">*</span>
                 </label>
-                <div class="select-wrapper-modern">
-                  <span class="select-icon">📦</span>
-                  <select
-                    v-model="item.item_id"
-                    @change="item.warehouse_id = getWarehouseIdByName('Gudang Sanwil (RST Basah)')"
-                    class="form-select-modern"
-                    required
+                <div class="search-wrapper-product">
+                  <span class="search-icon-product">🔍</span>
+                  <input
+                    v-model="item.searchQuery"
+                    @input="onProductSearch(index)"
+                    @focus="item.showDropdown = true"
+                    type="text"
+                    class="search-input-product"
+                    placeholder="Ketik nama atau kode produk..."
+                  />
+                  <button
+                    v-if="item.item_id"
+                    @click="clearProductSelection(index)"
+                    class="btn-clear-product"
+                    type="button"
                   >
-                    <option value="">-- Pilih Stok di Gudang Sawmill --</option>
-                    <option
-                      v-for="inv in sanwilInventories"
+                    ✕
+                  </button>
+
+                  <!-- DROPDOWN SEARCH RESULTS -->
+                  <div
+                    v-if="item.showDropdown && item.searchResults.length > 0"
+                    class="product-dropdown"
+                  >
+                    <div
+                      v-for="inv in item.searchResults"
                       :key="`wh${inv.warehouse_id}_item${inv.item_id}`"
-                      :value="inv.item_id"
+                      class="product-option"
+                      @click="selectProduct(index, inv)"
                     >
-                      {{ inv.item?.code || 'N/A' }} - {{ inv.item?.name || 'N/A' }} ({{
-                        inv.qty
-                      }}
-                      pcs)
-                    </option>
-                  </select>
-                  <span class="select-arrow">▼</span>
+                      <div class="product-option-main">
+                        <span class="product-code">[{{ inv.item?.code || 'N/A' }}]</span>
+                        <span class="product-name">{{ inv.item?.name || 'N/A' }}</span>
+                      </div>
+                      <div class="product-option-sub">
+                        Stok: <strong>{{ inv.qty }} pcs</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    v-if="
+                      item.showDropdown &&
+                      item.searchQuery &&
+                      item.searchResults.length === 0 &&
+                      !isSearching
+                    "
+                    class="product-dropdown-empty"
+                  >
+                    <span class="empty-icon">🔍</span>
+                    <span>Produk tidak ditemukan</span>
+                  </div>
                 </div>
 
                 <p v-if="getSelectedInventory(index)" class="helper-inline">
-                  Gudang: {{ getSelectedInventory(index).warehouse?.name || 'Gudang Sawmill' }} •
+                  Gudang: {{ getSelectedInventory(index).warehouse?.name || 'Gudang Sanwil' }} •
                   Produk: {{ getSelectedInventory(index).item?.name }} • Total Stok:
                   <strong>{{ getSelectedInventory(index).qty }} pcs</strong>
                 </p>
               </div>
 
-              <!-- Qty dan Target Item (2 kolom) -->
               <div v-if="getSelectedInventory(index)" class="form-grid-2col">
-                <!-- Qty yang Dioven -->
                 <div class="form-group-modern">
                   <label class="form-label-modern">
                     Qty yang Dioven (pcs) <span class="required-star">*</span>
@@ -170,7 +213,6 @@
                   </p>
                 </div>
 
-                <!-- Target Item Kering -->
                 <div class="form-group-modern">
                   <label class="form-label-modern">
                     Jadikan Barang Kering <span class="required-star">*</span>
@@ -186,14 +228,13 @@
                     <span class="select-arrow">▼</span>
                   </div>
                   <p v-if="item.target_item_id" class="help-text">
-                    Item tujuan akan menerima stok kering di Gudang Candy.
+                    Item tujuan akan menerima stok kering di Gudang KD.
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- FORM ACTIONS -->
           <div class="form-actions-modern">
             <button
               type="button"
@@ -203,9 +244,9 @@
               <span class="btn-icon">↩️</span>
               <span class="btn-text">Batal</span>
             </button>
-            <button type="submit" class="btn-action btn-submit-modern">
+            <button type="submit" class="btn-action btn-submit-modern" :disabled="isSubmitting">
               <span class="btn-icon">💾</span>
-              <span class="btn-text">Simpan Proses Candy</span>
+              <span class="btn-text">{{ isSubmitting ? 'Menyimpan...' : 'Simpan Proses KD' }}</span>
             </button>
           </div>
         </form>
@@ -215,7 +256,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, computed, onMounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
@@ -227,12 +268,16 @@ const { showSuccess, showError } = useNotification()
 const form = reactive({
   date: new Date().toISOString().slice(0, 10),
   notes: '',
+  ref_po_id: '',
   items: [
     {
       item_id: '',
       warehouse_id: '',
       target_item_id: '',
       qty: null,
+      searchQuery: '', // ✅ NEW
+      showDropdown: false, // ✅ NEW
+      searchResults: [], // ✅ NEW
     },
   ],
 })
@@ -240,6 +285,29 @@ const form = reactive({
 const warehouses = ref([])
 const sanwilInventories = ref([])
 const dryItems = ref([])
+const productionOrders = ref([])
+const isSubmitting = ref(false)
+const isSearching = ref(false)
+
+let searchTimeout = null
+
+const selectedPO = computed(() => {
+  if (!form.ref_po_id) return null
+  return productionOrders.value.find((po) => po.id === form.ref_po_id) || null
+})
+
+// ✅ COMPUTED: Filter inventory berdasarkan PO yang dipilih
+const filteredInventoriesByPO = computed(() => {
+  if (!form.ref_po_id || !selectedPO.value) {
+    return sanwilInventories.value
+  }
+
+  // Filter berdasarkan product_id dari PO
+  const poProductId = selectedPO.value.product_id
+  if (!poProductId) return sanwilInventories.value
+
+  return sanwilInventories.value.filter((inv) => inv.item?.product_id === poProductId)
+})
 
 const getSelectedInventory = (index) => {
   const item = form.items[index]
@@ -255,6 +323,64 @@ const getWarehouseIdByName = (name) => {
   return wh ? wh.id : null
 }
 
+// ✅ NEW: Search produk dengan debounce
+const onProductSearch = (index) => {
+  clearTimeout(searchTimeout)
+  const item = form.items[index]
+  item.showDropdown = true
+
+  if (!item.searchQuery || item.searchQuery.length < 1) {
+    item.searchResults = []
+    return
+  }
+
+  isSearching.value = true
+
+  searchTimeout = setTimeout(() => {
+    const query = item.searchQuery.toLowerCase()
+
+    // Search dari inventory yang sudah difilter by PO
+    item.searchResults = filteredInventoriesByPO.value.filter((inv) => {
+      const name = inv.item?.name?.toLowerCase() || ''
+      const code = inv.item?.code?.toLowerCase() || ''
+      return name.includes(query) || code.includes(query)
+    })
+
+    isSearching.value = false
+  }, 300)
+}
+
+// ✅ NEW: Select produk dari dropdown
+const selectProduct = (index, inv) => {
+  const item = form.items[index]
+  item.item_id = inv.item_id
+  item.warehouse_id = inv.warehouse_id
+  item.searchQuery = `[${inv.item?.code}] ${inv.item?.name}`
+  item.showDropdown = false
+  item.searchResults = []
+}
+
+// ✅ NEW: Clear product selection
+const clearProductSelection = (index) => {
+  const item = form.items[index]
+  item.item_id = ''
+  item.warehouse_id = ''
+  item.searchQuery = ''
+  item.searchResults = []
+  item.showDropdown = false
+}
+
+const onPoChange = () => {
+  console.log('✅ PO dipilih:', form.ref_po_id, selectedPO.value)
+
+  // Reset semua item search saat PO berubah
+  form.items.forEach((item) => {
+    clearProductSelection(form.items.indexOf(item))
+  })
+
+  showSuccess('Berhasil', 'PO dipilih. Silakan pilih produk yang sesuai dengan PO ini.')
+}
+
 const addItem = () => {
   const sanwilId = getWarehouseIdByName('Gudang Sanwil (RST Basah)')
   form.items.push({
@@ -262,6 +388,9 @@ const addItem = () => {
     warehouse_id: sanwilId || '',
     target_item_id: '',
     qty: null,
+    searchQuery: '',
+    showDropdown: false,
+    searchResults: [],
   })
   showSuccess('Berhasil', 'Item baru ditambahkan')
 }
@@ -280,9 +409,13 @@ const fetchData = async () => {
     const whRes = await apiClient.get('/warehouses')
     warehouses.value = whRes.data.data || whRes.data || []
 
+    const poRes = await apiClient.get('/production-orders')
+    productionOrders.value = poRes.data.data || poRes.data || []
+    console.log('✅ Production Orders:', productionOrders.value.length, 'items')
+
     const sanwilId = getWarehouseIdByName('Gudang Sanwil (RST Basah)')
     if (!sanwilId) {
-      showError('Konfigurasi', 'Gudang Sawmill tidak ditemukan di master')
+      showError('Konfigurasi', 'Gudang Sanwil tidak ditemukan di master')
       console.log('❌ WAREHOUSES:', warehouses.value)
       return
     }
@@ -301,7 +434,6 @@ const fetchData = async () => {
     console.log('📦 RAW INVENTORIES dari API:', raw)
     console.log('📦 Total baris inventory:', raw.length)
 
-    // ✅ GROUP BY item_id + warehouse_id dan SUM qty
     const groupedMap = {}
 
     raw.forEach((inv) => {
@@ -318,13 +450,8 @@ const fetchData = async () => {
         }
       }
 
-      // Sum qty
       groupedMap[key].qty += Number(inv.qty || 0)
       groupedMap[key].inventory_ids.push(inv.id)
-
-      console.log(
-        `➕ Menambahkan ${inv.qty} pcs ke item_id ${inv.item_id}, total sekarang: ${groupedMap[key].qty}`,
-      )
     })
 
     sanwilInventories.value = Object.values(groupedMap)
@@ -332,7 +459,6 @@ const fetchData = async () => {
     console.log('✅ SANWIL INVENTORIES (GROUPED):', sanwilInventories.value)
     console.log('✅ Total item setelah grouping:', sanwilInventories.value.length)
 
-    // Set default warehouse_id untuk item pertama
     if (form.items.length > 0 && !form.items[0].warehouse_id) {
       form.items[0].warehouse_id = sanwilId
     }
@@ -351,7 +477,11 @@ const fetchData = async () => {
 
 const handleSubmit = async () => {
   try {
-    // Validasi setiap item
+    if (!form.ref_po_id) {
+      showError('Validasi', 'Production Order wajib dipilih')
+      return
+    }
+
     for (let i = 0; i < form.items.length; i++) {
       const item = form.items[i]
       const selectedInv = getSelectedInventory(i)
@@ -377,9 +507,12 @@ const handleSubmit = async () => {
       }
     }
 
+    isSubmitting.value = true
+
     const payload = {
       date: form.date,
       notes: form.notes || null,
+      ref_po_id: form.ref_po_id,
       items: form.items.map((item) => ({
         warehouse_id: item.warehouse_id,
         item_id: item.item_id,
@@ -394,20 +527,32 @@ const handleSubmit = async () => {
 
     console.log('✅ RESPONSE DARI SERVER:', response.data)
 
-    showSuccess('Sukses', `Proses Candy berhasil dicatat untuk ${form.items.length} item.`)
+    showSuccess('Sukses', `Proses KD berhasil dicatat untuk ${form.items.length} item.`)
     router.push({ name: 'ProduksiPembahanan' })
   } catch (error) {
     console.error('❌ ERROR SUBMIT:', error)
     const msg =
       error.response?.data?.message ||
       (error.response?.data?.errors && JSON.stringify(error.response.data.errors)) ||
-      'Gagal mencatat proses Candy'
+      'Gagal mencatat proses KD'
     showError('Gagal', msg)
+  } finally {
+    isSubmitting.value = false
   }
+}
+
+// Close dropdown when clicking outside
+const handleClickOutside = (event) => {
+  form.items.forEach((item, index) => {
+    if (!event.target.closest(`.search-wrapper-product`)) {
+      item.showDropdown = false
+    }
+  })
 }
 
 onMounted(() => {
   fetchData()
+  document.addEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -851,6 +996,137 @@ onMounted(() => {
   background: linear-gradient(135deg, #cc0000, #990000);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(255, 68, 68, 0.5);
+}
+
+/* ========================================
+   ✅ SEARCH PRODUCT STYLES
+   ======================================== */
+.search-wrapper-product {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon-product {
+  position: absolute;
+  left: 1.125rem;
+  font-size: 1.125rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.search-input-product {
+  width: 100%;
+  padding: 1rem 3.25rem 1rem 3.25rem;
+  border: 2.5px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  background: white;
+  color: #111827;
+}
+
+.search-input-product::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.search-input-product:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.15);
+  transform: translateY(-1px);
+}
+
+.btn-clear-product {
+  position: absolute;
+  right: 1.125rem;
+  padding: 0.35rem 0.6rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  border-radius: 6px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  z-index: 2;
+}
+
+.btn-clear-product:hover {
+  background: #fecaca;
+  transform: scale(1.1);
+}
+
+.product-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.product-option {
+  padding: 0.85rem 1.25rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+  transition: all 0.15s ease;
+}
+
+.product-option:last-child {
+  border-bottom: none;
+}
+
+.product-option:hover {
+  background: #fef3c7;
+}
+
+.product-option-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.product-code {
+  font-weight: 800;
+  color: #f97316;
+  font-size: 0.9rem;
+  font-family: monospace;
+}
+
+.product-name {
+  font-weight: 700;
+  color: #111827;
+  font-size: 0.95rem;
+  flex: 1;
+}
+
+.product-option-sub {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.product-dropdown-empty {
+  padding: 2rem;
+  text-align: center;
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.empty-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 0.5rem;
 }
 
 @media (max-width: 768px) {

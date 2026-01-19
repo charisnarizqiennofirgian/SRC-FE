@@ -21,13 +21,27 @@
           </router-link>
         </div>
 
+        <!-- Legend -->
+        <div class="legend-bar">
+          <span class="legend-title">Keterangan:</span>
+          <span class="legend-item">
+            <span class="status-badge badge-waiting">🔴</span> Waiting
+          </span>
+          <span class="legend-item">
+            <span class="status-badge badge-progress">🟡</span> In Progress
+          </span>
+          <span class="legend-item"> <span class="status-badge badge-done">✅</span> Done </span>
+        </div>
+
         <!-- Loading -->
         <div v-if="isLoading" class="loading-state">
+          <div class="spinner"></div>
           <p>Memuat data...</p>
         </div>
 
         <!-- Empty State -->
         <div v-else-if="monitoringData.length === 0" class="empty-state">
+          <span class="empty-icon">📦</span>
           <p>Tidak ada Sales Order aktif saat ini.</p>
         </div>
 
@@ -41,95 +55,114 @@
                 <th class="col-buyer" rowspan="2">Buyer</th>
                 <th class="col-num" rowspan="2">Target</th>
                 <!-- Zona Hulu -->
-                <th colspan="5" class="zone-header zone-hulu">Persiapan Bahan</th>
+                <th colspan="5" class="zone-header zone-hulu">
+                  <span class="zone-icon">🌲</span> Persiapan Bahan
+                </th>
                 <!-- Zona Hilir -->
-                <th colspan="5" class="zone-header zone-hilir">Produksi</th>
+                <th colspan="5" class="zone-header zone-hilir">
+                  <span class="zone-icon">⚙️</span> Produksi
+                </th>
                 <th class="col-num" rowspan="2">Sisa</th>
               </tr>
               <tr>
                 <!-- Hulu -->
-                <th class="col-status bg-gray">Sanwil</th>
-                <th class="col-status bg-gray">KD</th>
-                <th class="col-status bg-gray">Pembahanan</th>
-                <th class="col-status bg-gray">Moulding</th>
-                <th class="col-status bg-gray">Mesin</th>
+                <th class="col-status stage-sanwil">Sanwil</th>
+                <th class="col-status stage-kd">KD</th>
+                <th class="col-status stage-pembahanan">Pembahanan</th>
+                <th class="col-status stage-moulding">Moulding</th>
+                <th class="col-status stage-mesin">Mesin</th>
                 <!-- Hilir -->
-                <th class="col-num bg-blue">Assembling</th>
-                <th class="col-num bg-orange">Rustik</th>
-                <th class="col-num bg-yellow">Sanding</th>
-                <th class="col-num bg-purple">Finishing</th>
-                <th class="col-num bg-green">Packing</th>
+                <th class="col-num stage-assembling">Assembling</th>
+                <th class="col-num stage-rustik">Rustik</th>
+                <th class="col-num stage-sanding">Sanding</th>
+                <th class="col-num stage-finishing">Finishing</th>
+                <th class="col-num stage-packing">Packing</th>
               </tr>
             </thead>
             <tbody>
               <tr
                 v-for="(row, index) in monitoringData"
                 :key="index"
-                :class="{ 'row-done': row.is_done }"
+                :class="{ 'row-done': row.is_done, 'row-even': index % 2 === 0 }"
               >
                 <td class="col-so">
-                  <span class="so-number">{{ row.so_number }}</span>
-                  <span class="so-date">{{ row.so_date }}</span>
+                  <div class="so-wrapper">
+                    <span class="so-number">{{ row.so_number }}</span>
+                    <span class="so-date">{{ row.so_date }}</span>
+                  </div>
                 </td>
                 <td class="col-item">
-                  <div class="item-name">{{ row.item_name }}</div>
-                  <div class="item-code">{{ row.item_code }}</div>
+                  <div class="item-wrapper">
+                    <div class="item-name">{{ row.item_name }}</div>
+                    <div class="item-code">{{ row.item_code }}</div>
+                  </div>
                 </td>
-                <td class="col-buyer">{{ row.buyer_name }}</td>
-                <td class="col-num font-medium">{{ formatNumber(row.target) }}</td>
+                <td class="col-buyer">
+                  <span class="buyer-name">{{ row.buyer_name }}</span>
+                </td>
+                <td class="col-num">
+                  <span class="target-value">{{ formatNumber(row.target) }}</span>
+                </td>
 
-                <!-- Zona Hulu (Status) -->
-                <td class="col-status bg-gray">
-                  <span v-if="row.status_sanwil" class="status-ok">✅</span>
-                  <span v-else class="status-wait">🔴</span>
+                <!-- Zona Hulu (Status 3 Level) -->
+                <td class="col-status stage-sanwil">
+                  <span :class="['status-indicator', getStatusClass(row.status_sanwil)]">
+                    {{ getStatusIcon(row.status_sanwil) }}
+                  </span>
                 </td>
-                <td class="col-status bg-gray">
-                  <span v-if="row.status_kd" class="status-ok">✅</span>
-                  <span v-else class="status-wait">🔴</span>
+                <td class="col-status stage-kd">
+                  <span :class="['status-indicator', getStatusClass(row.status_kd)]">
+                    {{ getStatusIcon(row.status_kd) }}
+                  </span>
                 </td>
-                <td class="col-status bg-gray">
-                  <span v-if="row.status_pembahanan" class="status-ok">✅</span>
-                  <span v-else class="status-wait">🔴</span>
+                <td class="col-status stage-pembahanan">
+                  <span :class="['status-indicator', getStatusClass(row.status_pembahanan)]">
+                    {{ getStatusIcon(row.status_pembahanan) }}
+                  </span>
                 </td>
-                <td class="col-status bg-gray">
-                  <span v-if="row.status_moulding" class="status-ok">✅</span>
-                  <span v-else class="status-wait">🔴</span>
+                <td class="col-status stage-moulding">
+                  <span :class="['status-indicator', getStatusClass(row.status_moulding)]">
+                    {{ getStatusIcon(row.status_moulding) }}
+                  </span>
                 </td>
-                <td class="col-status bg-gray">
-                  <span v-if="row.status_mesin" class="status-ok">✅</span>
-                  <span v-else class="status-wait">🔴</span>
+                <td class="col-status stage-mesin">
+                  <span :class="['status-indicator', getStatusClass(row.status_mesin)]">
+                    {{ getStatusIcon(row.status_mesin) }}
+                  </span>
                 </td>
 
                 <!-- Zona Hilir (Angka) -->
-                <td class="col-num bg-blue">
-                  <span :class="row.qty_assembling > 0 ? 'has-value' : 'no-value'">
+                <td class="col-num stage-assembling">
+                  <span :class="['qty-value', row.qty_assembling > 0 ? 'has-value' : 'no-value']">
                     {{ formatNumber(row.qty_assembling) }}
                   </span>
                 </td>
-                <td class="col-num bg-orange">
-                  <span :class="row.qty_rustik > 0 ? 'has-value' : 'no-value'">
+                <td class="col-num stage-rustik">
+                  <span :class="['qty-value', row.qty_rustik > 0 ? 'has-value' : 'no-value']">
                     {{ formatNumber(row.qty_rustik) }}
                   </span>
                 </td>
-                <td class="col-num bg-yellow">
-                  <span :class="row.qty_sanding > 0 ? 'has-value' : 'no-value'">
+                <td class="col-num stage-sanding">
+                  <span :class="['qty-value', row.qty_sanding > 0 ? 'has-value' : 'no-value']">
                     {{ formatNumber(row.qty_sanding) }}
                   </span>
                 </td>
-                <td class="col-num bg-purple">
-                  <span :class="row.qty_finishing > 0 ? 'has-value' : 'no-value'">
+                <td class="col-num stage-finishing">
+                  <span :class="['qty-value', row.qty_finishing > 0 ? 'has-value' : 'no-value']">
                     {{ formatNumber(row.qty_finishing) }}
                   </span>
                 </td>
-                <td class="col-num bg-green">
-                  <span :class="row.qty_packing > 0 ? 'has-value' : 'no-value'">
+                <td class="col-num stage-packing">
+                  <span :class="['qty-value', row.qty_packing > 0 ? 'has-value' : 'no-value']">
                     {{ formatNumber(row.qty_packing) }}
                   </span>
                 </td>
 
                 <!-- Sisa -->
                 <td class="col-num">
-                  <span v-if="row.is_done" class="badge-done">DONE</span>
+                  <span v-if="row.is_done" class="completion-badge">
+                    <span class="badge-icon">✓</span> DONE
+                  </span>
                   <span v-else class="sisa-value">{{ formatNumber(row.sisa) }}</span>
                 </td>
               </tr>
@@ -139,13 +172,24 @@
 
         <!-- Footer Summary -->
         <div v-if="monitoringData.length > 0" class="widget-footer">
-          <span class="summary-text">
-            Menampilkan {{ monitoringData.length }} item dari {{ totalSO }} SO aktif
-          </span>
-          <span class="summary-stats">
-            <span class="stat-done">{{ doneCount }} selesai</span>
-            <span class="stat-pending">{{ pendingCount }} pending</span>
-          </span>
+          <div class="summary-left">
+            <span class="summary-icon">📊</span>
+            <span class="summary-text">
+              Menampilkan <strong>{{ monitoringData.length }}</strong> item dari {{ totalSO }} SO
+              aktif
+            </span>
+          </div>
+          <div class="summary-stats">
+            <span class="stat-item stat-done">
+              <span class="stat-dot"></span>
+              {{ doneCount }} selesai
+            </span>
+            <span class="stat-divider">•</span>
+            <span class="stat-item stat-pending">
+              <span class="stat-dot"></span>
+              {{ pendingCount }} pending
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -190,7 +234,30 @@ const formatNumber = (num) => {
   return number.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 }
 
-// Computed
+const getStatusIcon = (status) => {
+  switch (status) {
+    case 'done':
+      return '✅'
+    case 'in_progress':
+      return '🟡'
+    case 'waiting':
+    default:
+      return '🔴'
+  }
+}
+
+const getStatusClass = (status) => {
+  switch (status) {
+    case 'done':
+      return 'status-done'
+    case 'in_progress':
+      return 'status-progress'
+    case 'waiting':
+    default:
+      return 'status-waiting'
+  }
+}
+
 const doneCount = computed(() => {
   return monitoringData.value.filter((row) => row.is_done).length
 })
@@ -200,7 +267,6 @@ const pendingCount = computed(() => {
 })
 
 onMounted(() => {
-  // Get user name
   const userData = localStorage.getItem('user')
   if (userData) {
     try {
@@ -210,272 +276,612 @@ onMounted(() => {
       console.error('Failed to parse user data:', error)
     }
   }
-
-  // Fetch monitoring data
   fetchMonitoringData()
 })
 </script>
 
 <style scoped>
+/* ============================================
+   MODERN DASHBOARD VARIABLES & BASE
+   ============================================ */
+:root {
+  --color-primary: #3b82f6;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-600: #6b7280;
+  --color-gray-900: #111827;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --transition-base: all 0.2s ease-in-out;
+}
+
 .dashboard-home {
   max-width: 1600px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 24px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  min-height: 100vh;
 }
 
-/* Welcome Section Compact */
+/* ============================================
+   WELCOME SECTION - MODERN HERO
+   ============================================ */
 .welcome-section-compact {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  color: white;
 }
 
 .welcome-title {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .welcome-subtitle {
-  font-size: 14px;
-  color: #6b7280;
+  font-size: 15px;
+  opacity: 0.95;
+  font-weight: 400;
 }
 
-/* Widget Card */
+/* ============================================
+   WIDGET CARD - ELEVATED MODERN CARD
+   ============================================ */
 .widget-card {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 8px 24px rgba(0, 0, 0, 0.06);
   overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: var(--transition-base);
+}
+
+.widget-card:hover {
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.07),
+    0 12px 32px rgba(0, 0, 0, 0.08);
 }
 
 .widget-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
+  padding: 20px 24px;
+  border-bottom: 2px solid var(--color-gray-100);
+  background: linear-gradient(to right, #fafbfc 0%, #ffffff 100%);
 }
 
 .widget-title {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .widget-icon {
-  font-size: 24px;
+  font-size: 28px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 .widget-title h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1f2937;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-gray-900);
   margin: 0;
+  letter-spacing: -0.3px;
 }
 
 .view-all-btn {
   font-size: 14px;
-  color: #3b82f6;
+  color: var(--color-primary);
   text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: var(--transition-base);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .view-all-btn:hover {
+  background: #eff6ff;
   color: #2563eb;
+  transform: translateX(2px);
 }
 
-/* Loading & Empty State */
-.loading-state,
-.empty-state {
-  padding: 60px 20px;
+/* ============================================
+   LEGEND BAR - MODERN STATUS GUIDE
+   ============================================ */
+.legend-bar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-bottom: 1px solid #fbbf24;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.legend-title {
+  font-weight: 700;
+  color: #92400e;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #78716c;
+  transition: var(--transition-base);
+}
+
+.legend-item:hover {
+  color: #44403c;
+  transform: scale(1.05);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.badge-waiting {
+  background: #fee2e2;
+}
+
+.badge-progress {
+  background: #fef3c7;
+}
+
+.badge-done {
+  background: #d1fae5;
+}
+
+/* ============================================
+   LOADING & EMPTY STATES
+   ============================================ */
+.loading-state {
+  padding: 80px 20px;
   text-align: center;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
-/* Table */
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--color-gray-200);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-state {
+  padding: 80px 20px;
+  text-align: center;
+  color: var(--color-gray-600);
+}
+
+.empty-icon {
+  font-size: 64px;
+  display: block;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+/* ============================================
+   TABLE - MODERN DATA GRID
+   ============================================ */
 .table-wrapper {
   overflow-x: auto;
+  overflow-y: visible;
 }
 
 .monitoring-table {
   width: 100%;
-  min-width: 1400px;
-  border-collapse: collapse;
+  min-width: 1500px;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .monitoring-table th,
 .monitoring-table td {
-  padding: 10px 12px;
+  padding: 14px 12px;
   text-align: left;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-gray-200);
+  transition: var(--transition-base);
+}
+
+.monitoring-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .monitoring-table th {
-  background: #f9fafb;
-  font-weight: 600;
-  font-size: 12px;
+  background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
+  font-weight: 700;
+  font-size: 11px;
   color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   white-space: nowrap;
 }
 
 .monitoring-table td {
   font-size: 13px;
   color: #1f2937;
+  background: white;
 }
 
-/* Zone Headers */
+.monitoring-table tbody tr {
+  transition: var(--transition-base);
+}
+
+.monitoring-table tbody tr:hover {
+  background: #f9fafb;
+  transform: scale(1.002);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.row-even {
+  background: #fafbfc;
+}
+
+.row-done {
+  background: linear-gradient(90deg, #f0fdf4 0%, #dcfce7 100%) !important;
+}
+
+.row-done:hover {
+  background: linear-gradient(90deg, #dcfce7 0%, #bbf7d0 100%) !important;
+}
+
+/* ============================================
+   ZONE HEADERS - COLORFUL PRODUCTION STAGES
+   ============================================ */
 .zone-header {
   text-align: center !important;
-  border-bottom: 2px solid #e5e7eb;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  padding: 16px 12px !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 3px solid;
+}
+
+.zone-icon {
+  font-size: 18px;
+  margin-right: 6px;
 }
 
 .zone-hulu {
-  background: #f3f4f6 !important;
-  color: #4b5563;
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%) !important;
+  color: #3730a3 !important;
+  border-bottom-color: #6366f1 !important;
 }
 
 .zone-hilir {
-  background: #dbeafe !important;
-  color: #1e40af;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
+  color: #1e40af !important;
+  border-bottom-color: #3b82f6 !important;
 }
 
+/* ============================================
+   STAGE COLUMNS - GRADIENT BACKGROUNDS
+   ============================================ */
+.stage-sanwil,
+.stage-kd,
+.stage-pembahanan,
+.stage-moulding,
+.stage-mesin {
+  background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%) !important;
+}
+
+.stage-assembling {
+  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%) !important;
+}
+
+.stage-rustik {
+  background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%) !important;
+}
+
+.stage-sanding {
+  background: linear-gradient(180deg, #fefce8 0%, #fef9c3 100%) !important;
+}
+
+.stage-finishing {
+  background: linear-gradient(180deg, #faf5ff 0%, #f3e8ff 100%) !important;
+}
+
+.stage-packing {
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%) !important;
+}
+
+/* ============================================
+   COLUMN ALIGNMENTS
+   ============================================ */
 .col-num {
   text-align: right !important;
+  font-variant-numeric: tabular-nums;
 }
 
 .col-status {
   text-align: center !important;
 }
 
-.font-medium {
-  font-weight: 500;
+/* ============================================
+   SO & ITEM CELLS - STRUCTURED INFO
+   ============================================ */
+.so-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-/* Background colors for columns */
-.bg-gray {
-  background-color: #f9fafb !important;
-}
-.bg-blue {
-  background-color: #eff6ff !important;
-}
-.bg-yellow {
-  background-color: #fefce8 !important;
-}
-.bg-orange {
-  background-color: #fff7ed !important;
-}
-.bg-purple {
-  background-color: #faf5ff !important;
-}
-.bg-green {
-  background-color: #f0fdf4 !important;
-}
-
-/* Row done */
-.row-done {
-  background-color: #f0fdf4;
-}
-
-/* SO Number */
 .so-number {
-  display: block;
-  font-weight: 600;
+  font-weight: 700;
   color: #1f2937;
-  font-size: 12px;
+  font-size: 13px;
+  display: block;
 }
 
 .so-date {
-  display: block;
   font-size: 11px;
-  color: #6b7280;
-  margin-top: 2px;
+  color: var(--color-gray-600);
+  display: block;
 }
 
-/* Item */
+.item-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .item-name {
-  font-weight: 500;
-  font-size: 12px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #1f2937;
+  line-height: 1.3;
 }
 
 .item-code {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--color-gray-600);
+  font-family: 'Courier New', monospace;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
 }
 
-/* Status Icons */
-.status-ok {
+.buyer-name {
+  font-weight: 500;
+  color: #374151;
+}
+
+.target-value {
+  font-weight: 700;
+  color: #1e40af;
   font-size: 14px;
 }
 
-.status-wait {
-  font-size: 12px;
+/* ============================================
+   STATUS INDICATORS - 3D BADGES
+   ============================================ */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: var(--transition-base);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Values */
+.status-indicator:hover {
+  transform: scale(1.15) rotate(5deg);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.status-done {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 2px solid #10b981;
+}
+
+.status-progress {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.status-waiting {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border: 2px solid #ef4444;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* ============================================
+   QUANTITY VALUES - BOLD NUMBERS
+   ============================================ */
+.qty-value {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  transition: var(--transition-base);
+}
+
 .has-value {
-  font-weight: 600;
   color: #059669;
+  background: #d1fae5;
+  border: 1px solid #a7f3d0;
+}
+
+.has-value:hover {
+  background: #a7f3d0;
+  transform: scale(1.05);
 }
 
 .no-value {
-  color: #9ca3af;
+  color: #d1d5db;
+  font-weight: 400;
 }
 
 .sisa-value {
-  font-weight: 600;
+  font-weight: 800;
   color: #dc2626;
-}
-
-.badge-done {
+  font-size: 15px;
   display: inline-block;
-  background: #dcfce7;
-  color: #15803d;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 3px 6px;
-  border-radius: 4px;
+  padding: 4px 10px;
+  background: #fee2e2;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
 }
 
-/* Widget Footer */
+/* ============================================
+   COMPLETION BADGE - SUCCESS STATE
+   ============================================ */
+.completion-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  transition: var(--transition-base);
+}
+
+.completion-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.badge-icon {
+  font-weight: 900;
+  font-size: 13px;
+}
+
+/* ============================================
+   WIDGET FOOTER - SUMMARY STATS
+   ============================================ */
 .widget-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
-  background: #f9fafb;
-  border-top: 1px solid #e5e7eb;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border-top: 2px solid var(--color-gray-200);
   font-size: 13px;
 }
 
-.summary-text {
-  color: #6b7280;
+.summary-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-gray-600);
+}
+
+.summary-icon {
+  font-size: 20px;
+}
+
+.summary-text strong {
+  color: var(--color-gray-900);
+  font-weight: 700;
 }
 
 .summary-stats {
   display: flex;
+  align-items: center;
   gap: 16px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: var(--transition-base);
 }
 
 .stat-done {
   color: #059669;
-  font-weight: 500;
+  background: #d1fae5;
 }
 
 .stat-pending {
   color: #dc2626;
-  font-weight: 500;
+  background: #fee2e2;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+.stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.stat-divider {
+  color: var(--color-gray-400);
+  font-weight: 300;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+@media (max-width: 1024px) {
   .dashboard-home {
     padding: 16px;
-  }
-
-  .welcome-title {
-    font-size: 22px;
   }
 
   .widget-header {
@@ -484,10 +890,26 @@ onMounted(() => {
     gap: 12px;
   }
 
+  .legend-bar {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .welcome-title {
+    font-size: 24px;
+  }
+
   .widget-footer {
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     align-items: flex-start;
+  }
+
+  .summary-stats {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 </style>
