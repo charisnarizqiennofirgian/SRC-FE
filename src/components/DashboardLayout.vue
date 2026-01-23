@@ -118,6 +118,17 @@ const menuItems = ref([
       { name: 'Data Master Barang', route: { name: 'MasterBarang' } },
       { name: 'Data Supplier', route: '/admin/suppliers' },
       { name: 'Data Buyer', route: '/admin/buyers' },
+      { name: 'Chart of Account', route: '/admin/chart-of-account' },
+      { name: 'Metode Pembayaran', route: '/admin/payment-methods' },
+    ],
+  },
+  {
+    name: 'Keuangan',
+    icon: '💵',
+    children: [
+      { name: 'Jurnal Umum', route: { name: 'JurnalUmum' } },
+      { name: 'Pembayaran Hutang', route: { name: 'PembayaranHutang' } },
+      { name: 'Riwayat Pembayaran', route: { name: 'RiwayatPembayaranHutang' } },
     ],
   },
   {

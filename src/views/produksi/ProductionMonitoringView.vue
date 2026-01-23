@@ -1,282 +1,329 @@
 <template>
   <DashboardLayout>
-    <div class="p-6">
-      <div class="mb-6">
-        <div class="flex items-center gap-2 mb-2">
-          <router-link to="/" class="text-blue-600 hover:text-blue-800">Dashboard</router-link>
-          <span class="text-gray-400">→</span>
-          <span class="text-gray-600">Monitoring Produksi</span>
+    <div class="monitoring-page">
+      <!-- Breadcrumb & Header -->
+      <div class="page-header">
+        <div class="breadcrumb">
+          <router-link to="/" class="breadcrumb-item">
+            <span class="breadcrumb-icon">🏠</span>
+            Dashboard
+          </router-link>
+          <span class="breadcrumb-separator">→</span>
+          <span class="breadcrumb-current">Monitoring Produksi</span>
         </div>
-        <h1 class="text-2xl font-bold text-gray-800">Monitoring Progress Produksi</h1>
-        <p class="text-gray-600 mt-1">Semua Sales Order aktif dan progress di setiap gudang</p>
-      </div>
-
-      <!-- LEGEND -->
-      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-        <div class="flex items-center gap-6 flex-wrap text-sm">
-          <span class="font-semibold text-yellow-800">Keterangan Status:</span>
-          <span class="flex items-center gap-1">
-            <span class="text-lg">🔴</span>
-            <span class="text-gray-600">Waiting (Belum ada aktivitas)</span>
-          </span>
-          <span class="flex items-center gap-1">
-            <span class="text-lg">🟡</span>
-            <span class="text-gray-600">In Progress (Ada sisa)</span>
-          </span>
-          <span class="flex items-center gap-1">
-            <span class="text-lg">✅</span>
-            <span class="text-gray-600">Done (Semua sudah keluar)</span>
-          </span>
-        </div>
-      </div>
-
-      <!-- FILTER -->
-      <div class="bg-white shadow-md rounded-lg p-4 mb-6">
-        <div class="flex gap-4 items-end flex-wrap">
-          <div class="flex-1 min-w-[250px]">
-            <label class="block text-sm font-medium text-gray-700 mb-1">
-              Cari No. SO / Nama Buyer
-            </label>
-            <input
-              type="text"
-              v-model="search"
-              @keyup.enter="fetchData"
-              placeholder="Ketik nomor SO atau nama buyer..."
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+        <div class="header-content">
+          <div class="header-text">
+            <h1 class="page-title">
+              <span class="title-icon">📊</span>
+              Monitoring Progress Produksi
+            </h1>
+            <p class="page-subtitle">Semua Sales Order aktif dan progress di setiap gudang</p>
           </div>
-          <button
-            @click="fetchData"
-            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-          >
-            Cari
-          </button>
-          <button
-            @click="resetFilter"
-            class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
-          >
-            Reset
-          </button>
         </div>
       </div>
 
-      <!-- LOADING -->
-      <div v-if="isLoading" class="bg-white shadow-md rounded-lg p-12 text-center">
-        <p class="text-gray-600">Memuat data...</p>
+      <!-- Legend Card -->
+      <div class="legend-card">
+        <div class="legend-header">
+          <span class="legend-icon">ℹ️</span>
+          <span class="legend-title">Keterangan Status</span>
+        </div>
+        <div class="legend-items">
+          <div class="legend-item">
+            <span class="status-badge badge-waiting">🔴</span>
+            <span class="legend-text"> <strong>Waiting</strong> - Belum ada aktivitas </span>
+          </div>
+          <div class="legend-divider"></div>
+          <div class="legend-item">
+            <span class="status-badge badge-progress">🟡</span>
+            <span class="legend-text"> <strong>In Progress</strong> - Ada sisa </span>
+          </div>
+          <div class="legend-divider"></div>
+          <div class="legend-item">
+            <span class="status-badge badge-done">✅</span>
+            <span class="legend-text"> <strong>Done</strong> - Semua sudah keluar </span>
+          </div>
+        </div>
       </div>
 
-      <!-- TABLE -->
-      <div v-else class="bg-white shadow-md rounded-lg overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full min-w-[1400px]">
-            <thead>
-              <tr class="bg-gray-100">
-                <th class="px-3 py-3 text-left text-gray-700 font-medium text-sm" rowspan="2">
-                  No. SO
-                </th>
-                <th class="px-3 py-3 text-left text-gray-700 font-medium text-sm" rowspan="2">
-                  Item
-                </th>
-                <th class="px-3 py-3 text-left text-gray-700 font-medium text-sm" rowspan="2">
-                  Buyer
-                </th>
-                <th class="px-3 py-3 text-right text-gray-700 font-medium text-sm" rowspan="2">
-                  Target
-                </th>
+      <!-- Filter Section -->
+      <div class="filter-card">
+        <div class="filter-header">
+          <span class="filter-icon">🔍</span>
+          <span class="filter-title">Pencarian & Filter</span>
+        </div>
+        <div class="filter-content">
+          <div class="search-group">
+            <label class="search-label">
+              <span class="label-text">Cari No. SO / Nama Buyer</span>
+              <span class="label-badge">Real-time</span>
+            </label>
+            <div class="search-input-wrapper">
+              <span class="search-icon">🔎</span>
+              <input
+                type="text"
+                v-model="search"
+                @keyup.enter="fetchData"
+                placeholder="Ketik nomor SO atau nama buyer..."
+                class="search-input"
+              />
+              <button v-if="search" @click="resetFilter" class="clear-btn" title="Clear">✕</button>
+            </div>
+          </div>
+          <div class="action-buttons">
+            <button @click="fetchData" class="btn btn-primary">
+              <span class="btn-icon">🔍</span>
+              Cari
+            </button>
+            <button @click="resetFilter" class="btn btn-secondary">
+              <span class="btn-icon">↻</span>
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="isLoading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Memuat data monitoring...</p>
+      </div>
+
+      <!-- Table Container -->
+      <div v-else class="table-container">
+        <!-- Stats Summary Bar -->
+        <div class="stats-bar">
+          <div class="stat-item stat-total">
+            <span class="stat-icon">📦</span>
+            <div class="stat-content">
+              <span class="stat-value">{{ data.length }}</span>
+              <span class="stat-label">Total Items</span>
+            </div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item stat-orders">
+            <span class="stat-icon">📋</span>
+            <div class="stat-content">
+              <span class="stat-value">{{ uniqueSOCount }}</span>
+              <span class="stat-label">Sales Orders</span>
+            </div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item stat-done">
+            <span class="stat-icon">✅</span>
+            <div class="stat-content">
+              <span class="stat-value">{{ doneCount }}</span>
+              <span class="stat-label">Selesai</span>
+            </div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item stat-pending">
+            <span class="stat-icon">⏳</span>
+            <div class="stat-content">
+              <span class="stat-value">{{ pendingCount }}</span>
+              <span class="stat-label">Pending</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Wrapper -->
+        <div class="table-scroll-wrapper">
+          <table class="data-table">
+            <thead class="table-header">
+              <tr class="header-row-main">
+                <th class="th-sticky" rowspan="2">No. SO</th>
+                <th class="th-sticky" rowspan="2">Item</th>
+                <th class="th-sticky" rowspan="2">Buyer</th>
+                <th class="th-num" rowspan="2">Target</th>
                 <!-- Zona Hulu -->
-                <th
-                  colspan="5"
-                  class="px-3 py-2 text-center text-gray-600 font-semibold text-xs bg-gray-200 border-b-2 border-gray-300"
-                >
-                  Persiapan Bahan
+                <th colspan="5" class="zone-header zone-hulu">
+                  <span class="zone-icon">🌲</span>
+                  <span class="zone-text">Persiapan Bahan</span>
                 </th>
                 <!-- Zona Hilir -->
-                <th
-                  colspan="5"
-                  class="px-3 py-2 text-center text-blue-700 font-semibold text-xs bg-blue-100 border-b-2 border-blue-300"
-                >
-                  Produksi
+                <th colspan="5" class="zone-header zone-hilir">
+                  <span class="zone-icon">⚙️</span>
+                  <span class="zone-text">Produksi</span>
                 </th>
-                <th class="px-3 py-3 text-right text-gray-700 font-medium text-sm" rowspan="2">
-                  Sisa
-                </th>
+                <th class="th-num" rowspan="2">Sisa</th>
               </tr>
-              <tr class="bg-gray-50">
+              <tr class="header-row-sub">
                 <!-- Hulu -->
-                <th class="px-2 py-2 text-center text-gray-600 font-medium text-xs bg-gray-100">
-                  Sanwil
-                </th>
-                <th class="px-2 py-2 text-center text-gray-600 font-medium text-xs bg-gray-100">
-                  KD
-                </th>
-                <th class="px-2 py-2 text-center text-gray-600 font-medium text-xs bg-gray-100">
-                  Pembahanan
-                </th>
-                <th class="px-2 py-2 text-center text-gray-600 font-medium text-xs bg-gray-100">
-                  Moulding
-                </th>
-                <th class="px-2 py-2 text-center text-gray-600 font-medium text-xs bg-gray-100">
-                  Mesin
-                </th>
+                <th class="th-stage stage-hulu">Sanwil</th>
+                <th class="th-stage stage-hulu">KD</th>
+                <th class="th-stage stage-hulu">Pembahanan</th>
+                <th class="th-stage stage-hulu">Moulding</th>
+                <th class="th-stage stage-hulu">Mesin</th>
                 <!-- Hilir -->
-                <th class="px-2 py-2 text-center text-blue-700 font-medium text-xs bg-blue-50">
-                  Assembling
-                </th>
-                <th class="px-2 py-2 text-center text-orange-700 font-medium text-xs bg-orange-50">
-                  Rustik
-                </th>
-                <th class="px-2 py-2 text-center text-yellow-700 font-medium text-xs bg-yellow-50">
-                  Sanding
-                </th>
-                <th class="px-2 py-2 text-center text-purple-700 font-medium text-xs bg-purple-50">
-                  Finishing
-                </th>
-                <th class="px-2 py-2 text-center text-green-700 font-medium text-xs bg-green-50">
-                  Packing
-                </th>
+                <th class="th-stage stage-assembling">Assembling</th>
+                <th class="th-stage stage-rustik">Rustik</th>
+                <th class="th-stage stage-sanding">Sanding</th>
+                <th class="th-stage stage-finishing">Finishing</th>
+                <th class="th-stage stage-packing">Packing</th>
               </tr>
             </thead>
-            <tbody>
-              <tr v-if="data.length === 0">
-                <td colspan="15" class="px-4 py-8 text-center text-gray-500">
-                  Tidak ada data Sales Order aktif.
+            <tbody class="table-body">
+              <!-- Empty State -->
+              <tr v-if="data.length === 0" class="empty-row">
+                <td colspan="15" class="empty-cell">
+                  <div class="empty-state">
+                    <span class="empty-icon">📭</span>
+                    <p class="empty-text">Tidak ada data Sales Order aktif.</p>
+                    <p class="empty-subtext">Coba ubah filter atau tambahkan SO baru</p>
+                  </div>
                 </td>
               </tr>
+              <!-- Data Rows -->
               <tr
                 v-for="(row, index) in paginatedData"
                 :key="index"
-                class="border-t hover:bg-gray-50"
-                :class="{ 'bg-green-50': row.is_done }"
+                class="data-row"
+                :class="{
+                  'row-done': row.is_done,
+                  'row-even': index % 2 === 0,
+                }"
               >
-                <td class="px-3 py-3">
-                  <span class="font-medium block text-sm">{{ row.so_number }}</span>
-                  <span class="text-xs text-gray-500">{{ row.so_date }}</span>
+                <!-- SO Number -->
+                <td class="td-so">
+                  <div class="so-wrapper">
+                    <span class="so-number">{{ row.so_number }}</span>
+                    <span class="so-date">{{ row.so_date }}</span>
+                  </div>
                 </td>
-                <td class="px-3 py-3">
-                  <div class="font-medium text-sm">{{ row.item_name }}</div>
-                  <div class="text-xs text-gray-500">{{ row.item_code }}</div>
+                <!-- Item -->
+                <td class="td-item">
+                  <div class="item-wrapper">
+                    <div class="item-name">{{ row.item_name }}</div>
+                    <div class="item-code">{{ row.item_code }}</div>
+                  </div>
                 </td>
-                <td class="px-3 py-3 text-sm">{{ row.buyer_name }}</td>
-                <td class="px-3 py-3 text-right font-medium text-sm">
-                  {{ formatNumber(row.target) }}
+                <!-- Buyer -->
+                <td class="td-buyer">
+                  <span class="buyer-name">{{ row.buyer_name }}</span>
                 </td>
-
-                <!-- Zona Hulu (Status 3 Level) -->
-                <td class="px-2 py-3 text-center bg-gray-50">
-                  <span class="text-lg">{{ getStatusIcon(row.status_sanwil) }}</span>
-                </td>
-                <td class="px-2 py-3 text-center bg-gray-50">
-                  <span class="text-lg">{{ getStatusIcon(row.status_kd) }}</span>
-                </td>
-                <td class="px-2 py-3 text-center bg-gray-50">
-                  <span class="text-lg">{{ getStatusIcon(row.status_pembahanan) }}</span>
-                </td>
-                <td class="px-2 py-3 text-center bg-gray-50">
-                  <span class="text-lg">{{ getStatusIcon(row.status_moulding) }}</span>
-                </td>
-                <td class="px-2 py-3 text-center bg-gray-50">
-                  <span class="text-lg">{{ getStatusIcon(row.status_mesin) }}</span>
+                <!-- Target -->
+                <td class="td-num">
+                  <span class="target-value">{{ formatNumber(row.target) }}</span>
                 </td>
 
-                <!-- Zona Hilir (Angka) -->
-                <td class="px-2 py-3 text-center bg-blue-50">
-                  <span
-                    :class="
-                      row.qty_assembling > 0 ? 'text-blue-600 font-semibold' : 'text-gray-400'
-                    "
-                  >
+                <!-- Zona Hulu (Status) -->
+                <td class="td-status stage-hulu">
+                  <span :class="['status-indicator', getStatusClass(row.status_sanwil)]">
+                    {{ getStatusIcon(row.status_sanwil) }}
+                  </span>
+                </td>
+                <td class="td-status stage-hulu">
+                  <span :class="['status-indicator', getStatusClass(row.status_kd)]">
+                    {{ getStatusIcon(row.status_kd) }}
+                  </span>
+                </td>
+                <td class="td-status stage-hulu">
+                  <span :class="['status-indicator', getStatusClass(row.status_pembahanan)]">
+                    {{ getStatusIcon(row.status_pembahanan) }}
+                  </span>
+                </td>
+                <td class="td-status stage-hulu">
+                  <span :class="['status-indicator', getStatusClass(row.status_moulding)]">
+                    {{ getStatusIcon(row.status_moulding) }}
+                  </span>
+                </td>
+                <td class="td-status stage-hulu">
+                  <span :class="['status-indicator', getStatusClass(row.status_mesin)]">
+                    {{ getStatusIcon(row.status_mesin) }}
+                  </span>
+                </td>
+
+                <!-- Zona Hilir (Qty) -->
+                <td class="td-qty stage-assembling">
+                  <span :class="['qty-value', row.qty_assembling > 0 ? 'has-value' : 'no-value']">
                     {{ formatNumber(row.qty_assembling) }}
                   </span>
                 </td>
-                <td class="px-2 py-3 text-center bg-orange-50">
-                  <span
-                    :class="row.qty_rustik > 0 ? 'text-orange-600 font-semibold' : 'text-gray-400'"
-                  >
+                <td class="td-qty stage-rustik">
+                  <span :class="['qty-value', row.qty_rustik > 0 ? 'has-value' : 'no-value']">
                     {{ formatNumber(row.qty_rustik) }}
                   </span>
                 </td>
-                <td class="px-2 py-3 text-center bg-yellow-50">
-                  <span
-                    :class="row.qty_sanding > 0 ? 'text-yellow-600 font-semibold' : 'text-gray-400'"
-                  >
+                <td class="td-qty stage-sanding">
+                  <span :class="['qty-value', row.qty_sanding > 0 ? 'has-value' : 'no-value']">
                     {{ formatNumber(row.qty_sanding) }}
                   </span>
                 </td>
-                <td class="px-2 py-3 text-center bg-purple-50">
-                  <span
-                    :class="
-                      row.qty_finishing > 0 ? 'text-purple-600 font-semibold' : 'text-gray-400'
-                    "
-                  >
+                <td class="td-qty stage-finishing">
+                  <span :class="['qty-value', row.qty_finishing > 0 ? 'has-value' : 'no-value']">
                     {{ formatNumber(row.qty_finishing) }}
                   </span>
                 </td>
-                <td class="px-2 py-3 text-center bg-green-50">
-                  <span
-                    :class="row.qty_packing > 0 ? 'text-green-600 font-semibold' : 'text-gray-400'"
-                  >
+                <td class="td-qty stage-packing">
+                  <span :class="['qty-value', row.qty_packing > 0 ? 'has-value' : 'no-value']">
                     {{ formatNumber(row.qty_packing) }}
                   </span>
                 </td>
 
                 <!-- Sisa -->
-                <td class="px-3 py-3 text-right">
-                  <span
-                    v-if="row.is_done"
-                    class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium"
-                  >
+                <td class="td-num">
+                  <span v-if="row.is_done" class="completion-badge">
+                    <span class="badge-icon">✓</span>
                     DONE
                   </span>
-                  <span v-else class="text-red-600 font-semibold text-sm">
-                    {{ formatNumber(row.sisa) }}
-                  </span>
+                  <span v-else class="sisa-value">{{ formatNumber(row.sisa) }}</span>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- PAGINATION -->
-        <div class="px-4 py-3 border-t bg-gray-50">
-          <div class="flex justify-between items-center flex-wrap gap-4">
-            <div class="text-sm text-gray-600">
-              Menampilkan {{ paginationStart }} - {{ paginationEnd }} dari {{ data.length }} item
-              ({{ uniqueSOCount }} SO)
-              <span class="mx-2">|</span>
-              <span class="text-green-600 font-medium">{{ doneCount }} selesai</span>,
-              <span class="text-red-600 font-medium">{{ pendingCount }} pending</span>
+        <!-- Pagination -->
+        <div class="pagination-container">
+          <div class="pagination-info">
+            <span class="info-icon">📄</span>
+            <span class="info-text">
+              Menampilkan <strong>{{ paginationStart }} - {{ paginationEnd }}</strong> dari
+              <strong>{{ data.length }}</strong> item
+              <span class="info-separator">•</span>
+              <span class="info-detail">
+                <strong>{{ uniqueSOCount }}</strong> SO
+              </span>
+            </span>
+          </div>
+          <div class="pagination-controls">
+            <button
+              @click="currentPage = 1"
+              :disabled="currentPage === 1"
+              class="page-btn"
+              title="First Page"
+            >
+              «
+            </button>
+            <button
+              @click="currentPage--"
+              :disabled="currentPage === 1"
+              class="page-btn"
+              title="Previous"
+            >
+              ‹
+            </button>
+            <div class="page-indicator">
+              <span class="current-page">{{ currentPage }}</span>
+              <span class="page-separator">/</span>
+              <span class="total-pages">{{ totalPages }}</span>
             </div>
-            <div class="flex gap-2 items-center">
-              <button
-                @click="currentPage = 1"
-                :disabled="currentPage === 1"
-                class="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
-              >
-                First
-              </button>
-              <button
-                @click="currentPage--"
-                :disabled="currentPage === 1"
-                class="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
-              >
-                Prev
-              </button>
-              <span class="px-3 py-1 text-sm"> {{ currentPage }} / {{ totalPages }} </span>
-              <button
-                @click="currentPage++"
-                :disabled="currentPage === totalPages"
-                class="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
-              >
-                Next
-              </button>
-              <button
-                @click="currentPage = totalPages"
-                :disabled="currentPage === totalPages"
-                class="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
-              >
-                Last
-              </button>
-            </div>
+            <button
+              @click="currentPage++"
+              :disabled="currentPage === totalPages"
+              class="page-btn"
+              title="Next"
+            >
+              ›
+            </button>
+            <button
+              @click="currentPage = totalPages"
+              :disabled="currentPage === totalPages"
+              class="page-btn"
+              title="Last Page"
+            >
+              »
+            </button>
           </div>
         </div>
       </div>
@@ -331,7 +378,6 @@ const formatNumber = (num) => {
   return number.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 }
 
-// ✅ Helper untuk status 3 level
 const getStatusIcon = (status) => {
   switch (status) {
     case 'done':
@@ -344,7 +390,18 @@ const getStatusIcon = (status) => {
   }
 }
 
-// Pagination computed
+const getStatusClass = (status) => {
+  switch (status) {
+    case 'done':
+      return 'status-done'
+    case 'in_progress':
+      return 'status-progress'
+    case 'waiting':
+    default:
+      return 'status-waiting'
+  }
+}
+
 const totalPages = computed(() => {
   return Math.ceil(data.value.length / perPage) || 1
 })
@@ -365,7 +422,6 @@ const paginationEnd = computed(() => {
   return end > data.value.length ? data.value.length : end
 })
 
-// Summary computed
 const uniqueSOCount = computed(() => {
   const soIds = [...new Set(data.value.map((row) => row.so_id))]
   return soIds.length
@@ -383,3 +439,988 @@ onMounted(() => {
   fetchData()
 })
 </script>
+
+<style scoped>
+/* ============================================
+   VARIABLES & BASE
+   ============================================ */
+.monitoring-page {
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 24px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  min-height: 100vh;
+}
+
+/* ============================================
+   PAGE HEADER & BREADCRUMB
+   ============================================ */
+.page-header {
+  margin-bottom: 24px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.breadcrumb-item:hover {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.breadcrumb-icon {
+  font-size: 14px;
+}
+
+.breadcrumb-separator {
+  color: #cbd5e1;
+  font-weight: 300;
+}
+
+.breadcrumb-current {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.header-content {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 24px 28px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.25);
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 28px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.title-icon {
+  font-size: 32px;
+}
+
+.page-subtitle {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* ============================================
+   LEGEND CARD
+   ============================================ */
+.legend-card {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #fbbf24;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.15);
+}
+
+.legend-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.legend-icon {
+  font-size: 18px;
+}
+
+.legend-title {
+  font-weight: 700;
+  color: #92400e;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.legend-items {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  padding: 8px 14px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.legend-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.badge-waiting {
+  background: #fee2e2;
+}
+
+.badge-progress {
+  background: #fef3c7;
+}
+
+.badge-done {
+  background: #d1fae5;
+}
+
+.legend-text {
+  color: #78716c;
+  font-size: 13px;
+}
+
+.legend-text strong {
+  color: #44403c;
+  font-weight: 600;
+}
+
+.legend-divider {
+  width: 1px;
+  height: 24px;
+  background: #e7e5e4;
+}
+
+/* ============================================
+   FILTER CARD
+   ============================================ */
+.filter-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+  border: 1px solid #e5e7eb;
+}
+
+.filter-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  border-bottom: 2px solid #f3f4f6;
+  background: linear-gradient(to right, #fafbfc 0%, #ffffff 100%);
+  border-radius: 12px 12px 0 0;
+}
+
+.filter-icon {
+  font-size: 20px;
+}
+
+.filter-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: #1f2937;
+  letter-spacing: -0.2px;
+}
+
+.filter-content {
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.search-group {
+  flex: 1;
+  min-width: 300px;
+}
+
+.search-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.label-text {
+  font-weight: 600;
+  font-size: 13px;
+  color: #374151;
+}
+
+.label-badge {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 16px;
+  color: #9ca3af;
+}
+
+.search-input {
+  width: 100%;
+  padding: 11px 14px 11px 42px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.clear-btn {
+  position: absolute;
+  right: 12px;
+  background: #e5e7eb;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #6b7280;
+  transition: all 0.2s ease;
+}
+
+.clear-btn:hover {
+  background: #d1d5db;
+  color: #374151;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.btn-icon {
+  font-size: 16px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   LOADING STATE
+   ============================================ */
+.loading-container {
+  background: white;
+  border-radius: 12px;
+  padding: 80px 20px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ============================================
+   TABLE CONTAINER & STATS
+   ============================================ */
+.table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.stats-bar {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border-bottom: 2px solid #e5e7eb;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+  font-size: 24px;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.stat-total .stat-value {
+  color: #3b82f6;
+}
+
+.stat-orders .stat-value {
+  color: #8b5cf6;
+}
+
+.stat-done .stat-value {
+  color: #10b981;
+}
+
+.stat-pending .stat-value {
+  color: #ef4444;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 40px;
+  background: #e5e7eb;
+}
+
+/* ============================================
+   DATA TABLE
+   ============================================ */
+.table-scroll-wrapper {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.data-table {
+  width: 100%;
+  min-width: 1600px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.data-table th {
+  padding: 14px 12px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.header-row-main th {
+  background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+  color: white;
+}
+
+.th-sticky {
+  position: sticky;
+  left: 0;
+  z-index: 15;
+  background: linear-gradient(180deg, #1f2937 0%, #111827 100%) !important;
+}
+
+.th-num {
+  text-align: right !important;
+}
+
+.zone-header {
+  text-align: center !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  padding: 16px 12px !important;
+}
+
+.zone-icon {
+  font-size: 18px;
+  margin-right: 6px;
+}
+
+.zone-hulu {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  border-bottom-color: #4338ca !important;
+}
+
+.zone-hilir {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  border-bottom-color: #1d4ed8 !important;
+}
+
+.header-row-sub th {
+  background: #f9fafb;
+  color: #374151;
+  font-size: 10px;
+}
+
+.th-stage {
+  text-align: center !important;
+  white-space: nowrap;
+}
+
+.stage-hulu {
+  background: linear-gradient(180deg, #e0e7ff 0%, #c7d2fe 100%) !important;
+  color: #3730a3 !important;
+}
+
+.stage-assembling {
+  background: linear-gradient(180deg, #dbeafe 0%, #bfdbfe 100%) !important;
+  color: #1e40af !important;
+}
+
+.stage-rustik {
+  background: linear-gradient(180deg, #ffedd5 0%, #fed7aa 100%) !important;
+  color: #9a3412 !important;
+}
+
+.stage-sanding {
+  background: linear-gradient(180deg, #fef9c3 0%, #fef08a 100%) !important;
+  color: #854d0e !important;
+}
+
+.stage-finishing {
+  background: linear-gradient(180deg, #f3e8ff 0%, #e9d5ff 100%) !important;
+  color: #6b21a8 !important;
+}
+
+.stage-packing {
+  background: linear-gradient(180deg, #dcfce7 0%, #bbf7d0 100%) !important;
+  color: #166534 !important;
+}
+
+/* ============================================
+   TABLE BODY
+   ============================================ */
+.data-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 13px;
+  background: white;
+}
+
+.data-row {
+  transition: all 0.2s ease;
+}
+
+.data-row:hover {
+  background: #f9fafb;
+  transform: scale(1.001);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.row-even {
+  background: #fafbfc;
+}
+
+.row-done {
+  background: linear-gradient(90deg, #ecfdf5 0%, #d1fae5 100%) !important;
+}
+
+.row-done:hover {
+  background: linear-gradient(90deg, #d1fae5 0%, #a7f3d0 100%) !important;
+}
+
+/* Empty State */
+.empty-cell {
+  padding: 80px 20px !important;
+}
+
+.empty-state {
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 64px;
+  display: block;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.empty-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.empty-subtext {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+/* Cell Styles */
+.td-so {
+  min-width: 140px;
+}
+
+.so-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.so-number {
+  font-weight: 700;
+  color: #1f2937;
+  font-size: 13px;
+}
+
+.so-date {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.td-item {
+  min-width: 200px;
+}
+
+.item-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item-name {
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.3;
+}
+
+.item-code {
+  font-size: 11px;
+  color: #6b7280;
+  font-family: 'Courier New', monospace;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.td-buyer {
+  min-width: 150px;
+}
+
+.buyer-name {
+  font-weight: 500;
+  color: #374151;
+}
+
+.td-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.target-value {
+  font-weight: 700;
+  color: #1e40af;
+  font-size: 14px;
+}
+
+.td-status {
+  text-align: center !important;
+}
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.status-indicator:hover {
+  transform: scale(1.15) rotate(5deg);
+}
+
+.status-done {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 2px solid #10b981;
+}
+
+.status-progress {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.status-waiting {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border: 2px solid #ef4444;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.td-qty {
+  text-align: center !important;
+}
+
+.qty-value {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.has-value {
+  color: #059669;
+  background: #d1fae5;
+  border: 1px solid #a7f3d0;
+}
+
+.has-value:hover {
+  background: #a7f3d0;
+  transform: scale(1.05);
+}
+
+.no-value {
+  color: #d1d5db;
+  font-weight: 400;
+}
+
+.sisa-value {
+  font-weight: 800;
+  color: #dc2626;
+  font-size: 14px;
+  display: inline-block;
+  padding: 4px 10px;
+  background: #fee2e2;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+}
+
+.completion-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  transition: all 0.2s ease;
+}
+
+.completion-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.badge-icon {
+  font-weight: 900;
+  font-size: 13px;
+}
+
+/* ============================================
+   PAGINATION
+   ============================================ */
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border-top: 2px solid #e5e7eb;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.pagination-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.info-icon {
+  font-size: 18px;
+}
+
+.info-text strong {
+  color: #1f2937;
+  font-weight: 700;
+}
+
+.info-separator {
+  margin: 0 8px;
+  color: #cbd5e1;
+}
+
+.info-detail {
+  color: #8b5cf6;
+  font-weight: 600;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-btn {
+  width: 36px;
+  height: 36px;
+  border: 2px solid #e5e7eb;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 16px;
+  color: #374151;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.page-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.page-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  height: 36px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 8px;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.current-page {
+  font-size: 16px;
+}
+
+.page-separator {
+  opacity: 0.7;
+}
+
+.total-pages {
+  opacity: 0.9;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 1024px) {
+  .monitoring-page {
+    padding: 16px;
+  }
+
+  .stats-bar {
+    gap: 8px;
+  }
+
+  .stat-item {
+    padding: 8px 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 22px;
+  }
+
+  .header-content {
+    padding: 20px;
+  }
+
+  .filter-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .action-buttons {
+    width: 100%;
+  }
+
+  .btn {
+    flex: 1;
+  }
+
+  .stats-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stat-item {
+    justify-content: flex-start;
+  }
+
+  .stat-divider {
+    display: none;
+  }
+
+  .pagination-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pagination-info {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .pagination-controls {
+    justify-content: center;
+  }
+}
+</style>

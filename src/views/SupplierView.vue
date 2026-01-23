@@ -46,13 +46,14 @@
               <th class="th-name">Nama Supplier</th>
               <th class="th-address">Alamat</th>
               <th class="th-phone">No. Telepon</th>
+              <th class="th-coa">Akun Hutang</th>
               <th class="th-action">Action</th>
             </tr>
           </thead>
           <tbody>
             <!-- Empty State -->
             <tr v-if="suppliers.length === 0" class="empty-row">
-              <td colspan="5">
+              <td colspan="6">
                 <div class="empty-state">
                   <span class="empty-icon">📭</span>
                   <p class="empty-text">Belum ada data supplier</p>
@@ -71,6 +72,12 @@
               <td class="td-name">{{ item.name }}</td>
               <td class="td-address">{{ item.address || '-' }}</td>
               <td class="td-phone">{{ item.phone || '-' }}</td>
+              <td class="td-coa">
+                <span v-if="item.payable_account" class="coa-badge">
+                  {{ item.payable_account.code }} - {{ item.payable_account.name }}
+                </span>
+                <span v-else class="coa-empty">Belum diatur</span>
+              </td>
               <td class="td-action">
                 <div class="action-buttons">
                   <button class="action-btn btn-edit" @click="openEditModal(item)" title="Edit">
@@ -163,18 +170,37 @@
               ></textarea>
             </div>
 
-            <div class="form-group">
-              <label for="supplierPhone" class="form-label">
-                <span class="label-icon">📞</span>
-                No. Telepon
-              </label>
-              <input
-                type="text"
-                id="supplierPhone"
-                v-model="supplierForm.phone"
-                placeholder="Contoh: 021-12345678"
-                class="form-control"
-              />
+            <div class="form-row">
+              <div class="form-group">
+                <label for="supplierPhone" class="form-label">
+                  <span class="label-icon">📞</span>
+                  No. Telepon
+                </label>
+                <input
+                  type="text"
+                  id="supplierPhone"
+                  v-model="supplierForm.phone"
+                  placeholder="Contoh: 021-12345678"
+                  class="form-control"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="payableAccount" class="form-label">
+                  <span class="label-icon">💰</span>
+                  Akun Hutang
+                </label>
+                <select
+                  id="payableAccount"
+                  v-model="supplierForm.payable_account_id"
+                  class="form-control"
+                >
+                  <option :value="null">-- Pilih Akun Hutang --</option>
+                  <option v-for="coa in coaOptions" :key="coa.id" :value="coa.id">
+                    {{ coa.code }} - {{ coa.name }}
+                  </option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -223,6 +249,7 @@ import ConfirmDialog from '../components/ConfirmDialog.vue'
 
 const searchQuery = ref('')
 const suppliers = ref([])
+const coaOptions = ref([])
 const showModal = ref(false)
 const isEditing = ref(false)
 const supplierForm = ref({
@@ -231,6 +258,7 @@ const supplierForm = ref({
   name: '',
   address: '',
   phone: '',
+  payable_account_id: null,
 })
 
 const currentPage = ref(1)
@@ -282,6 +310,15 @@ const fetchSuppliers = async () => {
   }
 }
 
+const fetchCoaKewajiban = async () => {
+  try {
+    const response = await apiClient.get('/coa/by-type/KEWAJIBAN')
+    coaOptions.value = response.data.data
+  } catch (error) {
+    console.error('Gagal mengambil data COA:', error)
+  }
+}
+
 const handlePageChange = (page) => {
   currentPage.value = page
   fetchSuppliers()
@@ -289,13 +326,27 @@ const handlePageChange = (page) => {
 
 const openAddModal = () => {
   isEditing.value = false
-  supplierForm.value = { id: null, code: '', name: '', address: '', phone: '' }
+  supplierForm.value = {
+    id: null,
+    code: '',
+    name: '',
+    address: '',
+    phone: '',
+    payable_account_id: null,
+  }
   showModal.value = true
 }
 
 const openEditModal = (supplier) => {
   isEditing.value = true
-  supplierForm.value = { ...supplier }
+  supplierForm.value = {
+    id: supplier.id,
+    code: supplier.code,
+    name: supplier.name,
+    address: supplier.address,
+    phone: supplier.phone,
+    payable_account_id: supplier.payable_account_id,
+  }
   showModal.value = true
 }
 
@@ -349,6 +400,7 @@ const deleteSupplier = async (id) => {
 
 onMounted(() => {
   fetchSuppliers()
+  fetchCoaKewajiban()
 })
 </script>
 

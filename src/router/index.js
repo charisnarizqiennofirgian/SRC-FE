@@ -39,6 +39,7 @@ import RustikView from '../views/produksi/RustikView.vue'
 import FinishingView from '../views/produksi/FinishingView.vue'
 import PackingView from '../views/produksi/PackingView.vue'
 import MaterialUsageView from '../views/produksi/MaterialUsageView.vue'
+import ChartOfAccountView from '../views/master/ChartOfAccountView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -84,6 +85,18 @@ const router = createRouter({
           path: 'buyers',
           name: 'admin-buyers',
           component: () => import('../views/BuyerView.vue'),
+        },
+        {
+          path: 'chart-of-account',
+          name: 'admin-coa',
+          component: ChartOfAccountView,
+          meta: { title: 'Chart of Account' },
+        },
+        {
+          path: 'payment-methods',
+          name: 'admin-payment-methods',
+          component: () => import('../views/master/PaymentMethodView.vue'),
+          meta: { title: 'Metode Pembayaran' },
         },
         {
           path: 'master-barang',
@@ -376,11 +389,30 @@ const router = createRouter({
       component: () => import('../views/produksi/ProductionMonitoringView.vue'),
       meta: { title: 'Monitoring Produksi', requiresAuth: true },
     },
+
     {
       path: '/reports/sawmill',
       name: 'SawmillReport',
       component: SawmilReport,
       meta: { title: 'Laporan Produksi Sawmill', requiresAuth: true },
+    },
+    {
+      path: '/admin/keuangan/jurnal-umum',
+      name: 'JurnalUmum',
+      component: () => import('../views/keuangan/JurnalUmum.vue'),
+      meta: { title: 'Jurnal Umum', requiresAuth: true },
+    },
+    {
+      path: '/admin/keuangan/pembayaran-hutang',
+      name: 'PembayaranHutang',
+      component: () => import('../views/keuangan/PembayaranHutangView.vue'),
+      meta: { title: 'Pembayaran Hutang', requiresAuth: true },
+    },
+    {
+      path: '/admin/keuangan/riwayat-pembayaran',
+      name: 'RiwayatPembayaranHutang',
+      component: () => import('../views/keuangan/RiwayatPembayaranView.vue'),
+      meta: { title: 'Riwayat Pembayaran Hutang', requiresAuth: true },
     },
 
     // ROUTE STOK YANG MASIH DIPAKAI

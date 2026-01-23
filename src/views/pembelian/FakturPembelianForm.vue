@@ -2,17 +2,30 @@
   <DashboardLayout>
     <!-- Page Header -->
     <div class="page-header">
+      <div class="breadcrumb">
+        <router-link to="/" class="breadcrumb-item">
+          <span class="breadcrumb-icon">🏠</span>
+          Dashboard
+        </router-link>
+        <span class="breadcrumb-separator">→</span>
+        <router-link to="/admin/pembelian/faktur" class="breadcrumb-item">
+          Faktur Pembelian
+        </router-link>
+        <span class="breadcrumb-separator">→</span>
+        <span class="breadcrumb-current">Buat Faktur</span>
+      </div>
+
       <div class="header-content">
         <div class="header-left-section">
           <div class="icon-badge">🧾</div>
-          <div>
+          <div class="header-text">
             <h1 class="page-title">Buat Faktur Pembelian</h1>
             <p class="page-subtitle">Catat tagihan yang diterima dari supplier</p>
           </div>
         </div>
-        <router-link to="/admin/pembelian" class="btn-back">
+        <router-link to="/admin/pembelian/faktur" class="btn-back">
           <span class="btn-icon">←</span>
-          <span>Kembali ke Daftar</span>
+          <span class="btn-text">Kembali</span>
         </router-link>
       </div>
     </div>
@@ -24,7 +37,7 @@
     </div>
 
     <!-- Form -->
-    <form v-else @submit.prevent="saveBill">
+    <form v-else @submit.prevent="saveBill" class="purchase-form">
       <!-- Informasi Faktur Card -->
       <div class="content-card">
         <div class="card-header-section">
@@ -41,7 +54,7 @@
             <div class="form-group">
               <label class="form-label">
                 <span class="label-icon">🏭</span>
-                <span>Supplier</span>
+                <span class="label-text">Supplier</span>
                 <span class="required">*</span>
               </label>
               <select
@@ -60,7 +73,7 @@
             <div class="form-group">
               <label class="form-label">
                 <span class="label-icon">📄</span>
-                <span>No. Faktur Supplier</span>
+                <span class="label-text">No. Faktur Supplier</span>
                 <span class="required">*</span>
               </label>
               <input
@@ -75,7 +88,7 @@
             <div class="form-group">
               <label class="form-label">
                 <span class="label-icon">📅</span>
-                <span>Tanggal Faktur</span>
+                <span class="label-text">Tanggal Faktur</span>
                 <span class="required">*</span>
               </label>
               <input type="date" v-model="form.bill_date" class="form-control" required />
@@ -84,7 +97,7 @@
             <div class="form-group">
               <label class="form-label">
                 <span class="label-icon">⏰</span>
-                <span>Tanggal Jatuh Tempo</span>
+                <span class="label-text">Tanggal Jatuh Tempo</span>
                 <span class="required">*</span>
               </label>
               <input type="date" v-model="form.due_date" class="form-control" required />
@@ -96,7 +109,7 @@
       <!-- Tarik Data Card -->
       <div class="content-card">
         <div class="card-header-section">
-          <div class="section-icon-wrapper">
+          <div class="section-icon-wrapper warning">
             <div class="section-icon">🔗</div>
           </div>
           <div class="section-header-text">
@@ -110,7 +123,7 @@
           <div class="form-group">
             <label class="form-label">
               <span class="label-icon">📦</span>
-              <span>Penerimaan Barang (Goods Receipt)</span>
+              <span class="label-text">Penerimaan Barang (Goods Receipt)</span>
             </label>
             <select
               @change="handleReceiptSelect"
@@ -122,7 +135,7 @@
                 {{ receipt.receipt_number }} - Tanggal: {{ formatTanggal(receipt.receipt_date) }}
               </option>
             </select>
-            <small v-if="!form.supplier_id" class="form-hint">
+            <small v-if="!form.supplier_id" class="form-hint info">
               <span class="hint-icon">💡</span>
               Pilih supplier terlebih dahulu untuk melihat daftar penerimaan.
             </small>
@@ -140,7 +153,7 @@
       <!-- Detail Tagihan Card -->
       <div class="content-card">
         <div class="card-header-section">
-          <div class="section-icon-wrapper">
+          <div class="section-icon-wrapper primary">
             <div class="section-icon">📋</div>
           </div>
           <div class="section-header-text">
@@ -149,83 +162,104 @@
           </div>
         </div>
         <div class="card-body-table">
-          <div class="table-container">
-            <div class="table-wrapper">
-              <table class="detail-table">
-                <thead>
-                  <tr>
-                    <th class="th-material">
-                      <div class="th-content">
-                        <span class="th-icon">📦</span>
-                        <span>Barang</span>
-                      </div>
-                    </th>
-                    <th class="th-qty">
-                      <div class="th-content">
-                        <span class="th-icon">📊</span>
-                        <span>Jumlah Ditagih</span>
-                      </div>
-                    </th>
-                    <th class="th-price">
-                      <div class="th-content">
-                        <span class="th-icon">💰</span>
-                        <span>Harga Satuan</span>
-                      </div>
-                    </th>
-                    <th class="th-subtotal">
-                      <div class="th-content">
-                        <span class="th-icon">💵</span>
-                        <span>Subtotal</span>
-                      </div>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-if="form.details.length === 0" class="empty-row">
-                    <td colspan="4">
-                      <div class="empty-state">
-                        <span class="empty-icon">📋</span>
-                        <p class="empty-text">Belum ada detail tagihan</p>
-                        <p class="empty-hint">
-                          Pilih penerimaan barang di atas untuk mengisi detail
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr v-for="(item, index) in form.details" :key="index" class="data-row">
-                    <td class="td-material">{{ item.item_name }}</td>
-                    <td class="td-qty">
+          <div class="table-scroll-wrapper">
+            <table class="detail-table">
+              <thead>
+                <tr>
+                  <th class="th-material">
+                    <div class="th-content">
+                      <span class="th-icon">📦</span>
+                      <span>Barang</span>
+                    </div>
+                  </th>
+                  <th class="th-qty">
+                    <div class="th-content">
+                      <span class="th-icon">📊</span>
+                      <span>Jumlah</span>
+                    </div>
+                  </th>
+                  <th class="th-price">
+                    <div class="th-content">
+                      <span class="th-icon">💰</span>
+                      <span>Harga Satuan</span>
+                    </div>
+                  </th>
+                  <th class="th-subtotal">
+                    <div class="th-content">
+                      <span class="th-icon">💵</span>
+                      <span>Subtotal</span>
+                    </div>
+                  </th>
+                  <th class="th-coa">
+                    <div class="th-content">
+                      <span class="th-icon">📊</span>
+                      <span>Akun COA</span>
+                      <span class="required">*</span>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="form.details.length === 0" class="empty-row">
+                  <td colspan="5">
+                    <div class="empty-state">
+                      <span class="empty-icon">📋</span>
+                      <p class="empty-text">Belum ada detail tagihan</p>
+                      <p class="empty-hint">Pilih penerimaan barang di atas untuk mengisi detail</p>
+                    </div>
+                  </td>
+                </tr>
+                <tr
+                  v-for="(item, index) in form.details"
+                  :key="index"
+                  class="data-row"
+                  :class="{ 'row-even': index % 2 === 0 }"
+                >
+                  <td class="td-material">
+                    <div class="material-info">
+                      <span class="material-icon">📦</span>
+                      <span class="material-name">{{ item.item_name }}</span>
+                    </div>
+                  </td>
+                  <td class="td-qty">
+                    <input
+                      type="number"
+                      v-model="item.quantity"
+                      class="table-input"
+                      required
+                      min="0.01"
+                      step="any"
+                    />
+                  </td>
+                  <td class="td-price">
+                    <div class="input-with-currency">
+                      <span class="currency-prefix">Rp</span>
                       <input
                         type="number"
-                        v-model="item.quantity"
-                        class="table-input"
+                        v-model="item.price"
+                        class="table-input has-prefix"
                         required
-                        min="0.01"
+                        min="0"
                         step="any"
                       />
-                    </td>
-                    <td class="td-price">
-                      <div class="input-with-currency">
-                        <span class="currency-prefix">Rp</span>
-                        <input
-                          type="number"
-                          v-model="item.price"
-                          class="table-input has-prefix"
-                          required
-                          min="0"
-                          step="any"
-                        />
-                      </div>
-                    </td>
-                    <td class="td-subtotal">
-                      <span class="subtotal-value">
-                        {{ formatCurrency((item.quantity || 0) * (item.price || 0)) }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                    </div>
+                  </td>
+                  <td class="td-subtotal">
+                    <span class="subtotal-value">
+                      {{ formatCurrency((item.quantity || 0) * (item.price || 0)) }}
+                    </span>
+                  </td>
+                  <td class="td-coa">
+                    <select v-model="item.account_id" class="table-select" required>
+                      <option :value="null">-- Pilih Akun --</option>
+                      <option v-for="coa in coaAccounts" :key="coa.id" :value="coa.id">
+                        {{ coa.code }} - {{ coa.name }}
+                      </option>
+                    </select>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
           <!-- Summary Section -->
@@ -237,7 +271,7 @@
               </div>
               <div class="summary-row ppn-row">
                 <span class="sum-label">
-                  <span class="ppn-badge">12%</span>
+                  <span class="ppn-badge">{{ ppnPercentage }}%</span>
                   PPN
                 </span>
                 <span class="sum-value">{{ formatCurrency(ppnAmount) }}</span>
@@ -252,11 +286,125 @@
         </div>
       </div>
 
+      <!-- Pembayaran Card -->
+      <div class="content-card">
+        <div class="card-header-section">
+          <div class="section-icon-wrapper payment">
+            <div class="section-icon">💳</div>
+          </div>
+          <div class="section-header-text">
+            <h2 class="section-title">Syarat Pembayaran</h2>
+            <p class="section-subtitle">Pilih metode pembayaran untuk faktur ini</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Payment Type Selection -->
+          <div class="form-group">
+            <label class="form-label">
+              <span class="label-icon">💰</span>
+              <span class="label-text">Tipe Pembayaran</span>
+              <span class="required">*</span>
+            </label>
+            <div class="payment-type-grid">
+              <label class="payment-card" :class="{ active: form.payment_type === 'TEMPO' }">
+                <input type="radio" v-model="form.payment_type" value="TEMPO" />
+                <div class="payment-card-content">
+                  <span class="payment-icon">📅</span>
+                  <span class="payment-label">Tempo (Hutang)</span>
+                  <span class="payment-desc">Bayar nanti sesuai jatuh tempo</span>
+                </div>
+              </label>
+              <label class="payment-card" :class="{ active: form.payment_type === 'TUNAI' }">
+                <input type="radio" v-model="form.payment_type" value="TUNAI" />
+                <div class="payment-card-content">
+                  <span class="payment-icon">💵</span>
+                  <span class="payment-label">Tunai (Lunas)</span>
+                  <span class="payment-desc">Bayar langsung saat ini</span>
+                </div>
+              </label>
+              <label class="payment-card" :class="{ active: form.payment_type === 'DP' }">
+                <input type="radio" v-model="form.payment_type" value="DP" />
+                <div class="payment-card-content">
+                  <span class="payment-icon">💳</span>
+                  <span class="payment-label">Uang Muka (DP)</span>
+                  <span class="payment-desc">Bayar sebagian, sisanya hutang</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Payment Method (untuk TUNAI dan DP) -->
+          <div
+            v-if="form.payment_type === 'TUNAI' || form.payment_type === 'DP'"
+            class="form-group"
+          >
+            <label class="form-label">
+              <span class="label-icon">🏦</span>
+              <span class="label-text">Bayar Dari</span>
+              <span class="required">*</span>
+            </label>
+            <select v-model="form.payment_method_id" class="form-control" required>
+              <option :value="null">-- Pilih Metode Pembayaran --</option>
+              <option v-for="method in paymentMethods" :key="method.id" :value="method.id">
+                {{ method.type === 'BANK' ? '🏦' : '💵' }} {{ method.name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Nominal DP (untuk DP saja) -->
+          <div v-if="form.payment_type === 'DP'" class="form-group">
+            <label class="form-label">
+              <span class="label-icon">💰</span>
+              <span class="label-text">Nominal Uang Muka</span>
+              <span class="required">*</span>
+            </label>
+            <div class="input-with-currency">
+              <span class="currency-prefix">Rp</span>
+              <input
+                type="number"
+                v-model="form.paid_amount"
+                class="form-control has-prefix"
+                placeholder="Masukkan nominal DP"
+                required
+                min="0"
+                :max="grandTotal"
+                step="any"
+              />
+            </div>
+            <small class="form-hint info">
+              <span class="hint-icon">💡</span>
+              Sisa hutang:
+              <strong>{{ formatCurrency(grandTotal - (form.paid_amount || 0)) }}</strong>
+            </small>
+          </div>
+
+          <!-- Payment Summary -->
+          <div class="payment-summary">
+            <div class="payment-summary-header">
+              <span class="summary-title">💰 Ringkasan Pembayaran</span>
+            </div>
+            <div class="payment-summary-row">
+              <span class="psum-label">Total Tagihan</span>
+              <span class="psum-value">{{ formatCurrency(grandTotal) }}</span>
+            </div>
+            <div class="payment-summary-row paid">
+              <span class="psum-label">Dibayar</span>
+              <span class="psum-value">{{ formatCurrency(paidAmount) }}</span>
+            </div>
+            <div class="payment-summary-divider"></div>
+            <div class="payment-summary-row remaining">
+              <span class="psum-label">Sisa Hutang</span>
+              <span class="psum-value">{{ formatCurrency(remainingAmount) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Form Actions -->
       <div class="form-actions">
         <button type="button" @click="cancel" class="btn-cancel-action">
           <span class="action-icon">❌</span>
-          <span>Batal</span>
+          <span class="action-text">Batal</span>
         </button>
         <button
           type="submit"
@@ -264,7 +412,7 @@
           :disabled="isSaving || form.details.length === 0"
         >
           <span class="action-icon">{{ isSaving ? '⏳' : '💾' }}</span>
-          <span>{{ isSaving ? 'Menyimpan...' : 'Simpan Faktur' }}</span>
+          <span class="action-text">{{ isSaving ? 'Menyimpan...' : 'Simpan Faktur' }}</span>
         </button>
       </div>
     </form>
@@ -286,6 +434,9 @@ const loadingReceipts = ref(false)
 const isSaving = ref(false)
 const daftarSupplier = ref([])
 const availableReceipts = ref([])
+const coaAccounts = ref([])
+const paymentMethods = ref([])
+const ppnPercentage = ref(12)
 
 const today = new Date().toISOString().slice(0, 10)
 const thirtyDaysFromNow = new Date()
@@ -299,6 +450,10 @@ const form = reactive({
   due_date: dueDateDefault,
   notes: '',
   details: [],
+  payment_type: 'TEMPO',
+  payment_method_id: null,
+  paid_amount: 0,
+  ppn_percentage: 12,
 })
 
 const subtotal = computed(() => {
@@ -308,11 +463,27 @@ const subtotal = computed(() => {
 })
 
 const ppnAmount = computed(() => {
-  return subtotal.value * 0.12
+  return subtotal.value * (ppnPercentage.value / 100)
 })
 
 const grandTotal = computed(() => {
   return subtotal.value + ppnAmount.value
+})
+
+const paidAmount = computed(() => {
+  switch (form.payment_type) {
+    case 'TUNAI':
+      return grandTotal.value
+    case 'DP':
+      return form.paid_amount || 0
+    case 'TEMPO':
+    default:
+      return 0
+  }
+})
+
+const remainingAmount = computed(() => {
+  return grandTotal.value - paidAmount.value
 })
 
 const handleSupplierChange = async () => {
@@ -325,8 +496,8 @@ const handleSupplierChange = async () => {
     const response = await apiClient.get(`/goods-receipts/unbilled?supplier_id=${form.supplier_id}`)
     availableReceipts.value = response.data.data
   } catch (error) {
-    console.error('Gagal memuat data faktur:', error)
-    toast.error('Gagal memuat data faktur.')
+    console.error('Gagal memuat data penerimaan:', error)
+    toast.error('Gagal memuat data penerimaan barang.')
   } finally {
     loadingReceipts.value = false
   }
@@ -356,17 +527,12 @@ const handleReceiptSelect = (event) => {
     return
   }
 
-  // ✅ Map details dengan price yang sudah di-attach oleh backend
   form.details = selectedReceipt.details.map((detail) => {
-    // ✅ Prioritas: ambil price yang udah di-attach backend
     let price = 0
 
-    // Cek 1: Price langsung dari detail (hasil backend enrichment)
     if (detail.price !== undefined && detail.price !== null) {
       price = parseFloat(detail.price)
-    }
-    // Cek 2: Fallback ke purchaseOrderDetail.price
-    else if (detail.purchaseOrderDetail && detail.purchaseOrderDetail.price) {
+    } else if (detail.purchaseOrderDetail && detail.purchaseOrderDetail.price) {
       price = parseFloat(detail.purchaseOrderDetail.price)
     }
 
@@ -375,36 +541,60 @@ const handleReceiptSelect = (event) => {
       item_id: detail.item_id,
       item_name: detail.item ? detail.item.name : 'Nama Barang Tidak Ditemukan',
       quantity: parseFloat(detail.quantity_received) || 0,
-      price: price, // ✅ Harga dari backend!
+      price: price,
+      account_id: null,
     }
   })
-
-  console.log('✅ Form details populated:', form.details)
 }
 
 const saveBill = async () => {
+  const missingCoa = form.details.some((item) => !item.account_id)
+  if (missingCoa) {
+    toast.error('Semua item harus memiliki akun COA!')
+    return
+  }
+
+  if ((form.payment_type === 'TUNAI' || form.payment_type === 'DP') && !form.payment_method_id) {
+    toast.error('Pilih metode pembayaran!')
+    return
+  }
+
+  if (form.payment_type === 'DP' && (!form.paid_amount || form.paid_amount <= 0)) {
+    toast.error('Masukkan nominal uang muka!')
+    return
+  }
+
   isSaving.value = true
   try {
-    await apiClient.post('/purchase-bills', form)
+    const payload = {
+      ...form,
+      ppn_percentage: ppnPercentage.value,
+    }
+
+    await apiClient.post('/purchase-bills', payload)
     toast.success('Faktur Pembelian berhasil disimpan!')
-    router.push('/admin/pembelian')
+    router.push('/admin/pembelian/faktur')
   } catch (error) {
-    toast.error('Gagal menyimpan faktur.')
-    console.error(error)
+    const errorMessage = error.response?.data?.message || 'Gagal menyimpan faktur.'
+    toast.error(errorMessage)
+    console.error('Error saving invoice:', error)
   } finally {
     isSaving.value = false
   }
 }
 
-const fetchDataDropdowns = async () => {
+const fetchFormData = async () => {
   loading.value = true
   try {
     const supplierRes = await apiClient.get('/suppliers?all=true')
     daftarSupplier.value = supplierRes.data.data
+
+    const formDataRes = await apiClient.get('/purchase-bills/form-data')
+    coaAccounts.value = formDataRes.data.data.coa_accounts
+    paymentMethods.value = formDataRes.data.data.payment_methods
   } catch (error) {
-    const errorMessage = error.response?.data?.message || 'Gagal menyimpan faktur.'
-    toast.error(errorMessage)
-    console.error('Error saving invoice:', error)
+    console.error('Gagal memuat data form:', error)
+    toast.error('Gagal memuat data form.')
   } finally {
     loading.value = false
   }
@@ -423,11 +613,65 @@ const formatCurrency = (value) => {
   }).format(value)
 }
 
-onMounted(fetchDataDropdowns)
+onMounted(fetchFormData)
 </script>
 
 <style scoped>
-/* Loading State */
+/* ============================================
+   VARIABLES & BASE
+   ============================================ */
+* {
+  box-sizing: border-box;
+}
+
+.purchase-form {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ============================================
+   BREADCRUMB
+   ============================================ */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.breadcrumb-item:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.breadcrumb-icon {
+  font-size: 14px;
+}
+
+.breadcrumb-separator {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.breadcrumb-current {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+}
+
+/* ============================================
+   LOADING STATE
+   ============================================ */
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -445,7 +689,7 @@ onMounted(fetchDataDropdowns)
   width: 60px;
   height: 60px;
   border: 6px solid #e0e7ff;
-  border-top-color: #6366f1;
+  border-top-color: #10b981;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -462,10 +706,12 @@ onMounted(fetchDataDropdowns)
   font-weight: 600;
 }
 
-/* Page Header */
+/* ============================================
+   PAGE HEADER
+   ============================================ */
 .page-header {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  padding: 32px 36px;
+  padding: 24px 32px;
   border-radius: 16px;
   margin-bottom: 24px;
   box-shadow: 0 8px 24px rgba(16, 185, 129, 0.25);
@@ -480,7 +726,7 @@ onMounted(fetchDataDropdowns)
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.2), transparent);
+  background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.15), transparent);
   pointer-events: none;
 }
 
@@ -489,7 +735,7 @@ onMounted(fetchDataDropdowns)
   justify-content: space-between;
   align-items: center;
   color: white;
-  gap: 24px;
+  gap: 20px;
   flex-wrap: wrap;
   position: relative;
   z-index: 1;
@@ -498,28 +744,34 @@ onMounted(fetchDataDropdowns)
 .header-left-section {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
+  flex: 1;
 }
 
 .icon-badge {
-  width: 60px;
-  height: 60px;
+  width: 56px;
+  height: 56px;
   background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(10px);
-  border-radius: 14px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 30px;
+  font-size: 28px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border: 2px solid rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+
+.header-text {
+  flex: 1;
 }
 
 .page-title {
-  font-size: 28px;
-  font-weight: 800;
-  margin: 0 0 6px 0;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .page-subtitle {
@@ -531,115 +783,130 @@ onMounted(fetchDataDropdowns)
 .btn-back {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: white;
   color: #10b981;
   text-decoration: none;
-  padding: 12px 22px;
-  border-radius: 12px;
-  font-size: 15px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
   font-weight: 700;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
 }
 
 .btn-back:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
 .btn-icon {
-  font-size: 18px;
+  font-size: 16px;
 }
 
-/* Content Card */
+/* ============================================
+   CONTENT CARD
+   ============================================ */
 .content-card {
   background: white;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  margin-bottom: 24px;
-  border: 1px solid #f0f0f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+  border: 1px solid #e5e7eb;
 }
 
 .card-header-section {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 24px 32px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-  border-bottom: 3px solid #e9ecef;
-  position: relative;
-}
-
-.card-header-section::after {
-  content: '';
-  position: absolute;
-  bottom: -3px;
-  left: 32px;
-  width: 70px;
-  height: 3px;
-  background: linear-gradient(90deg, #10b981, #059669);
-  border-radius: 3px 3px 0 0;
+  gap: 16px;
+  padding: 20px 24px;
+  background: linear-gradient(to right, #fafbfc 0%, #ffffff 100%);
+  border-bottom: 2px solid #f3f4f6;
 }
 
 .section-icon-wrapper {
-  width: 64px;
-  height: 64px;
-  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-  border-radius: 14px;
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
   border: 2px solid #6ee7b7;
+  flex-shrink: 0;
+}
+
+.section-icon-wrapper.warning {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-color: #fbbf24;
+}
+
+.section-icon-wrapper.primary {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-color: #3b82f6;
+}
+
+.section-icon-wrapper.payment {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+  border-color: #6366f1;
 }
 
 .section-icon {
-  font-size: 32px;
+  font-size: 28px;
+}
+
+.section-header-text {
+  flex: 1;
 }
 
 .section-title {
-  font-size: 20px;
-  font-weight: 800;
-  color: #1e293b;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
   margin: 0 0 4px 0;
+  letter-spacing: -0.3px;
 }
 
 .section-subtitle {
   font-size: 13px;
-  color: #64748b;
+  color: #6b7280;
   margin: 0;
 }
 
 .card-body {
-  padding: 28px 32px;
+  padding: 24px;
 }
 
 .card-body-table {
-  padding: 32px 36px;
+  padding: 24px;
 }
 
-/* Form */
+/* ============================================
+   FORM ELEMENTS
+   ============================================ */
 .info-grid-form {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  gap: 20px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-bottom: 20px;
 }
 
 .form-label {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  color: #1e293b;
-  font-size: 14px;
+  gap: 6px;
+  font-weight: 600;
+  color: #374151;
+  font-size: 13px;
 }
 
 .label-icon {
@@ -648,129 +915,29 @@ onMounted(fetchDataDropdowns)
 
 .required {
   color: #ef4444;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .form-control {
   width: 100%;
-  padding: 13px 16px;
-  border: 2px solid #e2e8f0;
+  padding: 11px 14px;
+  border: 2px solid #e5e7eb;
   border-radius: 10px;
-  font-size: 15px;
-  transition: all 0.3s ease;
-  box-sizing: border-box;
+  font-size: 14px;
+  transition: all 0.2s ease;
   background: white;
 }
 
 .form-control:focus {
   outline: none;
   border-color: #10b981;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
 .form-control:disabled {
   background: #f9fafb;
   cursor: not-allowed;
   opacity: 0.6;
-}
-
-.form-hint {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: #6b7280;
-  margin-top: 4px;
-}
-
-.form-hint.warning {
-  color: #f59e0b;
-}
-
-.hint-icon {
-  font-size: 14px;
-}
-
-/* Table */
-.table-container {
-  background: linear-gradient(135deg, #f8f9fa, #ffffff);
-  padding: 24px;
-  border-radius: 14px;
-  margin-bottom: 24px;
-  border: 2px solid #e9ecef;
-}
-
-.table-wrapper {
-  overflow-x: auto;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
-.detail-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 800px;
-  background: white;
-}
-
-.detail-table thead {
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-}
-
-.detail-table th {
-  padding: 18px 20px;
-  text-align: left;
-  color: white;
-  font-weight: 800;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.th-content {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.th-icon {
-  font-size: 16px;
-}
-
-.th-material {
-  width: 40%;
-}
-
-.th-qty {
-  width: 20%;
-}
-
-.th-price {
-  width: 20%;
-}
-
-.th-subtotal {
-  width: 20%;
-  text-align: right;
-}
-
-.data-row {
-  transition: all 0.2s ease;
-  border-bottom: 2px solid #f1f5f9;
-}
-
-.data-row:hover {
-  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-}
-
-.detail-table td {
-  padding: 16px 20px;
-  vertical-align: middle;
-}
-
-.td-material {
-  font-weight: 600;
-  color: #1e293b;
 }
 
 .input-with-currency {
@@ -783,27 +950,139 @@ onMounted(fetchDataDropdowns)
   top: 50%;
   transform: translateY(-50%);
   font-weight: 700;
-  color: #64748b;
+  color: #6b7280;
   font-size: 14px;
   z-index: 1;
 }
 
-.table-input {
-  width: 100%;
-  padding: 12px 14px;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  background: white;
-  min-height: 46px;
-}
-
-.table-input.has-prefix {
+.form-control.has-prefix {
   padding-left: 42px;
 }
 
-.table-input:focus {
+.form-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.form-hint.info {
+  color: #3b82f6;
+}
+
+.form-hint.warning {
+  color: #f59e0b;
+}
+
+.hint-icon {
+  font-size: 14px;
+}
+
+/* ============================================
+   TABLE
+   ============================================ */
+.table-scroll-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+}
+
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1000px;
+  background: white;
+}
+
+.detail-table thead {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.detail-table th {
+  padding: 16px 16px;
+  text-align: left;
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.th-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.th-icon {
+  font-size: 16px;
+}
+
+.th-subtotal .th-content {
+  justify-content: flex-end;
+}
+
+.data-row {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.data-row:hover {
+  background: #f9fafb;
+}
+
+.row-even {
+  background: #fafbfc;
+}
+
+.detail-table td {
+  padding: 14px 16px;
+  vertical-align: middle;
+}
+
+.material-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.material-icon {
+  font-size: 20px;
+  background: #f3f4f6;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.material-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.table-input,
+.table-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.table-input:focus,
+.table-select:focus {
   outline: none;
   border-color: #10b981;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
@@ -814,15 +1093,15 @@ onMounted(fetchDataDropdowns)
 }
 
 .subtotal-value {
-  font-weight: 800;
+  font-weight: 700;
   color: #059669;
-  font-size: 15px;
-  padding: 10px 16px;
-  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  font-size: 14px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
   border-radius: 8px;
   border: 2px solid #6ee7b7;
   display: inline-block;
-  min-width: 130px;
+  min-width: 120px;
   text-align: right;
 }
 
@@ -833,41 +1112,42 @@ onMounted(fetchDataDropdowns)
 
 .empty-state {
   text-align: center;
-  padding: 48px 20px;
+  padding: 60px 20px;
 }
 
 .empty-icon {
   font-size: 48px;
   display: block;
-  margin-bottom: 16px;
-  opacity: 0.5;
+  margin-bottom: 12px;
+  opacity: 0.4;
 }
 
 .empty-text {
   font-size: 16px;
-  font-weight: 700;
-  color: #475569;
+  font-weight: 600;
+  color: #6b7280;
   margin: 0 0 8px 0;
 }
 
 .empty-hint {
-  font-size: 14px;
-  color: #94a3b8;
+  font-size: 13px;
+  color: #9ca3af;
   margin: 0;
 }
 
-/* Summary */
+/* ============================================
+   SUMMARY SECTION
+   ============================================ */
 .summary-section {
-  padding: 24px 36px;
-  border-top: 3px solid #e9ecef;
   display: flex;
   justify-content: flex-end;
+  padding: 20px 0 0 0;
 }
 
 .summary-box {
   min-width: 350px;
   background: white;
-  border: 2px solid #e2e8f0;
+  border: 2px solid #e5e7eb;
   border-radius: 12px;
   padding: 16px 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -876,14 +1156,15 @@ onMounted(fetchDataDropdowns)
 .summary-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 10px 0;
-  border-bottom: 1px dashed #e2e8f0;
+  border-bottom: 1px dashed #e5e7eb;
 }
 
 .sum-label {
   font-weight: 600;
   font-size: 14px;
-  color: #475569;
+  color: #6b7280;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -892,86 +1173,235 @@ onMounted(fetchDataDropdowns)
 .sum-value {
   font-weight: 700;
   font-size: 14px;
-  color: #1e293b;
+  color: #1f2937;
 }
 
 .ppn-row {
-  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
   margin: 0 -20px;
   padding: 10px 20px;
-  border-radius: 6px;
+  border-radius: 8px;
+  border: none;
 }
 
 .ppn-badge {
   display: inline-flex;
   padding: 2px 6px;
-  background: #10b981;
+  background: #f59e0b;
   color: white;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
   border-radius: 4px;
 }
 
 .summary-divider {
   height: 2px;
-  background: linear-gradient(90deg, #e2e8f0, #cbd5e1, #e2e8f0);
-  margin: 10px 0;
+  background: linear-gradient(90deg, #e5e7eb, #cbd5e1, #e5e7eb);
+  margin: 8px 0;
 }
 
 .summary-total {
   margin-top: 8px;
   padding: 12px 16px;
-  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-  border-radius: 8px;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border-radius: 10px;
   border: 2px solid #10b981;
 }
 
 .sum-label-total {
-  font-weight: 800;
-  font-size: 16px;
+  font-weight: 700;
+  font-size: 15px;
   color: #065f46;
 }
 
 .sum-value-total {
-  font-weight: 900;
-  font-size: 20px;
+  font-weight: 800;
+  font-size: 18px;
   color: #10b981;
 }
 
-/* Form Actions */
+/* ============================================
+   PAYMENT TYPE SELECTION
+   ============================================ */
+.payment-type-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.payment-card {
+  position: relative;
+  cursor: pointer;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.payment-card:hover {
+  border-color: #10b981;
+  background: #f9fafb;
+  transform: translateY(-2px);
+}
+
+.payment-card.active {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.payment-card input[type='radio'] {
+  position: absolute;
+  opacity: 0;
+}
+
+.payment-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.payment-icon {
+  font-size: 32px;
+  margin-bottom: 4px;
+}
+
+.payment-label {
+  font-weight: 700;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.payment-desc {
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+/* ============================================
+   PAYMENT SUMMARY
+   ============================================ */
+.payment-summary {
+  margin-top: 24px;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.payment-summary-header {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+  padding: 12px 20px;
+  border-bottom: 2px solid #a5b4fc;
+}
+
+.summary-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: #3730a3;
+}
+
+.payment-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px dashed #e5e7eb;
+}
+
+.payment-summary-row:last-child {
+  border-bottom: none;
+}
+
+.psum-label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.psum-value {
+  font-weight: 700;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.payment-summary-row.paid {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+}
+
+.payment-summary-row.paid .psum-value {
+  color: #059669;
+}
+
+.payment-summary-divider {
+  height: 2px;
+  background: linear-gradient(90deg, #e5e7eb, #cbd5e1, #e5e7eb);
+}
+
+.payment-summary-row.remaining {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  padding: 16px 20px;
+}
+
+.payment-summary-row.remaining .psum-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.payment-summary-row.remaining .psum-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: #f59e0b;
+}
+
+/* ============================================
+   FORM ACTIONS
+   ============================================ */
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 16px;
-  padding: 24px 36px;
-  background: linear-gradient(135deg, #f8f9fa, #ffffff);
+  gap: 12px;
+  padding: 20px 24px;
+  background: white;
   border-radius: 12px;
-  border: 2px solid #e9ecef;
-  margin-top: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  position: sticky;
+  bottom: 20px;
+  z-index: 100;
 }
 
 .btn-cancel-action,
 .btn-submit-action {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 28px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 800;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .btn-cancel-action {
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-  color: #475569;
-  border: 2px solid #cbd5e1;
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.btn-cancel-action:hover {
+  background: #e5e7eb;
+  transform: translateY(-2px);
 }
 
 .btn-submit-action {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
@@ -988,21 +1418,41 @@ onMounted(fetchDataDropdowns)
 }
 
 .action-icon {
-  font-size: 18px;
+  font-size: 16px;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 1024px) {
   .info-grid-form {
     grid-template-columns: 1fr;
   }
 
-  .summary-section {
-    padding: 20px;
+  .payment-type-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-back {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .card-body,
+  .card-body-table {
+    padding: 16px;
   }
 
   .summary-box {
     min-width: auto;
+    width: 100%;
   }
 
   .form-actions {

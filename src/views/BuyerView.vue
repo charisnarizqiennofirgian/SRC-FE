@@ -46,13 +46,14 @@
               <th class="th-name">Nama Buyer</th>
               <th class="th-address">Alamat</th>
               <th class="th-phone">No. Telepon</th>
+              <th class="th-coa">Akun Piutang</th>
               <th class="th-action">Action</th>
             </tr>
           </thead>
           <tbody>
             <!-- Empty State -->
             <tr v-if="buyers.length === 0" class="empty-row">
-              <td colspan="5">
+              <td colspan="6">
                 <div class="empty-state">
                   <span class="empty-icon">📭</span>
                   <p class="empty-text">Belum ada data buyer</p>
@@ -69,6 +70,12 @@
               <td class="td-name">{{ item.name }}</td>
               <td class="td-address">{{ item.address || '-' }}</td>
               <td class="td-phone">{{ item.phone || '-' }}</td>
+              <td class="td-coa">
+                <span v-if="item.receivable_account" class="coa-badge">
+                  {{ item.receivable_account.code }} - {{ item.receivable_account.name }}
+                </span>
+                <span v-else class="coa-empty">Belum diatur</span>
+              </td>
               <td class="td-action">
                 <div class="action-buttons">
                   <button class="action-btn btn-edit" @click="openEditModal(item)" title="Edit">
@@ -157,18 +164,37 @@
               ></textarea>
             </div>
 
-            <div class="form-group">
-              <label for="buyerPhone" class="form-label">
-                <span class="label-icon">📞</span>
-                No. Telepon
-              </label>
-              <input
-                type="text"
-                id="buyerPhone"
-                v-model="buyerForm.phone"
-                placeholder="Contoh: 021-12345678"
-                class="form-control"
-              />
+            <div class="form-row">
+              <div class="form-group">
+                <label for="buyerPhone" class="form-label">
+                  <span class="label-icon">📞</span>
+                  No. Telepon
+                </label>
+                <input
+                  type="text"
+                  id="buyerPhone"
+                  v-model="buyerForm.phone"
+                  placeholder="Contoh: 021-12345678"
+                  class="form-control"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="receivableAccount" class="form-label">
+                  <span class="label-icon">💰</span>
+                  Akun Piutang
+                </label>
+                <select
+                  id="receivableAccount"
+                  v-model="buyerForm.receivable_account_id"
+                  class="form-control"
+                >
+                  <option :value="null">-- Pilih Akun Piutang --</option>
+                  <option v-for="coa in coaOptions" :key="coa.id" :value="coa.id">
+                    {{ coa.code }} - {{ coa.name }}
+                  </option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -217,6 +243,7 @@ import ConfirmDialog from '../components/ConfirmDialog.vue'
 
 const searchQuery = ref('')
 const buyers = ref([])
+const coaOptions = ref([])
 const showModal = ref(false)
 const isEditing = ref(false)
 const buyerForm = ref({
@@ -225,6 +252,7 @@ const buyerForm = ref({
   name: '',
   address: '',
   phone: '',
+  receivable_account_id: null,
 })
 
 const currentPage = ref(1)
@@ -276,6 +304,15 @@ const fetchBuyers = async () => {
   }
 }
 
+const fetchCoaAset = async () => {
+  try {
+    const response = await apiClient.get('/coa/by-type/ASET')
+    coaOptions.value = response.data.data
+  } catch (error) {
+    console.error('Gagal mengambil data COA:', error)
+  }
+}
+
 const handlePageChange = (page) => {
   currentPage.value = page
   fetchBuyers()
@@ -283,13 +320,27 @@ const handlePageChange = (page) => {
 
 const openAddModal = () => {
   isEditing.value = false
-  buyerForm.value = { id: null, code: '', name: '', address: '', phone: '' }
+  buyerForm.value = {
+    id: null,
+    code: '',
+    name: '',
+    address: '',
+    phone: '',
+    receivable_account_id: null,
+  }
   showModal.value = true
 }
 
 const openEditModal = (buyer) => {
   isEditing.value = true
-  buyerForm.value = { ...buyer }
+  buyerForm.value = {
+    id: buyer.id,
+    code: buyer.code,
+    name: buyer.name,
+    address: buyer.address,
+    phone: buyer.phone,
+    receivable_account_id: buyer.receivable_account_id,
+  }
   showModal.value = true
 }
 
@@ -340,8 +391,25 @@ const deleteBuyer = async (id) => {
 
 onMounted(() => {
   fetchBuyers()
+  fetchCoaAset()
 })
 </script>
+
+<style scoped>
+.coa-badge {
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.coa-empty {
+  color: #9ca3af;
+  font-style: italic;
+  font-size: 12px;
+}
+</style>
 
 <style scoped>
 /* ===== PAGE HEADER ===== */

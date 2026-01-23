@@ -211,7 +211,7 @@ INDONESIA</textarea
                   <label class="form-label-modern">Container Type (Tipe Container)</label>
                   <input
                     v-model="form.container_type"
-                    type="text"
+                    type="text" n
                     class="form-input-modern"
                     placeholder="Contoh: 2x40HC, 1x20FT"
                   />

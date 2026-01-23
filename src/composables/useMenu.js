@@ -33,6 +33,7 @@ export function useMenu() {
           { name: 'Data Bahan Baku', route: '/admin/materials' },
           { name: 'Data Supplier', route: '/admin/suppliers' },
           { name: 'Data Buyer', route: '/admin/buyers' },
+          { name: 'Chart of Account', route: '/admin/chart-of-account' },
         ],
       },
       {
