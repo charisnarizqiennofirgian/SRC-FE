@@ -211,7 +211,8 @@ INDONESIA</textarea
                   <label class="form-label-modern">Container Type (Tipe Container)</label>
                   <input
                     v-model="form.container_type"
-                    type="text" n
+                    type="text"
+                    n
                     class="form-input-modern"
                     placeholder="Contoh: 2x40HC, 1x20FT"
                   />
@@ -583,7 +584,7 @@ const onSalesOrderSelect = () => {
           quantity_ordered: parseFloat(detail.quantity),
           quantity_already_shipped: parseFloat(detail.quantity_shipped),
           quantity_sisa: qtySisa,
-          current_stock: parseFloat(detail.item.stock),
+          current_stock: parseFloat(detail.current_stock || 0),
           delivery_date_promise: detail.delivery_date,
           quantity_shipped: 0,
           quantity_boxes: null,

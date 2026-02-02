@@ -175,7 +175,9 @@ const menuItems = ref([
     icon: '💰',
     children: [
       { name: 'Pesanan Penjualan', route: { name: 'DaftarSalesOrder' } },
+      { name: 'Uang Muka (DP)', route: { name: 'DownPaymentList' } },
       { name: 'Daftar Pengiriman', route: { name: 'DaftarPengiriman' } },
+      { name: 'Sales Invoice', route: { name: 'InvoiceList' } },
     ],
   },
 ])

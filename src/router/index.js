@@ -31,6 +31,13 @@ import SalesOrderCetak from '../views/penjualan/SalesOrderCetak.vue'
 import DaftarPengiriman from '../views/penjualan/DaftarPengiriman.vue'
 import FormPengiriman from '../views/penjualan/FormPengiriman.vue'
 import CetakPengiriman from '../views/penjualan/CetakPengiriman.vue'
+import InvoiceList from '../views/penjualan/invoices/InvoiceList.vue'
+// import InvoiceCreate from '../views/penjualan/invoices/InvoiceCreate.vue' // Removed static import
+import InvoiceDetail from '../views/penjualan/invoices/InvoiceDetail.vue'
+import InvoicePayment from '../views/penjualan/invoices/InvoicePayment.vue'
+import DownPaymentList from '../views/penjualan/downpayments/DownPaymentList.vue'
+import DownPaymentCreate from '../views/penjualan/downpayments/DownPaymentCreate.vue'
+import DownPaymentDetail from '../views/penjualan/downpayments/DownPaymentDetail.vue'
 import BomIndex from '../views/produksi/BomIndex.vue'
 import BomForm from '../views/produksi/BomForm.vue'
 import SawmilReport from '../views/produksi/SawmilReport.vue'
@@ -191,6 +198,51 @@ const router = createRouter({
           name: 'CetakPengiriman',
           component: CetakPengiriman,
           meta: { title: 'Cetak Pengiriman Barang' },
+          props: true,
+        },
+        {
+          path: '/admin/penjualan/invoices',
+          name: 'InvoiceList',
+          component: InvoiceList,
+          meta: { title: 'Daftar Sales Invoice', requiresAuth: true },
+        },
+        {
+          path: '/admin/penjualan/invoices/create',
+          name: 'BuatInvoice',
+          component: () => import('../views/penjualan/invoices/InvoiceCreate.vue'),
+          meta: { title: 'Buat Sales Invoice', requiresAuth: true },
+        },
+        {
+          path: '/admin/penjualan/invoices/:id',
+          name: 'InvoiceDetail',
+          component: InvoiceDetail,
+          meta: { title: 'Detail Invoice', requiresAuth: true },
+          props: true,
+        },
+        {
+          path: '/admin/penjualan/invoices/:id/payment',
+          name: 'InvoicePayment',
+          component: InvoicePayment,
+          meta: { title: 'Pembayaran Invoice', requiresAuth: true },
+          props: true,
+        },
+        {
+          path: '/admin/penjualan/down-payments',
+          name: 'DownPaymentList',
+          component: DownPaymentList,
+          meta: { title: 'Daftar Uang Muka', requiresAuth: true },
+        },
+        {
+          path: '/admin/penjualan/down-payments/create',
+          name: 'DownPaymentCreate',
+          component: DownPaymentCreate,
+          meta: { title: 'Buat Uang Muka', requiresAuth: true },
+        },
+        {
+          path: '/admin/penjualan/down-payments/:id',
+          name: 'DownPaymentDetail',
+          component: DownPaymentDetail,
+          meta: { title: 'Detail Uang Muka', requiresAuth: true },
           props: true,
         },
 

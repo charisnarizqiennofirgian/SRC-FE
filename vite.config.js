@@ -13,10 +13,24 @@ export default defineConfig({
     },
   },
   server: {
+    port: 5173,
     proxy: {
       '/api': {
-        target: 'http://192.168.1.46:8000',
+        target: 'http://192.168.1.23:8000',
         changeOrigin: true,
+        secure: false,
+        ws: true,
+        configure: (proxy, options) => {
+          proxy.on('error', (err, req, res) => {
+            console.log('proxy error', err)
+          })
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            console.log('Sending Request to:', proxyReq.path)
+          })
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            console.log('Received Response from:', req.url, 'Status:', proxyRes.statusCode)
+          })
+        },
       },
     },
   },

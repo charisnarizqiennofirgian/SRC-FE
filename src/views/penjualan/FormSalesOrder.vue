@@ -96,22 +96,10 @@
                 <option value="IDR">IDR (Rupiah)</option>
                 <option value="USD">USD (Dolar)</option>
               </select>
+              <p class="form-hint-text">💡 Kurs akan diinput saat membuat Invoice Penjualan</p>
             </div>
 
-            <div v-if="form.currency === 'USD'" class="form-group-so">
-              <label class="form-label-so">
-                Kurs (Rate)
-                <span class="required-mark">*</span>
-              </label>
-              <input
-                v-model.number="form.exchange_rate"
-                type="number"
-                min="1"
-                step="1"
-                class="form-input-so"
-                required
-              />
-            </div>
+            <div class="form-group-so"></div>
           </div>
         </div>
       </div>
@@ -189,7 +177,6 @@
                       required
                     />
                   </td>
-                  <!-- ✅ KOLOM BARU: Keterangan -->
                   <td>
                     <textarea
                       v-model="item.keterangan"
@@ -331,6 +318,7 @@ const form = reactive({
   subtotal: 0,
   discount: 0,
   tax_ppn: 0,
+  tax_rate: 11, // ← TAMBAH INI! Default 11%
   grand_total: 0,
 })
 
@@ -340,6 +328,11 @@ const masterData = reactive({
 })
 
 const ppnRate = ref(0.11)
+
+// ← TAMBAH INI! Watch ppnRate changes
+watch(ppnRate, (newRate) => {
+  form.tax_rate = newRate * 100 // Convert 0.11 → 11
+})
 
 onMounted(async () => {
   loading.value = true
@@ -401,21 +394,35 @@ const fetchSalesOrder = async (id) => {
     form.status = so.status
     form.discount = parseFloat(so.discount) || 0
     form.currency = so.currency
-    form.exchange_rate = parseInt(so.exchange_rate) || 1
+    form.exchange_rate = 1
 
-    if (so.tax_ppn > 0) {
+    // ✅ LOAD TAX RATE DARI DATABASE
+    if (so.tax_rate !== undefined && so.tax_rate !== null) {
+      const rate = parseFloat(so.tax_rate)
+      form.tax_rate = rate
+      ppnRate.value = rate / 100 // Convert 11 → 0.11
+    } else if (so.tax_ppn > 0) {
+      // Fallback: hitung dari tax_ppn (backward compatibility)
       const calculatedRate = so.tax_ppn / so.subtotal
-      if (calculatedRate.toFixed(2) == '0.12') ppnRate.value = 0.12
-      else if (calculatedRate.toFixed(2) == '0.11') ppnRate.value = 0.11
-      else ppnRate.value = 0
+      if (calculatedRate.toFixed(2) == '0.12') {
+        ppnRate.value = 0.12
+        form.tax_rate = 12
+      } else if (calculatedRate.toFixed(2) == '0.11') {
+        ppnRate.value = 0.11
+        form.tax_rate = 11
+      } else {
+        ppnRate.value = 0
+        form.tax_rate = 0
+      }
     } else {
       ppnRate.value = 0
+      form.tax_rate = 0
     }
 
     form.details = so.details.map((detail) => ({
-      id: detail.id, // ✅ Penting untuk update
+      id: detail.id,
       item_id: parseInt(detail.item_id),
-      item_code: detail.item_code || '', // ✅ BARU
+      item_code: detail.item_code || '',
       item_name: detail.item_name || '',
       item_unit: detail.item_unit || 'N/A',
       quantity: parseFloat(detail.quantity) || 1,
@@ -424,7 +431,7 @@ const fetchSalesOrder = async (id) => {
       line_total: parseFloat(detail.line_total) || 0,
       specifications: detail.specifications || null,
       delivery_date: detail.delivery_date ? detail.delivery_date.substring(0, 10) : '',
-      keterangan: detail.keterangan || '', // ✅ BARU
+      keterangan: detail.keterangan || '',
     }))
   } catch (error) {
     console.error('Error fetch SO:', error)
@@ -435,17 +442,15 @@ const fetchSalesOrder = async (id) => {
 
 watch(
   () => form.currency,
-  (newCurrency) => {
-    if (newCurrency === 'IDR') {
-      form.exchange_rate = 1
-    }
+  () => {
+    form.exchange_rate = 1
   },
 )
 
 const addItemRow = () => {
   form.details.push({
     item_id: null,
-    item_code: '', // ✅ BARU
+    item_code: '',
     item_name: '',
     item_unit: '',
     quantity: 1,
@@ -453,7 +458,7 @@ const addItemRow = () => {
     line_total: 0,
     specifications: null,
     delivery_date: form.so_date,
-    keterangan: '', // ✅ BARU
+    keterangan: '',
   })
 }
 
@@ -464,7 +469,7 @@ const removeItemRow = (index) => {
 const onItemSelect = (index) => {
   const selectedItem = masterData.items.find((item) => item.id === form.details[index].item_id)
   if (selectedItem) {
-    form.details[index].item_code = selectedItem.code || '' // ✅ BARU: Auto-fill kode
+    form.details[index].item_code = selectedItem.code || ''
     form.details[index].item_name = selectedItem.name
     form.details[index].item_unit = selectedItem.unit?.name || 'N/A'
     form.details[index].quantity = 1
@@ -488,6 +493,7 @@ watch(
 const taxAmount = computed(() => {
   const amount = form.subtotal * ppnRate.value
   form.tax_ppn = amount
+  form.tax_rate = ppnRate.value * 100 // ← TAMBAH INI! Simpan sebagai 0, 11, atau 12
   return amount
 })
 
@@ -505,6 +511,13 @@ const handleSubmit = async () => {
     isSaving.value = false
     return
   }
+
+  // DEBUG: Log data yang akan dikirim
+  console.log('=== DEBUG SUBMIT SO ===')
+  console.log('Form data:', form)
+  console.log('Tax Rate:', form.tax_rate)
+  console.log('PPN Rate:', ppnRate.value)
+  console.log('======================')
 
   try {
     if (isEditMode.value) {
@@ -537,7 +550,7 @@ const formatCurrency = (value, currency) => {
     style: 'currency',
     currency: currency || 'IDR',
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }
 
   if (currency === 'USD') {

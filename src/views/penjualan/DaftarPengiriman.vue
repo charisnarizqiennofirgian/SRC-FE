@@ -147,30 +147,73 @@
                 </td>
                 <td class="td-actions">
                   <div class="action-buttons-group">
-                    <button
-                      @click="goToCetakPage(sj.id)"
-                      class="btn-action btn-print"
-                      title="Cetak / Lihat"
-                    >
-                      🖨️
-                    </button>
-                    <!-- Tambahkan tombol baru di sini -->
+                    <template v-if="sj.status === 'DRAFT'">
+                      <button
+                        @click="shipDeliveryOrder(sj.id)"
+                        class="btn-action btn-ship"
+                        title="Kirim Barang"
+                      >
+                        🚚
+                      </button>
+                      <button
+                        @click="goToEditPage(sj.id)"
+                        class="btn-action btn-edit"
+                        title="Edit SJ"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        @click="cancelShipment(sj.id, sj.do_number)"
+                        class="btn-action btn-delete"
+                        title="Hapus"
+                      >
+                        🗑️
+                      </button>
+                    </template>
 
-                    <!-- (Tombol edit dan delete tetap ada seperti biasa) -->
-                    <button
-                      @click="goToEditPage(sj.id)"
-                      class="btn-action btn-edit"
-                      title="Edit SJ"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      @click="cancelShipment(sj.id, sj.do_number)"
-                      class="btn-action btn-delete"
-                      title="Batal Kirim"
-                    >
-                      🗑️
-                    </button>
+                    <template v-else-if="sj.status === 'SHIPPED'">
+                      <button
+                        @click="markAsDelivered(sj.id)"
+                        class="btn-action btn-delivered"
+                        title="Konfirmasi Terima"
+                      >
+                        ✅
+                      </button>
+                      <button
+                        @click="goToCetakPage(sj.id)"
+                        class="btn-action btn-print"
+                        title="Cetak SJ"
+                      >
+                        🖨️
+                      </button>
+                    </template>
+
+                    <template v-else-if="sj.status === 'DELIVERED'">
+                      <button
+                        @click="createInvoice(sj.id)"
+                        class="btn-action btn-invoice"
+                        title="Buat Invoice"
+                      >
+                        📄
+                      </button>
+                      <button
+                        @click="goToCetakPage(sj.id)"
+                        class="btn-action btn-print"
+                        title="Cetak SJ"
+                      >
+                        🖨️
+                      </button>
+                    </template>
+
+                    <template v-else>
+                      <button
+                        @click="goToCetakPage(sj.id)"
+                        class="btn-action btn-print"
+                        title="Cetak SJ"
+                      >
+                        🖨️
+                      </button>
+                    </template>
                   </div>
                 </td>
               </tr>
@@ -281,10 +324,65 @@ const goToCetakBarcodePage = (id) => {
   router.push({ name: 'CetakBarcodeKemendag', params: { id } })
 }
 
+const shipDeliveryOrder = async (id) => {
+  Swal.fire({
+    title: 'Kirim Barang?',
+    text: 'Barang akan keluar dari gudang dan stok akan berkurang. Lanjutkan?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#007bff',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'Ya, Kirim!',
+    cancelButtonText: 'Batal',
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        const response = await apiClient.post(`/delivery-orders/${id}/ship`)
+        toast.success(response.data.message || 'Barang berhasil dikirim! Stok telah berkurang.')
+        fetchDeliveryOrders(pagination.value.current_page)
+      } catch (error) {
+        console.error('Gagal mengirim barang:', error)
+        toast.error(error.response?.data?.message || 'Gagal mengirim barang.')
+      }
+    }
+  })
+}
+
+const markAsDelivered = async (id) => {
+  Swal.fire({
+    title: 'Konfirmasi Penerimaan?',
+    text: 'Barang sudah diterima customer dengan baik?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#28a745',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'Ya, Sudah Diterima!',
+    cancelButtonText: 'Belum',
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        const response = await apiClient.post(`/delivery-orders/${id}/mark-delivered`)
+        toast.success(response.data.message || 'Status berhasil diupdate! Siap untuk di-invoice.')
+        fetchDeliveryOrders(pagination.value.current_page)
+      } catch (error) {
+        console.error('Gagal update status:', error)
+        toast.error(error.response?.data?.message || 'Gagal update status.')
+      }
+    }
+  })
+}
+
+const createInvoice = (doId) => {
+  router.push({
+    name: 'BuatInvoice',
+    query: { do_id: doId },
+  })
+}
+
 const cancelShipment = (id, doNumber) => {
   Swal.fire({
     title: 'Batalkan Pengiriman?',
-    text: `Anda yakin ingin membatalkan SJ "${doNumber}"? Stok barang akan dikembalikan ke gudang.`,
+    text: `Anda yakin ingin membatalkan SJ "${doNumber}"? (Hanya DO dengan status DRAFT yang bisa dihapus)`,
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#d33',
@@ -316,6 +414,9 @@ const formatDisplayDate = (dateString) => {
 }
 
 const getStatusClass = (status) => {
+  if (status === 'DRAFT') return 'status-badge status-draft'
+  if (status === 'SHIPPED') return 'status-badge status-shipped'
+  if (status === 'DELIVERED') return 'status-badge status-delivered'
   if (status === 'Shipped') return 'status-badge status-shipped'
   if (status === 'Cancelled') return 'status-badge status-cancelled'
   return 'status-badge status-default'
@@ -552,13 +653,25 @@ onMounted(() => {
   font-weight: 600;
   text-transform: capitalize;
 }
+.status-draft {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 2px solid #ffc107;
+}
 .status-shipped {
   background-color: #e6f7ff;
   color: #007bff;
+  border: 2px solid #007bff;
+}
+.status-delivered {
+  background-color: #d4edda;
+  color: #155724;
+  border: 2px solid #28a745;
 }
 .status-cancelled {
   background-color: #fdeeee;
   color: #d90000;
+  border: 2px solid #dc3545;
 }
 .status-default {
   background-color: #f1f1f1;
@@ -605,6 +718,34 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+.btn-ship {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
+}
+.btn-ship:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+}
+.btn-delivered {
+  background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(40, 167, 69, 0.3);
+}
+.btn-delivered:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+.btn-invoice {
+  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+  color: #000;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(255, 193, 7, 0.3);
+}
+.btn-invoice:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
 }
 .btn-print {
   background: #17a2b8;
