@@ -175,52 +175,55 @@
               <div class="form-row form-row-triple">
                 <div class="form-group">
                   <label class="form-label">
-                    Diameter (mm)
-                    <span class="required">*</span>
-                  </label>
-                  <div class="input-wrapper">
-                    <input
-                      v-model.number="form.specifications.t"
-                      type="number"
-                      class="form-control"
-                      placeholder="cth: 300"
-                      required
-                      min="0"
-                      @input="calculateProgress"
-                    />
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">
-                    Panjang (P) mm
-                    <span class="required">*</span>
-                  </label>
-                  <div class="input-wrapper">
-                    <input
-                      v-model.number="form.specifications.p"
-                      type="number"
-                      class="form-control"
-                      placeholder="cth: 2000"
-                      required
-                      min="0"
-                      @input="calculateProgress"
-                    />
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">
                     Jenis Kayu
                     <span class="required">*</span>
                   </label>
                   <div class="input-wrapper">
+                    <span class="input-icon">🌳</span>
                     <input
-                      v-model="form.jenis"
+                      v-model="form.jenis_kayu"
                       type="text"
                       class="form-control"
-                      placeholder="cth: TEAK / MAHONI"
+                      placeholder="cth: Meranti, Jati, Mahoni"
                       required
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">
+                    TPK
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🏭</span>
+                    <input
+                      v-model="form.tpk"
+                      type="text"
+                      class="form-control"
+                      placeholder="cth: TPK Makmur Jaya"
+                      required
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">
+                    Diameter (cm)
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">⭕</span>
+                    <input
+                      v-model.number="form.diameter"
+                      type="number"
+                      class="form-control"
+                      placeholder="cth: 40"
+                      required
+                      min="0"
+                      step="0.01"
                       @input="calculateProgress"
                     />
                   </div>
@@ -230,21 +233,44 @@
               <div class="form-row">
                 <div class="form-group">
                   <label class="form-label">
-                    Kubikasi per Batang (m³)
+                    Panjang (meter)
                     <span class="required">*</span>
                   </label>
                   <div class="input-wrapper">
+                    <span class="input-icon">📏</span>
                     <input
-                      v-model.number="form.volume_m3"
+                      v-model.number="form.panjang"
+                      type="number"
+                      class="form-control"
+                      placeholder="cth: 4.5"
+                      required
+                      min="0"
+                      step="0.01"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">
+                    Kubikasi (m³)
+                    <span class="required">*</span>
+                    <span class="label-hint">(Manual dari TPK)</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📦</span>
+                    <input
+                      v-model.number="form.kubikasi"
                       type="number"
                       min="0"
                       step="0.0001"
                       class="form-control"
-                      placeholder="cth: 0.4567"
+                      placeholder="cth: 0.5655"
                       required
                       @input="calculateProgress"
                     />
                   </div>
+                  <p class="form-help-text">Kubikasi manual dari TPK (tidak dihitung otomatis)</p>
                 </div>
               </div>
             </div>
@@ -550,7 +576,6 @@
                 </div>
               </div>
 
-              <!-- Dropdown Gudang untuk Stok Awal -->
               <div class="form-group">
                 <label class="form-label">
                   Pilih Gudang
@@ -639,7 +664,7 @@ const form = reactive({
   category_id: '',
   unit_id: '',
   stock: 0,
-  initial_warehouse_id: '', // gudang untuk stok awal
+  initial_warehouse_id: '',
   hs_code: '',
   specifications: {
     t: null,
@@ -654,11 +679,16 @@ const form = reactive({
   wood_consumed_per_pcs: null,
   m3_per_carton: null,
   volume_m3: null,
+  jenis_kayu: '',
+  tpk: '',
+  diameter: null,
+  panjang: null,
+  kubikasi: null,
 })
 
 const categories = ref([])
 const units = ref([])
-const warehouses = ref([]) // master gudang
+const warehouses = ref([])
 const formProgress = ref(0)
 
 const selectedCategoryName = computed(() => {
@@ -680,7 +710,6 @@ const isKayuLogCategory = computed(() =>
   selectedCategoryName.value.toLowerCase().includes('kayu log'),
 )
 
-// stok awal > 0 => gudang wajib dipilih & dropdown aktif
 const mustSelectWarehouse = computed(() => (form.stock || 0) > 0)
 
 const handleCategoryChange = () => {
@@ -695,6 +724,11 @@ const handleCategoryChange = () => {
   form.kualitas = ''
   form.bentuk = ''
   form.volume_m3 = null
+  form.jenis_kayu = ''
+  form.tpk = ''
+  form.diameter = null
+  form.panjang = null
+  form.kubikasi = null
 
   if (!isProdukJadiCategory.value) {
     form.hs_code = ''
@@ -725,11 +759,12 @@ const calculateProgress = () => {
   }
 
   if (isKayuLogCategory.value) {
-    total += 4
-    if (form.specifications.t) filled++
-    if (form.specifications.p) filled++
-    if (form.jenis) filled++
-    if (form.volume_m3) filled++
+    total += 5
+    if (form.jenis_kayu) filled++
+    if (form.tpk) filled++
+    if (form.diameter) filled++
+    if (form.panjang) filled++
+    if (form.kubikasi) filled++
   }
 
   if (isKayuRSTCategory.value) {
@@ -761,7 +796,7 @@ const fetchDropdownData = async () => {
     const [categoriesResponse, unitsResponse, warehousesResponse] = await Promise.all([
       apiClient.get('/categories/all'),
       apiClient.get('/units/all'),
-      apiClient.get('/warehouses'), // endpoint master gudang
+      apiClient.get('/warehouses'),
     ])
 
     categories.value = categoriesResponse.data.data
@@ -786,7 +821,7 @@ const fetchItemData = async (itemId) => {
     form.unit_id = data.unit_id || ''
     form.stock = parseInt(data.stock) || 0
     form.hs_code = data.hs_code || ''
-    form.initial_warehouse_id = data.initial_warehouse_id || '' // kalau nanti backend sediakan
+    form.initial_warehouse_id = data.initial_warehouse_id || ''
 
     if (data.specifications) {
       form.specifications.t = data.specifications.t ?? null
@@ -803,6 +838,12 @@ const fetchItemData = async (itemId) => {
     form.m3_per_carton = data.m3_per_carton || null
     form.volume_m3 = data.volume_m3 || null
 
+    form.jenis_kayu = data.jenis_kayu || ''
+    form.tpk = data.tpk || ''
+    form.diameter = data.diameter || null
+    form.panjang = data.panjang || null
+    form.kubikasi = data.kubikasi || null
+
     calculateProgress()
   } catch (error) {
     console.error('Gagal mengambil data barang:', error)
@@ -811,7 +852,6 @@ const fetchItemData = async (itemId) => {
 }
 
 const handleInitialStockChange = () => {
-  // jika stok awal jadi 0 / kosong, reset gudang
   if (!mustSelectWarehouse.value) {
     form.initial_warehouse_id = ''
   }
@@ -834,20 +874,20 @@ const handleSubmit = async () => {
 
     if (isKayuLogCategory.value) {
       if (
-        !form.jenis.trim() ||
-        !form.specifications.t ||
-        !form.specifications.p ||
-        !form.volume_m3
+        !form.jenis_kayu.trim() ||
+        !form.tpk.trim() ||
+        !form.diameter ||
+        !form.panjang ||
+        !form.kubikasi
       ) {
         showError(
           'Validasi Gagal',
-          'Diameter, Panjang, Jenis Kayu, dan Kubikasi wajib diisi untuk Kayu Log',
+          'Jenis Kayu, TPK, Diameter, Panjang, dan Kubikasi wajib diisi untuk Kayu Log',
         )
         return
       }
     }
 
-    // Validasi khusus Fase 2: stok awal > 0 => gudang wajib
     if (mustSelectWarehouse.value && !form.initial_warehouse_id) {
       showError('Validasi Gagal', 'Silakan pilih Gudang untuk Stok Awal.')
       return
@@ -870,10 +910,23 @@ const handleSubmit = async () => {
       jenis: null,
       kualitas: null,
       bentuk: null,
-      volume_m3: form.volume_m3,
+      volume_m3: null,
+      jenis_kayu: null,
+      tpk: null,
+      diameter: null,
+      panjang: null,
+      kubikasi: null,
     }
 
-    if (isKayuRSTCategory.value || isKartonBoxCategory.value || isKayuLogCategory.value) {
+    if (isKayuLogCategory.value) {
+      payload.jenis_kayu = form.jenis_kayu
+      payload.tpk = form.tpk
+      payload.diameter = form.diameter
+      payload.panjang = form.panjang
+      payload.kubikasi = form.kubikasi
+    }
+
+    if (isKayuRSTCategory.value || isKartonBoxCategory.value) {
       payload.specifications = {
         t: form.specifications.t,
         l: form.specifications.l,
@@ -881,10 +934,8 @@ const handleSubmit = async () => {
       }
     }
 
-    if (isKayuRSTCategory.value || isKayuLogCategory.value) {
-      payload.jenis = form.jenis
-    }
     if (isKayuRSTCategory.value) {
+      payload.jenis = form.jenis
       payload.kualitas = form.kualitas
       payload.bentuk = form.bentuk
     }

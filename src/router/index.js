@@ -466,6 +466,30 @@ const router = createRouter({
       component: () => import('../views/keuangan/RiwayatPembayaranView.vue'),
       meta: { title: 'Riwayat Pembayaran Hutang', requiresAuth: true },
     },
+    {
+      path: '/admin/keuangan/jurnal-umum/tambah',
+      name: 'TambahJurnalManual',
+      component: () => import('../views/keuangan/JurnalManualForm.vue'),
+      meta: { title: 'Buat Jurnal Manual', requiresAuth: true },
+    },
+    {
+      path: '/admin/keuangan/buku-besar',
+      name: 'BukuBesar',
+      component: () => import('../views/keuangan/GeneralLedgerView.vue'),
+      meta: { title: 'Buku Besar', requiresAuth: true },
+    },
+    {
+      path: '/admin/keuangan/laba-rugi',
+      name: 'LabaRugi',
+      component: () => import('../views/keuangan/IncomeStatementView.vue'),
+      meta: { title: 'Laporan Laba Rugi', requiresAuth: true },
+    },
+    {
+      path: '/admin/keuangan/neraca',
+      name: 'Neraca',
+      component: () => import('../views/keuangan/BalanceSheetView.vue'),
+      meta: { title: 'Neraca', requiresAuth: true },
+    },
 
     // ROUTE STOK YANG MASIH DIPAKAI
     {

@@ -239,7 +239,7 @@
                 <td class="td-customer">
                   <div class="customer-info">
                     <span class="customer-icon">👤</span>
-                    <span class="customer-name">{{ invoice.buyer.name }}</span>
+                    <span class="customer-name">{{ invoice.buyer?.name || '-' }}</span>
                   </div>
                 </td>
                 <td class="td-currency">
@@ -248,9 +248,9 @@
                 <td class="td-total">
                   <div class="amount-cell">
                     <div class="amount-primary">
-                      {{ formatCurrency(invoice.grand_total_original, invoice.currency) }}
+                      {{ formatCurrency(invoice.total_currency, invoice.currency) }}
                     </div>
-                    <div class="amount-secondary">{{ formatRupiah(invoice.grand_total_idr) }}</div>
+                    <div class="amount-secondary">{{ formatRupiah(invoice.total_idr) }}</div>
                   </div>
                 </td>
                 <td class="td-paid">
@@ -386,14 +386,41 @@ export default {
       try {
         const params = {
           page,
-          ...this.filters,
+          search: this.filters.search || undefined,
+          status: this.filters.status || undefined,
+          payment_status: this.filters.payment_status || undefined,
         }
 
+        console.log('Loading invoices with params:', params)
+
         const response = await apiClient.get('/sales-invoices', { params })
-        this.invoices = response.data
+
+        console.log('API Response:', response.data)
+
+        if (response.data.data) {
+          this.invoices = response.data
+        } else if (Array.isArray(response.data)) {
+          this.invoices = {
+            data: response.data,
+            current_page: 1,
+            last_page: 1,
+          }
+        } else {
+          this.invoices = {
+            data: [],
+            current_page: 1,
+            last_page: 1,
+          }
+        }
       } catch (error) {
         console.error('Error loading invoices:', error)
+        console.error('Error response:', error.response)
         this.$toast.error('Gagal memuat data invoice')
+        this.invoices = {
+          data: [],
+          current_page: 1,
+          last_page: 1,
+        }
       } finally {
         this.loading = false
       }
@@ -455,6 +482,7 @@ export default {
     },
 
     formatDate(date) {
+      if (!date) return '-'
       return new Date(date).toLocaleDateString('id-ID', {
         day: '2-digit',
         month: 'short',
@@ -463,17 +491,20 @@ export default {
     },
 
     formatRupiah(amount) {
+      if (!amount) return 'Rp 0'
       return new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',
         minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
       }).format(amount)
     },
 
     formatCurrency(amount, currency) {
+      if (!amount) return currency === 'USD' ? '$0' : 'Rp 0'
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: currency,
+        currency: currency || 'USD',
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
       }).format(amount)

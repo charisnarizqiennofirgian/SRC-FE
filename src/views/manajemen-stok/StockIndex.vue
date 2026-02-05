@@ -119,7 +119,21 @@
         <div class="table-container-modern">
           <table class="table-stock-modern">
             <thead>
-              <tr v-if="activeTab === 'rst'">
+              <!-- HEADER KAYU LOG -->
+              <tr v-if="activeTab === 'logs'">
+                <th class="th-number">No</th>
+                <th class="th-code">Kode</th>
+                <th class="th-name">Nama</th>
+                <th class="th-small">Jenis Kayu</th>
+                <th class="th-small">TPK</th>
+                <th class="th-small">Diameter (cm)</th>
+                <th class="th-small">Panjang (m)</th>
+                <th class="th-small">Stok</th>
+                <th class="th-small">Kubikasi (m³)</th>
+              </tr>
+
+              <!-- HEADER KAYU RST -->
+              <tr v-else-if="activeTab === 'rst'">
                 <th class="th-number">No</th>
                 <th class="th-code">Kode</th>
                 <th class="th-name">Nama</th>
@@ -131,6 +145,8 @@
                 <th class="th-small">Stok</th>
                 <th class="th-small">Kubikasi (m³)</th>
               </tr>
+
+              <!-- HEADER KATEGORI LAIN -->
               <tr v-else>
                 <th class="th-number">No</th>
                 <th class="th-code">Kode Item</th>
@@ -143,7 +159,10 @@
 
             <tbody>
               <tr v-if="filteredReport.length === 0" class="empty-row-modern">
-                <td :colspan="activeTab === 'rst' ? 10 : 6" class="empty-cell-modern">
+                <td
+                  :colspan="activeTab === 'logs' ? 9 : activeTab === 'rst' ? 10 : 6"
+                  class="empty-cell-modern"
+                >
                   <div class="empty-state-content">
                     <div class="empty-icon-wrapper">
                       <span class="empty-icon">📭</span>
@@ -160,11 +179,70 @@
                 </td>
               </tr>
 
+              <!-- ROWS KAYU LOG -->
+              <tr
+                v-else-if="activeTab === 'logs'"
+                v-for="(item, index) in filteredReport"
+                :key="'log-' + item.id"
+                class="data-row-modern"
+              >
+                <td class="td-number">
+                  <div class="number-badge">
+                    {{
+                      pagination
+                        ? (pagination.current_page - 1) * pagination.per_page + index + 1
+                        : index + 1
+                    }}
+                  </div>
+                </td>
+                <td class="td-code">
+                  <div class="code-badge-modern">
+                    <span class="code-icon">🏷️</span>
+                    <span class="code-text">{{ item.code }}</span>
+                  </div>
+                </td>
+                <td class="td-name">
+                  <div class="item-info-modern">
+                    <div class="item-icon-box">
+                      <span class="item-icon">🪵</span>
+                    </div>
+                    <div class="item-text">
+                      <span class="item-name-text">{{ item.name }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="td-small">
+                  <span class="badge-unit-modern">{{ item.jenis_kayu || '-' }}</span>
+                </td>
+                <td class="td-small">
+                  <span class="badge-unit-modern">{{ item.tpk || '-' }}</span>
+                </td>
+                <td class="td-small">
+                  {{ item.diameter ? formatQty(item.diameter) : '-' }}
+                </td>
+                <td class="td-small">
+                  {{ item.panjang ? formatQty(item.panjang) : '-' }}
+                </td>
+                <td class="td-small">
+                  <div class="stock-total-inline">
+                    <span class="stock-value">
+                      {{ formatQty(totalQty(filteredStocks(item.stocks))) }}
+                    </span>
+                    <button type="button" class="btn-eye-inline" @click="openDetail(item)">
+                      👁️
+                    </button>
+                  </div>
+                </td>
+                <td class="td-small">
+                  {{ formatLogVolume(totalKubikasi(item, filteredStocks(item.stocks))) }}
+                </td>
+              </tr>
+
               <!-- ROWS KAYU RST -->
               <tr
                 v-else-if="activeTab === 'rst'"
                 v-for="(item, index) in filteredReport"
-                :key="item.id"
+                :key="'rst-' + item.id"
                 class="data-row-modern"
               >
                 <td class="td-number">
@@ -218,7 +296,7 @@
                   </div>
                 </td>
                 <td class="td-small">
-                  {{ formatQty(totalKubikasi(item, filteredStocks(item.stocks))) }}
+                  {{ formatKubikasi(totalKubikasi(item, filteredStocks(item.stocks))) }}
                 </td>
               </tr>
 
@@ -226,7 +304,7 @@
               <tr
                 v-else
                 v-for="(item, index) in filteredReport"
-                :key="item.id"
+                :key="'other-' + item.id"
                 class="data-row-modern"
               >
                 <td class="td-number">
@@ -266,7 +344,6 @@
                 <td class="td-stock">
                   <div class="stock-total-inline">
                     <span class="stock-value">
-                      <!-- LOGIC BARU: kalau tab Bahan Operasional, pakai item.stock -->
                       {{
                         activeTab === 'operational'
                           ? formatQty(item.stock || 0)
@@ -394,7 +471,6 @@ const warehouses = ref([])
 const selectedWarehouseId = ref(null)
 let searchTimeout = null
 
-// state modal detail
 const isDetailOpen = ref(false)
 const detailItem = ref(null)
 const detailStocks = ref([])
@@ -543,13 +619,36 @@ const formatQty = (val) => {
   })
 }
 
-// ✅ GANTI quantity → qty
+// ✅ TAMBAH FUNCTION BARU INI
+const formatKubikasi = (val) => {
+  if (!val && val !== 0) return 0
+  return parseFloat(val).toLocaleString('en-US', {
+    minimumFractionDigits: 4, // Selalu tampil 4 desimal
+    maximumFractionDigits: 4,
+  })
+}
+
+const formatLogVolume = (val) => {
+  if (!val && val !== 0) return 0
+  const num = parseFloat(val)
+  // Jika angka bulat (seperti 200, 9000), jangan tampilkan desimal (.0000)
+  if (num % 1 === 0) return formatQty(num)
+  // Jika angka desimal (seperti 0.7, 0.4), paksa tampilkan 4 desimal (0.7000)
+  return formatKubikasi(num)
+}
+
 const totalQty = (stocks) => {
   return (stocks || []).reduce((sum, s) => sum + parseFloat(s.qty || 0), 0)
 }
 
 const totalKubikasi = (item, stocksFiltered) => {
-  if (!item || !item.specifications) return 0
+  if (!item) return 0
+
+  if (activeTab.value === 'logs') {
+    return Number(item.kubikasi || 0)
+  }
+
+  if (!item.specifications) return 0
   const t = Number(item.specifications.t || 0)
   const l = Number(item.specifications.l || 0)
   const p = Number(item.specifications.p || 0)
@@ -559,14 +658,13 @@ const totalKubikasi = (item, stocksFiltered) => {
   return volumePerPcs * qty
 }
 
-// ✅ GANTI quantity → qty
 const openDetail = (item) => {
   detailItem.value = item
   const stocks = item.stocks || []
   detailStocks.value = stocks.map((s) => ({
     id: s.id,
     warehouse_name: s.warehouse?.name || s.warehouse?.code || 'Gudang',
-    quantity: s.qty || 0, // ✅ Ganti s.quantity → s.qty
+    quantity: s.qty || 0,
   }))
   isDetailOpen.value = true
 }

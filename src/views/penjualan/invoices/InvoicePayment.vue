@@ -1,214 +1,240 @@
 <template>
   <div class="invoice-payment">
-    <!-- Header -->
-    <div class="page-header">
-      <h1>Terima Pembayaran Invoice</h1>
-      <button @click="goBack" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> Kembali
+    <!-- Hero Header -->
+    <div class="hero-header">
+      <div class="header-content">
+        <div class="header-icon">
+          <i class="fas fa-credit-card"></i>
+        </div>
+        <div>
+          <h1 class="page-title">Terima Pembayaran</h1>
+          <p class="page-subtitle">Invoice #{{ invoice.invoice_number || 'Loading...' }}</p>
+        </div>
+      </div>
+      <button @click="goBack" class="btn btn-secondary btn-icon-left">
+        <i class="fas fa-arrow-left"></i>
+        <span>Kembali</span>
       </button>
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+    <div v-if="loading" class="loading-hero">
+      <div class="spinner spinner-xl"></div>
+      <p>Memuat invoice...</p>
+    </div>
 
-    <!-- Payment Form -->
-    <div v-else-if="invoice.id" class="payment-content">
-      <!-- Invoice Summary -->
-      <div class="card">
-        <div class="card-header">
-          <h3>Informasi Invoice</h3>
+    <!-- Main Content -->
+    <div v-else-if="invoice.id" class="main-content">
+      <!-- Invoice Summary Hero -->
+      <div class="summary-hero">
+        <div class="summary-left">
+          <div class="customer-info">
+            <div class="customer-avatar">
+              <i class="fas fa-user"></i>
+            </div>
+            <h3>{{ invoice.buyer.name }}</h3>
+            <p>{{ invoice.invoice_number }}</p>
+          </div>
         </div>
-        <div class="card-body">
-          <div class="invoice-summary">
-            <div class="summary-item">
-              <span class="label">No. Invoice:</span>
-              <span class="value">{{ invoice.invoice_number }}</span>
+
+        <div class="summary-right">
+          <div class="amount-card total-due">
+            <div class="amount-label">Sisa Tagihan</div>
+            <div class="amount-value danger">
+              {{ formatRupiah(invoice.remaining_amount) }}
             </div>
-            <div class="summary-item">
-              <span class="label">Customer:</span>
-              <span class="value">{{ invoice.buyer.name }}</span>
+          </div>
+          <div class="amount-progress">
+            <div class="progress-bg">
+              <div class="progress-fill" :style="{ width: progressPercentage + '%' }"></div>
             </div>
-            <div class="summary-item">
-              <span class="label">Total Tagihan:</span>
-              <span class="value">{{ formatRupiah(invoice.grand_total_idr) }}</span>
-            </div>
-            <div class="summary-item">
-              <span class="label">Sudah Dibayar:</span>
-              <span class="value text-success">{{ formatRupiah(invoice.paid_amount) }}</span>
-            </div>
-            <div class="summary-item total">
-              <span class="label">Sisa Tagihan:</span>
-              <span class="value text-danger">{{ formatRupiah(invoice.remaining_amount) }}</span>
+            <div class="progress-labels">
+              <span>{{ formatRupiah(invoice.paid_amount) }} <small>terbayar</small></span>
+              <span>/ {{ formatRupiah(invoice.grand_total_idr) }} <small>total</small></span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Payment Type Selection -->
-      <div class="card mt-3">
-        <div class="card-header">
-          <h3>Tipe Pembayaran</h3>
+      <!-- Payment Type Tabs -->
+      <div class="payment-tabs-card">
+        <div class="tabs-header">
+          <button
+            @click="selectPaymentType('CASH')"
+            class="tab-btn"
+            :class="{ active: paymentType === 'CASH' }"
+          >
+            <i class="fas fa-money-bill-wave"></i>
+            <span>Tunai / Transfer</span>
+          </button>
+          <button
+            @click="selectPaymentType('DP')"
+            class="tab-btn"
+            :class="{ active: paymentType === 'DP' }"
+          >
+            <i class="fas fa-piggy-bank"></i>
+            <span>Potong DP</span>
+          </button>
         </div>
-        <div class="card-body">
-          <div class="payment-type-selector">
-            <button
-              @click="selectPaymentType('CASH')"
-              class="payment-type-btn"
-              :class="{ active: paymentType === 'CASH' }"
-            >
-              <i class="fas fa-money-bill-wave"></i>
-              <span>Tunai / Transfer</span>
-            </button>
-            <button
-              @click="selectPaymentType('DP')"
-              class="payment-type-btn"
-              :class="{ active: paymentType === 'DP' }"
-            >
-              <i class="fas fa-piggy-bank"></i>
-              <span>Potong Uang Muka (DP)</span>
-            </button>
-          </div>
-        </div>
-      </div>
 
-      <!-- Cash Payment Form -->
-      <div v-if="paymentType === 'CASH'" class="card mt-3">
-        <div class="card-header">
-          <h3>Form Pembayaran Tunai/Transfer</h3>
-        </div>
-        <div class="card-body">
-          <div class="form-group">
-            <label>Tanggal Pembayaran <span class="text-danger">*</span></label>
-            <input v-model="cashForm.payment_date" type="date" class="form-control" required />
-          </div>
+        <!-- Cash Payment Form -->
+        <div v-if="paymentType === 'CASH'" class="payment-form">
+          <div class="form-section">
+            <div class="form-header">
+              <i class="fas fa-cash-register"></i>
+              <h3>Pembayaran Tunai / Transfer</h3>
+            </div>
 
-          <div class="form-group">
-            <label>Jumlah Pembayaran <span class="text-danger">*</span></label>
-            <div class="input-group">
-              <div class="input-group-prepend">
-                <span class="input-group-text">Rp</span>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label required">Tanggal</label>
+                <input v-model="cashForm.payment_date" type="date" class="form-input" required />
               </div>
-              <input
-                v-model.number="cashForm.amount"
-                type="number"
-                step="1000"
-                class="form-control"
-                placeholder="0"
-                :max="invoice.remaining_amount"
-                required
-              />
-            </div>
-            <small class="text-muted">
-              Maksimal: {{ formatRupiah(invoice.remaining_amount) }}
-            </small>
-          </div>
 
-          <div class="form-group">
-            <label>Akun Kas/Bank (COA) <span class="text-danger">*</span></label>
-            <select v-model="cashForm.account_id" class="form-control" required>
-              <option value="">-- Pilih Akun Kas/Bank --</option>
-              <option v-for="account in cashBankAccounts" :key="account.id" :value="account.id">
-                {{ account.code }} - {{ account.account_name }}
-              </option>
-            </select>
-            <small class="text-muted">Pilih akun kas atau bank untuk pencatatan</small>
-          </div>
-
-          <div class="form-group">
-            <label>Catatan</label>
-            <textarea
-              v-model="cashForm.notes"
-              class="form-control"
-              rows="3"
-              placeholder="Catatan pembayaran (opsional)..."
-            ></textarea>
-          </div>
-
-          <div class="form-actions">
-            <button
-              @click="submitCashPayment"
-              :disabled="submitting || !isCashFormValid"
-              class="btn btn-primary btn-lg"
-            >
-              <i class="fas fa-save"></i>
-              {{ submitting ? 'Menyimpan...' : 'Simpan Pembayaran' }}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- DP Deduction Form -->
-      <div v-if="paymentType === 'DP'" class="card mt-3">
-        <div class="card-header">
-          <h3>Potong Uang Muka (DP)</h3>
-        </div>
-        <div class="card-body">
-          <!-- Loading DPs -->
-          <div v-if="loadingDPs" class="loading">
-            <i class="fas fa-spinner fa-spin"></i> Loading down payments...
-          </div>
-
-          <!-- No Available DPs -->
-          <div v-else-if="availableDPs.length === 0" class="alert alert-info">
-            Tidak ada uang muka tersedia untuk customer ini
-          </div>
-
-          <!-- DP List -->
-          <div v-else>
-            <div class="form-group">
-              <label>Pilih Uang Muka <span class="text-danger">*</span></label>
-              <select
-                v-model="dpForm.down_payment_id"
-                @change="onDPSelected"
-                class="form-control"
-                required
-              >
-                <option value="">-- Pilih DP --</option>
-                <option v-for="dp in availableDPs" :key="dp.id" :value="dp.id">
-                  {{ dp.dp_number }} - Sisa: {{ formatRupiah(dp.remaining_amount) }} (Dari SO:
-                  {{ dp.sales_order.so_number }})
-                </option>
-              </select>
-            </div>
-
-            <div v-if="selectedDP" class="dp-info">
-              <h4>Informasi DP Terpilih</h4>
-              <p><strong>Nomor DP:</strong> {{ selectedDP.dp_number }}</p>
-              <p><strong>Tanggal:</strong> {{ formatDate(selectedDP.payment_date) }}</p>
-              <p><strong>Total DP:</strong> {{ formatRupiah(selectedDP.amount_idr) }}</p>
-              <p><strong>Sudah Dipakai:</strong> {{ formatRupiah(selectedDP.used_amount) }}</p>
-              <p>
-                <strong>Sisa DP:</strong>
-                <span class="text-success">{{ formatRupiah(selectedDP.remaining_amount) }}</span>
-              </p>
-            </div>
-
-            <div class="form-group">
-              <label>Jumlah yang Dipotong <span class="text-danger">*</span></label>
-              <div class="input-group">
-                <div class="input-group-prepend">
-                  <span class="input-group-text">Rp</span>
+              <div class="form-group">
+                <label class="form-label required">Jumlah</label>
+                <div class="input-group">
+                  <span class="input-prefix">Rp</span>
+                  <input
+                    v-model.number="cashForm.amount"
+                    type="number"
+                    class="form-input"
+                    :max="Math.round(invoice.remaining_amount)"
+                    placeholder="0"
+                    required
+                  />
+                  <small class="input-hint"
+                    >Max: {{ formatRupiah(invoice.remaining_amount) }}</small
+                  >
                 </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label required">Akun Kas/Bank</label>
+                <div class="select-wrapper">
+                  <select v-model="cashForm.account_id" class="form-input" required>
+                    <option value="">Pilih akun...</option>
+                    <option
+                      v-for="account in cashBankAccounts"
+                      :key="account.id"
+                      :value="account.id"
+                    >
+                      {{ account.code }} - {{ account.name }}
+                    </option>
+                  </select>
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group full">
+              <label class="form-label">Catatan</label>
+              <textarea
+                v-model="cashForm.notes"
+                class="form-input textarea"
+                rows="3"
+                placeholder="Catatan pembayaran..."
+              ></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button
+                @click="submitCashPayment"
+                :disabled="submitting || !isCashFormValid"
+                class="btn btn-primary btn-lg"
+              >
+                <i v-if="submitting" class="fas fa-spinner fa-spin"></i>
+                <i v-else class="fas fa-save"></i>
+                {{ submitting ? 'Menyimpan...' : 'Simpan Pembayaran' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- DP Deduction Form -->
+        <div v-if="paymentType === 'DP'" class="payment-form">
+          <div class="form-section">
+            <div class="form-header">
+              <i class="fas fa-piggy-bank"></i>
+              <h3>Potong Uang Muka</h3>
+            </div>
+
+            <!-- DP Selection -->
+            <div v-if="loadingDPs" class="loading-section">
+              <div class="spinner spinner-md"></div>
+              <p>Memuat uang muka...</p>
+            </div>
+
+            <div v-else-if="availableDPs.length === 0" class="empty-state">
+              <i class="fas fa-inbox"></i>
+              <p>Tidak ada uang muka tersedia</p>
+            </div>
+
+            <div v-else class="dp-selector-section">
+              <div class="form-group">
+                <label class="form-label required">Pilih DP</label>
+                <div class="select-wrapper">
+                  <select
+                    v-model="dpForm.down_payment_id"
+                    @change="onDPSelected"
+                    class="form-input"
+                    required
+                  >
+                    <option value="">Pilih uang muka...</option>
+                    <option v-for="dp in availableDPs" :key="dp.id" :value="dp.id">
+                      {{ dp.dp_number }} - Sisa: {{ formatRupiah(dp.remaining_amount) }} (SO:
+                      {{ dp.sales_order?.so_number || '-' }})
+                    </option>
+                  </select>
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+              </div>
+
+              <!-- Selected DP Info -->
+              <div v-if="selectedDP" class="selected-dp-card">
+                <div class="dp-header">
+                  <h4>{{ selectedDP.dp_number }}</h4>
+                  <div class="dp-remaining">
+                    Sisa: {{ formatRupiah(selectedDP.remaining_amount) }}
+                  </div>
+                </div>
+                <div class="dp-details-grid">
+                  <div class="dp-detail">
+                    <span>Total DP</span>
+                    <span>{{ formatRupiah(selectedDP.amount_idr) }}</span>
+                  </div>
+                  <div class="dp-detail">
+                    <span>Sudah Dipakai</span>
+                    <span>{{ formatRupiah(selectedDP.used_amount) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Amount Input -->
+            <div class="form-group">
+              <label class="form-label required">Jumlah Dipotong</label>
+              <div class="input-group">
+                <span class="input-prefix">Rp</span>
                 <input
                   v-model.number="dpForm.amount"
                   type="number"
-                  step="1000"
-                  class="form-control"
+                  class="form-input"
+                  :max="Math.round(maxDPAmount)"
                   placeholder="0"
-                  :max="maxDPAmount"
                   required
                 />
+                <small class="input-hint">Max: {{ formatRupiah(maxDPAmount) }}</small>
               </div>
-              <small class="text-muted"> Maksimal: {{ formatRupiah(maxDPAmount) }} </small>
             </div>
 
-            <div class="form-group">
-              <label>Catatan</label>
+            <div class="form-group full">
+              <label class="form-label">Catatan</label>
               <textarea
                 v-model="dpForm.notes"
-                class="form-control"
+                class="form-input textarea"
                 rows="3"
-                placeholder="Catatan pemotongan DP (opsional)..."
+                placeholder="Catatan pemotongan..."
               ></textarea>
             </div>
 
@@ -216,7 +242,7 @@
               <button
                 @click="submitDPDeduction"
                 :disabled="submitting || !isDPFormValid"
-                class="btn btn-primary btn-lg"
+                class="btn btn-warning btn-lg"
               >
                 <i class="fas fa-cut"></i>
                 {{ submitting ? 'Memproses...' : 'Potong DP' }}
@@ -227,44 +253,50 @@
       </div>
 
       <!-- Payment History -->
-      <div v-if="invoice.id" class="card mt-3">
-        <div class="card-header">
-          <h3>Riwayat Pembayaran</h3>
+      <div class="history-card">
+        <div class="history-header">
+          <div class="history-left">
+            <i class="fas fa-history"></i>
+            <h3>Riwayat Pembayaran</h3>
+          </div>
+          <span class="history-count">{{ payments.length }} transaksi</span>
         </div>
-        <div class="card-body">
-          <div v-if="loadingPayments" class="loading">
-            <i class="fas fa-spinner fa-spin"></i> Loading...
+
+        <div v-if="loadingPayments" class="loading-section">
+          <div class="spinner spinner-md"></div>
+          <p>Memuat riwayat...</p>
+        </div>
+
+        <div v-else-if="payments.length === 0" class="empty-state">
+          <i class="fas fa-receipt"></i>
+          <p>Belum ada pembayaran</p>
+        </div>
+
+        <div v-else class="history-list">
+          <div v-for="payment in payments" :key="payment.id" class="history-item">
+            <div class="history-main">
+              <div class="history-icon" :class="payment.payment_type">
+                <i v-if="payment.payment_type === 'CASH'" class="fas fa-money-bill"></i>
+                <i v-else class="fas fa-piggy-bank"></i>
+              </div>
+              <div class="history-content">
+                <div class="history-title">{{ payment.payment_number }}</div>
+                <div class="history-meta">
+                  <span>{{ formatDate(payment.payment_date) }}</span>
+                  <span>{{ payment.account?.account_name || '-' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="history-amount">
+              {{ formatRupiah(payment.amount) }}
+              <div class="history-type" :class="payment.payment_type.toLowerCase()">
+                {{ payment.payment_type === 'CASH' ? 'Tunai' : 'DP' }}
+              </div>
+            </div>
+            <div v-if="payment.notes" class="history-notes">
+              {{ payment.notes }}
+            </div>
           </div>
-          <div v-else-if="payments.length === 0" class="alert alert-info">
-            Belum ada pembayaran untuk invoice ini
-          </div>
-          <table v-else class="table table-bordered">
-            <thead>
-              <tr>
-                <th>No. Pembayaran</th>
-                <th>Tanggal</th>
-                <th>Tipe</th>
-                <th>Jumlah</th>
-                <th>Akun</th>
-                <th>Catatan</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="payment in payments" :key="payment.id">
-                <td>{{ payment.payment_number }}</td>
-                <td>{{ formatDate(payment.payment_date) }}</td>
-                <td>
-                  <span v-if="payment.payment_type === 'CASH'" class="badge badge-success"
-                    >Tunai</span
-                  >
-                  <span v-else class="badge badge-warning">Potong DP</span>
-                </td>
-                <td class="text-right">{{ formatRupiah(payment.amount) }}</td>
-                <td>{{ payment.account?.account_name || '-' }}</td>
-                <td>{{ payment.notes || '-' }}</td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       </div>
     </div>
@@ -324,8 +356,12 @@ export default {
     },
 
     maxDPAmount() {
-      if (!this.selectedDP) return 0
-      return Math.min(this.selectedDP.remaining_amount, this.invoice.remaining_amount)
+      return Math.min(this.selectedDP?.remaining_amount || 0, this.invoice.remaining_amount || 0)
+    },
+
+    progressPercentage() {
+      if (!this.invoice.total_idr || this.invoice.total_idr === 0) return 0
+      return (this.invoice.paid_amount / this.invoice.total_idr) * 100
     },
   },
 
@@ -333,7 +369,6 @@ export default {
     const invoiceId = this.$route.params.id
     this.cashForm.sales_invoice_id = invoiceId
     this.dpForm.sales_invoice_id = invoiceId
-
     this.loadInvoice()
     this.loadCashBankAccounts()
     this.loadPaymentHistory()
@@ -345,12 +380,17 @@ export default {
       try {
         const id = this.$route.params.id
         const response = await apiClient.get(`/sales-invoices/${id}`)
-        this.invoice = response.data
 
-        this.cashForm.amount = this.invoice.remaining_amount
+        // Handle response format
+        this.invoice = response.data.data || response.data
+
+        console.log('Invoice loaded:', this.invoice)
+
+        // Set default cash amount
+        this.cashForm.amount = Math.round(this.invoice.remaining_amount || 0)
       } catch (error) {
         console.error('Error loading invoice:', error)
-        alert('Gagal memuat data invoice')
+        this.$toast?.error('Gagal memuat invoice')
       } finally {
         this.loading = false
       }
@@ -358,27 +398,57 @@ export default {
 
     async loadCashBankAccounts() {
       try {
-        const response = await apiClient.get('/coa', {
-          params: {
-            account_type: 'CASH,BANK',
-            is_active: 1,
-          },
-        })
-        this.cashBankAccounts = response.data.data || response.data || []
+        // Try different endpoints
+        let response
+        try {
+          response = await apiClient.get('/chart-of-accounts', {
+            params: { type: 'ASET', is_active: 1 },
+          })
+        } catch {
+          response = await apiClient.get('/coa', {
+            params: { is_active: 1 },
+          })
+        }
+
+        const accounts = response.data.data || response.data || []
+
+        // Filter kas/bank accounts
+        this.cashBankAccounts = accounts.filter(
+          (acc) =>
+            acc.code?.startsWith('1-1') || // Kas & Bank codes usually start with 1-1
+            acc.name?.toLowerCase().includes('kas') ||
+            acc.name?.toLowerCase().includes('bank'),
+        )
+
+        console.log('Cash/Bank accounts:', this.cashBankAccounts)
       } catch (error) {
-        console.error('Error loading COA:', error)
-        this.cashBankAccounts = []
+        console.error('Error loading cash/bank accounts:', error)
       }
     },
 
     async loadAvailableDPs() {
       this.loadingDPs = true
       try {
-        const response = await apiClient.get(`/down-payments/available/${this.invoice.buyer_id}`)
-        this.availableDPs = response.data
+        console.log('Loading DPs for invoice:', this.$route.params.id)
+
+        // Use the correct endpoint
+        const response = await apiClient.get(
+          `/sales-invoices/${this.$route.params.id}/down-payments`,
+        )
+
+        console.log('DP Response:', response.data)
+
+        this.availableDPs = response.data.data || response.data || []
+
+        console.log('Available DPs:', this.availableDPs)
+
+        if (this.availableDPs.length === 0) {
+          console.log('No DPs available for this invoice')
+        }
       } catch (error) {
         console.error('Error loading DPs:', error)
-        alert('Gagal memuat data uang muka')
+        console.error('Error response:', error.response)
+        this.$toast?.error('Gagal memuat data uang muka')
       } finally {
         this.loadingDPs = false
       }
@@ -390,7 +460,7 @@ export default {
         const response = await apiClient.get('/invoice-payments', {
           params: { sales_invoice_id: this.$route.params.id },
         })
-        this.payments = response.data.data || []
+        this.payments = response.data.data || response.data || []
       } catch (error) {
         console.error('Error loading payment history:', error)
       } finally {
@@ -400,8 +470,7 @@ export default {
 
     selectPaymentType(type) {
       this.paymentType = type
-
-      if (type === 'DP' && this.availableDPs.length === 0) {
+      if (type === 'DP' && this.availableDPs.length === 0 && !this.loadingDPs) {
         this.loadAvailableDPs()
       }
     },
@@ -409,30 +478,27 @@ export default {
     onDPSelected() {
       const dpId = this.dpForm.down_payment_id
       this.selectedDP = this.availableDPs.find((dp) => dp.id == dpId)
-
       if (this.selectedDP) {
-        this.dpForm.amount = Math.min(
-          this.selectedDP.remaining_amount,
-          this.invoice.remaining_amount,
+        this.dpForm.amount = Math.round(
+          Math.min(this.selectedDP.remaining_amount, this.invoice.remaining_amount),
         )
       }
     },
 
     async submitCashPayment() {
       if (!this.isCashFormValid) {
-        alert('Mohon lengkapi form dengan benar')
+        this.$toast?.error('Lengkapi form pembayaran')
         return
       }
 
       this.submitting = true
       try {
         await apiClient.post('/invoice-payments/cash', this.cashForm)
-
-        alert('Pembayaran berhasil dicatat!')
-        this.$router.push(`/admin/penjualan/invoices/${this.invoice.id}`)
+        this.$toast?.success('Pembayaran berhasil dicatat!')
+        this.$router.push(`/admin/penjualan/invoices`)
       } catch (error) {
         console.error('Error submitting payment:', error)
-        alert(error.response?.data?.message || 'Gagal mencatat pembayaran')
+        this.$toast?.error(error.response?.data?.message || 'Gagal mencatat pembayaran')
       } finally {
         this.submitting = false
       }
@@ -440,26 +506,25 @@ export default {
 
     async submitDPDeduction() {
       if (!this.isDPFormValid) {
-        alert('Mohon lengkapi form dengan benar')
+        this.$toast?.error('Lengkapi form pemotongan DP')
         return
       }
 
       this.submitting = true
       try {
-        await apiClient.post('/invoice-payments/deduct-dp', this.dpForm)
-
-        alert('Pemotongan DP berhasil!')
-        this.$router.push(`/admin/penjualan/invoices/${this.invoice.id}`)
+        await apiClient.post('/invoice-payments/down-payment', this.dpForm)
+        this.$toast?.success('Pemotongan DP berhasil!')
+        this.$router.push(`/admin/penjualan/invoices`)
       } catch (error) {
         console.error('Error submitting DP deduction:', error)
-        alert(error.response?.data?.message || 'Gagal memotong DP')
+        this.$toast?.error(error.response?.data?.message || 'Gagal memotong DP')
       } finally {
         this.submitting = false
       }
     },
 
     goBack() {
-      this.$router.push(`/admin/penjualan/invoices/${this.invoice.id}`)
+      this.$router.push('/admin/penjualan/invoices')
     },
 
     formatDate(date) {
@@ -468,10 +533,12 @@ export default {
     },
 
     formatRupiah(amount) {
+      if (!amount) return 'Rp 0'
       return new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',
         minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
       }).format(amount)
     },
   },
@@ -479,274 +546,615 @@ export default {
 </script>
 
 <style scoped>
-/* CSS SAMA, tidak ada perubahan */
 .invoice-payment {
-  padding: 20px;
+  padding: 32px;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  min-height: 100vh;
 }
 
-.page-header {
+/* Hero Header */
+.hero-header {
+  background: white;
+  border-radius: 24px;
+  padding: 32px;
+  margin-bottom: 32px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
 }
 
-.card {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.header-icon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24px;
 }
 
-.card-header {
-  padding: 15px 20px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #ddd;
+.page-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 4px 0;
 }
 
-.card-header h3 {
+.page-subtitle {
+  color: #64748b;
+  font-size: 16px;
   margin: 0;
-  font-size: 1.25rem;
 }
 
-.card-body {
-  padding: 20px;
-}
-
-.invoice-summary {
-  max-width: 500px;
-}
-
-.summary-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid #eee;
-}
-
-.summary-item.total {
-  border-bottom: none;
-  border-top: 2px solid #333;
-  font-size: 1.2em;
-  font-weight: bold;
-  margin-top: 10px;
-  padding-top: 15px;
-}
-
-.summary-item .label {
-  font-weight: 600;
-}
-
-.summary-item .value {
-  font-weight: bold;
-}
-
-.payment-type-selector {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
-}
-
-.payment-type-btn {
-  padding: 20px;
-  border: 2px solid #ddd;
-  border-radius: 8px;
+/* Summary Hero */
+.summary-hero {
   background: white;
-  cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  flex-direction: column;
+  border-radius: 24px;
+  padding: 40px;
+  margin-bottom: 32px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
   align-items: center;
-  gap: 10px;
 }
 
-.payment-type-btn:hover {
-  border-color: #007bff;
-  background-color: #f8f9ff;
-}
-
-.payment-type-btn.active {
-  border-color: #007bff;
-  background-color: #e7f1ff;
-}
-
-.payment-type-btn i {
-  font-size: 2em;
-  color: #007bff;
-}
-
-.payment-type-btn span {
-  font-weight: 600;
-  text-align: center;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: 600;
-}
-
-.form-control {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 1rem;
-}
-
-.text-danger {
-  color: #dc3545;
-}
-
-.text-success {
-  color: #28a745;
-}
-
-.text-muted {
-  color: #6c757d;
-  font-size: 0.9em;
-}
-
-.input-group {
+.customer-info {
   display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
-.input-group-prepend {
+.customer-avatar {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 20px;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 28px;
+  flex-shrink: 0;
 }
 
-.input-group-text {
-  padding: 8px 12px;
-  background-color: #e9ecef;
-  border: 1px solid #ced4da;
-  border-right: 0;
-  border-radius: 4px 0 0 4px;
+.customer-info h3 {
+  margin: 0;
+  font-size: 24px;
+  color: #1e293b;
 }
 
-.input-group .form-control {
-  border-radius: 0 4px 4px 0;
+.customer-info p {
+  margin: 4px 0 0 0;
+  color: #64748b;
+  font-size: 16px;
 }
 
-.dp-info {
-  background-color: #f8f9fa;
-  padding: 15px;
-  border-radius: 8px;
-  margin: 15px 0;
-}
-
-.dp-info h4 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  color: #333;
-}
-
-.dp-info p {
-  margin: 5px 0;
-}
-
-.form-actions {
-  margin-top: 30px;
+.amount-card {
   text-align: right;
 }
 
-.btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background-color: #007bff;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: #0056b3;
-}
-
-.btn-primary:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background-color: #6c757d;
-  color: white;
-}
-
-.btn-secondary:hover {
-  background-color: #5a6268;
-}
-
-.btn-lg {
-  padding: 12px 30px;
-  font-size: 1.1rem;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.table th,
-.table td {
-  padding: 10px;
-  text-align: left;
-  border: 1px solid #ddd;
-}
-
-.table thead th {
-  background-color: #f8f9fa;
-  font-weight: 600;
-}
-
-.text-right {
-  text-align: right;
-}
-
-.badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.85em;
+.amount-label {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 8px;
   font-weight: 500;
 }
 
-.badge-success {
-  background-color: #28a745;
-  color: white;
+.amount-value {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
 }
 
-.badge-warning {
-  background-color: #ffc107;
-  color: #212529;
+.amount-value.danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.loading {
-  text-align: center;
+.amount-progress {
+  margin-top: 24px;
+}
+
+.progress-bg {
+  height: 12px;
+  background: #f1f5f9;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #059669);
+  border-radius: 6px;
+  transition: width 0.5s ease;
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.progress-labels small {
+  font-weight: 500;
+}
+
+/* Payment Tabs */
+.payment-tabs-card {
+  background: white;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  margin-bottom: 32px;
+}
+
+.tabs-header {
+  display: flex;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  color: #64748b;
+  transition: all 0.3s;
+  border-bottom: 3px solid transparent;
+}
+
+.tab-btn:hover {
+  color: #3b82f6;
+}
+
+.tab-btn.active {
+  color: #3b82f6;
+  background: white;
+  border-bottom-color: #3b82f6;
+}
+
+.tab-btn i {
+  font-size: 20px;
+  width: 24px;
+}
+
+/* Payment Forms */
+.payment-form {
   padding: 40px;
+}
+
+.form-section {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.form-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.form-header i {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
   font-size: 18px;
 }
 
-.alert {
-  padding: 15px;
-  border-radius: 4px;
-  margin-bottom: 20px;
+.form-header h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
 }
 
-.alert-info {
-  background-color: #d1ecf1;
-  border: 1px solid #bee5eb;
-  color: #0c5460;
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
 }
 
-.mt-3 {
-  margin-top: 1rem;
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group.full {
+  grid-column: 1 / -1;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.required::after {
+  content: ' *';
+  color: #ef4444;
+}
+
+.form-input {
+  padding: 16px 20px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 16px;
+  transition: all 0.3s;
+  background: white;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.input-group {
+  position: relative;
+}
+
+.input-prefix {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.input-hint {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.select-wrapper {
+  position: relative;
+}
+
+.select-wrapper i {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.form-input option {
+  padding: 12px;
+}
+
+/* Selected DP Card */
+.selected-dp-card {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1px solid #10b981;
+  border-radius: 16px;
+  padding: 24px;
+  margin: 24px 0;
+}
+
+.dp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.dp-header h4 {
+  margin: 0;
+  color: #166534;
+  font-weight: 700;
+}
+
+.dp-remaining {
+  background: rgba(16, 185, 129, 0.2);
+  color: #166534;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.dp-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  font-size: 14px;
+}
+
+.dp-detail span:first-child {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dp-detail span:last-child {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* Empty & Loading States */
+.loading-section,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+  text-align: center;
+  color: #64748b;
+}
+
+.empty-state i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.spinner-md {
+  width: 36px;
+  height: 36px;
+  border-width: 3px;
+}
+
+.loading-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: #64748b;
+}
+
+.spinner-xl {
+  width: 72px;
+  height: 72px;
+  border-width: 5px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 32px;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1);
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+}
+
+.btn-warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  color: #374151;
+}
+
+.btn-lg {
+  padding: 20px 40px;
+  font-size: 16px;
+}
+
+.form-actions {
+  margin-top: 40px;
+  text-align: center;
+}
+
+/* History Card */
+.history-card {
+  background: white;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 40px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.history-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.history-left i {
+  color: #64748b;
+  font-size: 20px;
+}
+
+.history-left h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.history-count {
+  background: #e2e8f0;
+  color: #64748b;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.history-list {
+  padding: 40px;
+}
+
+.history-item {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  border: 1px solid #f1f5f9;
+  border-radius: 16px;
+  margin-bottom: 16px;
+  transition: all 0.3s;
+}
+
+.history-item:hover {
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.history-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.history-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: white;
+}
+
+.history-icon.cash {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+.history-icon.dp {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.history-content {
+  flex: 1;
+}
+
+.history-title {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.history-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.history-amount {
+  font-size: 24px;
+  font-weight: 800;
+  color: #059669;
+  margin-bottom: 8px;
+}
+
+.history-type {
+  background: rgba(16, 185, 129, 0.2);
+  color: #166534;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+  width: fit-content;
+}
+
+.history-notes {
+  color: #64748b;
+  font-size: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .invoice-payment {
+    padding: 20px;
+  }
+
+  .summary-hero {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 32px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-header {
+    flex-direction: column;
+    gap: 24px;
+    align-items: stretch;
+  }
+
+  .history-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .tabs-header {
+    flex-direction: column;
+  }
 }
 </style>

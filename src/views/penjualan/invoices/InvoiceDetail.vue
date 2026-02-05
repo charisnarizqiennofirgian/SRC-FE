@@ -18,9 +18,16 @@
           <span>Kembali</span>
         </button>
 
-        <button v-if="invoice.status === 'DRAFT'" @click="postInvoice" class="btn btn-success">
-          <i class="fas fa-check-circle"></i>
-          Post Invoice
+        <button
+          v-if="invoice.status === 'DRAFT'"
+          @click="postInvoice"
+          :disabled="loading"
+          class="btn btn-success"
+        >
+          <i class="fas fa-spinner fa-spin" v-if="loading"></i>
+          <i class="fas fa-check-circle" v-else></i>
+          <span v-if="loading">Memproses...</span>
+          <span v-else>Post Invoice</span>
         </button>
 
         <button
@@ -328,12 +335,21 @@ export default {
     },
 
     async postInvoice() {
-      if (!confirm('Post invoice ini? Jurnal akan otomatis dibuat.')) return
+      if (!confirm('Post invoice ini? Jurnal akan otomatis dibuat dan tidak bisa diubah lagi.')) {
+        return
+      }
+
+      this.loading = true // Set loading true
+
       try {
         await apiClient.post(`/sales-invoices/${this.invoice.id}/post`)
-        this.loadInvoice()
+        this.$toast.success('Invoice berhasil di-post!')
+        await this.loadInvoice() // Reload data
       } catch (error) {
-        alert(error.response?.data?.message || 'Gagal posting invoice')
+        console.error('Error posting invoice:', error)
+        this.$toast.error(error.response?.data?.message || 'Gagal posting invoice')
+      } finally {
+        this.loading = false // Set loading false
       }
     },
 

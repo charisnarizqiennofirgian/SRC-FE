@@ -98,16 +98,35 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
 const userName = ref('User')
+const userPermissions = ref([]) // ✅ TAMBAH
 const userMenuOpen = ref(false)
 const sidebarOpen = ref(false)
 
-const menuItems = ref([
+// ✅ MAPPING PERMISSION → MENU
+const menuPermissionMap = {
+  Dashboard: ['view-dashboard'],
+  'Master Data': [
+    'manage-categories',
+    'manage-units',
+    'manage-items',
+    'manage-suppliers',
+    'manage-buyers',
+  ],
+  Keuangan: [], // Semua user bisa akses (atau bisa dikasih permission khusus)
+  'Manajemen Stok': ['manage-stock-adjustments', 'view-stock-report'],
+  Produksi: ['manage-bom'],
+  Pembelian: ['manage-po', 'manage-grn', 'manage-bills'],
+  Penjualan: ['manage-so', 'manage-do', 'manage-invoices'],
+}
+
+// ✅ SEMUA MENU ITEMS
+const allMenuItems = [
   { name: 'Dashboard', route: '/dashboard', icon: '📊' },
   {
     name: 'Master Data',
@@ -127,8 +146,11 @@ const menuItems = ref([
     icon: '💵',
     children: [
       { name: 'Jurnal Umum', route: { name: 'JurnalUmum' } },
+      { name: 'Buku Besar', route: { name: 'BukuBesar' } },
+      { name: 'Laporan Laba Rugi', route: { name: 'LabaRugi' } },
       { name: 'Pembayaran Hutang', route: { name: 'PembayaranHutang' } },
       { name: 'Riwayat Pembayaran', route: { name: 'RiwayatPembayaranHutang' } },
+      { name: 'Neraca', route: { name: 'Neraca' } },
     ],
   },
   {
@@ -180,7 +202,27 @@ const menuItems = ref([
       { name: 'Sales Invoice', route: { name: 'InvoiceList' } },
     ],
   },
-])
+]
+
+// ✅ COMPUTED: FILTER MENU BERDASARKAN PERMISSION
+const menuItems = computed(() => {
+  // Jika super-admin, tampilkan semua
+  if (userPermissions.value.includes('*') || userPermissions.value.includes('super-admin')) {
+    return allMenuItems
+  }
+
+  return allMenuItems.filter((menuItem) => {
+    const requiredPermissions = menuPermissionMap[menuItem.name] || []
+
+    // Jika tidak ada permission yang diperlukan, tampilkan (menu public)
+    if (requiredPermissions.length === 0) {
+      return true
+    }
+
+    // Cek apakah user punya salah satu permission yang diperlukan
+    return requiredPermissions.some((perm) => userPermissions.value.includes(perm))
+  })
+})
 
 const openMenus = ref({})
 
@@ -204,7 +246,6 @@ const onSubmenuItemClicked = () => {
   }
 }
 
-// Fungsi untuk menutup semua menu kecuali yang ditentukan
 const closeAllMenusExcept = (menuName) => {
   Object.keys(openMenus.value).forEach((key) => {
     if (key !== menuName) {
@@ -214,11 +255,9 @@ const closeAllMenusExcept = (menuName) => {
 }
 
 const toggleMenu = (menuName) => {
-  // Jika menu yang diklik sedang terbuka, tutup saja
   if (openMenus.value[menuName]) {
     openMenus.value[menuName] = false
   } else {
-    // Jika tidak, tutup semua menu lain dan buka menu ini
     closeAllMenusExcept(menuName)
     openMenus.value[menuName] = true
   }
@@ -236,6 +275,7 @@ const logout = () => {
   if (confirm('Apakah Anda yakin ingin logout?')) {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
+    localStorage.removeItem('permissions') // ✅ TAMBAH
     router.push('/')
   }
 }
@@ -251,6 +291,17 @@ onMounted(() => {
     } catch (error) {
       console.error('Gagal parse data user dari localStorage:', error)
       logout()
+    }
+  }
+
+  // ✅ LOAD PERMISSIONS
+  const permissionsData = localStorage.getItem('permissions')
+  if (permissionsData) {
+    try {
+      userPermissions.value = JSON.parse(permissionsData)
+      console.log('User permissions:', userPermissions.value)
+    } catch (error) {
+      console.error('Gagal parse permissions:', error)
     }
   }
 

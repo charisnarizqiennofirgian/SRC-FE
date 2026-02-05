@@ -13,6 +13,10 @@
           </div>
         </div>
         <div class="header-actions">
+          <router-link to="/admin/keuangan/jurnal-umum/tambah" class="btn btn-primary">
+            <span class="btn-icon">➕</span>
+            <span class="btn-text">Buat Jurnal Manual</span>
+          </router-link>
           <button class="btn btn-export" @click="exportExcel">
             <span class="btn-icon">📥</span>
             <span class="btn-text">Export Excel</span>
@@ -133,7 +137,7 @@
       </div>
     </div>
 
-    <!-- MODAL DETAIL (opsional, bisa dikembangkan) -->
+    <!-- MODAL DETAIL -->
     <div v-if="showModal" class="modal-overlay" @click="closeModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
@@ -319,6 +323,32 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 20px;
+}
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  margin-right: 10px;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
 .icon-badge {

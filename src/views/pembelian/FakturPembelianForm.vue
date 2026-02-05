@@ -190,18 +190,11 @@
                       <span>Subtotal</span>
                     </div>
                   </th>
-                  <th class="th-coa">
-                    <div class="th-content">
-                      <span class="th-icon">📊</span>
-                      <span>Akun COA</span>
-                      <span class="required">*</span>
-                    </div>
-                  </th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-if="form.details.length === 0" class="empty-row">
-                  <td colspan="5">
+                  <td colspan="4">
                     <div class="empty-state">
                       <span class="empty-icon">📋</span>
                       <p class="empty-text">Belum ada detail tagihan</p>
@@ -249,14 +242,6 @@
                       {{ formatCurrency((item.quantity || 0) * (item.price || 0)) }}
                     </span>
                   </td>
-                  <td class="td-coa">
-                    <select v-model="item.account_id" class="table-select" required>
-                      <option :value="null">-- Pilih Akun --</option>
-                      <option v-for="coa in coaAccounts" :key="coa.id" :value="coa.id">
-                        {{ coa.code }} - {{ coa.name }}
-                      </option>
-                    </select>
-                  </td>
                 </tr>
               </tbody>
             </table>
@@ -283,6 +268,28 @@
               </div>
             </div>
           </div>
+
+          <!-- ✅ COA Section (Gelondongan) -->
+          <div class="coa-selection-section">
+            <div class="form-group">
+              <label class="form-label">
+                <span class="label-icon">📊</span>
+                <span class="label-text">Akun COA</span>
+                <span class="required">*</span>
+              </label>
+              <select v-model="form.coa_id" class="form-control" required>
+                <option :value="null">-- Pilih Akun COA --</option>
+                <option v-for="coa in coaAccounts" :key="coa.id" :value="coa.id">
+                  {{ coa.code }} - {{ coa.name }}
+                </option>
+              </select>
+              <small class="form-hint info">
+                <span class="hint-icon">💡</span>
+                Pilih <strong>Persediaan Barang</strong> untuk stok, <strong>Kas</strong> untuk
+                tunai, atau <strong>Bank</strong> untuk transfer
+              </small>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -293,8 +300,8 @@
             <div class="section-icon">💳</div>
           </div>
           <div class="section-header-text">
-            <h2 class="section-title">Syarat Pembayaran</h2>
-            <p class="section-subtitle">Pilih metode pembayaran untuk faktur ini</p>
+            <h2 class="section-title">Pembayaran</h2>
+            <p class="section-subtitle">Pilih tipe pembayaran untuk faktur ini</p>
           </div>
         </div>
         <div class="card-body">
@@ -331,24 +338,6 @@
                 </div>
               </label>
             </div>
-          </div>
-
-          <!-- Payment Method (untuk TUNAI dan DP) -->
-          <div
-            v-if="form.payment_type === 'TUNAI' || form.payment_type === 'DP'"
-            class="form-group"
-          >
-            <label class="form-label">
-              <span class="label-icon">🏦</span>
-              <span class="label-text">Bayar Dari</span>
-              <span class="required">*</span>
-            </label>
-            <select v-model="form.payment_method_id" class="form-control" required>
-              <option :value="null">-- Pilih Metode Pembayaran --</option>
-              <option v-for="method in paymentMethods" :key="method.id" :value="method.id">
-                {{ method.type === 'BANK' ? '🏦' : '💵' }} {{ method.name }}
-              </option>
-            </select>
           </div>
 
           <!-- Nominal DP (untuk DP saja) -->
@@ -435,7 +424,6 @@ const isSaving = ref(false)
 const daftarSupplier = ref([])
 const availableReceipts = ref([])
 const coaAccounts = ref([])
-const paymentMethods = ref([])
 const ppnPercentage = ref(12)
 
 const today = new Date().toISOString().slice(0, 10)
@@ -450,8 +438,8 @@ const form = reactive({
   due_date: dueDateDefault,
   notes: '',
   details: [],
+  coa_id: null, // ✅ 1 COA untuk semuanya
   payment_type: 'TEMPO',
-  payment_method_id: null,
   paid_amount: 0,
   ppn_percentage: 12,
 })
@@ -542,20 +530,13 @@ const handleReceiptSelect = (event) => {
       item_name: detail.item ? detail.item.name : 'Nama Barang Tidak Ditemukan',
       quantity: parseFloat(detail.quantity_received) || 0,
       price: price,
-      account_id: null,
     }
   })
 }
 
 const saveBill = async () => {
-  const missingCoa = form.details.some((item) => !item.account_id)
-  if (missingCoa) {
-    toast.error('Semua item harus memiliki akun COA!')
-    return
-  }
-
-  if ((form.payment_type === 'TUNAI' || form.payment_type === 'DP') && !form.payment_method_id) {
-    toast.error('Pilih metode pembayaran!')
+  if (!form.coa_id) {
+    toast.error('Pilih akun COA!')
     return
   }
 
@@ -591,7 +572,6 @@ const fetchFormData = async () => {
 
     const formDataRes = await apiClient.get('/purchase-bills/form-data')
     coaAccounts.value = formDataRes.data.data.coa_accounts
-    paymentMethods.value = formDataRes.data.data.payment_methods
   } catch (error) {
     console.error('Gagal memuat data form:', error)
     toast.error('Gagal memuat data form.')
@@ -834,6 +814,7 @@ onMounted(fetchFormData)
   display: flex;
   align-items: center;
   justify-content: center;
+
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
   border: 2px solid #6ee7b7;
   flex-shrink: 0;

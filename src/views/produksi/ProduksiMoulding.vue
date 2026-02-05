@@ -57,7 +57,7 @@
                   :options="productionOrders"
                   :reduce="(po) => po.id"
                   label="label"
-                  placeholder="-- Pilih PO On Progress --"
+                  placeholder="🔍 Cari Production Order..."
                   class="form-select-modern-search"
                   @option:selected="handlePoChange"
                 >
@@ -340,13 +340,23 @@ const getSelectedSource = (index) => {
 const fetchProductionOrders = async () => {
   try {
     const res = await apiClient.get('/production-orders', {
-      params: { status: 'on_progress', per_page: 100 },
+      params: {
+        status_not: 'completed',
+        include: 'sales_order',
+      },
     })
     const raw = res.data.data?.data || res.data.data || []
-    productionOrders.value = raw.map((p) => ({
-      ...p,
-      label: p.label || `${p.po_number} - ${p.buyer?.name || '-'}`,
-    }))
+    productionOrders.value = raw.map((p) => {
+      // Ambil buyer name dari berbagai kemungkinan field
+      const buyer = p.buyer_name || p.sales_order?.buyer_name || p.buyer?.name || '-'
+      // Ambil so number dari berbagai kemungkinan field
+      const so = p.so_number || p.sales_order?.so_number || '-'
+
+      return {
+        ...p,
+        label: `${buyer} - ${so}`,
+      }
+    })
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil daftar Production Order')

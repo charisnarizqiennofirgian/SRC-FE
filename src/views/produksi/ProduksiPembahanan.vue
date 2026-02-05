@@ -27,7 +27,7 @@
 
     <div class="content-card-roughmill">
       <div class="card-body-roughmill">
-        <form @submit.prevent="handleSubmit">
+        <form @submit.prevent="handleSubmit" novalidate>
           <div class="form-section-modern">
             <div class="section-header">
               <div class="section-icon-badge po-badge">
@@ -50,7 +50,7 @@
                   :options="productionOrders"
                   :reduce="(po) => po.id"
                   label="label"
-                  placeholder="-- Pilih PO On Progress --"
+                  placeholder="🔍 Cari Production Order..."
                   class="form-select-modern-search"
                   @option:selected="handlePoChange"
                 >
@@ -110,7 +110,7 @@
                 <p class="section-subtitle">Input dan output stok pembahanan</p>
               </div>
 
-              <button type="button" @click="addItem" class="btn-add-item">
+              <button type="button" @click="addItem" class="btn-add-item" :disabled="!form.po_id">
                 <span class="add-icon">➕</span>
                 <span>Tambah Item</span>
               </button>
@@ -150,16 +150,16 @@
                         v-model="item.item_id"
                         :options="kdInventories"
                         :reduce="(inv) => inv.item_id"
-                        label="label"
                         :get-option-label="(opt) => getInventoryLabel(opt)"
                         placeholder="-- Pilih Stok Gudang KD --"
                         class="form-select-modern-search"
-                        @option:selected="onItemSelect(index)"
                       >
-                        <template #option="{ item, qty }">
-                          <strong>{{ item?.code }}</strong> - {{ item?.name }}
-                          <br />
-                          <small>Stok: {{ qty }} pcs</small>
+                        <template #option="option">
+                          <div>
+                            <strong>{{ option.item?.code }}</strong> - {{ option.item?.name }}
+                            <br />
+                            <small>Stok: {{ option.qty }} pcs</small>
+                          </div>
                         </template>
                         <template #no-options="{ search, searching }">
                           <template v-if="searching">
@@ -188,8 +188,7 @@
                         min="1"
                         :max="getSelectedInventory(index)?.qty || 9999"
                         class="form-input-modern"
-                        placeholder="Jumlah pcs"
-                        required
+                        placeholder="Jumlah pcs (min: 1)"
                       />
                       <span class="input-suffix">pcs</span>
                     </div>
@@ -244,8 +243,7 @@
                         type="number"
                         min="1"
                         class="form-input-modern"
-                        placeholder="Hasil pcs"
-                        required
+                        placeholder="Hasil pcs (min: 1)"
                       />
                       <span class="input-suffix">pcs</span>
                     </div>
@@ -305,8 +303,6 @@ const form = reactive({
 const productionOrders = ref([])
 const kdInventories = ref([])
 const outputItems = ref([])
-const warehouses = ref([])
-const kdWarehouseId = ref(null)
 const isSubmitting = ref(false)
 
 const poTargets = ref([])
@@ -317,7 +313,7 @@ const poInfo = ref({
 
 const addItem = () => {
   form.items.push({
-    warehouse_id: kdWarehouseId.value || '',
+    warehouse_id: 3, // ✅ HARDCODE: Selalu Gudang KD
     item_id: '',
     input_qty: null,
     output_item_id: '',
@@ -329,23 +325,13 @@ const removeItem = (index) => {
   form.items.splice(index, 1)
 }
 
-const getWarehouseIdByCode = (code) => {
-  const wh = warehouses.value.find((w) => w.code === code)
-  return wh ? wh.id : null
-}
-
-const onItemSelect = (index) => {
-  form.items[index].warehouse_id = kdWarehouseId.value
-}
-
 const getSelectedInventory = (index) => {
   const item = form.items[index]
-  // Handle if item_id is null or object (though reduce prevents object)
   if (!item.item_id) return null
+
   return (
-    kdInventories.value.find(
-      (inv) => inv.item_id === item.item_id && inv.warehouse_id === kdWarehouseId.value,
-    ) || null
+    kdInventories.value.find((inv) => inv.item_id === item.item_id && inv.warehouse_id === 3) ||
+    null
   )
 }
 
@@ -364,20 +350,35 @@ const autoSelectPoFromSo = () => {
   }
 }
 
+// ✅ UPDATED: Fetch PO yang butuh pembahanan saja
 const fetchPoOnProgress = async () => {
   try {
-    const res = await apiClient.get('/production-orders', {
-      params: { status_not: 'completed', per_page: 100 },
+    const res = await apiClient.get('/produksi/pembahanan/available-pos', {
+      params: { include: 'sales_order' },
     })
-    const raw = res.data.data?.data || res.data.data || []
-    productionOrders.value = raw.map((p) => ({
-      ...p,
-      label: p.label || `${p.po_number} - ${p.buyer?.name || '-'}`, // Ensure label exists
-    }))
+
+    const raw = res.data.data || []
+    productionOrders.value = raw.map((p) => {
+      // Format sesuai permintaan revisi: Buyer - SO Number (hilangkan PO Number)
+      // Ambil buyer name dari berbagai kemungkinan field
+      const buyer = p.buyer_name || p.sales_order?.buyer_name || p.buyer?.name || '-'
+      // Ambil so number dari berbagai kemungkinan field
+      const so = p.so_number || p.sales_order?.so_number || '-'
+
+      const cleanLabel = `${buyer} - ${so}`
+
+      return {
+        ...p,
+        label: cleanLabel, // Paksa gunakan format kita agar konsisten
+      }
+    })
+
+    console.log('📋 Available POs for Pembahanan:', productionOrders.value.length)
+
     autoSelectPoFromSo()
   } catch (error) {
     console.error(error)
-    showError('Gagal', 'Gagal mengambil daftar Production Order')
+    showError('Gagal', 'Gagal mengambil daftar Production Order untuk Pembahanan')
   }
 }
 
@@ -385,10 +386,12 @@ const handlePoChange = async () => {
   poTargets.value = []
   poInfo.value = { buyer_name: null, so_number: null }
 
-  if (!form.po_id) return
+  if (!form.po_id) {
+    kdInventories.value = []
+    return
+  }
 
   try {
-    // If form.po_id is object (from v-select without reduce), handle it
     const id = typeof form.po_id === 'object' ? form.po_id?.id : form.po_id
 
     const res = await apiClient.get(`/production-orders/${id}`)
@@ -400,34 +403,33 @@ const handlePoChange = async () => {
     }
 
     poTargets.value = data.targets || []
+
+    await fetchKdInventories()
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil detail Production Order')
   }
 }
 
+// ✅ SIMPLIFIED: Selalu fetch dari Gudang KD
 const fetchKdInventories = async () => {
   try {
-    const whRes = await apiClient.get('/warehouses')
-    warehouses.value = whRes.data.data || whRes.data || []
-
-    const kdId = getWarehouseIdByCode('RSTK')
-    if (!kdId) {
-      showError('Konfigurasi', 'Gudang KD (RST Kering) tidak ditemukan di master')
+    if (!form.po_id) {
+      kdInventories.value = []
       return
     }
 
-    kdWarehouseId.value = kdId
-
-    const invRes = await apiClient.get('/inventories', {
+    const invRes = await apiClient.get('/produksi/pembahanan/source-inventories', {
       params: {
-        warehouse_id: kdId,
-        per_page: 9999,
+        po_id: form.po_id,
       },
     })
 
-    const raw = invRes.data.data?.data || invRes.data.data || []
+    const raw = invRes.data.data || []
 
+    console.log('📦 Inventories from Gudang KD:', raw.length, 'items')
+
+    // Group by item_id
     const groupedMap = {}
 
     raw.forEach((inv) => {
@@ -448,9 +450,14 @@ const fetchKdInventories = async () => {
 
     kdInventories.value = Object.values(groupedMap)
 
-    if (form.items.length > 0 && !form.items[0].warehouse_id) {
-      form.items[0].warehouse_id = kdId
-    }
+    console.log('📦 Grouped Inventories:', kdInventories.value.length)
+
+    // Auto-set warehouse_id = 3 (Gudang KD)
+    form.items.forEach((item) => {
+      if (!item.warehouse_id) {
+        item.warehouse_id = 3
+      }
+    })
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil daftar stok Gudang KD')
@@ -472,26 +479,49 @@ const fetchOutputItems = async () => {
 
 const handleSubmit = async () => {
   try {
+    if (!form.po_id) {
+      showError('Validasi', 'Production Order wajib dipilih')
+      return
+    }
+
     for (let i = 0; i < form.items.length; i++) {
       const item = form.items[i]
 
-      if (!item.item_id) {
-        showError('Validasi', `Item #${i + 1}: Sumber stok wajib dipilih`)
+      // ✅ VALIDASI OUTPUT (WAJIB)
+      if (!item.output_item_id) {
+        showError('Validasi', `Item #${i + 1}: Item RST hasil wajib dipilih`)
         return
       }
 
-      const selectedInv = getSelectedInventory(i)
-      if (!selectedInv) {
-        showError('Validasi', `Item #${i + 1}: Data inventory tidak ditemukan`)
+      if (!item.output_qty || item.output_qty < 1) {
+        showError('Validasi', `Item #${i + 1}: Qty output harus minimal 1`)
         return
       }
 
-      if (item.input_qty > selectedInv.qty) {
-        showError(
-          'Validasi',
-          `Item #${i + 1}: Qty input (${item.input_qty} pcs) melebihi stok tersedia (${selectedInv.qty} pcs)`,
-        )
-        return
+      // ✅ VALIDASI INPUT (OPSIONAL - Hanya jika diisi)
+      if (item.item_id) {
+        // Jika item_id diisi, maka input_qty juga wajib
+        if (!item.input_qty || item.input_qty < 1) {
+          showError(
+            'Validasi',
+            `Item #${i + 1}: Qty input harus minimal 1 jika sumber stok dipilih`,
+          )
+          return
+        }
+
+        const selectedInv = getSelectedInventory(i)
+        if (!selectedInv) {
+          showError('Validasi', `Item #${i + 1}: Data inventory tidak ditemukan`)
+          return
+        }
+
+        if (item.input_qty > selectedInv.qty) {
+          showError(
+            'Validasi',
+            `Item #${i + 1}: Qty input (${item.input_qty} pcs) melebihi stok tersedia (${selectedInv.qty} pcs)`,
+          )
+          return
+        }
       }
     }
 
@@ -500,9 +530,9 @@ const handleSubmit = async () => {
     const payload = {
       po_id: Number(form.po_id),
       items: form.items.map((item) => ({
-        warehouse_id: item.warehouse_id,
-        item_id: item.item_id,
-        input_qty: Number(item.input_qty),
+        warehouse_id: item.item_id ? 3 : null, // ✅ Null jika tidak pilih item
+        item_id: item.item_id || null, // ✅ Null jika tidak diisi
+        input_qty: item.item_id ? Number(item.input_qty) : 0, // ✅ 0 jika tidak diisi
         output_item_id: Number(item.output_item_id),
         output_qty: Number(item.output_qty),
       })),
@@ -515,9 +545,9 @@ const handleSubmit = async () => {
     showSuccess('Sukses', 'Proses pembahanan berhasil disimpan, lanjut ke Produksi Moulding.')
     router.push({ name: 'ProduksiMoulding' })
   } catch (error) {
+    console.error('❌ ERROR:', error)
     const msg = error.response?.data?.message || 'Gagal menyimpan proses pembahanan'
     showError('Gagal', msg)
-    console.error(error)
   } finally {
     isSubmitting.value = false
   }
@@ -525,11 +555,9 @@ const handleSubmit = async () => {
 
 onMounted(() => {
   fetchPoOnProgress()
-  fetchKdInventories()
   fetchOutputItems()
 })
 </script>
-
 <style scoped>
 /* ========================================
    PAGE HEADER - ROUGH MILL THEME
@@ -1203,5 +1231,48 @@ onMounted(() => {
 :deep(.form-select-modern-search .vs__dropdown-option--highlight) {
   background: #059669;
   color: white;
+}
+/* ========================================
+   PO SELECT OPTION STYLE
+   ======================================== */
+.po-option-item {
+  padding: 8px 4px;
+}
+
+.po-option-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  gap: 12px;
+}
+
+.po-option-buyer {
+  font-weight: 700;
+  color: #111827;
+  font-size: 0.95rem;
+}
+
+.po-option-so {
+  font-size: 0.8rem;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.po-option-sub {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.po-option-number {
+  font-weight: 500;
+  color: #059669; /* Green to match theme */
+}
+
+.po-option-product {
+  color: #9ca3af;
 }
 </style>

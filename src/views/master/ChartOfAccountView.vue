@@ -469,6 +469,7 @@ const accountTypes = {
   KEWAJIBAN: 'Kewajiban (Hutang)',
   MODAL: 'Modal (Ekuitas)',
   PENDAPATAN: 'Pendapatan',
+  HPP: 'HPP (Harga Pokok Penjualan)',
   BIAYA: 'Biaya (Beban)',
 }
 
@@ -519,6 +520,7 @@ const getTypeIcon = (type) => {
     KEWAJIBAN: '📋',
     MODAL: '💎',
     PENDAPATAN: '💵',
+    HPP: '📦',
     BIAYA: '💸',
   }
   return icons[type] || '📂'

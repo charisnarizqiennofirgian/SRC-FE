@@ -495,6 +495,7 @@ export default {
         style: 'currency',
         currency: 'IDR',
         minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
       }).format(val)
     },
     formatCurrency(val, curr) {

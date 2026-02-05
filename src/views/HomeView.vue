@@ -68,7 +68,7 @@ export default {
     async handleLogin() {
       if (this.isLoading) return
 
-      // ... (Validasi frontend Anda sudah bagus) ...
+      // Validasi frontend
       if (!this.email || !this.password) {
         this.errorMessage = 'Email dan password harus diisi.'
         return
@@ -89,15 +89,43 @@ export default {
           password: this.password,
         })
 
+        // Save token & user
         localStorage.setItem('token', response.data.access_token)
         localStorage.setItem('user', JSON.stringify(response.data.user))
 
-        // --- PERBAIKAN DI SINI ---
-        // Langsung gunakan rute yang diberikan oleh backend.
+        // ✅ TAMBAH: Save permissions
+        if (response.data.permissions) {
+          localStorage.setItem('permissions', JSON.stringify(response.data.permissions))
+          console.log('✅ Permissions saved:', response.data.permissions)
+        } else if (response.data.user?.permissions) {
+          localStorage.setItem('permissions', JSON.stringify(response.data.user.permissions))
+          console.log('✅ Permissions saved from user:', response.data.user.permissions)
+        } else {
+          // ✅ Fallback: Load permissions from API
+          console.log('⚠️ No permissions in login response, fetching...')
+          try {
+            const userResponse = await apiClient.get('/user')
+            if (userResponse.data.permissions) {
+              localStorage.setItem('permissions', JSON.stringify(userResponse.data.permissions))
+              console.log('✅ Permissions loaded from /user:', userResponse.data.permissions)
+            } else {
+              // ✅ Last resort: Load user with roles & permissions
+              const user = userResponse.data.user || userResponse.data
+              const permissions = user.roles?.[0]?.permissions?.map((p) => p.name) || []
+              localStorage.setItem('permissions', JSON.stringify(permissions))
+              console.log('✅ Permissions extracted from roles:', permissions)
+            }
+          } catch (err) {
+            console.error('❌ Failed to load permissions:', err)
+            localStorage.setItem('permissions', JSON.stringify([]))
+          }
+        }
+
+        // Redirect
         const redirectRoute = response.data.dashboard_route || '/dashboard'
         await this.$router.push(redirectRoute)
       } catch (error) {
-        // ... (Error handling Anda sudah bagus) ...
+        // Error handling
         if (error.code === 'ECONNABORTED') {
           this.errorMessage = 'Koneksi timeout. Silakan coba lagi.'
         } else if (error.response && error.response.status === 422) {
