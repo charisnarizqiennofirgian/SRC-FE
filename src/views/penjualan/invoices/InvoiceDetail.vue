@@ -344,7 +344,7 @@ export default {
       try {
         await apiClient.post(`/sales-invoices/${this.invoice.id}/post`)
         this.$toast.success('Invoice berhasil di-post!')
-        await this.loadInvoice() // Reload data
+        this.$router.push({ name: 'InvoiceList' }) // Kembali ke daftar invoice
       } catch (error) {
         console.error('Error posting invoice:', error)
         this.$toast.error(error.response?.data?.message || 'Gagal posting invoice')
