@@ -207,7 +207,9 @@
                       <template #option="option">
                         <div class="log-option-item">
                           <div class="log-option-code">{{ option.code }}</div>
-                          <div class="log-option-name">{{ option.name }}</div>
+                          <div class="log-option-details">
+                            NO SKSHHK: {{ option.no_skshhk }} | TPK: {{ option.tpk }}
+                          </div>
                         </div>
                       </template>
                     </vue-select>
@@ -431,8 +433,6 @@ const poInfo = ref({
 // ✅ COMPUTED: Format PO untuk vue-select (BUYER - SO NUMBER)
 const productionOrdersForSelect = computed(() => {
   return productionOrders.value.map((po) => {
-    // Gunakan label dari backend jika ada, karena formatnya sudah benar (Buyer - SO)
-    // Fallback ke logika lama jika label tidak ada (untuk safety)
     const displayName = po.label || po.po_number
 
     return {
@@ -444,13 +444,15 @@ const productionOrdersForSelect = computed(() => {
   })
 })
 
-// ✅ COMPUTED: Format LOG items untuk vue-select
+// ✅ COMPUTED: Format LOG items untuk vue-select (UPDATE!)
 const logItemsForSelect = computed(() => {
   return logItems.value.map((item) => ({
     id: item.id,
     code: item.code,
     name: item.name,
-    label: `${item.code} - ${item.name}`,
+    no_skshhk: item.no_skshhk || '-',
+    tpk: item.tpk || '-',
+    label: `${item.code} - NO SKSHHK: ${item.no_skshhk || '-'} | TPK: ${item.tpk || '-'}`,
   }))
 })
 
@@ -472,11 +474,10 @@ const fetchItems = async () => {
       apiClient.get('/materials', { params: { category_name: 'Kayu Log', per_page: 500 } }),
       apiClient.get('/materials', { params: { category_name: 'Kayu RST', per_page: 500 } }),
       apiClient.get('/warehouses'),
-      // ✅ TAMBAHKAN: include=sales_order
       apiClient.get('/production-orders', {
         params: {
           status_not: 'completed',
-          include: 'sales_order', // ✅ PENTING!
+          include: 'sales_order',
         },
       }),
     ])
@@ -491,7 +492,7 @@ const fetchItems = async () => {
     console.log('✅ LOG Items loaded:', logItems.value.length)
     console.log('✅ RST Items loaded:', rstItems.value.length)
     console.log('✅ PO loaded:', productionOrders.value.length)
-    console.log('🔍 Sample PO:', productionOrders.value[0]) // ✅ DEBUG
+    console.log('🔍 Sample LOG item:', logItems.value[0])
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil data log / RST / gudang / Production Order')
@@ -599,7 +600,6 @@ const handleSubmit = async () => {
       return
     }
 
-    // ✅ Validate LOGS
     const validLogs = form.logs.filter(
       (log) => log.item_log_id && log.qty_log_pcs && log.qty_log_pcs > 0,
     )
@@ -609,7 +609,6 @@ const handleSubmit = async () => {
       return
     }
 
-    // ✅ Validate RSTS
     const validRsts = form.rsts.filter(
       (row) => row.item_rst_id && row.qty_rst_pcs && row.qty_rst_pcs > 0,
     )
@@ -663,7 +662,6 @@ onMounted(() => {
   fetchItems()
 })
 </script>
-
 <style scoped>
 /* ========================================
    VUE-SELECT CUSTOM STYLE (TAMBAHAN BARU)

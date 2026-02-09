@@ -273,6 +273,77 @@
                   <p class="form-help-text">Kubikasi manual dari TPK (tidak dihitung otomatis)</p>
                 </div>
               </div>
+
+              <div class="form-row form-row-triple">
+                <div class="form-group">
+                  <label class="form-label">
+                    Tanggal Terima
+                    <span class="label-hint">(Opsional)</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📅</span>
+                    <input
+                      v-model="form.tanggal_terima"
+                      type="date"
+                      class="form-control"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">
+                    NO SKSHHK
+                    <span class="label-hint">(Opsional)</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">📄</span>
+                    <input
+                      v-model="form.no_skshhk"
+                      type="text"
+                      class="form-control"
+                      placeholder="cth: SKSHHK-123"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">
+                    No Kapling
+                    <span class="label-hint">(Opsional)</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">🗺️</span>
+                    <input
+                      v-model="form.no_kapling"
+                      type="text"
+                      class="form-control"
+                      placeholder="cth: KP-001"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">
+                    Mutu
+                    <span class="label-hint">(Opsional)</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <span class="input-icon">⭐</span>
+                    <input
+                      v-model="form.mutu"
+                      type="text"
+                      class="form-control"
+                      placeholder="cth: A, B, C"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </transition>
 
@@ -684,6 +755,10 @@ const form = reactive({
   diameter: null,
   panjang: null,
   kubikasi: null,
+  tanggal_terima: '',
+  no_skshhk: '',
+  no_kapling: '',
+  mutu: '',
 })
 
 const categories = ref([])
@@ -729,6 +804,10 @@ const handleCategoryChange = () => {
   form.diameter = null
   form.panjang = null
   form.kubikasi = null
+  form.tanggal_terima = ''
+  form.no_skshhk = ''
+  form.no_kapling = ''
+  form.mutu = ''
 
   if (!isProdukJadiCategory.value) {
     form.hs_code = ''
@@ -843,6 +922,10 @@ const fetchItemData = async (itemId) => {
     form.diameter = data.diameter || null
     form.panjang = data.panjang || null
     form.kubikasi = data.kubikasi || null
+    form.tanggal_terima = data.tanggal_terima || ''
+    form.no_skshhk = data.no_skshhk || ''
+    form.no_kapling = data.no_kapling || ''
+    form.mutu = data.mutu || ''
 
     calculateProgress()
   } catch (error) {
@@ -916,6 +999,10 @@ const handleSubmit = async () => {
       diameter: null,
       panjang: null,
       kubikasi: null,
+      tanggal_terima: null,
+      no_skshhk: null,
+      no_kapling: null,
+      mutu: null,
     }
 
     if (isKayuLogCategory.value) {
@@ -924,6 +1011,10 @@ const handleSubmit = async () => {
       payload.diameter = form.diameter
       payload.panjang = form.panjang
       payload.kubikasi = form.kubikasi
+      payload.tanggal_terima = form.tanggal_terima || null
+      payload.no_skshhk = form.no_skshhk || null
+      payload.no_kapling = form.no_kapling || null
+      payload.mutu = form.mutu || null
     }
 
     if (isKayuRSTCategory.value || isKartonBoxCategory.value) {

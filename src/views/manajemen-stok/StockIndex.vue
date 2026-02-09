@@ -26,6 +26,15 @@
               </p>
             </div>
           </div>
+          <div v-if="activeTab === 'logs'" class="stat-card-modern">
+            <div class="stat-icon-wrapper">
+              <span class="stat-icon">📦</span>
+            </div>
+            <div class="stat-content">
+              <p class="stat-label">Total Kubikasi</p>
+              <p class="stat-value">{{ formatKubikasi(totalKubikasiSum) }} m³</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -101,6 +110,33 @@
               </option>
             </select>
           </div>
+          <div v-if="activeTab === 'logs'" class="per-page-control">
+            <label class="per-page-label-modern">TPK:</label>
+            <select v-model="selectedTpk" class="per-page-select-modern">
+              <option :value="null">Semua TPK</option>
+              <option v-for="tpk in uniqueTpk" :key="tpk" :value="tpk">
+                {{ tpk }}
+              </option>
+            </select>
+          </div>
+          <div v-if="activeTab === 'logs'" class="per-page-control">
+            <label class="per-page-label-modern">Jenis Kayu:</label>
+            <select v-model="selectedJenisKayu" class="per-page-select-modern">
+              <option :value="null">Semua Jenis</option>
+              <option v-for="jk in uniqueJenisKayu" :key="jk" :value="jk">
+                {{ jk }}
+              </option>
+            </select>
+          </div>
+          <div v-if="activeTab === 'logs'" class="per-page-control">
+            <label class="per-page-label-modern">Mutu:</label>
+            <select v-model="selectedMutu" class="per-page-select-modern">
+              <option :value="null">Semua Mutu</option>
+              <option v-for="mutu in uniqueMutu" :key="mutu" :value="mutu">
+                {{ mutu }}
+              </option>
+            </select>
+          </div>
           <div class="per-page-control">
             <label class="per-page-label-modern">Tampilkan:</label>
             <select v-model="perPage" @change="handlePerPageChange" class="per-page-select-modern">
@@ -123,13 +159,16 @@
               <tr v-if="activeTab === 'logs'">
                 <th class="th-number">No</th>
                 <th class="th-code">Kode</th>
-                <th class="th-name">Nama</th>
-                <th class="th-small">Jenis Kayu</th>
+                <th class="th-small">Tanggal Terima</th>
                 <th class="th-small">TPK</th>
-                <th class="th-small">Diameter (cm)</th>
+                <th class="th-small">Jenis Kayu</th>
+                <th class="th-small">NO SKSHHK</th>
+                <th class="th-small">No Kapling</th>
                 <th class="th-small">Panjang (m)</th>
+                <th class="th-small">Diameter (cm)</th>
                 <th class="th-small">Stok</th>
                 <th class="th-small">Kubikasi (m³)</th>
+                <th class="th-small">Mutu</th>
               </tr>
 
               <!-- HEADER KAYU RST -->
@@ -160,7 +199,7 @@
             <tbody>
               <tr v-if="filteredReport.length === 0" class="empty-row-modern">
                 <td
-                  :colspan="activeTab === 'logs' ? 9 : activeTab === 'rst' ? 10 : 6"
+                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 10 : 6"
                   class="empty-cell-modern"
                 >
                   <div class="empty-state-content">
@@ -201,27 +240,26 @@
                     <span class="code-text">{{ item.code }}</span>
                   </div>
                 </td>
-                <td class="td-name">
-                  <div class="item-info-modern">
-                    <div class="item-icon-box">
-                      <span class="item-icon">🪵</span>
-                    </div>
-                    <div class="item-text">
-                      <span class="item-name-text">{{ item.name }}</span>
-                    </div>
-                  </div>
-                </td>
                 <td class="td-small">
-                  <span class="badge-unit-modern">{{ item.jenis_kayu || '-' }}</span>
+                  {{ item.tanggal_terima || '-' }}
                 </td>
                 <td class="td-small">
                   <span class="badge-unit-modern">{{ item.tpk || '-' }}</span>
                 </td>
                 <td class="td-small">
-                  {{ item.diameter ? formatQty(item.diameter) : '-' }}
+                  <span class="badge-unit-modern">{{ item.jenis_kayu || '-' }}</span>
+                </td>
+                <td class="td-small">
+                  {{ item.no_skshhk || '-' }}
+                </td>
+                <td class="td-small">
+                  {{ item.no_kapling || '-' }}
                 </td>
                 <td class="td-small">
                   {{ item.panjang ? formatQty(item.panjang) : '-' }}
+                </td>
+                <td class="td-small">
+                  {{ item.diameter ? formatQty(item.diameter) : '-' }}
                 </td>
                 <td class="td-small">
                   <div class="stock-total-inline">
@@ -235,6 +273,9 @@
                 </td>
                 <td class="td-small">
                   {{ formatLogVolume(totalKubikasi(item, filteredStocks(item.stocks))) }}
+                </td>
+                <td class="td-small">
+                  <span class="badge-unit-modern">{{ item.mutu || '-' }}</span>
                 </td>
               </tr>
 
@@ -469,11 +510,30 @@ const perPage = ref(50)
 const currentPage = ref(1)
 const warehouses = ref([])
 const selectedWarehouseId = ref(null)
+const selectedTpk = ref(null)
+const selectedJenisKayu = ref(null)
+const selectedMutu = ref(null)
+const totalKubikasiSum = ref(0)
 let searchTimeout = null
 
 const isDetailOpen = ref(false)
 const detailItem = ref(null)
 const detailStocks = ref([])
+
+const uniqueTpk = computed(() => {
+  const tpks = reportData.value.map((item) => item.tpk).filter(Boolean)
+  return [...new Set(tpks)].sort()
+})
+
+const uniqueJenisKayu = computed(() => {
+  const jenisKayus = reportData.value.map((item) => item.jenis_kayu).filter(Boolean)
+  return [...new Set(jenisKayus)].sort()
+})
+
+const uniqueMutu = computed(() => {
+  const mutus = reportData.value.map((item) => item.mutu).filter(Boolean)
+  return [...new Set(mutus)].sort()
+})
 
 const currentCategory = () => {
   return tabs.find((t) => t.key === activeTab.value)?.category ?? 'Kayu Log'
@@ -509,6 +569,16 @@ const fetchReport = async () => {
     if (selectedWarehouseId.value) {
       params.warehouse_id = selectedWarehouseId.value
     }
+    if (selectedTpk.value) {
+      params.tpk = selectedTpk.value
+    }
+    if (selectedJenisKayu.value) {
+      params.jenis_kayu = selectedJenisKayu.value
+    }
+    if (selectedMutu.value) {
+      params.mutu = selectedMutu.value
+    }
+
     await apiClient.get('/stock-report', { params }).then((response) => {
       if (response.data.data?.data) {
         reportData.value = response.data.data.data
@@ -524,6 +594,8 @@ const fetchReport = async () => {
         reportData.value = response.data.data
         pagination.value = null
       }
+
+      totalKubikasiSum.value = response.data.summary?.total_kubikasi || 0
     })
   } catch (e) {
     toast.error('Gagal memuat laporan stok.')
@@ -536,6 +608,9 @@ const fetchReport = async () => {
 const setTab = (key) => {
   activeTab.value = key
   currentPage.value = 1
+  selectedTpk.value = null
+  selectedJenisKayu.value = null
+  selectedMutu.value = null
 }
 
 watch(activeTab, () => {
@@ -543,6 +618,11 @@ watch(activeTab, () => {
 })
 
 watch(selectedWarehouseId, () => {
+  currentPage.value = 1
+  fetchReport()
+})
+
+watch([selectedTpk, selectedJenisKayu, selectedMutu], () => {
   currentPage.value = 1
   fetchReport()
 })
@@ -619,11 +699,10 @@ const formatQty = (val) => {
   })
 }
 
-// ✅ TAMBAH FUNCTION BARU INI
 const formatKubikasi = (val) => {
   if (!val && val !== 0) return 0
   return parseFloat(val).toLocaleString('en-US', {
-    minimumFractionDigits: 4, // Selalu tampil 4 desimal
+    minimumFractionDigits: 4,
     maximumFractionDigits: 4,
   })
 }
@@ -631,9 +710,7 @@ const formatKubikasi = (val) => {
 const formatLogVolume = (val) => {
   if (!val && val !== 0) return 0
   const num = parseFloat(val)
-  // Jika angka bulat (seperti 200, 9000), jangan tampilkan desimal (.0000)
   if (num % 1 === 0) return formatQty(num)
-  // Jika angka desimal (seperti 0.7, 0.4), paksa tampilkan 4 desimal (0.7000)
   return formatKubikasi(num)
 }
 
