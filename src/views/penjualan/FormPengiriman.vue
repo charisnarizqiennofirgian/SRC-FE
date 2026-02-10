@@ -1,6 +1,5 @@
 <template>
   <DashboardLayout>
-    <!-- PAGE HEADER -->
     <div class="page-header-modern">
       <div class="header-content-wrapper">
         <div class="header-left">
@@ -15,7 +14,6 @@
       </div>
     </div>
 
-    <!-- LOADING STATE -->
     <div v-if="loadingMaster" class="loading-container-modern">
       <div class="loading-content">
         <div class="spinner-modern"></div>
@@ -23,7 +21,6 @@
       </div>
     </div>
 
-    <!-- ERROR STATE -->
     <div v-else-if="errorState" class="error-container-modern">
       <div class="error-content">
         <div class="error-icon">⚠️</div>
@@ -36,9 +33,7 @@
       </div>
     </div>
 
-    <!-- FORM CONTENT -->
     <form v-else @submit.prevent="handleSubmit" class="form-container-modern">
-      <!-- SECTION 1: PILIH SALES ORDER -->
       <div class="form-card">
         <div class="card-header">
           <span class="header-icon">📋</span>
@@ -63,7 +58,6 @@
             </div>
           </div>
 
-          <!-- MODE PENGIRIMAN -->
           <div class="form-group-modern" style="margin-top: 1.5rem">
             <label class="form-label-modern">Mode Pengiriman</label>
             <div style="display: flex; gap: 1rem; align-items: center">
@@ -81,7 +75,6 @@
       </div>
 
       <template v-if="selectedSalesOrder">
-        <!-- SECTION 2: SHIPPER INFO -->
         <div class="form-card">
           <div class="card-header">
             <span class="header-icon">🏢</span>
@@ -100,18 +93,15 @@ INDONESIA</textarea
           </div>
         </div>
 
-        <!-- SECTION 3: DETAIL PENGIRIMAN & DOKUMEN (FULL DIPULIHKAN) -->
         <div class="form-card">
           <div class="card-header">
             <span class="header-icon">🌍</span>
             <h2 class="card-title">Detail Pengiriman & Dokumen</h2>
           </div>
           <div class="card-body">
-            <!-- Pihak Terkait -->
             <div class="form-subsection">
               <h3 class="subsection-title">📬 Pihak Terkait</h3>
               <div class="form-grid-2col">
-                <!-- Consignee -->
                 <div class="form-group-modern">
                   <label class="form-label-modern">Consignee (Penerima Barang)</label>
                   <input
@@ -128,7 +118,6 @@ INDONESIA</textarea
                   ></textarea>
                 </div>
 
-                <!-- Applicant -->
                 <div class="form-group-modern">
                   <label class="form-label-modern">Applicant (Pemohon)</label>
                   <input
@@ -146,7 +135,6 @@ INDONESIA</textarea
                 </div>
               </div>
 
-              <!-- Notify -->
               <div class="form-group-modern notify-section">
                 <label class="form-label-modern">Notify (Pihak yang Diberitahu)</label>
                 <div class="form-grid-2col">
@@ -166,7 +154,6 @@ INDONESIA</textarea
               </div>
             </div>
 
-            <!-- Syarat Pengiriman -->
             <div class="form-subsection">
               <h3 class="subsection-title">📝 Syarat Pengiriman</h3>
               <div class="form-grid-3col">
@@ -202,7 +189,6 @@ INDONESIA</textarea
               </div>
             </div>
 
-            <!-- Container & Seal -->
             <div class="form-subsection">
               <h3 class="subsection-title">📦 Container & Seal</h3>
 
@@ -212,7 +198,6 @@ INDONESIA</textarea
                   <input
                     v-model="form.container_type"
                     type="text"
-                    n
                     class="form-input-modern"
                     placeholder="Contoh: 2x40HC, 1x20FT"
                   />
@@ -267,7 +252,6 @@ INDONESIA</textarea
               </div>
             </div>
 
-            <!-- Forwarder (Messrs) -->
             <div class="form-subsection">
               <h3 class="subsection-title">📨 Forwarder Information (Messrs)</h3>
               <div class="form-group-modern">
@@ -283,7 +267,6 @@ INDONESIA</textarea
               </div>
             </div>
 
-            <!-- Pelabuhan & Tujuan -->
             <div class="form-subsection">
               <h3 class="subsection-title">⚓ Pelabuhan & Tujuan</h3>
               <div class="form-grid-3col">
@@ -319,7 +302,6 @@ INDONESIA</textarea
               </div>
             </div>
 
-            <!-- Kapal -->
             <div class="form-subsection">
               <h3 class="subsection-title">🚢 Informasi Kapal</h3>
               <div class="form-grid-2col">
@@ -345,7 +327,6 @@ INDONESIA</textarea
               </div>
             </div>
 
-            <!-- REX & Goods -->
             <div class="form-subsection">
               <h3 class="subsection-title">📋 REX & Deskripsi Barang</h3>
               <div class="form-grid-3col">
@@ -378,7 +359,6 @@ INDONESIA</textarea
           </div>
         </div>
 
-        <!-- SECTION 4: BARCODE UPLOAD -->
         <div class="form-card">
           <div class="card-header">
             <span class="header-icon">📸</span>
@@ -413,7 +393,6 @@ INDONESIA</textarea
           </div>
         </div>
 
-        <!-- SECTION 5: BARANG DIKIRIM -->
         <div class="form-card">
           <div class="card-header">
             <span class="header-icon">📦</span>
@@ -431,6 +410,12 @@ INDONESIA</textarea
                     <th v-if="form.shipment_mode === 'AIR'" class="text-center">Kirim (Crate)</th>
                     <th class="text-center">Kirim (Pcs)</th>
                     <th class="text-center">Kirim (Box)</th>
+                    <th class="text-center">NW/Box (kg)</th>
+                    <th class="text-center">GW/Box (kg)</th>
+                    <th class="text-center">M3/Carton</th>
+                    <th class="text-center">Total NW (kg)</th>
+                    <th class="text-center">Total GW (kg)</th>
+                    <th class="text-center">Total M3</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -463,6 +448,7 @@ INDONESIA</textarea
                       />
                       <div v-if="item.error" class="error-text-small">{{ item.error }}</div>
                     </td>
+
                     <td class="text-center">
                       <input
                         v-model.number="item.quantity_boxes"
@@ -470,17 +456,80 @@ INDONESIA</textarea
                         min="0"
                         class="form-input-table"
                         placeholder="0"
+                        @input="calculateTotals(item)"
                       />
+                    </td>
+
+                    <td class="text-center">
+                      <input
+                        v-model.number="item.nw_per_box"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        class="form-input-table"
+                        placeholder="0.00"
+                        @input="calculateTotals(item)"
+                      />
+                    </td>
+
+                    <td class="text-center">
+                      <input
+                        v-model.number="item.gw_per_box"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        class="form-input-table"
+                        placeholder="0.00"
+                        @input="calculateTotals(item)"
+                      />
+                    </td>
+
+                    <td class="text-center">
+                      <input
+                        v-model.number="item.m3_per_carton"
+                        type="number"
+                        step="0.0001"
+                        min="0"
+                        class="form-input-table"
+                        placeholder="0.0000"
+                        @input="calculateTotals(item)"
+                      />
+                    </td>
+
+                    <td class="text-center">
+                      <span class="total-badge">{{ formatNumber(item.total_nw) }}</span>
+                    </td>
+
+                    <td class="text-center">
+                      <span class="total-badge">{{ formatNumber(item.total_gw) }}</span>
+                    </td>
+
+                    <td class="text-center">
+                      <span class="total-badge">{{ formatNumber(item.total_m3, 4) }}</span>
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
+
+            <div class="summary-box">
+              <div class="summary-item">
+                <span class="summary-label">Grand Total NW:</span>
+                <span class="summary-value">{{ formatNumber(grandTotalNW) }} kg</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Grand Total GW:</span>
+                <span class="summary-value">{{ formatNumber(grandTotalGW) }} kg</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Grand Total M3:</span>
+                <span class="summary-value">{{ formatNumber(grandTotalM3, 4) }} m³</span>
+              </div>
+            </div>
           </div>
         </div>
       </template>
 
-      <!-- FORM ACTIONS -->
       <div class="form-actions-modern">
         <button @click.prevent="goBack" type="button" class="btn-secondary-modern">
           <span class="btn-icon">↩️</span>
@@ -489,7 +538,7 @@ INDONESIA</textarea
         <button type="submit" class="btn-primary-modern" :disabled="isSaving || !isFormValid">
           <span v-if="isSaving" class="spinner-inline"></span>
           <span v-else class="btn-icon">💾</span>
-          <span>{{ isSaving ? 'Menyimpan...' : 'Simpan & Potong Stok' }}</span>
+          <span>{{ isSaving ? 'Menyimpan...' : 'Simpan DO' }}</span>
         </button>
       </div>
     </form>
@@ -542,11 +591,9 @@ const form = reactive({
   notify_info: { name: '', address: '' },
   details: [],
   barcode_image: '',
-
   forwarder_name: '',
   peb_number: '',
   container_type: '',
-
   shipment_mode: 'SEA',
 })
 
@@ -589,6 +636,12 @@ const onSalesOrderSelect = () => {
           quantity_shipped: 0,
           quantity_boxes: null,
           quantity_crates: null,
+          nw_per_box: detail.item?.nw_per_box || null,
+          gw_per_box: detail.item?.gw_per_box || null,
+          m3_per_carton: detail.item?.m3_per_carton || null,
+          total_nw: null,
+          total_gw: null,
+          total_m3: null,
           error: null,
         }
       })
@@ -598,6 +651,34 @@ const onSalesOrderSelect = () => {
     form.details = []
   }
 }
+
+const calculateTotals = (item) => {
+  const boxes = parseFloat(item.quantity_boxes) || 0
+  const nw = parseFloat(item.nw_per_box) || 0
+  const gw = parseFloat(item.gw_per_box) || 0
+  const m3 = parseFloat(item.m3_per_carton) || 0
+
+  item.total_nw = boxes && nw ? boxes * nw : null
+  item.total_gw = boxes && gw ? boxes * gw : null
+  item.total_m3 = boxes && m3 ? boxes * m3 : null
+}
+
+const formatNumber = (value, decimals = 2) => {
+  if (!value || isNaN(value)) return '-'
+  return parseFloat(value).toFixed(decimals)
+}
+
+const grandTotalNW = computed(() => {
+  return form.details.reduce((sum, item) => sum + (parseFloat(item.total_nw) || 0), 0)
+})
+
+const grandTotalGW = computed(() => {
+  return form.details.reduce((sum, item) => sum + (parseFloat(item.total_gw) || 0), 0)
+})
+
+const grandTotalM3 = computed(() => {
+  return form.details.reduce((sum, item) => sum + (parseFloat(item.total_m3) || 0), 0)
+})
 
 const handleBarcodeImageUpload = (event) => {
   const file = event.target.files[0]
@@ -630,6 +711,9 @@ const handleSubmit = async () => {
       quantity_shipped: d.quantity_shipped,
       quantity_boxes: d.quantity_boxes || null,
       quantity_crates: form.shipment_mode === 'AIR' ? d.quantity_crates || null : null,
+      nw_per_box: d.nw_per_box || null,
+      gw_per_box: d.gw_per_box || null,
+      m3_per_carton: d.m3_per_carton || null,
     }))
 
   if (payloadDetails.length === 0) {
@@ -661,11 +745,9 @@ const handleSubmit = async () => {
   formData.append('applicant_info', JSON.stringify(form.applicant_info))
   formData.append('notify_info', JSON.stringify(form.notify_info))
   formData.append('details', JSON.stringify(payloadDetails))
-
   formData.append('forwarder_name', form.forwarder_name)
   formData.append('peb_number', form.peb_number)
   formData.append('container_type', form.container_type)
-
   formData.append('shipment_mode', form.shipment_mode)
 
   if (form.rex_certificate_file) {
@@ -710,9 +792,6 @@ const goBack = () => {
 </script>
 
 <style scoped>
-/* ========================================
-   MODERN PAGE HEADER
-   ======================================== */
 .page-header-modern {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 2.5rem;
@@ -760,9 +839,6 @@ const goBack = () => {
   font-weight: 500;
 }
 
-/* ========================================
-   LOADING & ERROR STATES
-   ======================================== */
 .loading-container-modern,
 .error-container-modern {
   display: flex;
@@ -846,17 +922,11 @@ const goBack = () => {
   box-shadow: 0 10px 24px rgba(102, 126, 234, 0.4);
 }
 
-/* ========================================
-   FORM CONTAINER
-   ======================================== */
 .form-container-modern {
   max-width: 1200px;
   margin: 0 auto 3rem;
 }
 
-/* ========================================
-   FORM CARD
-   ======================================== */
 .form-card {
   background: white;
   border-radius: 20px;
@@ -906,9 +976,6 @@ const goBack = () => {
   padding: 2.5rem;
 }
 
-/* ========================================
-   SUBSECTION
-   ======================================== */
 .form-subsection {
   margin-bottom: 2.5rem;
   padding-bottom: 2.5rem;
@@ -935,9 +1002,6 @@ const goBack = () => {
   border-left: 4px solid #667eea;
 }
 
-/* ========================================
-   FORM GRID
-   ======================================== */
 .form-grid-2col {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -954,12 +1018,10 @@ const goBack = () => {
   grid-column: 1 / -1;
 }
 
-/* ✅ JARAK KHUSUS UNTUK NOTIFY */
 .notify-section {
   margin-top: 1.75rem;
 }
 
-/* ✅ JARAK KHUSUS UNTUK BL DATE */
 .bl-date-row {
   margin-top: 1.75rem;
 }
@@ -981,9 +1043,6 @@ const goBack = () => {
   }
 }
 
-/* ========================================
-   FORM ELEMENTS
-   ======================================== */
 .form-group-modern {
   margin-bottom: 0;
 }
@@ -1039,7 +1098,6 @@ const goBack = () => {
   line-height: 1.6;
 }
 
-/* ✅ JARAK VERTIKAL ANTARA INPUT DAN TEXTAREA */
 .input-spacing {
   margin-top: 1rem !important;
 }
@@ -1066,9 +1124,6 @@ const goBack = () => {
   font-size: 0.875rem;
 }
 
-/* ========================================
-   FILE UPLOAD
-   ======================================== */
 .file-upload-area {
   margin-bottom: 1.5rem;
 }
@@ -1154,9 +1209,6 @@ const goBack = () => {
   border-left: 4px solid #ef4444;
 }
 
-/* ========================================
-   TABLE
-   ======================================== */
 .table-responsive {
   overflow-x: auto;
   margin: -0.5rem;
@@ -1245,9 +1297,65 @@ const goBack = () => {
   font-weight: 600;
 }
 
-/* ========================================
-   FORM ACTIONS
-   ======================================== */
+.total-badge {
+  display: inline-block;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e40af;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  min-width: 70px;
+  text-align: center;
+}
+
+.summary-box {
+  margin-top: 2rem;
+  padding: 1.75rem;
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border: 3px solid #7dd3fc;
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.summary-label {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0369a1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0c4a6e;
+  font-family: 'Courier New', monospace;
+}
+
+@media (max-width: 640px) {
+  .summary-box {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .summary-item {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
 .form-actions-modern {
   display: flex;
   justify-content: flex-end;
