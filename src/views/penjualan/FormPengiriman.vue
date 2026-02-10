@@ -404,6 +404,7 @@ INDONESIA</textarea
                 <thead>
                   <tr>
                     <th>Nama Barang</th>
+                    <th class="text-center">HS Code</th>
                     <th class="text-center">Qty Dipesan</th>
                     <th class="text-center">Qty Terkirim</th>
                     <th class="text-center">Stok Tersedia</th>
@@ -413,14 +414,19 @@ INDONESIA</textarea
                     <th class="text-center">NW/Box (kg)</th>
                     <th class="text-center">GW/Box (kg)</th>
                     <th class="text-center">M3/Carton</th>
+                    <th class="text-center">Wood/Pcs (m3)</th>
                     <th class="text-center">Total NW (kg)</th>
                     <th class="text-center">Total GW (kg)</th>
                     <th class="text-center">Total M3</th>
+                    <th class="text-center">Total Wood (m3)</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="item in form.details" :key="item.sales_order_detail_id">
                     <td class="item-name">{{ item.item_name }}</td>
+                    <td class="text-center">
+                      <span class="hs-code-badge">{{ item.hs_code || '-' }}</span>
+                    </td>
                     <td class="text-center">{{ item.quantity_ordered }}</td>
                     <td class="text-center">{{ item.quantity_already_shipped }}</td>
                     <td class="text-center">
@@ -445,6 +451,7 @@ INDONESIA</textarea
                         :max="Math.min(item.quantity_sisa, item.current_stock)"
                         class="form-input-table"
                         placeholder="0"
+                        @input="calculateTotals(item)"
                       />
                       <div v-if="item.error" class="error-text-small">{{ item.error }}</div>
                     </td>
@@ -497,6 +504,18 @@ INDONESIA</textarea
                     </td>
 
                     <td class="text-center">
+                      <input
+                        v-model.number="item.wood_consumed_per_pcs"
+                        type="number"
+                        step="0.0001"
+                        min="0"
+                        class="form-input-table"
+                        placeholder="0.0000"
+                        @input="calculateTotals(item)"
+                      />
+                    </td>
+
+                    <td class="text-center">
                       <span class="total-badge">{{ formatNumber(item.total_nw) }}</span>
                     </td>
 
@@ -506,6 +525,10 @@ INDONESIA</textarea
 
                     <td class="text-center">
                       <span class="total-badge">{{ formatNumber(item.total_m3, 4) }}</span>
+                    </td>
+
+                    <td class="text-center">
+                      <span class="total-badge">{{ formatNumber(item.total_wood_consumed, 4) }}</span>
                     </td>
                   </tr>
                 </tbody>
@@ -524,6 +547,10 @@ INDONESIA</textarea
               <div class="summary-item">
                 <span class="summary-label">Grand Total M3:</span>
                 <span class="summary-value">{{ formatNumber(grandTotalM3, 4) }} m³</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Grand Total Wood:</span>
+                <span class="summary-value">{{ formatNumber(grandTotalWood, 4) }} m³</span>
               </div>
             </div>
           </div>
@@ -628,6 +655,7 @@ const onSalesOrderSelect = () => {
           sales_order_detail_id: detail.id,
           item_id: detail.item_id,
           item_name: detail.item_name,
+          hs_code: detail.item?.hs_code || null,
           quantity_ordered: parseFloat(detail.quantity),
           quantity_already_shipped: parseFloat(detail.quantity_shipped),
           quantity_sisa: qtySisa,
@@ -639,9 +667,11 @@ const onSalesOrderSelect = () => {
           nw_per_box: detail.item?.nw_per_box || null,
           gw_per_box: detail.item?.gw_per_box || null,
           m3_per_carton: detail.item?.m3_per_carton || null,
+          wood_consumed_per_pcs: detail.item?.wood_consumed_per_pcs || null,
           total_nw: null,
           total_gw: null,
           total_m3: null,
+          total_wood_consumed: null,
           error: null,
         }
       })
@@ -654,13 +684,16 @@ const onSalesOrderSelect = () => {
 
 const calculateTotals = (item) => {
   const boxes = parseFloat(item.quantity_boxes) || 0
+  const shipped = parseFloat(item.quantity_shipped) || 0
   const nw = parseFloat(item.nw_per_box) || 0
   const gw = parseFloat(item.gw_per_box) || 0
   const m3 = parseFloat(item.m3_per_carton) || 0
+  const wood = parseFloat(item.wood_consumed_per_pcs) || 0
 
   item.total_nw = boxes && nw ? boxes * nw : null
   item.total_gw = boxes && gw ? boxes * gw : null
   item.total_m3 = boxes && m3 ? boxes * m3 : null
+  item.total_wood_consumed = shipped && wood ? shipped * wood : null
 }
 
 const formatNumber = (value, decimals = 2) => {
@@ -678,6 +711,10 @@ const grandTotalGW = computed(() => {
 
 const grandTotalM3 = computed(() => {
   return form.details.reduce((sum, item) => sum + (parseFloat(item.total_m3) || 0), 0)
+})
+
+const grandTotalWood = computed(() => {
+  return form.details.reduce((sum, item) => sum + (parseFloat(item.total_wood_consumed) || 0), 0)
 })
 
 const handleBarcodeImageUpload = (event) => {
@@ -714,6 +751,7 @@ const handleSubmit = async () => {
       nw_per_box: d.nw_per_box || null,
       gw_per_box: d.gw_per_box || null,
       m3_per_carton: d.m3_per_carton || null,
+      wood_consumed_per_pcs: d.wood_consumed_per_pcs || null,
     }))
 
   if (payloadDetails.length === 0) {
@@ -1428,5 +1466,16 @@ const goBack = () => {
 
 .btn-icon {
   font-size: 1.25rem;
+}
+
+.hs-code-badge {
+  display: inline-block;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.8125rem;
+  font-family: 'Courier New', monospace;
 }
 </style>
