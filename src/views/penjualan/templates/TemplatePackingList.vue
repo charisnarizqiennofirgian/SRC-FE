@@ -102,7 +102,6 @@ const props = defineProps({
   data: { type: Object, required: true },
 })
 
-// ✅ Penentu: apakah ini AIR / punya crate
 const hasCrates = computed(() => {
   const mode = props.data?.shipment_mode || 'SEA'
   if (mode === 'AIR') return true
@@ -130,26 +129,25 @@ const formatHsCode = (hsCode) => {
 }
 
 const calculateWoodTotal = (item) => {
-  const woodPerPcs = parseFloat(item.item?.wood_consumed_per_pcs || 0)
+  const woodPerPcs = parseFloat(item.wood_consumed_per_pcs || item.item?.wood_consumed_per_pcs || 0)
   const qty = parseFloat(item.quantity_shipped || 0)
   return woodPerPcs * qty
 }
 
-// volume total per item = volume per box * jumlah box
 const calculateVolumeTotal = (item) => {
-  const volPerBox = parseFloat(item.item?.volume_m3 || item.item?.m3_per_carton || 0)
+  const volPerBox = parseFloat(item.m3_per_carton || item.item?.m3_per_carton || item.item?.volume_m3 || 0)
   const boxes = parseFloat(item.quantity_boxes || 0)
   return volPerBox * boxes
 }
 
 const calculateNettTotal = (item) => {
-  const nwPerBox = parseFloat(item.item?.nw_per_box || 0)
+  const nwPerBox = parseFloat(item.nw_per_box || item.item?.nw_per_box || 0)
   const boxes = parseFloat(item.quantity_boxes || 0)
   return nwPerBox * boxes
 }
 
 const calculateGrossTotal = (item) => {
-  const gwPerBox = parseFloat(item.item?.gw_per_box || 0)
+  const gwPerBox = parseFloat(item.gw_per_box || item.item?.gw_per_box || 0)
   const boxes = parseFloat(item.quantity_boxes || 0)
   return gwPerBox * boxes
 }
@@ -163,17 +161,16 @@ const totals = computed(() => {
       acc.crates += parseFloat(item.quantity_crates || 0)
       acc.boxes += parseFloat(item.quantity_boxes || 0)
       acc.pcs += parseFloat(item.quantity_shipped || 0)
-      acc.woodM3 += calculateWoodTotal(item)
-      acc.volumeM3 += calculateVolumeTotal(item)
-      acc.nett += calculateNettTotal(item)
-      acc.gross += calculateGrossTotal(item)
+      acc.woodM3 += parseFloat(item.total_wood_consumed || 0) || calculateWoodTotal(item)
+      acc.volumeM3 += parseFloat(item.total_m3 || 0) || calculateVolumeTotal(item)
+      acc.nett += parseFloat(item.total_nw || 0) || calculateNettTotal(item)
+      acc.gross += parseFloat(item.total_gw || 0) || calculateGrossTotal(item)
       return acc
     },
     { crates: 0, boxes: 0, pcs: 0, woodM3: 0, volumeM3: 0, nett: 0, gross: 0 },
   )
 })
 </script>
-
 <style scoped>
 .table-print-packing {
   width: 100%;

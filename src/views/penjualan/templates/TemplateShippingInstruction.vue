@@ -167,18 +167,15 @@ const props = defineProps({
   },
 })
 
-// === FORMATTERS ===
-// Format angka bulat (1,386)
 const formatNumber = (val) => {
   return val ? parseFloat(val).toLocaleString('en-US', { maximumFractionDigits: 0 }) : 0
 }
 
-// Format volume (3.267) - Menghilangkan 0 tidak perlu di belakang
 const formatVolume = (val) => {
   if (!val && val !== 0) return '0.0000'
   return Number(val).toFixed(4)
 }
-// Format Tanggal
+
 const formatDate = (dateString) => {
   if (!dateString) return ''
   const date = new Date(dateString)
@@ -219,26 +216,24 @@ const formatStuffingDate = (dateString) => {
   return `${day}-${month}-${year}`
 }
 
-// === LOGIKA KALKULATOR (SAMA SEPERTI PL) ===
 const calculateVolumeItem = (item) => {
-  const volPerBox = parseFloat(item.item?.volume_m3 || item.item?.m3_per_carton || 0)
+  const volPerBox = parseFloat(item.m3_per_carton || item.item?.m3_per_carton || item.item?.volume_m3 || 0)
   const boxes = parseFloat(item.quantity_boxes || 0)
   return volPerBox * boxes
 }
 
 const calculateGrossItem = (item) => {
-  const gwPerBox = parseFloat(item.item?.gw_per_box || 0)
+  const gwPerBox = parseFloat(item.gw_per_box || item.item?.gw_per_box || 0)
   const boxes = parseFloat(item.quantity_boxes || 0)
   return gwPerBox * boxes
 }
 
 const calculateNettItem = (item) => {
-  const nwPerBox = parseFloat(item.item?.nw_per_box || 0)
+  const nwPerBox = parseFloat(item.nw_per_box || item.item?.nw_per_box || 0)
   const boxes = parseFloat(item.quantity_boxes || 0)
   return nwPerBox * boxes
 }
 
-// === COMPUTED TOTALS ===
 const totals = computed(() => {
   const items = props.data?.details || []
 
@@ -248,22 +243,21 @@ const totals = computed(() => {
 
   return items.reduce(
     (acc, item) => {
-      acc.grossWeight += calculateGrossItem(item)
-      acc.nettWeight += calculateNettItem(item)
-      acc.volume += calculateVolumeItem(item)
+      acc.grossWeight += parseFloat(item.total_gw || 0) || calculateGrossItem(item)
+      acc.nettWeight += parseFloat(item.total_nw || 0) || calculateNettItem(item)
+      acc.volume += parseFloat(item.total_m3 || 0) || calculateVolumeItem(item)
       return acc
     },
     { grossWeight: 0, nettWeight: 0, volume: 0 },
   )
 })
 
-// === FILTER HS CODE UNIK ===
 const uniqueHsCodes = computed(() => {
   const items = props.data?.details || []
   if (items.length === 0) return []
 
   const hsCodes = items
-    .map((item) => item.item?.hs_code)
+    .map((item) => item.hs_code || item.item?.hs_code)
     .filter((code) => code && code.trim() !== '')
 
   return [...new Set(hsCodes)]

@@ -91,7 +91,6 @@ const props = defineProps({
   data: { type: Object, required: true },
 })
 
-// === FORMATTERS ===
 const formatNumber = (value) => {
   if (!value && value !== 0) return 0
   return parseFloat(Number(value).toFixed(0))
@@ -99,28 +98,27 @@ const formatNumber = (value) => {
 
 const formatDecimal = (value, decimals = 4) => {
   if (!value && value !== 0) return '0.' + '0'.repeat(decimals)
-  return Number(value).toFixed(decimals) // sekarang output string dengan 4 desimal
+  return Number(value).toFixed(decimals)
 }
 
 const formatNumberWords = (amount) => {
   return Math.round(amount).toLocaleString('en-US')
 }
 
-// === LOGIC HITUNGAN ===
 const calculateWoodTotal = (item) => {
-  const woodPerPcs = parseFloat(item.item?.wood_consumed_per_pcs || 0)
+  const woodPerPcs = parseFloat(item.wood_consumed_per_pcs || item.item?.wood_consumed_per_pcs || 0)
   const qty = parseFloat(item.quantity_shipped || 0)
   return woodPerPcs * qty
 }
 
 const calculateVolumeTotal = (item) => {
-  const m3PerCarton = parseFloat(item.item?.m3_per_carton || 0)
+  const m3PerCarton = parseFloat(item.m3_per_carton || item.item?.m3_per_carton || 0)
   const boxes = parseFloat(item.quantity_boxes || 0)
   return m3PerCarton * boxes
 }
 
 const calculateNettTotal = (item) => {
-  const nwPerBox = parseFloat(item.item?.nw_per_box || 0)
+  const nwPerBox = parseFloat(item.nw_per_box || item.item?.nw_per_box || 0)
   const boxes = parseFloat(item.quantity_boxes || 0)
   return nwPerBox * boxes
 }
@@ -135,7 +133,6 @@ const calculatePriceTotal = (item) => {
   return qty * price
 }
 
-// === TOTALS ===
 const totals = computed(() => {
   if (!props.data || !props.data.details)
     return { boxes: 0, pcs: 0, woodM3: 0, volumeM3: 0, amountUSD: 0, nett: 0 }
@@ -144,10 +141,10 @@ const totals = computed(() => {
     (acc, item) => {
       acc.boxes += parseFloat(item.quantity_boxes || 0)
       acc.pcs += parseFloat(item.quantity_shipped || 0)
-      acc.woodM3 += calculateWoodTotal(item)
-      acc.volumeM3 += calculateVolumeTotal(item)
+      acc.woodM3 += parseFloat(item.total_wood_consumed || 0) || calculateWoodTotal(item)
+      acc.volumeM3 += parseFloat(item.total_m3 || 0) || calculateVolumeTotal(item)
       acc.amountUSD += calculatePriceTotal(item)
-      acc.nett += calculateNettTotal(item)
+      acc.nett += parseFloat(item.total_nw || 0) || calculateNettTotal(item)
       return acc
     },
     { boxes: 0, pcs: 0, woodM3: 0, volumeM3: 0, amountUSD: 0, nett: 0 },
