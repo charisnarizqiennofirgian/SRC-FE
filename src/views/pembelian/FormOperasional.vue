@@ -406,58 +406,25 @@ const fetchDataDropdown = async () => {
     const allBarang = barangRes.data.data
     const allCategories = categoryRes.data.data
 
-    console.log('🔍 === DEBUG START ===')
-    console.log('📦 Total semua barang:', allBarang.length)
-    console.log('📦 Sample barang pertama:', allBarang[0])
-    console.log('📂 Total kategori:', allCategories.length)
-    console.log('📂 Semua kategori:', allCategories)
-
-    // ✅ FILTER: Case-insensitive untuk nama kategori
+    // ✅ FILTER: Hanya kategori "Bahan Operasional" atau "Bahan Penolong"
     const operationalCategories = allCategories.filter((cat) => {
       const catName = (cat.name || '').toLowerCase().trim()
-      const isOperational = catName === 'bahan penolong' || catName === 'bahan operasional'
-      console.log(
-        `🔍 Check kategori: "${cat.name}" (id: ${cat.id}) → ${isOperational ? '✅ OPERATIONAL' : '❌ BUKAN'}`,
-      )
-      return isOperational
+      return catName === 'bahan penolong' || catName === 'bahan operasional'
     })
 
-    console.log('✅ Kategori operasional found:', operationalCategories)
-
     const operationalCategoryIds = operationalCategories.map((cat) => cat.id)
-    console.log('✅ Category IDs operasional:', operationalCategoryIds)
 
     // ✅ FILTER: Hanya barang dengan kategori operasional
     if (operationalCategoryIds.length > 0) {
       daftarBarang.value = allBarang.filter((item) => {
-        const hasCategory = operationalCategoryIds.includes(item.category_id)
-
-        // Debug setiap item
-        if (hasCategory) {
-          console.log(
-            `✅ INCLUDE: ${item.code} - ${item.name} (category_id: ${item.category_id}, category: ${item.category?.name || 'N/A'})`,
-          )
-        } else {
-          console.log(
-            `❌ EXCLUDE: ${item.code} - ${item.name} (category_id: ${item.category_id}, category: ${item.category?.name || 'N/A'})`,
-          )
-        }
-
-        return hasCategory
+        return operationalCategoryIds.includes(item.category_id)
       })
+      
+      console.log(`✅ Filter aktif: Hanya menampilkan ${daftarBarang.value.length} barang dari kategori Bahan Operasional/Penolong`)
     } else {
-      console.warn('⚠️ TIDAK ADA kategori operasional! Semua barang akan ditampilkan.')
+      console.warn('⚠️ TIDAK ADA kategori operasional! Menampilkan semua barang.')
       daftarBarang.value = allBarang
     }
-
-    console.log('✅ Total barang operasional FILTERED:', daftarBarang.value.length)
-    console.log('📋 Barang operasional yang akan ditampilkan:')
-    daftarBarang.value.forEach((item, idx) => {
-      console.log(
-        `  ${idx + 1}. ${item.code} - ${item.name} (Stok: ${item.stock}, Category: ${item.category?.name || 'N/A'})`,
-      )
-    })
-    console.log('🔍 === DEBUG END ===')
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'Gagal memuat data.'
     toast.error(errorMessage)

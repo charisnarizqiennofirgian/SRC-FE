@@ -228,12 +228,13 @@
                     <div class="input-with-currency">
                       <span class="currency-prefix">Rp</span>
                       <input
-                        type="number"
-                        v-model="item.price"
+                        type="text"
+                        :value="formatPriceInput(item.price)"
+                        @input="handlePriceInput($event, item)"
+                        @blur="handlePriceBlur($event, item)"
                         class="table-input has-prefix"
+                        placeholder="0"
                         required
-                        min="0"
-                        step="any"
                       />
                     </div>
                   </td>
@@ -277,7 +278,11 @@
                 <span class="label-text">Akun COA</span>
                 <span class="required">*</span>
               </label>
-              <select v-model="form.coa_id" class="form-control" required>
+              <select 
+                id="coa-select" 
+                v-model="form.coa_id" 
+                class="form-control" 
+                required>
                 <option :value="null">-- Pilih Akun COA --</option>
                 <option v-for="coa in coaAccounts" :key="coa.id" :value="coa.id">
                   {{ coa.code }} - {{ coa.name }}
@@ -409,11 +414,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '@/api/axios'
 import DashboardLayout from '@/components/DashboardLayout.vue'
 import { useToast } from 'vue-toastification'
+import Choices from 'choices.js'
+import 'choices.js/public/assets/styles/choices.min.css'
 
 const router = useRouter()
 const toast = useToast()
@@ -425,6 +432,7 @@ const daftarSupplier = ref([])
 const availableReceipts = ref([])
 const coaAccounts = ref([])
 const ppnPercentage = ref(12)
+const coaChoicesInstance = ref(null)
 
 const today = new Date().toISOString().slice(0, 10)
 const thirtyDaysFromNow = new Date()
@@ -572,12 +580,66 @@ const fetchFormData = async () => {
 
     const formDataRes = await apiClient.get('/purchase-bills/form-data')
     coaAccounts.value = formDataRes.data.data.coa_accounts
+    
+    // Initialize Choices.js for COA dropdown after data is loaded
+    await nextTick()
+    initializeCoaDropdown()
   } catch (error) {
     console.error('Gagal memuat data form:', error)
     toast.error('Gagal memuat data form.')
   } finally {
     loading.value = false
   }
+}
+
+const initializeCoaDropdown = () => {
+  // Use setTimeout to ensure DOM is fully rendered
+  setTimeout(() => {
+    const coaSelect = document.getElementById('coa-select')
+    console.log('🔍 Trying to initialize COA dropdown...', coaSelect)
+    
+    if (coaSelect && !coaChoicesInstance.value) {
+      try {
+        coaChoicesInstance.value = new Choices(coaSelect, {
+          searchEnabled: true,
+          searchPlaceholderValue: 'Ketik untuk mencari akun COA...',
+          noResultsText: 'Akun tidak ditemukan',
+          noChoicesText: 'Tidak ada pilihan',
+          itemSelectText: 'Klik untuk pilih',
+          shouldSort: false,
+          position: 'bottom',
+          renderChoiceLimit: -1, // Render all choices
+          searchResultLimit: 100, // Limit search results
+        })
+        console.log('✅ COA Choices.js initialized successfully')
+      } catch (error) {
+        console.error('❌ Error initializing Choices.js:', error)
+      }
+    } else {
+      console.warn('⚠️ COA select element not found or already initialized')
+    }
+  }, 100)
+}
+
+const formatPriceInput = (value) => {
+  if (!value || value === 0) return ''
+  return parseFloat(value).toLocaleString('id-ID')
+}
+
+const handlePriceInput = (event, item) => {
+  // Remove non-numeric characters except comma and dot
+  let value = event.target.value.replace(/[^0-9.,]/g, '')
+  
+  // Replace comma with dot for decimal
+  value = value.replace(/,/g, '')
+  
+  // Update the raw number value
+  item.price = parseFloat(value) || 0
+}
+
+const handlePriceBlur = (event, item) => {
+  // Format the display value when user leaves the input
+  event.target.value = formatPriceInput(item.price)
 }
 
 const cancel = () => {
@@ -1069,6 +1131,10 @@ onMounted(fetchFormData)
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
+.table-input.has-prefix {
+  padding-left: 48px;
+}
+
 .td-subtotal {
   text-align: right;
 }
@@ -1444,5 +1510,74 @@ onMounted(fetchFormData)
   .btn-submit-action {
     justify-content: center;
   }
+}
+
+/* ============================================
+   CHOICES.JS CUSTOM STYLING
+   ============================================ */
+/* Force scrollbar on dropdown list */
+:deep(.choices__list--dropdown),
+:deep(.choices__list[aria-expanded]),
+.choices__list--dropdown,
+.choices__list[aria-expanded] {
+  max-height: 300px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+:deep(.choices[data-type*="select-one"] .choices__list--dropdown),
+.choices[data-type*="select-one"] .choices__list--dropdown {
+  max-height: 300px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Ensure the inner list also has proper height */
+:deep(.choices__list--dropdown .choices__list),
+.choices__list--dropdown .choices__list {
+  max-height: 300px !important;
+  overflow-y: auto !important;
+}
+
+:deep(.choices__list--dropdown .choices__item),
+.choices__list--dropdown .choices__item {
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+:deep(.choices__list--dropdown .choices__item--selectable.is-highlighted),
+.choices__list--dropdown .choices__item--selectable.is-highlighted {
+  background-color: #10b981 !important;
+}
+
+</style>
+
+<style>
+/* ============================================
+   CHOICES.JS GLOBAL STYLING (UNSCOPED)
+   ============================================ */
+.choices__list--dropdown {
+  max-height: 300px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+.choices[data-type*="select-one"] .choices__list--dropdown {
+  max-height: 300px !important;
+  overflow-y: auto !important;
+}
+
+.choices__list--dropdown .choices__list {
+  max-height: 300px !important;
+}
+
+.choices__list--dropdown .choices__item--selectable {
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+.choices__list--dropdown .choices__item--selectable.is-highlighted {
+  background-color: #10b981 !important;
+  color: white;
 }
 </style>

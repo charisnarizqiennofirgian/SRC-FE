@@ -211,13 +211,13 @@
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">
-                  Metode Pembayaran
+                  Akun Pembayaran (COA)
                   <span class="required">*</span>
                 </label>
-                <select v-model="form.payment_method_id" class="form-control" required>
-                  <option value="">-- Pilih Bank/Kas --</option>
-                  <option v-for="method in paymentMethods" :key="method.id" :value="method.id">
-                    {{ method.name }} ({{ method.account?.code }})
+                <select id="coa-select" v-model="form.account_id" class="form-control" required>
+                  <option value="">-- Pilih Akun Kas/Bank --</option>
+                  <option v-for="account in coaAccounts" :key="account.id" :value="account.id">
+                    {{ account.code }} - {{ account.name }} ({{ account.currency }})
                   </option>
                 </select>
               </div>
@@ -252,11 +252,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import { useNotification } from '../../composables/useNotification.js'
+import Choices from 'choices.js'
+import 'choices.js/public/assets/styles/choices.min.css'
 
 const router = useRouter()
 const { showSuccess, showError } = useNotification()
@@ -267,17 +269,17 @@ const outstandingBills = ref([])
 const loadingBills = ref(false)
 const selectedBillId = ref(null)
 const selectedBill = ref(null)
-const paymentMethods = ref([])
+const coaAccounts = ref([])
+const coaChoicesInstance = ref(null)
 const submitting = ref(false)
 
 const form = ref({
   payment_date: new Date().toISOString().split('T')[0],
   amount: 0,
-  payment_method_id: '',
+  account_id: '',
   notes: '',
 })
 
-// 🆕 Variable untuk format display
 const formattedAmount = ref('0')
 
 const today = computed(() => new Date().toISOString().split('T')[0])
@@ -292,13 +294,47 @@ const fetchSuppliers = async () => {
   }
 }
 
-const fetchPaymentMethods = async () => {
+const fetchCoaAccounts = async () => {
   try {
-    const response = await apiClient.get('/purchase-payments/form-data')
-    paymentMethods.value = response.data.data.payment_methods
+    const response = await apiClient.get('/coa', {
+      params: { 
+        is_active: 1 
+      }
+    })
+    coaAccounts.value = response.data.data || []
+    
+    await nextTick()
+    initializeCoaDropdown()
   } catch (error) {
-    console.error('Error fetching payment methods:', error)
+    console.error('Error fetching COA accounts:', error)
+    showError('Gagal', 'Gagal memuat data akun COA')
   }
+}
+
+const initializeCoaDropdown = () => {
+  setTimeout(() => {
+    const coaSelect = document.getElementById('coa-select')
+    
+    // Destroy existing instance if it exists
+    if (coaChoicesInstance.value) {
+      coaChoicesInstance.value.destroy()
+      coaChoicesInstance.value = null
+    }
+
+    if (coaSelect) {
+      coaChoicesInstance.value = new Choices(coaSelect, {
+        searchEnabled: true,
+        searchPlaceholderValue: 'Cari akun COA...',
+        noResultsText: 'Akun tidak ditemukan',
+        noChoicesText: 'Tidak ada pilihan',
+        itemSelectText: 'Klik untuk pilih',
+        shouldSort: false,
+        position: 'bottom',
+        renderChoiceLimit: -1,
+        searchResultLimit: 100,
+      })
+    }
+  }, 100)
 }
 
 const loadOutstandingBills = async () => {
@@ -321,37 +357,35 @@ const loadOutstandingBills = async () => {
   }
 }
 
-// 🆕 Format angka jadi Rupiah display (tanpa "Rp")
 const formatAmountDisplay = (value) => {
   if (!value || value === 0) return '0'
   return new Intl.NumberFormat('id-ID').format(value)
 }
 
-// 🆕 Handle input: ijinkan angka saja, auto format
 const handleAmountInput = (e) => {
-  let value = e.target.value.replace(/[^\d]/g, '') // Ambil angka saja
+  let value = e.target.value.replace(/[^\d]/g, '')
   form.value.amount = parseFloat(value) || 0
   formattedAmount.value = formatAmountDisplay(value)
 }
 
-// 🆕 Format saat blur (keluar dari input)
 const formatAmountOnBlur = () => {
   formattedAmount.value = formatAmountDisplay(form.value.amount)
 }
 
-// 🆕 Update setAmount dengan format display
 const setAmount = (amount) => {
   const rounded = Math.round(amount)
   form.value.amount = rounded
   formattedAmount.value = formatAmountDisplay(rounded)
 }
 
-// 🆕 Update selectBill dengan format display
-const selectBill = (bill) => {
+const selectBill = async (bill) => {
   selectedBill.value = bill
   const rounded = Math.round(bill.remaining_amount)
   form.value.amount = rounded
   formattedAmount.value = formatAmountDisplay(rounded)
+  
+  await nextTick()
+  initializeCoaDropdown()
 }
 
 const handleSubmit = async () => {
@@ -367,7 +401,7 @@ const handleSubmit = async () => {
       purchase_bill_id: selectedBillId.value,
       payment_date: form.value.payment_date,
       amount: form.value.amount,
-      payment_method_id: form.value.payment_method_id,
+      account_id: form.value.account_id,
       notes: form.value.notes,
     }
 
@@ -384,7 +418,6 @@ const handleSubmit = async () => {
   }
 }
 
-// 🆕 Update resetForm dengan reset formattedAmount
 const resetForm = () => {
   selectedSupplierId.value = ''
   selectedBillId.value = null
@@ -393,7 +426,7 @@ const resetForm = () => {
   form.value = {
     payment_date: new Date().toISOString().split('T')[0],
     amount: 0,
-    payment_method_id: '',
+    account_id: '',
     notes: '',
   }
   formattedAmount.value = '0'
@@ -432,7 +465,7 @@ const getStatusClass = (status) => {
 
 onMounted(() => {
   fetchSuppliers()
-  fetchPaymentMethods()
+  fetchCoaAccounts()
 })
 </script>
 
@@ -848,5 +881,36 @@ onMounted(() => {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+</style>
+
+<style>
+/* ============================================
+   CHOICES.JS GLOBAL STYLING (UNSCOPED)
+   ============================================ */
+.choices__list--dropdown,
+.choices__list[aria-expanded] {
+  max-height: 300px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+.choices[data-type*="select-one"] .choices__list--dropdown {
+  max-height: 300px !important;
+  overflow-y: auto !important;
+}
+
+.choices__list--dropdown .choices__list {
+  max-height: 300px !important;
+}
+
+.choices__list--dropdown .choices__item--selectable {
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+.choices__list--dropdown .choices__item--selectable.is-highlighted {
+  background-color: #10b981 !important;
+  color: white;
 }
 </style>
