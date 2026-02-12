@@ -283,8 +283,9 @@
               type="file"
               @change="handleFileChangeUmum"
               class="form-control-file"
-              accept=".xlsx, .xls, .csv"
+              accept=".xlsx, .xls"
             />
+            <small class="form-hint">Format: .xlsx, .xls (Maks. 5MB)</small>
             <div v-if="uploadFileUmum" class="file-info">
               <span class="file-icon">✅</span>
               File dipilih: <strong>{{ uploadFileUmum.name }}</strong>
@@ -358,8 +359,9 @@
               type="file"
               @change="handleFileChangeKarton"
               class="form-control-file"
-              accept=".xlsx, .xls, .csv"
+              accept=".xlsx, .xls"
             />
+            <small class="form-hint">Format: .xlsx, .xls (Maks. 5MB)</small>
             <div v-if="uploadFileKarton" class="file-info">
               <span class="file-icon">✅</span>
               File dipilih: <strong>{{ uploadFileKarton.name }}</strong>
@@ -433,8 +435,9 @@
               type="file"
               @change="handleFileChangeKomponen"
               class="form-control-file"
-              accept=".xlsx, .xls, .csv"
+              accept=".xlsx, .xls"
             />
+            <small class="form-hint">Format: .xlsx, .xls (Maks. 5MB)</small>
             <div v-if="uploadFileKomponen" class="file-info">
               <span class="file-icon">✅</span>
               File dipilih: <strong>{{ uploadFileKomponen.name }}</strong>
@@ -512,8 +515,9 @@
               type="file"
               @change="handleFileChangeKayuRst"
               class="form-control-file"
-              accept=".xlsx, .xls, .csv"
+              accept=".xlsx, .xls"
             />
+            <small class="form-hint">Format: .xlsx, .xls (Maks. 5MB)</small>
             <div v-if="uploadFileKayuRst" class="file-info">
               <span class="file-icon">✅</span>
               File dipilih: <strong>{{ uploadFileKayuRst.name }}</strong>
@@ -591,8 +595,9 @@
               type="file"
               @change="handleFileChangeKayu"
               class="form-control-file"
-              accept=".xlsx, .xls, .csv"
+              accept=".xlsx, .xls"
             />
+            <small class="form-hint">Format: .xlsx, .xls (Maks. 5MB)</small>
             <div v-if="uploadFileKayu" class="file-info">
               <span class="file-icon">✅</span>
               File dipilih: <strong>{{ uploadFileKayu.name }}</strong>
@@ -670,8 +675,9 @@
               type="file"
               @change="handleFileChangeProdukJadi"
               class="form-control-file"
-              accept=".xlsx, .xls, .csv"
+              accept=".xlsx, .xls"
             />
+            <small class="form-hint">Format: .xlsx, .xls (Maks. 5MB)</small>
             <div v-if="uploadFileProdukJadi" class="file-info">
               <span class="file-icon">✅</span>
               File dipilih: <strong>{{ uploadFileProdukJadi.name }}</strong>
@@ -747,8 +753,9 @@
               type="file"
               @change="handleFileChangeBom"
               class="form-control-file"
-              accept=".xlsx, .xls, .csv"
+              accept=".xlsx, .xls"
             />
+            <small class="form-hint">Format: .xlsx, .xls (Maks. 5MB)</small>
             <div v-if="uploadFileBom" class="file-info">
               <span class="file-icon">✅</span>
               File dipilih: <strong>{{ uploadFileBom.name }}</strong>
@@ -2485,6 +2492,14 @@ const downloadTemplateBom = async () => {
   font-size: 14px;
   color: #166534;
   font-weight: 600;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 6px;
+  display: block;
+  font-weight: 500;
 }
 
 .file-icon {

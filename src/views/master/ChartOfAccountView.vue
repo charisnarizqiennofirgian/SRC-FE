@@ -388,7 +388,7 @@
                   type="file"
                   id="importFile"
                   ref="importFileInput"
-                  accept=".csv,.xlsx,.xls"
+                  accept=".xlsx,.xls"
                   class="file-input"
                   @change="handleFileChange"
                   required
@@ -400,7 +400,7 @@
                   </span>
                 </label>
               </div>
-              <small class="form-hint">Format: .csv, .xlsx, .xls (Maks. 2MB)</small>
+              <small class="form-hint">Format: .xlsx, .xls (Maks. 5MB)</small>
             </div>
           </div>
 
