@@ -202,6 +202,25 @@
                               class="form-control-spec"
                             />
                           </div>
+                          <!-- ✅ TAMBAH 2 FIELD BARU -->
+                          <div class="spec-field">
+                            <label class="spec-label">Model</label>
+                            <input
+                              type="text"
+                              v-model="item.specifications.model"
+                              placeholder="Model karton"
+                              class="form-control-spec"
+                            />
+                          </div>
+                          <div class="spec-field">
+                            <label class="spec-label">Keterangan</label>
+                            <input
+                              type="text"
+                              v-model="item.specifications.keterangan"
+                              placeholder="Keterangan tambahan"
+                              class="form-control-spec"
+                            />
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -363,6 +382,8 @@ const tambahBarang = async () => {
       tinggi: null,
       kualitas: '',
       jenis: '',
+      model: '', // ✅ TAMBAH
+      keterangan: '', // ✅ TAMBAH
     },
   })
   await nextTick()
@@ -433,6 +454,8 @@ const fetchPOData = async () => {
         tinggi: null,
         kualitas: '',
         jenis: '',
+        model: '', // ✅ TAMBAH
+        keterangan: '', // ✅ TAMBAH
       },
     }))
 
@@ -464,7 +487,7 @@ const fetchDataDropdown = async () => {
     } else {
       daftarBarang.value = allBarang
     }
-  } catch (error) {
+  } catch {
     toast.error('Gagal memuat data supplier atau barang.')
   }
 }
@@ -868,8 +891,9 @@ textarea.form-control {
 /* ===== SPEC GRID KARTON - NEW ===== */
 .spec-grid-karton {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 18px;
+  align-items: start;
 }
 
 .spec-field {
@@ -1201,7 +1225,13 @@ textarea.form-control {
 }
 
 /* ===== RESPONSIVE ===== */
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
+  .spec-grid-karton {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1100px) {
   .spec-grid-karton {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -1295,6 +1325,7 @@ textarea.form-control {
 
   .spec-grid-karton {
     grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
   }
 
   .spec-card {
@@ -1305,6 +1336,7 @@ textarea.form-control {
 @media (max-width: 480px) {
   .spec-grid-karton {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
 }
 </style>
