@@ -58,7 +58,8 @@
             <tr>
               <th class="th-po">Nomor PO</th>
               <th class="th-supplier">Supplier</th>
-              <th class="th-date">Tanggal</th>
+              <th class="th-date">Tanggal Pesan</th>
+              <th class="th-date">Tanggal Kirim</th> <!-- ✅ TAMBAH INI -->
               <th class="th-total">Total</th>
               <th class="th-status">Status</th>
               <th class="th-action">Aksi</th>
@@ -66,7 +67,7 @@
           </thead>
           <tbody>
             <tr v-if="daftarPesanan.length === 0" class="empty-row">
-              <td colspan="6">
+              <td colspan="7"> <!-- ✅ GANTI DARI 6 JADI 7 -->
                 <div class="empty-state">
                   <span class="empty-icon">📭</span>
                   <p class="empty-text">Belum ada Pesanan Pembelian</p>
@@ -87,6 +88,12 @@
               </td>
               <td class="td-date">
                 <span class="date-text">{{ formatTanggal(pesanan.order_date) }}</span>
+              </td>
+              <!-- ✅ TAMBAH KOLOM TANGGAL KIRIM -->
+              <td class="td-date">
+                <span class="date-text">{{
+                  pesanan.delivery_date ? formatTanggal(pesanan.delivery_date) : '-'
+                }}</span>
               </td>
               <td class="td-total">
                 <span class="total-amount">{{ formatRupiah(pesanan.grand_total) }}</span>
@@ -530,7 +537,7 @@ const formatRupiah = (angka) => {
   width: auto;
 }
 .th-date {
-  width: 200px;
+  width: 160px;
 }
 .th-total {
   width: 160px;

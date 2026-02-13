@@ -54,6 +54,13 @@
               <label class="form-label">Tanggal Pesan</label>
               <input type="date" v-model="form.order_date" class="form-control" required />
             </div>
+
+            <!-- ✅ TAMBAH INPUT TANGGAL KIRIM -->
+            <div class="form-group">
+              <label class="form-label">Tanggal Kirim</label>
+              <input type="date" v-model="form.delivery_date" class="form-control" required />
+            </div>
+
             <div class="form-group full-width">
               <label class="form-label">Catatan (Opsional)</label>
               <textarea
@@ -285,6 +292,7 @@ const choicesInstances = ref([])
 const form = reactive({
   supplier_id: '',
   order_date: new Date().toISOString().slice(0, 10),
+  delivery_date: '', // ✅ TAMBAH INI
   notes: '',
   ppn_percentage: 12, // Default 12%
   details: [],
@@ -411,6 +419,7 @@ const fetchPOData = async () => {
     poNumber.value = data.po_number
     form.supplier_id = data.supplier_id
     form.order_date = data.order_date
+    form.delivery_date = data.delivery_date || '' // ✅ TAMBAH INI
     form.notes = data.notes || ''
     form.ppn_percentage = parseFloat(data.ppn_percentage ?? 12)
 
@@ -705,7 +714,7 @@ const formatCurrency = (value) => {
 /* ===== FORM GRID ===== */
 .info-grid-form {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 24px;
 }
 
