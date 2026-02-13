@@ -1,6 +1,5 @@
 <template>
   <DashboardLayout>
-    <!-- HEADER -->
     <div class="page-header">
       <div class="header-content">
         <div class="header-left-section">
@@ -23,14 +22,12 @@
       </div>
     </div>
 
-    <!-- LOADING -->
     <div v-if="loading" class="loading-container">
       <div class="spinner"></div>
       <p class="loading-text">Memuat data...</p>
     </div>
 
     <form v-else @submit.prevent="saveOrder">
-      <!-- INFORMASI UTAMA -->
       <div class="content-card">
         <div class="card-header-section">
           <div class="section-icon-wrapper">
@@ -52,7 +49,7 @@
                 </option>
               </select>
             </div>
-            <!-- ✅ TAMBAH 2 INPUT TANGGAL -->
+
             <div class="form-group">
               <label class="form-label">Tanggal Pesan</label>
               <input type="date" v-model="form.order_date" class="form-control" required />
@@ -76,7 +73,6 @@
         </div>
       </div>
 
-      <!-- DETAIL BARANG -->
       <div class="content-card">
         <div class="card-header-section">
           <div class="section-icon-wrapper">
@@ -161,7 +157,6 @@
           </div>
         </div>
 
-        <!-- SUMMARY SECTION -->
         <div class="summary-section">
           <div class="summary-row">
             <div class="ppn-compact">
@@ -179,6 +174,11 @@
                   <input type="radio" v-model.number="form.ppn_percentage" :value="12" />
                   <span>12%</span>
                 </label>
+                <label class="ppn-radio ppn-special">
+                  <input type="radio" v-model.number="form.ppn_percentage" :value="11.12" />
+                  <span>12% ⚡</span>
+                  <small class="ppn-note">Hitung 11%</small>
+                </label>
               </div>
             </div>
 
@@ -188,7 +188,7 @@
                 <span class="value">{{ formatCurrency(totalSubtotal) }}</span>
               </div>
               <div class="summary-item-compact">
-                <span class="label">PPN ({{ form.ppn_percentage }}%):</span>
+                <span class="label">PPN ({{ formatPPNDisplay(form.ppn_percentage) }}):</span>
                 <span class="value ppn">{{ formatCurrency(totalPPN) }}</span>
               </div>
               <div class="summary-item-compact total">
@@ -200,7 +200,6 @@
         </div>
       </div>
 
-      <!-- FORM ACTIONS -->
       <div class="form-actions">
         <button type="submit" class="btn-submit-action" :disabled="isSaving">
           {{ isSaving ? 'Menyimpan...' : 'Simpan PO Operasional' }}
@@ -236,7 +235,7 @@ const choicesInstances = ref([])
 const form = reactive({
   supplier_id: '',
   order_date: new Date().toISOString().slice(0, 10),
-  delivery_date: '', // ✅ TAMBAH INI
+  delivery_date: '', // ✅ FIXED: Conflict Removed
   notes: '',
   ppn_percentage: 12,
   details: [],
@@ -248,19 +247,25 @@ const totalSubtotal = computed(() => {
   }, 0)
 })
 
+// ✅ UPDATED: DETECT 11.12 → HITUNG PAKAI 11%
 const totalPPN = computed(() => {
-  return (totalSubtotal.value * form.ppn_percentage) / 100
+  let ppnRate = form.ppn_percentage
+
+  // Special case: 11.12 → hitung pakai 11%
+  if (ppnRate === 11.12) {
+    ppnRate = 11
+  }
+
+  return (totalSubtotal.value * ppnRate) / 100
 })
 
 const grandTotal = computed(() => {
   return totalSubtotal.value + totalPPN.value
 })
 
-// ✅ PERBAIKAN: Rebuild dropdown dengan data yang sudah difilter
 const initializeChoices = async () => {
   await nextTick()
 
-  // ✅ Destroy semua Choices.js instance lama
   choicesInstances.value.forEach((choice) => {
     if (choice && choice.destroy) {
       choice.destroy()
@@ -268,14 +273,11 @@ const initializeChoices = async () => {
   })
   choicesInstances.value = []
 
-  // ✅ Buat Choices.js baru untuk setiap row
   form.details.forEach((item, index) => {
     const selectElement = document.getElementById(`select-barang-${index}`)
     if (selectElement) {
-      // ✅ HAPUS semua option lama
       selectElement.innerHTML = '<option disabled value="">Pilih Barang</option>'
 
-      // ✅ TAMBAH option dari daftarBarang YANG SUDAH DIFILTER
       daftarBarang.value.forEach((barang) => {
         const option = document.createElement('option')
         option.value = barang.id
@@ -283,15 +285,12 @@ const initializeChoices = async () => {
         selectElement.appendChild(option)
       })
 
-      // ✅ PERBAIKAN: Set value ke kosong (tidak auto-select)
       selectElement.value = ''
 
-      // ✅ Reset v-model jika item baru
       if (!item.item_id) {
         item.item_id = ''
       }
 
-      // ✅ Inisialisasi Choices.js
       const choices = new Choices(selectElement, {
         searchEnabled: true,
         searchPlaceholderValue: 'Ketik nama barang untuk mencari...',
@@ -304,7 +303,6 @@ const initializeChoices = async () => {
         searchFields: ['label'],
       })
 
-      // ✅ Event listener untuk update v-model
       selectElement.addEventListener('change', (event) => {
         item.item_id = parseInt(event.target.value) || ''
       })
@@ -382,7 +380,7 @@ const fetchPOData = async () => {
     poNumber.value = data.po_number
     form.supplier_id = data.supplier_id
     form.order_date = data.order_date
-    form.delivery_date = data.delivery_date || '' // ✅ TAMBAH INI
+    form.delivery_date = data.delivery_date || '' // ✅ FIXED: Conflict Removed
     form.notes = data.notes || ''
     form.ppn_percentage = parseFloat(data.ppn_percentage ?? 12)
 
@@ -415,7 +413,6 @@ const fetchDataDropdown = async () => {
     const allBarang = barangRes.data.data
     const allCategories = categoryRes.data.data
 
-    // ✅ FILTER: Hanya kategori "Bahan Operasional" atau "Bahan Penolong"
     const operationalCategories = allCategories.filter((cat) => {
       const catName = (cat.name || '').toLowerCase().trim()
       return catName === 'bahan penolong' || catName === 'bahan operasional'
@@ -423,13 +420,14 @@ const fetchDataDropdown = async () => {
 
     const operationalCategoryIds = operationalCategories.map((cat) => cat.id)
 
-    // ✅ FILTER: Hanya barang dengan kategori operasional
     if (operationalCategoryIds.length > 0) {
       daftarBarang.value = allBarang.filter((item) => {
         return operationalCategoryIds.includes(item.category_id)
       })
-      
-      console.log(`✅ Filter aktif: Hanya menampilkan ${daftarBarang.value.length} barang dari kategori Bahan Operasional/Penolong`)
+
+      console.log(
+        `✅ Filter aktif: Hanya menampilkan ${daftarBarang.value.length} barang dari kategori Bahan Operasional/Penolong`,
+      )
     } else {
       console.warn('⚠️ TIDAK ADA kategori operasional! Menampilkan semua barang.')
       daftarBarang.value = allBarang
@@ -446,7 +444,6 @@ onMounted(async () => {
   await fetchPOData()
 })
 
-// ✅ HELPER: Format stok
 const formatStock = (stock) => {
   if (stock === null || stock === undefined) return '0'
   return parseFloat(stock).toLocaleString('id-ID')
@@ -460,9 +457,71 @@ const formatCurrency = (value) => {
     minimumFractionDigits: 0,
   }).format(value)
 }
-</script>
 
+// ✅ UPDATED: Tampilan PPN di summary
+const formatPPNDisplay = (percentage) => {
+  if (percentage === 11.12) {
+    return '12% ⚡' // Tampilan konsisten dengan button
+  }
+  return `${percentage}%`
+}
+</script>
 <style scoped>
+/* ✅ SPECIAL STYLING UNTUK 12% ⚡ (HITUNG 11%) */
+.ppn-radio.ppn-special {
+  position: relative;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  font-weight: 600;
+  padding: 10px 16px;
+}
+
+.ppn-radio.ppn-special:has(input:checked) {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border-color: #d97706;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.ppn-radio.ppn-special span {
+  color: #92400e;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ppn-radio.ppn-special:has(input:checked) span {
+  color: white;
+}
+
+/* ✅ CATATAN KECIL "Hitung 11%" */
+.ppn-note {
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #92400e;
+  background: #fef3c7;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.ppn-radio.ppn-special:hover .ppn-note {
+  opacity: 1;
+}
+
+.ppn-radio.ppn-special:has(input:checked) .ppn-note {
+  opacity: 1;
+  background: #fbbf24;
+  color: white;
+}
+
 /* ===== LOADING STATE ===== */
 .loading-container {
   display: flex;
