@@ -278,6 +278,12 @@
                   <input type="radio" v-model.number="form.ppn_percentage" :value="12" />
                   <span>12%</span>
                 </label>
+                <!-- ✅ TAMPILAN: 12% dengan icon/badge -->
+                <label class="ppn-radio ppn-special">
+                  <input type="radio" v-model.number="form.ppn_percentage" :value="11.12" />
+                  <span>12% ⚡</span>
+                  <small class="ppn-note">Hitung 11%</small>
+                </label>
               </div>
             </div>
 
@@ -287,7 +293,7 @@
                 <span class="value">{{ formatCurrency(totalSubtotal) }}</span>
               </div>
               <div class="summary-item-compact">
-                <span class="label">PPN ({{ form.ppn_percentage }}%):</span>
+                <span class="label">PPN ({{ formatPPNDisplay(form.ppn_percentage) }}):</span>
                 <span class="value ppn">{{ formatCurrency(totalPPN) }}</span>
               </div>
               <div class="summary-item-compact total">
@@ -348,7 +354,14 @@ const totalSubtotal = computed(() => {
 })
 
 const totalPPN = computed(() => {
-  return (totalSubtotal.value * form.ppn_percentage) / 100
+  let ppnRate = form.ppn_percentage
+
+  // Special case: 11.12 → hitung pakai 11%
+  if (ppnRate === 11.12) {
+    ppnRate = 11
+  }
+
+  return (totalSubtotal.value * ppnRate) / 100
 })
 
 const grandTotal = computed(() => {
@@ -508,7 +521,7 @@ const fetchPOData = async () => {
 
     await nextTick()
     initializeChoices()
-  } catch (error) {
+  } catch {
     toast.error('Gagal memuat data PO.')
   } finally {
     loading.value = false
@@ -534,7 +547,7 @@ const fetchDataDropdown = async () => {
     } else {
       daftarBarang.value = allBarang
     }
-  } catch (error) {
+  } catch {
     toast.error('Gagal memuat data supplier atau barang.')
   }
 }
@@ -551,6 +564,14 @@ const formatCurrency = (value) => {
     currency: 'IDR',
     minimumFractionDigits: 0,
   }).format(value)
+}
+
+// ✅ UPDATED: Tampilan PPN di summary
+const formatPPNDisplay = (percentage) => {
+  if (percentage === 11.12) {
+    return '12% ⚡' // Tampilan konsisten dengan button
+  }
+  return `${percentage}%`
 }
 </script>
 
@@ -1470,5 +1491,60 @@ textarea.form-control {
     text-align: left;
     padding-right: 0;
   }
+}
+
+/* ✅ SPECIAL STYLING UNTUK 12% ⚡ (HITUNG 11%) */
+.ppn-radio.ppn-special {
+  position: relative;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  font-weight: 600;
+  padding: 10px 16px;
+}
+
+.ppn-radio.ppn-special:has(input:checked) {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border-color: #d97706;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.ppn-radio.ppn-special span {
+  color: #92400e;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ppn-radio.ppn-special:has(input:checked) span {
+  color: white;
+}
+
+/* ✅ CATATAN KECIL "Hitung 11%" */
+.ppn-note {
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #92400e;
+  background: #fef3c7;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.ppn-radio.ppn-special:hover .ppn-note {
+  opacity: 1;
+}
+
+.ppn-radio.ppn-special:has(input:checked) .ppn-note {
+  opacity: 1;
+  background: #fbbf24;
+  color: white;
 }
 </style>
