@@ -123,6 +123,7 @@ const menuPermissionMap = {
   Produksi: ['manage-bom'],
   Pembelian: ['manage-po', 'manage-grn', 'manage-bills'],
   Penjualan: ['manage-so', 'manage-do', 'manage-invoices'],
+  Perbaikan: [], // Semua user bisa akses (atau bisa dikasih permission khusus)
 }
 
 // ✅ SEMUA MENU ITEMS
@@ -201,6 +202,11 @@ const allMenuItems = [
       { name: 'Daftar Pengiriman', route: { name: 'DaftarPengiriman' } },
       { name: 'Sales Invoice', route: { name: 'InvoiceList' } },
     ],
+  },
+  {
+    name: 'Perbaikan',
+    icon: '🔧',
+    children: [{ name: 'Jurnal Manual', route: { name: 'JurnalPerbaikan' } }],
   },
 ]
 

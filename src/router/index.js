@@ -48,6 +48,11 @@ import PackingView from '../views/produksi/PackingView.vue'
 import MaterialUsageView from '../views/produksi/MaterialUsageView.vue'
 import ChartOfAccountView from '../views/master/ChartOfAccountView.vue'
 
+// MODULE PERBAIKAN
+import JurnalUmumIndex from '../views/perbaikan/JurnalUmumIndex.vue'
+import JurnalUmumDetail from '../views/perbaikan/JurnalUmumDetail.vue'
+import JurnalUmumEdit from '../views/perbaikan/JurnalUmumEdit.vue'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   linkActiveClass: 'router-link-active',
@@ -360,6 +365,27 @@ const router = createRouter({
           name: 'DetailFakturPembelian',
           component: DetailFakturPembelian,
           meta: { title: 'Detail Faktur Pembelian' },
+        },
+        // PERBAIKAN JURNAL MANUAL
+        {
+          path: '/admin/perbaikan/jurnal-manual',
+          name: 'JurnalPerbaikan',
+          component: JurnalUmumIndex,
+          meta: { title: 'Daftar Jurnal Perbaikan', requiresAuth: true },
+        },
+        {
+          path: '/admin/perbaikan/jurnal-manual/:id',
+          name: 'DetailJurnalPerbaikan',
+          component: JurnalUmumDetail,
+          meta: { title: 'Detail Jurnal Perbaikan', requiresAuth: true },
+          props: true,
+        },
+        {
+          path: '/admin/perbaikan/jurnal-manual/:id/edit',
+          name: 'EditJurnalPerbaikan',
+          component: JurnalUmumEdit,
+          meta: { title: 'Edit Jurnal Perbaikan', requiresAuth: true },
+          props: true,
         },
       ],
     },
