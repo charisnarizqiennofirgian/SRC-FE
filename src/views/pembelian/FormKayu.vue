@@ -6,7 +6,10 @@
         <div class="header-left-section">
           <div class="icon-badge">🪵</div>
           <div>
-            <h1 class="page-title">{{ isEditMode ? 'Edit' : 'Buat' }} PO Kayu</h1>
+            <div class="hero-eyebrow">Modul Pembelian</div>
+            <h1 class="page-title">
+              {{ isEditMode ? 'Edit' : 'Buat' }} PO <span class="accent">Kayu</span>
+            </h1>
             <p class="page-subtitle">
               {{
                 isEditMode ? `Edit PO Kayu ${poNumber}` : 'Isi detail untuk PO Kayu (RST & Mall)'
@@ -15,8 +18,7 @@
           </div>
         </div>
         <router-link :to="{ name: 'PembelianKayu' }" class="btn-back">
-          <span class="btn-icon">←</span>
-          <span>Kembali ke Daftar</span>
+          ← Kembali ke Daftar
         </router-link>
       </div>
     </div>
@@ -31,20 +33,23 @@
     <form v-else @submit.prevent="saveOrder">
       <!-- INFORMASI UTAMA -->
       <div class="content-card">
-        <div class="card-header-section">
-          <div class="section-icon-wrapper">
-            <div class="section-icon">ℹ️</div>
-          </div>
-          <div class="section-header-text">
-            <h2 class="section-title">Informasi Utama</h2>
-            <p class="section-subtitle">Pilih supplier, tanggal, dan catatan pemesanan</p>
+        <div class="card-head">
+          <div class="card-head-icon">ℹ️</div>
+          <div>
+            <h2 class="card-title">Informasi Utama</h2>
+            <p class="card-subtitle">Pilih supplier, tanggal, dan catatan pemesanan</p>
           </div>
         </div>
         <div class="card-body">
-          <div class="info-grid-form">
+          <div class="info-grid">
             <div class="form-group">
               <label class="form-label">Supplier</label>
-              <select v-model="form.supplier_id" class="form-control" required>
+              <select
+                id="select-supplier"
+                v-model="form.supplier_id"
+                class="form-control choices-select"
+                required
+              >
                 <option disabled value="">Pilih Supplier</option>
                 <option v-for="supplier in daftarSupplier" :key="supplier.id" :value="supplier.id">
                   {{ supplier.name }}
@@ -68,19 +73,18 @@
         </div>
       </div>
 
-      <!-- DETAIL BARANG & SPESIFIKASI -->
+      <!-- DETAIL BARANG -->
       <div class="content-card">
-        <div class="card-header-section">
-          <div class="section-icon-wrapper">
-            <div class="section-icon">📝</div>
-          </div>
-          <div class="section-header-text">
-            <h2 class="section-title">Detail Barang & Spesifikasi Kayu</h2>
-            <p class="section-subtitle">
+        <div class="card-head">
+          <div class="card-head-icon">📝</div>
+          <div>
+            <h2 class="card-title">Detail Barang & Spesifikasi Kayu</h2>
+            <p class="card-subtitle">
               Gunakan "Input Manual" untuk Kayu Mall, biarkan non-aktif untuk Kayu RST
             </p>
           </div>
         </div>
+
         <div class="card-body-table">
           <div class="table-wrapper">
             <table class="detail-table">
@@ -98,11 +102,10 @@
                   <!-- DATA ROW -->
                   <tr class="data-row">
                     <td class="td-material">
-                      <!-- ✅ SEARCHABLE DROPDOWN -->
                       <select
                         :id="'select-barang-' + index"
                         v-model="item.item_id"
-                        class="choices-select"
+                        class="form-control choices-select"
                         required
                       >
                         <option disabled value="">Pilih Barang</option>
@@ -159,7 +162,6 @@
                   <tr class="spec-row">
                     <td colspan="5" class="spec-cell">
                       <div class="spec-card">
-                        <!-- HEADER WITH TOGGLE -->
                         <div class="spec-header">
                           <h4 class="spec-title">🧮 Spesifikasi Kayu</h4>
                           <div class="manual-switch-wrapper">
@@ -175,8 +177,6 @@
                             </label>
                           </div>
                         </div>
-
-                        <!-- SPEC GRID -->
                         <div class="spec-grid-kayu">
                           <label class="spec-label">Invoice Size (mm)</label>
                           <input
@@ -218,7 +218,6 @@
                             class="form-control-spec"
                           />
 
-                          <!-- MODE RST -->
                           <template v-if="!item.specifications.is_manual_price">
                             <label class="spec-label">Harga per m³ (Rp)</label>
                             <input
@@ -227,7 +226,6 @@
                               placeholder="Harga per Kubik"
                               class="form-control-spec"
                             />
-
                             <label class="spec-label">Kubikasi (m³)</label>
                             <input
                               type="text"
@@ -237,11 +235,10 @@
                             />
                           </template>
 
-                          <!-- MODE MALL -->
                           <template v-else>
                             <div class="spacer-label"></div>
                             <div class="manual-note">
-                              <div class="note-icon">💡</div>
+                              <span>💡</span>
                               <span>Harga Satuan akan diinput manual di tabel atas</span>
                             </div>
                           </template>
@@ -253,6 +250,7 @@
               </tbody>
             </table>
           </div>
+
           <div class="table-actions">
             <button @click="tambahBarang" type="button" class="btn-add-row">
               ➕ Tambah Barang
@@ -260,12 +258,12 @@
           </div>
         </div>
 
-        <!-- SUMMARY SECTION -->
+        <!-- SUMMARY -->
         <div class="summary-section">
           <div class="summary-row">
-            <div class="ppn-compact">
-              <label class="ppn-label-compact">PPN:</label>
-              <div class="ppn-options-compact">
+            <div class="ppn-group">
+              <span class="ppn-label">PPN:</span>
+              <div class="ppn-options">
                 <label class="ppn-radio">
                   <input type="radio" v-model.number="form.ppn_percentage" :value="0" />
                   <span>0%</span>
@@ -278,7 +276,6 @@
                   <input type="radio" v-model.number="form.ppn_percentage" :value="12" />
                   <span>12%</span>
                 </label>
-                <!-- ✅ TAMPILAN: 12% dengan icon/badge -->
                 <label class="ppn-radio ppn-special">
                   <input type="radio" v-model.number="form.ppn_percentage" :value="11.12" />
                   <span>12% ⚡</span>
@@ -287,18 +284,18 @@
               </div>
             </div>
 
-            <div class="summary-compact">
-              <div class="summary-item-compact">
-                <span class="label">Subtotal:</span>
-                <span class="value">{{ formatCurrency(totalSubtotal) }}</span>
+            <div class="summary-totals">
+              <div class="summary-line">
+                <span class="s-label">Subtotal</span>
+                <span class="s-value">{{ formatCurrency(totalSubtotal) }}</span>
               </div>
-              <div class="summary-item-compact">
-                <span class="label">PPN ({{ formatPPNDisplay(form.ppn_percentage) }}):</span>
-                <span class="value ppn">{{ formatCurrency(totalPPN) }}</span>
+              <div class="summary-line">
+                <span class="s-label">PPN ({{ formatPPNDisplay(form.ppn_percentage) }})</span>
+                <span class="s-value s-ppn">{{ formatCurrency(totalPPN) }}</span>
               </div>
-              <div class="summary-item-compact total">
-                <span class="label">Grand Total:</span>
-                <span class="value">{{ formatCurrency(grandTotal) }}</span>
+              <div class="summary-line summary-total">
+                <span class="s-label">Grand Total</span>
+                <span class="s-value">{{ formatCurrency(grandTotal) }}</span>
               </div>
             </div>
           </div>
@@ -307,7 +304,8 @@
 
       <!-- FORM ACTIONS -->
       <div class="form-actions">
-        <button type="submit" class="btn-submit-action" :disabled="isSaving">
+        <router-link :to="{ name: 'PembelianKayu' }" class="btn-cancel">Batal</router-link>
+        <button type="submit" class="btn-submit" :disabled="isSaving">
           <span v-if="!isSaving">💾 {{ isEditMode ? 'Update' : 'Simpan' }} PO Kayu</span>
           <span v-else>⏳ Menyimpan...</span>
         </button>
@@ -337,7 +335,8 @@ const isSaving = ref(false)
 
 const daftarSupplier = ref([])
 const daftarBarang = ref([])
-const choicesInstances = ref([])
+const choicesMap = ref(new Map())
+const supplierChoice = ref(null)
 
 const form = reactive({
   supplier_id: '',
@@ -347,28 +346,16 @@ const form = reactive({
   details: [],
 })
 
-const totalSubtotal = computed(() => {
-  return form.details.reduce((sum, item) => {
-    return sum + (item.quantity || 0) * (item.price || 0)
-  }, 0)
-})
-
+const totalSubtotal = computed(() =>
+  form.details.reduce((sum, item) => sum + (item.quantity || 0) * (item.price || 0), 0),
+)
 const totalPPN = computed(() => {
-  let ppnRate = form.ppn_percentage
-
-  // Special case: 11.12 → hitung pakai 11%
-  if (ppnRate === 11.12) {
-    ppnRate = 11
-  }
-
+  let ppnRate = form.ppn_percentage === 11.12 ? 11 : form.ppn_percentage
   return (totalSubtotal.value * ppnRate) / 100
 })
+const grandTotal = computed(() => totalSubtotal.value + totalPPN.value)
 
-const grandTotal = computed(() => {
-  return totalSubtotal.value + totalPPN.value
-})
-
-const defaultKayuSpec = {
+const defaultKayuSpec = () => ({
   invoice_p: null,
   invoice_l: null,
   invoice_t: null,
@@ -378,70 +365,74 @@ const defaultKayuSpec = {
   harga_kubikasi: null,
   kubikasi: 0,
   is_manual_price: false,
-}
+})
 
-// ✅ FUNCTION: Initialize Choices.js
-const initializeChoices = async () => {
+const initSupplierChoice = async () => {
   await nextTick()
-
-  // Destroy old instances
-  choicesInstances.value.forEach((choice) => {
-    if (choice && choice.destroy) {
-      choice.destroy()
-    }
+  if (supplierChoice.value) supplierChoice.value.destroy()
+  const selectElement = document.getElementById('select-supplier')
+  if (!selectElement) return
+  supplierChoice.value = new Choices(selectElement, {
+    searchEnabled: true,
+    searchPlaceholderValue: 'Cari supplier...',
+    noResultsText: 'Tidak ditemukan',
+    noChoicesText: 'Tidak ada pilihan',
+    itemSelectText: 'Klik untuk pilih',
+    shouldSort: false,
+    removeItemButton: false,
   })
-  choicesInstances.value = []
-
-  // Create new instances
-  form.details.forEach((item, index) => {
-    const selectElement = document.getElementById(`select-barang-${index}`)
-    if (selectElement) {
-      const choices = new Choices(selectElement, {
-        searchEnabled: true,
-        searchPlaceholderValue: 'Ketik untuk mencari barang...',
-        noResultsText: 'Tidak ditemukan',
-        noChoicesText: 'Tidak ada pilihan',
-        itemSelectText: 'Klik untuk pilih',
-        shouldSort: false,
-        removeItemButton: false,
-      })
-
-      selectElement.addEventListener('change', (event) => {
-        item.item_id = parseInt(event.target.value) || ''
-      })
-
-      choicesInstances.value.push(choices)
-    }
+  if (form.supplier_id) supplierChoice.value.setChoiceByValue(String(form.supplier_id))
+  selectElement.addEventListener('change', (event) => {
+    form.supplier_id = parseInt(event.target.value) || ''
   })
 }
 
-// ✅ WATCH: Re-initialize Choices.js when details length changes
-watch(
-  () => form.details.length,
-  () => {
-    initializeChoices()
-  },
-)
+const initChoicesForIndex = async (index, item) => {
+  await nextTick()
+  if (choicesMap.value.has(index)) {
+    try {
+      choicesMap.value.get(index).destroy()
+    } catch {}
+    choicesMap.value.delete(index)
+  }
+  const selectElement = document.getElementById(`select-barang-${index}`)
+  if (!selectElement) return
+  const choices = new Choices(selectElement, {
+    searchEnabled: true,
+    searchPlaceholderValue: 'Ketik untuk mencari barang...',
+    noResultsText: 'Tidak ditemukan',
+    noChoicesText: 'Tidak ada pilihan',
+    itemSelectText: 'Klik untuk pilih',
+    shouldSort: false,
+    removeItemButton: false,
+  })
+  if (item.item_id) choices.setChoiceByValue(String(item.item_id))
+  selectElement.addEventListener('change', (event) => {
+    item.item_id = parseInt(event.target.value) || ''
+  })
+  choicesMap.value.set(index, choices)
+}
+
+const initAllChoices = async () => {
+  await nextTick()
+  await initSupplierChoice()
+  for (let i = 0; i < form.details.length; i++) await initChoicesForIndex(i, form.details[i])
+}
 
 watch(
   () => form.details,
   (newDetails) => {
     newDetails.forEach((item) => {
       const spec = item.specifications
-
       if (spec.invoice_p > 0 && spec.invoice_l > 0 && spec.invoice_t > 0) {
         const kubikasi = (spec.invoice_p / 1000) * (spec.invoice_l / 1000) * (spec.invoice_t / 1000)
         spec.kubikasi = parseFloat(kubikasi.toFixed(6))
       } else {
         spec.kubikasi = 0
       }
-
       if (!spec.is_manual_price) {
-        if (spec.kubikasi > 0 && spec.harga_kubikasi > 0) {
-          item.price = spec.kubikasi * spec.harga_kubikasi
-        } else {
-          item.price = 0
-        }
+        item.price =
+          spec.kubikasi > 0 && spec.harga_kubikasi > 0 ? spec.kubikasi * spec.harga_kubikasi : 0
       }
     })
   },
@@ -449,20 +440,26 @@ watch(
 )
 
 const tambahBarang = async () => {
-  form.details.push({
-    item_id: '',
-    quantity: 1,
-    price: 0,
-    specifications: { ...defaultKayuSpec },
-  })
-  await nextTick()
-  initializeChoices()
+  const newIndex = form.details.length
+  form.details.push({ item_id: '', quantity: 1, price: 0, specifications: defaultKayuSpec() })
+  if (!loading.value) await initChoicesForIndex(newIndex, form.details[newIndex])
 }
 
 const hapusBarang = (index) => {
-  if (form.details.length > 1) {
-    form.details.splice(index, 1)
+  if (form.details.length <= 1) return
+  if (choicesMap.value.has(index)) {
+    try {
+      choicesMap.value.get(index).destroy()
+    } catch {}
+    choicesMap.value.delete(index)
   }
+  form.details.splice(index, 1)
+  const newMap = new Map()
+  choicesMap.value.forEach((instance, key) => {
+    if (key < index) newMap.set(key, instance)
+    else if (key > index) newMap.set(key - 1, instance)
+  })
+  choicesMap.value = newMap
 }
 
 const saveOrder = async () => {
@@ -478,7 +475,6 @@ const saveOrder = async () => {
         specifications: d.specifications,
       })),
     }
-
     if (isEditMode.value) {
       await apiClient.put(`/purchase-orders/${poId}`, payload)
       toast.success('PO Kayu berhasil diupdate!')
@@ -488,8 +484,7 @@ const saveOrder = async () => {
     }
     router.push({ name: 'PembelianKayu' })
   } catch (error) {
-    const errorMessage = error.response?.data?.message || 'Gagal menyimpan pesanan.'
-    toast.error(errorMessage)
+    toast.error(error.response?.data?.message || 'Gagal menyimpan pesanan.')
   } finally {
     isSaving.value = false
   }
@@ -497,56 +492,41 @@ const saveOrder = async () => {
 
 const fetchPOData = async () => {
   if (!isEditMode.value) {
-    tambahBarang()
+    await tambahBarang()
     loading.value = false
     return
   }
-
   try {
     const response = await apiClient.get(`/purchase-orders/${poId}`)
     const data = response.data.data
-
     poNumber.value = data.po_number
     form.supplier_id = data.supplier_id
     form.order_date = data.order_date
     form.notes = data.notes || ''
     form.ppn_percentage = parseFloat(data.ppn_percentage ?? 12)
-
     form.details = data.details.map((d) => ({
       item_id: d.item_id,
       quantity: parseFloat(d.quantity_ordered),
       price: parseFloat(d.price),
-      specifications: { ...defaultKayuSpec, ...(d.specifications || {}) },
+      specifications: { ...defaultKayuSpec(), ...(d.specifications || {}) },
     }))
-
+    loading.value = false
     await nextTick()
-    initializeChoices()
+    await initAllChoices()
   } catch {
     toast.error('Gagal memuat data PO.')
-  } finally {
     loading.value = false
   }
 }
 
 const fetchDataDropdown = async () => {
   try {
-    const [supplierRes, barangRes, categoryRes] = await Promise.all([
+    const [supplierRes, barangRes] = await Promise.all([
       apiClient.get('/suppliers?all=true'),
-      apiClient.get('/materials?all=true'),
-      apiClient.get('/categories?all=true'),
+      apiClient.get('/materials?all=true&category_name=Kayu RST'),
     ])
     daftarSupplier.value = supplierRes.data.data
-
-    const allBarang = barangRes.data.data
-    const allCategories = categoryRes.data.data
-
-    const kayuCategory = allCategories.find((cat) => cat.name === 'Kayu RST')
-
-    if (kayuCategory) {
-      daftarBarang.value = allBarang.filter((item) => item.category_id === kayuCategory.id)
-    } else {
-      daftarBarang.value = allBarang
-    }
+    daftarBarang.value = barangRes.data.data
   } catch {
     toast.error('Gagal memuat data supplier atau barang.')
   }
@@ -555,6 +535,11 @@ const fetchDataDropdown = async () => {
 onMounted(async () => {
   await fetchDataDropdown()
   await fetchPOData()
+  if (!isEditMode.value) {
+    loading.value = false
+    await nextTick()
+    await initAllChoices()
+  }
 })
 
 const formatCurrency = (value) => {
@@ -565,691 +550,628 @@ const formatCurrency = (value) => {
     minimumFractionDigits: 0,
   }).format(value)
 }
-
-// ✅ UPDATED: Tampilan PPN di summary
-const formatPPNDisplay = (percentage) => {
-  if (percentage === 11.12) {
-    return '12% ⚡' // Tampilan konsisten dengan button
-  }
-  return `${percentage}%`
-}
+const formatPPNDisplay = (percentage) => (percentage === 11.12 ? '12% ⚡' : `${percentage}%`)
 </script>
 
 <style scoped>
-/* ===== LOADING STATE ===== */
+/* ===== LOADING ===== */
 .loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 500px;
-  gap: 24px;
-  background: linear-gradient(135deg, #fafbfc, #ffffff);
-  border-radius: 20px;
-  padding: 80px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  min-height: 400px;
+  gap: 20px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1.5px solid #f3f4f6;
 }
-
 .spinner {
-  width: 64px;
-  height: 64px;
-  border: 6px solid #f0f0f0;
+  width: 48px;
+  height: 48px;
+  border: 5px solid #f3f4f6;
   border-top-color: #92400e;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
 }
-
 .loading-text {
-  font-size: 17px;
-  color: #64748b;
-  font-weight: 700;
+  font-size: 15px;
+  color: #6b7280;
+  font-weight: 600;
 }
 
 /* ===== PAGE HEADER ===== */
 .page-header {
-  background: linear-gradient(135deg, #92400e 0%, #78350f 50%, #451a03 100%);
-  padding: 32px 36px;
-  border-radius: 20px;
-  margin-bottom: 28px;
-  box-shadow: 0 10px 30px rgba(146, 64, 14, 0.25);
-  position: relative;
-  overflow: hidden;
-}
-
-.page-header::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  right: -10%;
-  width: 350px;
-  height: 350px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.15), transparent);
-  border-radius: 50%;
-}
-
-.page-header::after {
-  content: '';
-  position: absolute;
-  bottom: -30%;
-  left: -5%;
-  width: 250px;
-  height: 250px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.1), transparent);
-  border-radius: 50%;
+  background: #fff;
+  border: 1.5px solid #f3f4f6;
+  border-left: 5px solid #92400e;
+  border-radius: 14px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: white;
-  gap: 24px;
+  gap: 20px;
   flex-wrap: wrap;
-  position: relative;
-  z-index: 1;
 }
 
 .header-left-section {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 
 .icon-badge {
-  width: 64px;
-  height: 64px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.15));
-  backdrop-filter: blur(15px);
-  border-radius: 16px;
+  width: 52px;
+  height: 52px;
+  background: #fef3c7;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  font-size: 26px;
+  border: 1.5px solid #fde68a;
+  flex-shrink: 0;
+}
+
+.hero-eyebrow {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #92400e;
+  font-weight: 700;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hero-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 2px;
+  background: #92400e;
+  border-radius: 2px;
 }
 
 .page-title {
-  font-size: 28px;
-  font-weight: 900;
-  margin: 0 0 6px 0;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  font-size: 26px;
+  font-weight: 800;
+  color: #111827;
   letter-spacing: -0.5px;
+  margin: 0 0 4px;
+  line-height: 1.1;
 }
-
+.page-title .accent {
+  color: #92400e;
+}
 .page-subtitle {
-  font-size: 14px;
-  opacity: 0.95;
+  font-size: 13px;
+  color: #6b7280;
   margin: 0;
-  font-weight: 500;
 }
 
 .btn-back {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  background: linear-gradient(135deg, #fff, #f0f0f0);
-  color: #92400e;
+  gap: 8px;
+  background: #fff;
+  color: #374151;
   text-decoration: none;
-  padding: 14px 24px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 700;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-  position: relative;
-  overflow: hidden;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: 1.5px solid #e5e7eb;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  white-space: nowrap;
 }
-
-.btn-back::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(146, 64, 14, 0.1), transparent);
-  transition: left 0.5s ease;
-}
-
-.btn-back:hover::before {
-  left: 100%;
-}
-
 .btn-back:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-}
-
-.btn-icon {
-  font-size: 18px;
+  background: #fef3c7;
+  border-color: #fde68a;
+  color: #92400e;
+  transform: translateY(-1px);
 }
 
 /* ===== CONTENT CARD ===== */
 .content-card {
-  background: white;
-  border-radius: 20px;
+  background: #fff;
+  border-radius: 14px;
+  border: 1.5px solid #f3f4f6;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  margin-bottom: 20px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  margin-bottom: 24px;
-  border: 1px solid #f0f0f0;
 }
 
-.card-header-section {
+.card-head {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 28px 36px;
-  background: linear-gradient(135deg, #fafbfc 0%, #ffffff 100%);
-  border-bottom: 3px solid #e9ecef;
-  position: relative;
+  gap: 14px;
+  padding: 20px 28px;
+  background: #fafafa;
+  border-bottom: 1.5px solid #f3f4f6;
 }
 
-.card-header-section::after {
-  content: '';
-  position: absolute;
-  bottom: -3px;
-  left: 36px;
-  width: 100px;
-  height: 3px;
-  background: linear-gradient(90deg, #92400e, #78350f, #451a03);
-  border-radius: 3px 3px 0 0;
-}
-
-.section-icon-wrapper {
-  display: flex;
-}
-
-.section-icon {
-  font-size: 28px;
-  width: 56px;
-  height: 56px;
+.card-head-icon {
+  width: 44px;
+  height: 44px;
+  background: #fef3c7;
+  border: 1.5px solid #fde68a;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  border-radius: 14px;
-  box-shadow: 0 6px 16px rgba(146, 64, 14, 0.25);
-  border: 2px solid #fbbf24;
-}
-
-.section-title {
   font-size: 20px;
-  font-weight: 900;
-  color: #1e293b;
-  margin: 0 0 6px 0;
-  letter-spacing: -0.3px;
+  flex-shrink: 0;
 }
 
-.section-subtitle {
-  font-size: 14px;
-  color: #64748b;
+.card-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 3px;
+}
+.card-subtitle {
+  font-size: 12.5px;
+  color: #6b7280;
   margin: 0;
-  font-weight: 600;
 }
 
 .card-body {
-  padding: 32px 36px;
+  padding: 24px 28px;
 }
-
 .card-body-table {
-  padding: 32px 36px 0 36px;
+  padding: 24px 28px 0;
 }
 
-/* ===== FORM GRID ===== */
-.info-grid-form {
+/* ===== FORM ===== */
+.info-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  gap: 20px;
 }
-
 .form-group {
-  margin-bottom: 0;
+  margin: 0;
 }
-
 .form-group.full-width {
   grid-column: 1 / -1;
 }
 
 .form-label {
   display: block;
-  margin-bottom: 10px;
-  font-weight: 800;
-  color: #1e293b;
-  font-size: 14px;
+  margin-bottom: 8px;
+  font-weight: 700;
+  color: #374151;
+  font-size: 13px;
 }
 
 .form-control {
   width: 100%;
-  padding: 14px 18px;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 15px;
-  transition: all 0.3s ease;
-  box-sizing: border-box;
-  background: #fafbfc;
+  padding: 11px 14px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: #fafafa;
   font-weight: 500;
+  font-family: inherit;
+  box-sizing: border-box;
+  color: #111827;
 }
-
 .form-control:focus {
   outline: none;
   border-color: #92400e;
-  background: white;
-  box-shadow: 0 0 0 4px rgba(146, 64, 14, 0.1);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(146, 64, 14, 0.1);
 }
-
 textarea.form-control {
   resize: vertical;
-  min-height: 100px;
-  font-family: inherit;
+  min-height: 90px;
 }
 
 /* ===== TABLE ===== */
 .table-wrapper {
   overflow-x: auto;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  border-radius: 10px;
+  border: 1.5px solid #f3f4f6;
 }
 
 .detail-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 900px;
-  background: white;
+  min-width: 860px;
 }
 
 .detail-table thead {
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  background: #1e293b;
 }
-
 .detail-table th {
-  padding: 20px 20px;
+  padding: 14px 18px;
   text-align: left;
-  color: white;
-  font-weight: 900;
-  font-size: 13px;
+  color: #e2e8f0;
+  font-weight: 700;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.8px;
+  white-space: nowrap;
 }
-
 .th-material {
   width: 35%;
 }
-
 .th-qty {
   width: 15%;
 }
-
 .th-price {
   width: 20%;
 }
-
 .th-subtotal {
   width: 18%;
 }
-
 .th-action {
   width: 12%;
   text-align: center;
 }
 
-.detail-table tbody tr {
-  transition: all 0.2s ease;
-}
-
 .data-row {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.15s;
 }
-
 .data-row:hover {
-  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  background: #fffbeb;
 }
-
 .detail-table td {
-  padding: 18px 20px;
+  padding: 14px 18px;
   vertical-align: middle;
 }
 
 .td-subtotal {
-  font-weight: 900;
+  font-weight: 800;
   color: #059669;
-  font-size: 16px;
+  font-size: 14px;
   font-family: 'Courier New', monospace;
 }
-
 .td-action {
   text-align: center;
 }
-
 .price-readonly {
-  background: #eef2ff !important;
+  background: #eff6ff !important;
+  color: #1e40af !important;
   font-weight: 700 !important;
-  color: #312e81 !important;
   cursor: not-allowed;
 }
 
-/* ===== SPEC ROW - ENHANCED ===== */
+/* ===== SPEC ROW ===== */
 .spec-row {
-  background: linear-gradient(135deg, #fff7ed, #fffbeb);
-  border-bottom: 3px solid #fde68a;
+  background: #fffbeb;
+  border-bottom: 1.5px solid #fde68a;
 }
-
 .spec-cell {
-  padding: 0 20px 20px 20px !important;
+  padding: 0 18px 16px 18px !important;
 }
 
 .spec-card {
-  background: white;
-  border: 2px solid #fbbf24;
-  border-radius: 14px;
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(146, 64, 14, 0.15);
+  background: #fff;
+  border: 1.5px solid #fde68a;
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(146, 64, 14, 0.08);
 }
 
 .spec-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid #fef3c7;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1.5px solid #fef3c7;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .spec-title {
-  font-weight: 900;
+  font-weight: 800;
   color: #78350f;
   margin: 0;
-  font-size: 17px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  letter-spacing: -0.2px;
+  font-size: 14px;
 }
 
-/* CUSTOM CHECKBOX TOGGLE */
+/* Toggle switch */
 .manual-switch-wrapper {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
-
 .manual-checkbox {
   display: none;
 }
-
 .manual-label {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
   user-select: none;
 }
-
 .checkbox-icon {
-  width: 48px;
-  height: 24px;
-  background: #e2e8f0;
-  border-radius: 12px;
+  width: 44px;
+  height: 22px;
+  background: #e5e7eb;
+  border-radius: 11px;
   position: relative;
-  transition: all 0.3s ease;
-  border: 2px solid #cbd5e1;
+  transition: all 0.25s ease;
+  border: 1.5px solid #d1d5db;
+  flex-shrink: 0;
 }
-
 .checkbox-icon::after {
   content: '';
   position: absolute;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   background: white;
   border-radius: 50%;
   top: 2px;
   left: 2px;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.25s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
-
 .manual-checkbox:checked + .manual-label .checkbox-icon {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: #10b981;
   border-color: #059669;
 }
-
 .manual-checkbox:checked + .manual-label .checkbox-icon::after {
-  left: 26px;
+  left: 24px;
 }
-
 .label-text {
   font-size: 13px;
   font-weight: 600;
   color: #374151;
 }
-
 .manual-checkbox:checked + .manual-label .label-text {
   color: #059669;
 }
 
-/* SPEC GRID */
+/* Spec grid */
 .spec-grid-kayu {
   display: grid;
-  grid-template-columns: 170px 1fr 1fr 1fr;
-  gap: 16px 18px;
+  grid-template-columns: 160px 1fr 1fr 1fr;
+  gap: 12px 14px;
   align-items: center;
 }
-
 .spec-label {
-  font-weight: 800;
-  color: #1e293b;
-  font-size: 14px;
+  font-weight: 700;
+  color: #374151;
+  font-size: 12.5px;
   text-align: right;
-  padding-right: 16px;
+  padding-right: 10px;
 }
-
 .form-control-spec {
   width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  background: #fafbfc;
+  padding: 10px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  transition: all 0.2s;
+  background: #fafafa;
   font-weight: 500;
   box-sizing: border-box;
+  font-family: inherit;
 }
-
 .form-control-spec:focus {
   outline: none;
   border-color: #92400e;
-  background: white;
+  background: #fff;
   box-shadow: 0 0 0 3px rgba(146, 64, 14, 0.1);
 }
-
 .form-control-spec::placeholder {
-  color: #94a3b8;
+  color: #9ca3af;
 }
-
 .kubikasi-readonly {
   background: #fef3c7 !important;
-  font-weight: 800 !important;
   color: #78350f !important;
+  font-weight: 800 !important;
   cursor: not-allowed;
 }
-
 .manual-note {
   grid-column: 2 / span 3;
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-  border: 2px solid #6ee7b7;
-  border-radius: 10px;
-  padding: 12px 16px;
+  gap: 8px;
+  background: #ecfdf5;
+  border: 1.5px solid #a7f3d0;
+  border-radius: 8px;
+  padding: 10px 14px;
   font-size: 13px;
   color: #065f46;
   font-weight: 600;
 }
 
-.note-icon {
-  font-size: 18px;
+/* ===== TABLE ACTIONS ===== */
+.table-actions {
+  padding: 16px 0 4px;
+}
+.btn-add-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  color: #059669;
+  border: 1.5px solid #a7f3d0;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.btn-add-row:hover {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+  transform: translateY(-1px);
 }
 
-.spacer-label {
-  grid-column: 1;
+.btn-delete {
+  padding: 8px 14px;
+  background: #fff;
+  color: #dc2626;
+  border: 1.5px solid #fecaca;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.btn-delete:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #f87171;
+}
+.btn-delete:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 /* ===== CHOICES.JS STYLING ===== */
 .choices {
-  margin-bottom: 0;
+  margin: 0;
   font-family: inherit;
+  width: 100% !important;
 }
 
+.choices-select {
+  width: 100% !important;
+}
 .choices__inner {
-  min-height: 46px;
-  padding: 10px 14px;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  background: #fafbfc;
+  min-height: 44px;
+  padding: 9px 14px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafafa;
   font-size: 14px;
+  font-weight: 500;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
 }
-
 .choices__inner:hover {
-  border-color: #cbd5e1;
+  border-color: #d1d5db;
 }
-
 .choices.is-open .choices__inner,
 .choices.is-focused .choices__inner {
   border-color: #92400e;
-  background: white;
+  background: #fff;
   box-shadow: 0 0 0 3px rgba(146, 64, 14, 0.1);
 }
-
-.choices__list--dropdown {
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.15);
-  z-index: 9999;
-  margin-top: 6px;
-}
-
-.choices__item--selectable {
-  padding: 14px 16px;
+.choices__list--single {
+  padding: 0;
   font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+}
+.choices__placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+  opacity: 1;
+}
+.choices__list--dropdown {
+  border: 1.5px solid #fde68a;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 9999;
+  margin-top: 4px;
+  overflow: hidden;
+}
+.choices__input {
+  font-size: 13px;
+  padding: 9px 12px;
+  background: #fafafa;
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 7px !important;
+  margin: 8px !important;
+  width: calc(100% - 16px) !important;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+.choices__input:focus {
+  background: #fff;
+  border-color: #92400e !important;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(146, 64, 14, 0.1);
+}
+.choices__list--dropdown .choices__item {
+  padding: 10px 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #374151;
   transition: all 0.15s ease;
 }
-
-.choices__item--selectable.is-highlighted {
+.choices__list--dropdown .choices__item--selectable.is-highlighted {
   background: #fef3c7;
-  color: #78350f;
+  color: #92400e;
 }
-
-.choices__input {
-  font-size: 14px;
-  padding: 8px;
-  background: white;
-  margin-bottom: 0;
+.choices__list--dropdown .choices__item.is-selected {
+  background: #92400e;
+  color: white;
+  font-weight: 700;
 }
-
-.choices__input::placeholder {
-  color: #94a3b8;
+.choices[data-type*='select-one']::after {
+  border-color: #9ca3af transparent transparent transparent;
+  border-width: 5px;
+  right: 14px;
+  transition: all 0.2s ease;
 }
-
-.td-material .choices {
-  width: 100%;
+.choices.is-open[data-type*='select-one']::after {
+  border-color: #92400e transparent transparent transparent;
+  transform: rotate(180deg);
+  margin-top: -5px;
 }
-
 .td-material .choices__inner {
   min-height: 42px;
+  font-size: 13.5px;
 }
 
-/* ===== BUTTONS ===== */
-.btn-delete {
-  padding: 10px 18px;
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 700;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
-}
-
-.btn-delete:hover:not(:disabled) {
-  background: linear-gradient(135deg, #dc2626, #b91c1c);
-  transform: translateY(-3px) scale(1.05);
-  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
-}
-
-.btn-delete:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.btn-add-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
-  border: none;
-  padding: 14px 24px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
-  margin-top: 20px;
-}
-
-.btn-add-row:hover {
-  background: linear-gradient(135deg, #059669, #047857);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
-}
-
-.table-actions {
-  padding: 20px 0 0 0;
-  text-align: left;
-}
-
-/* ===== SUMMARY SECTION - COMPACT ===== */
+/* ===== SUMMARY ===== */
 .summary-section {
-  padding: 28px 36px;
-  background: #f8f9fa;
-  border-top: 2px solid #e9ecef;
+  padding: 20px 28px;
+  border-top: 1.5px solid #f3f4f6;
+  background: #fafafa;
 }
 
 .summary-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 28px;
+  gap: 24px;
   flex-wrap: wrap;
 }
 
-.ppn-compact {
+.ppn-group {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
-
-.ppn-label-compact {
+.ppn-label {
   font-weight: 700;
-  color: #475569;
+  color: #374151;
   font-size: 13px;
   white-space: nowrap;
 }
-
-.ppn-options-compact {
+.ppn-options {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .ppn-radio {
@@ -1257,271 +1179,41 @@ textarea.form-control {
   align-items: center;
   gap: 6px;
   padding: 7px 12px;
-  background: white;
-  border: 2px solid #e2e8f0;
+  position: relative;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
   font-weight: 600;
   font-size: 13px;
+  transition: all 0.2s ease;
 }
-
 .ppn-radio:hover {
   border-color: #92400e;
   background: #fffbeb;
+  color: #92400e;
 }
-
 .ppn-radio input[type='radio'] {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   cursor: pointer;
   accent-color: #92400e;
   margin: 0;
 }
-
-.ppn-radio:has(input[type='radio']:checked) {
+.ppn-radio:has(input:checked) {
   background: #fef3c7;
   border-color: #92400e;
   color: #78350f;
 }
 
-.summary-compact {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.summary-item-compact {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 14px;
-  background: white;
-  border-radius: 8px;
-  border: 2px solid #e2e8f0;
-  white-space: nowrap;
-}
-
-.summary-item-compact .label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-}
-
-.summary-item-compact .value {
-  font-size: 14px;
-  font-weight: 800;
-  color: #1e293b;
-  font-family: 'Courier New', monospace;
-}
-
-.summary-item-compact .value.ppn {
-  color: #78350f;
-}
-
-.summary-item-compact.total {
-  background: linear-gradient(135deg, #92400e, #78350f);
-  border: none;
-  padding: 9px 16px;
-}
-
-.summary-item-compact.total .label,
-.summary-item-compact.total .value {
-  color: white;
-  font-size: 14px;
-}
-
-/* ===== FORM ACTIONS ===== */
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 16px;
-  margin-top: 28px;
-  padding: 28px 36px;
-  background: linear-gradient(135deg, #fafbfc, #ffffff);
-  border-radius: 20px;
-  border: 1px solid #f0f0f0;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-}
-
-.btn-submit-action {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 16px 32px;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: none;
-  background: linear-gradient(135deg, #92400e, #78350f);
-  color: white;
-  box-shadow: 0 4px 14px rgba(146, 64, 14, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-submit-action::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.5s ease;
-}
-
-.btn-submit-action:hover::before {
-  left: 100%;
-}
-
-.btn-submit-action:hover:not(:disabled) {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(146, 64, 14, 0.45);
-  background: linear-gradient(135deg, #78350f, #451a03);
-}
-
-.btn-submit-action:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-  .info-grid-form {
-    grid-template-columns: 1fr;
-  }
-
-  .page-header {
-    padding: 24px;
-    border-radius: 16px;
-  }
-
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .icon-badge {
-    width: 52px;
-    height: 52px;
-    font-size: 26px;
-  }
-
-  .page-title {
-    font-size: 22px;
-  }
-
-  .btn-back {
-    width: 100%;
-    justify-content: center;
-    padding: 12px 18px;
-  }
-
-  .card-header-section {
-    padding: 24px;
-  }
-
-  .card-body,
-  .card-body-table {
-    padding: 24px;
-  }
-
-  .spec-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .summary-section {
-    padding: 24px;
-  }
-
-  .summary-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-  }
-
-  .ppn-compact {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .ppn-options-compact {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-
-  .ppn-radio {
-    flex: 1;
-    min-width: 80px;
-    justify-content: center;
-  }
-
-  .summary-compact {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .summary-item-compact {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .form-actions {
-    flex-direction: column;
-    padding: 24px;
-  }
-
-  .btn-submit-action {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .spec-grid-kayu {
-    grid-template-columns: 1fr;
-  }
-
-  .spec-label {
-    text-align: left;
-    padding-right: 0;
-  }
-}
-
-/* ✅ SPECIAL STYLING UNTUK 12% ⚡ (HITUNG 11%) */
 .ppn-radio.ppn-special {
-  position: relative;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border: 2px solid #f59e0b;
-  font-weight: 600;
-  padding: 10px 16px;
+  background: #fffbeb;
+  border-color: #fde68a;
 }
-
 .ppn-radio.ppn-special:has(input:checked) {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-  border-color: #d97706;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  background: #fef3c7;
+  border-color: #f59e0b;
 }
-
-.ppn-radio.ppn-special span {
-  color: #92400e;
-  font-size: 14px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.ppn-radio.ppn-special:has(input:checked) span {
-  color: white;
-}
-
-/* ✅ CATATAN KECIL "Hitung 11%" */
 .ppn-note {
   position: absolute;
   bottom: -18px;
@@ -1537,14 +1229,157 @@ textarea.form-control {
   opacity: 0;
   transition: opacity 0.2s;
 }
-
-.ppn-radio.ppn-special:hover .ppn-note {
+.ppn-radio.ppn-special:hover .ppn-note,
+.ppn-radio.ppn-special:has(input:checked) .ppn-note {
   opacity: 1;
 }
 
-.ppn-radio.ppn-special:has(input:checked) .ppn-note {
-  opacity: 1;
-  background: #fbbf24;
+.summary-totals {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #fff;
+  border: 1.5px solid #f3f4f6;
+  border-radius: 10px;
+  padding: 14px 18px;
+  min-width: 260px;
+}
+
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+.s-label {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+}
+.s-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+  font-family: 'Courier New', monospace;
+}
+.s-ppn {
+  color: #78350f;
+}
+
+.summary-total {
+  padding-top: 8px;
+  margin-top: 4px;
+  border-top: 1.5px solid #f3f4f6;
+}
+.summary-total .s-label {
+  font-weight: 700;
+  color: #111827;
+  font-size: 14px;
+}
+.summary-total .s-value {
+  font-size: 15px;
+  color: #92400e;
+}
+
+/* ===== FORM ACTIONS ===== */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 28px;
+  background: #fff;
+  border-radius: 14px;
+  border: 1.5px solid #f3f4f6;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.btn-cancel {
+  display: inline-flex;
+  align-items: center;
+  padding: 11px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  background: #fff;
+  color: #374151;
+  border: 1.5px solid #e5e7eb;
+  transition: all 0.2s;
+}
+.btn-cancel:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.btn-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  background: #92400e;
   color: white;
+  box-shadow: 0 4px 12px rgba(146, 64, 14, 0.3);
+  transition: all 0.2s ease;
+}
+.btn-submit:hover:not(:disabled) {
+  background: #78350f;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(146, 64, 14, 0.4);
+}
+.btn-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .btn-back {
+    width: 100%;
+    justify-content: center;
+  }
+  .spec-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .spec-grid-kayu {
+    grid-template-columns: 1fr;
+  }
+  .spec-label {
+    text-align: left;
+    padding-right: 0;
+  }
+  .summary-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .summary-totals {
+    min-width: auto;
+  }
+  .ppn-options {
+    flex-wrap: wrap;
+  }
+  .form-actions {
+    flex-direction: column;
+  }
+  .btn-cancel,
+  .btn-submit {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>
