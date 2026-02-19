@@ -7,7 +7,7 @@
           <td>{{ formatCurrency(po.subtotal) }}</td>
         </tr>
         <tr>
-          <td>PPN {{ formatPercentage(po.ppn_percentage) }}%</td>
+          <td>PPN {{ displayPPN }}%</td>
           <td>{{ formatCurrency(po.ppn_amount) }}</td>
         </tr>
         <tr class="grand-total">
@@ -20,7 +20,16 @@
 </template>
 
 <script setup>
-defineProps(['po'])
+import { computed } from 'vue'
+
+const props = defineProps(['po'])
+
+// Jika ppn_percentage = 11.12 → tampilkan "12", hitung tetap 11%
+const displayPPN = computed(() => {
+  const val = parseFloat(props.po.ppn_percentage)
+  if (val === 11.12) return '12'
+  return Number.isInteger(val) ? val : val
+})
 
 const formatCurrency = (value) => {
   if (value == null || isNaN(value)) return 'Rp 0'
@@ -29,11 +38,6 @@ const formatCurrency = (value) => {
     currency: 'IDR',
     minimumFractionDigits: 0,
   }).format(value)
-}
-
-const formatPercentage = (value) => {
-  if (value == null || isNaN(value)) return '0'
-  return parseInt(value)
 }
 </script>
 

@@ -14,85 +14,86 @@
       </p>
       <p class="company-phone">Ph/Fax : +6224 76583167/+6224 76412468</p>
     </div>
-    <div class="invoice-title">
+    <div class="svlk-wrapper">
       <img src="@/assets/lgo.jpeg" alt="SVLK Logo" class="svlk-logo" />
     </div>
   </header>
 </template>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&display=swap');
+
 .invoice-header {
   display: flex;
   align-items: center;
   border-bottom: 3px solid #000;
-  padding: 6px 0;
-  gap: 8px;
+  padding: 8px 0;
+  gap: 0;
   position: relative;
   width: 100%;
   box-sizing: border-box;
-  overflow: visible;
+  margin: 0;
 }
 
+/* Logo SBC - pepet kiri, no margin */
 .company-logo {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  margin-right: 8px;
+  margin: 0;
+  padding: 0;
 }
 
 .logo-img {
-  width: 90px;
-  height: 90px;
+  width: 130px;
+  height: 130px;
   object-fit: contain;
   display: block;
+  margin: 0;
+  padding: 0;
 }
 
+/* Detail Perusahaan */
 .company-details {
+  flex: 1;
   min-width: 0;
-  flex-shrink: 1;
-  flex-grow: 1;
   text-align: left;
-  padding: 0;
+  padding: 0 0 0 8px;
   margin: 0;
-  overflow: visible;
 }
 
 .company-name {
-  font-size: 22px;
+  font-family: 'Cinzel', 'Times New Roman', serif;
+  font-size: 18px;
   font-weight: 900;
-  margin: 0 0 2px 0;
+  margin: 0 0 3px 0;
   color: #000;
-  letter-spacing: 0.3px;
-  line-height: 1.1;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
 }
 
 .company-tagline {
-  font-size: 12px;
+  font-family: 'Cinzel', 'Times New Roman', serif;
+  font-size: 14px;
   font-weight: 700;
-  margin: 0 0 3px 0;
+  margin: 0 0 5px 0;
   color: #000;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.5px;
 }
 
-.company-address {
-  font-size: 11px;
-  margin: 1px 0;
-  line-height: 1.3;
+.company-address,
+.company-location,
+.company-contact,
+.company-phone {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 12px;
+  margin: 2px 0;
+  line-height: 1.4;
+  color: #000;
 }
 
 .company-location {
-  font-size: 10px;
-  margin: 1px 0;
   font-style: italic;
-  line-height: 1.3;
-}
-
-.company-contact {
-  font-size: 10px;
-  margin: 1px 0;
-  line-height: 1.3;
 }
 
 .company-contact a {
@@ -100,111 +101,66 @@
   text-decoration: none;
 }
 
-.company-contact a:hover {
-  text-decoration: underline;
-}
-
-.company-phone {
-  font-size: 10px;
-  margin: 1px 0;
-  line-height: 1.3;
-}
-
-.invoice-title {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+/* Logo SVLK - pepet kanan, no gap */
+.svlk-wrapper {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
 }
 
 .svlk-logo {
-  width: 110px;
+  width: 150px;
   height: auto;
   object-fit: contain;
   display: block;
+  margin: 0;
+  padding: 0;
 }
 
-/* ========================================
-   PRINT MODE - OPTIMIZED
-   ======================================== */
 @media print {
   .invoice-header {
-    padding: 4px 0 !important;
-    gap: 6px !important;
+    padding: 6px 0 !important;
+    gap: 0 !important;
     page-break-inside: avoid;
   }
-
-  .company-logo {
-    margin-right: 6px;
-  }
-
   .logo-img {
-    width: 80px !important;
-    height: 80px !important;
+    width: 120px !important;
+    height: 120px !important;
   }
-
-  .invoice-title {
-    right: 0 !important;
-    transform: translateY(-50%) !important;
-  }
-
   .svlk-logo {
-    width: 100px !important;
+    width: 140px !important;
   }
-
   .company-name {
-    font-size: 20px !important;
-    letter-spacing: 0.2px !important;
+    font-size: 18px !important;
   }
-
   .company-tagline {
-    font-size: 11px !important;
-    letter-spacing: 0.6px !important;
+    font-size: 14px !important;
   }
-
-  .company-address {
-    font-size: 10px !important;
-  }
-
-  .company-location {
-    font-size: 9px !important;
-  }
-
+  .company-address,
+  .company-location,
   .company-contact,
   .company-phone {
-    font-size: 9px !important;
-  }
-
-  /* Pastikan tidak ada overflow */
-  .company-details * {
-    overflow: visible !important;
+    font-size: 12px !important;
   }
 }
 
-/* ========================================
-   RESPONSIVE (OPTIONAL)
-   ======================================== */
 @media screen and (max-width: 768px) {
   .invoice-header {
     flex-direction: column;
     text-align: center;
+    gap: 10px;
   }
-
   .company-logo {
-    margin: 0 auto 10px;
+    margin: 0 auto;
   }
-
   .company-details {
     text-align: center;
+    padding: 0;
   }
-
-  .invoice-title {
-    position: relative;
-    transform: none;
-    margin-top: 10px;
-    right: auto;
-    top: auto;
+  .svlk-wrapper {
+    margin: 0 auto;
   }
 }
 </style>

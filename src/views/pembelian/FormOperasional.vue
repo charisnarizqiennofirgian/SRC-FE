@@ -266,49 +266,43 @@ const grandTotal = computed(() => {
 const initializeChoices = async () => {
   await nextTick()
 
-  choicesInstances.value.forEach((choice) => {
-    if (choice && choice.destroy) {
-      choice.destroy()
-    }
-  })
-  choicesInstances.value = []
-
   form.details.forEach((item, index) => {
     const selectElement = document.getElementById(`select-barang-${index}`)
-    if (selectElement) {
-      selectElement.innerHTML = '<option disabled value="">Pilih Barang</option>'
+    if (!selectElement) return
 
-      daftarBarang.value.forEach((barang) => {
-        const option = document.createElement('option')
-        option.value = barang.id
-        option.textContent = `${barang.code} - ${barang.name} (Stok: ${formatStock(barang.stock)})`
-        selectElement.appendChild(option)
-      })
+    // Skip jika sudah punya instance
+    if (selectElement._choicesInstance) return
 
-      selectElement.value = ''
+    selectElement.innerHTML = '<option value="">Pilih Barang</option>'
+    daftarBarang.value.forEach((barang) => {
+      const option = document.createElement('option')
+      option.value = barang.id
+      option.textContent = `${barang.code} - ${barang.name} (Stok: ${formatStock(barang.stock)})`
+      selectElement.appendChild(option)
+    })
 
-      if (!item.item_id) {
-        item.item_id = ''
-      }
+    if (item.item_id) selectElement.value = item.item_id
 
-      const choices = new Choices(selectElement, {
-        searchEnabled: true,
-        searchPlaceholderValue: 'Ketik nama barang untuk mencari...',
-        noResultsText: 'Barang tidak ditemukan',
-        noChoicesText: 'Tidak ada barang operasional',
-        itemSelectText: 'Klik untuk pilih',
-        shouldSort: false,
-        removeItemButton: false,
-        position: 'bottom',
-        searchFields: ['label'],
-      })
+    const choices = new Choices(selectElement, {
+      searchEnabled: true,
+      searchPlaceholderValue: 'Ketik nama barang untuk mencari...',
+      noResultsText: 'Barang tidak ditemukan',
+      noChoicesText: 'Tidak ada barang operasional',
+      itemSelectText: 'Klik untuk pilih',
+      shouldSort: false,
+      removeItemButton: false,
+      position: 'bottom',
+      searchFields: ['label'],
+    })
 
-      selectElement.addEventListener('change', (event) => {
-        item.item_id = parseInt(event.target.value) || ''
-      })
+    // Simpan instance agar tidak reinit
+    selectElement._choicesInstance = choices
 
-      choicesInstances.value.push(choices)
-    }
+    selectElement.addEventListener('change', (event) => {
+      item.item_id = parseInt(event.target.value) || ''
+    })
+
+    choicesInstances.value.push(choices)
   })
 }
 
@@ -331,9 +325,15 @@ const tambahBarang = async () => {
 }
 
 const hapusBarang = (index) => {
-  if (form.details.length > 1) {
-    form.details.splice(index, 1)
+  if (form.details.length <= 1) return
+
+  const selectElement = document.getElementById(`select-barang-${index}`)
+  if (selectElement?._choicesInstance) {
+    selectElement._choicesInstance.destroy()
+    selectElement._choicesInstance = null
   }
+
+  form.details.splice(index, 1)
 }
 
 const saveOrder = async () => {
@@ -403,38 +403,36 @@ const fetchPOData = async () => {
 
 const fetchDataDropdown = async () => {
   try {
-    const [supplierRes, barangRes, categoryRes] = await Promise.all([
+    // Step 1: Fetch supplier & kategori parallel
+    const [supplierRes, categoryRes] = await Promise.all([
       apiClient.get('/suppliers?all=true'),
-      apiClient.get('/materials?all=true'),
       apiClient.get('/categories?all=true'),
     ])
     daftarSupplier.value = supplierRes.data.data
 
-    const allBarang = barangRes.data.data
-    const allCategories = categoryRes.data.data
-
-    const operationalCategories = allCategories.filter((cat) => {
-      const catName = (cat.name || '').toLowerCase().trim()
-      return catName === 'bahan penolong' || catName === 'bahan operasional'
-    })
-
-    const operationalCategoryIds = operationalCategories.map((cat) => cat.id)
-
-    if (operationalCategoryIds.length > 0) {
-      daftarBarang.value = allBarang.filter((item) => {
-        return operationalCategoryIds.includes(item.category_id)
+    // Step 2: Cari ID kategori operasional
+    const operasionalIds = categoryRes.data.data
+      .filter((cat) => {
+        const catName = (cat.name || '').toLowerCase().trim()
+        return catName === 'bahan penolong' || catName === 'bahan operasional'
       })
+      .map((cat) => cat.id)
 
-      console.log(
-        `✅ Filter aktif: Hanya menampilkan ${daftarBarang.value.length} barang dari kategori Bahan Operasional/Penolong`,
-      )
-    } else {
-      console.warn('⚠️ TIDAK ADA kategori operasional! Menampilkan semua barang.')
-      daftarBarang.value = allBarang
+    if (operasionalIds.length === 0) {
+      console.warn('⚠️ Kategori operasional tidak ditemukan!')
+      const barangRes = await apiClient.get('/materials?all=true')
+      daftarBarang.value = barangRes.data.data
+      return
     }
+
+    // Step 3: Fetch material dengan filter category_ids langsung di BE
+    const barangRes = await apiClient.get('/materials?all=true', {
+      params: { category_ids: operasionalIds.join(',') },
+    })
+    daftarBarang.value = barangRes.data.data
+    console.log(`✅ Loaded ${daftarBarang.value.length} barang operasional`)
   } catch (error) {
-    const errorMessage = error.response?.data?.message || 'Gagal memuat data.'
-    toast.error(errorMessage)
+    toast.error(error.response?.data?.message || 'Gagal memuat data.')
     console.error('❌ Error fetchDataDropdown:', error)
   }
 }

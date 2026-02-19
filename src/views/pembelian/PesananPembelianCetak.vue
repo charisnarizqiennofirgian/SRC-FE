@@ -21,6 +21,14 @@
           <p class="supplier-name">{{ po.supplier.name }}</p>
           <p>{{ po.supplier.address_city || po.supplier.address }}</p>
         </div>
+
+        <!-- TANGGAL KIRIM -->
+        <div v-if="po.delivery_date" class="delivery-date-line">
+          <span class="delivery-label">Tanggal Kirim</span>
+          <span class="delivery-sep">:</span>
+          <span class="delivery-value">{{ formatTanggal(po.delivery_date) }}</span>
+        </div>
+
         <p class="intro-text">Dengan hormat,</p>
         <p>
           Dengan ini kami mengirimkan daftar pesanan kami untuk {{ po.supplier.name }} sebagai
@@ -41,10 +49,7 @@ import { ref, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import apiClient from '../../api/axios'
 
-// Import Komponen Umum
 import KopSuratCetak from '@/components/cetak/KopSuratCetak.vue'
-
-// Import 3 LAYOUT UTAMA
 import LayoutOperasional from '@/components/cetak/LayoutOperasional.vue'
 import LayoutKarton from '@/components/cetak/LayoutKarton.vue'
 import LayoutKayu from '@/components/cetak/LayoutKayu.vue'
@@ -56,11 +61,9 @@ const po = ref(null)
 const fetchPODetail = async () => {
   try {
     const poId = route.params.id
-    // Panggil ?include=details.item.unit (untuk Operasional)
     const response = await apiClient.get(`/purchase-orders/${poId}?include=details.item.unit`)
     const data = response.data.data
 
-    // "Buka kado" specifications
     data.details = data.details.map((detail) => {
       if (detail.specifications && typeof detail.specifications === 'string') {
         detail.specifications = JSON.parse(detail.specifications)
@@ -77,7 +80,6 @@ const fetchPODetail = async () => {
   }
 }
 
-// Helper Tanggal
 const formatTanggal = (tanggal) => {
   if (!tanggal) return ''
   return new Date(tanggal).toLocaleDateString('id-ID', {
@@ -99,7 +101,6 @@ onMounted(async () => {
 </script>
 
 <style>
-/* CSS Global untuk Cetak */
 body {
   background-color: #f0f0f0;
 }
@@ -120,7 +121,6 @@ body {
   color: #333;
 }
 
-/* ✅ TAMBAHAN: PURCHASE ORDER TITLE */
 .po-title-section {
   text-align: center;
   margin: 20px 0 25px 0;
@@ -144,7 +144,6 @@ body {
   color: #000;
 }
 
-/* Info Supplier */
 .invoice-info {
   margin-top: 0;
   margin-bottom: 20px;
@@ -158,7 +157,7 @@ body {
 }
 
 .info-supplier {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .info-supplier p {
@@ -172,13 +171,34 @@ body {
   text-decoration: underline;
 }
 
+/* ── Tanggal Kirim ── */
+.delivery-date-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  font-size: 11px;
+}
+
+.delivery-label {
+  font-weight: 700;
+  min-width: 90px;
+}
+
+.delivery-sep {
+  font-weight: 700;
+}
+
+.delivery-value {
+  font-weight: 600;
+}
+
 .intro-text {
   font-weight: 600;
   margin-bottom: 8px;
   font-size: 11px;
 }
 
-/* CSS Tabel */
 .items-table {
   width: 100%;
   border-collapse: collapse;
@@ -203,12 +223,10 @@ body {
 .items-table .center {
   text-align: center;
 }
-
 .items-table .right {
   text-align: right;
 }
 
-/* Print-specific styles */
 @media print {
   body,
   .print-container {
@@ -221,25 +239,23 @@ body {
   .invoice-box {
     padding: 10mm;
   }
-
   .po-title {
     font-size: 15px;
   }
-
   .po-number-line {
     font-size: 10px;
   }
 
   .date-line,
   .info-supplier p,
-  .intro-text {
+  .intro-text,
+  .delivery-date-line {
     font-size: 10px;
   }
 
   .items-table {
     font-size: 10px;
   }
-
   .items-table th {
     font-size: 9px;
   }
