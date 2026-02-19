@@ -409,6 +409,58 @@
                 </div>
               </div>
 
+              <!-- Cutting Size -->
+              <div class="form-row form-row-triple">
+                <div class="form-group">
+                  <label class="form-label">
+                    Cutting Tebal (T) mm
+                    <span class="label-hint">(Opsional)</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model.number="form.cutting_t"
+                      type="number"
+                      class="form-control"
+                      placeholder="cth: 48"
+                      min="0"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">
+                    Cutting Lebar (L) mm
+                    <span class="label-hint">(Opsional)</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model.number="form.cutting_l"
+                      type="number"
+                      class="form-control"
+                      placeholder="cth: 78"
+                      min="0"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">
+                    Cutting Panjang (P) mm
+                    <span class="label-hint">(Opsional)</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input
+                      v-model.number="form.cutting_p"
+                      type="number"
+                      class="form-control"
+                      placeholder="cth: 998"
+                      min="0"
+                      @input="calculateProgress"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div class="form-row form-row-triple">
                 <div class="form-group">
                   <label class="form-label">
@@ -742,6 +794,9 @@ const form = reactive({
     l: null,
     p: null,
   },
+  cutting_t: null,
+  cutting_l: null,
+  cutting_p: null,
   jenis: '',
   kualitas: '',
   bentuk: '',
@@ -798,6 +853,9 @@ const handleCategoryChange = () => {
   form.jenis = ''
   form.kualitas = ''
   form.bentuk = ''
+  form.cutting_t = null
+  form.cutting_l = null
+  form.cutting_p = null
   form.volume_m3 = null
   form.jenis_kayu = ''
   form.tpk = ''
@@ -907,6 +965,10 @@ const fetchItemData = async (itemId) => {
       form.specifications.l = data.specifications.l ?? null
       form.specifications.p = data.specifications.p ?? null
     }
+
+    form.cutting_t = data.cutting_t ? parseInt(data.cutting_t) : null
+    form.cutting_l = data.cutting_l ? parseInt(data.cutting_l) : null
+    form.cutting_p = data.cutting_p ? parseInt(data.cutting_p) : null
 
     form.jenis = data.jenis || ''
     form.kualitas = data.kualitas || ''
@@ -1029,6 +1091,9 @@ const handleSubmit = async () => {
       payload.jenis = form.jenis
       payload.kualitas = form.kualitas
       payload.bentuk = form.bentuk
+      payload.cutting_t = form.cutting_t ? parseInt(form.cutting_t) : null
+      payload.cutting_l = form.cutting_l ? parseInt(form.cutting_l) : null
+      payload.cutting_p = form.cutting_p ? parseInt(form.cutting_p) : null
     }
 
     if (isProdukJadiCategory.value) {

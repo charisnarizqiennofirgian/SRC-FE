@@ -201,21 +201,24 @@
                           <label class="spec-label">Cutting Size (mm)</label>
                           <input
                             type="number"
-                            v-model="item.specifications.cutting_p"
+                            v-model.number="item.specifications.cutting_p"
                             placeholder="P"
                             class="form-control-spec"
+                            step="1"
                           />
                           <input
                             type="number"
-                            v-model="item.specifications.cutting_l"
+                            v-model.number="item.specifications.cutting_l"
                             placeholder="L"
                             class="form-control-spec"
+                            step="1"
                           />
                           <input
                             type="number"
-                            v-model="item.specifications.cutting_t"
+                            v-model.number="item.specifications.cutting_t"
                             placeholder="T"
                             class="form-control-spec"
+                            step="1"
                           />
 
                           <template v-if="!item.specifications.is_manual_price">
@@ -423,6 +426,25 @@ watch(
   () => form.details,
   (newDetails) => {
     newDetails.forEach((item) => {
+      // Auto-fill saat user pilih barang
+      if (item.item_id) {
+        const barang = daftarBarang.value.find((b) => b.id === item.item_id)
+        if (barang) {
+          const spec = item.specifications
+          // Invoice Size dari specifications barang
+          if (barang.specifications) {
+            if (!spec.invoice_p && barang.specifications.p) spec.invoice_p = barang.specifications.p
+            if (!spec.invoice_l && barang.specifications.l) spec.invoice_l = barang.specifications.l
+            if (!spec.invoice_t && barang.specifications.t) spec.invoice_t = barang.specifications.t
+          }
+          // Cutting Size dari kolom baru
+          if (!spec.cutting_p && barang.cutting_p) spec.cutting_p = parseInt(barang.cutting_p)
+          if (!spec.cutting_l && barang.cutting_l) spec.cutting_l = parseInt(barang.cutting_l)
+          if (!spec.cutting_t && barang.cutting_t) spec.cutting_t = parseInt(barang.cutting_t)
+        }
+      }
+
+      // Hitung kubikasi (tidak berubah)
       const spec = item.specifications
       if (spec.invoice_p > 0 && spec.invoice_l > 0 && spec.invoice_t > 0) {
         const kubikasi = (spec.invoice_p / 1000) * (spec.invoice_l / 1000) * (spec.invoice_t / 1000)
@@ -504,12 +526,24 @@ const fetchPOData = async () => {
     form.order_date = data.order_date
     form.notes = data.notes || ''
     form.ppn_percentage = parseFloat(data.ppn_percentage ?? 12)
-    form.details = data.details.map((d) => ({
-      item_id: d.item_id,
-      quantity: parseFloat(d.quantity_ordered),
-      price: parseFloat(d.price),
-      specifications: { ...defaultKayuSpec(), ...(d.specifications || {}) },
-    }))
+    form.details = data.details.map((d) => {
+      const spec = d.specifications || {}
+      return {
+        item_id: d.item_id,
+        quantity: parseFloat(d.quantity_ordered),
+        price: parseFloat(d.price),
+        specifications: {
+          ...defaultKayuSpec(),
+          ...spec,
+          cutting_p: spec.cutting_p ? parseInt(spec.cutting_p) : null,
+          cutting_l: spec.cutting_l ? parseInt(spec.cutting_l) : null,
+          cutting_t: spec.cutting_t ? parseInt(spec.cutting_t) : null,
+          invoice_p: spec.invoice_p ? parseInt(spec.invoice_p) : null,
+          invoice_l: spec.invoice_l ? parseInt(spec.invoice_l) : null,
+          invoice_t: spec.invoice_t ? parseInt(spec.invoice_t) : null,
+        },
+      }
+    })
     loading.value = false
     await nextTick()
     await initAllChoices()
