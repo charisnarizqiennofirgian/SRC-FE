@@ -23,6 +23,8 @@ import PembelianKayuIndex from '../views/pembelian/PembelianKayuindex.vue'
 import FormOperasional from '../views/pembelian/FormOperasional.vue'
 import FormKarton from '../views/pembelian/FormKarton.vue'
 import FormKayu from '../views/pembelian/FormKayu.vue'
+import LaporanHarga from '../views/pembelian/LaporanHarga.vue'
+
 import MasterBarangView from '../views/master/MasterBarangView.vue'
 import MasterBarangForm from '../views/master/MasterBarangForm.vue'
 import DaftarSalesOrder from '../views/penjualan/DaftarSalesOrder.vue'
@@ -311,6 +313,12 @@ const router = createRouter({
           name: 'EditPembelianKayu',
           component: FormKayu,
           meta: { title: 'Edit PO Kayu' },
+        },
+        {
+          path: '/admin/pembelian/laporan-harga',
+          name: 'LaporanHarga',
+          component: LaporanHarga,
+          meta: { title: 'Laporan Harga Pembelian', requiresAuth: true },
         },
         {
           path: '/admin/pembelian/:id/edit',

@@ -191,6 +191,7 @@ const allMenuItems = [
       { name: 'Pembelian Karton Box', route: { name: 'PembelianKarton' } },
       { name: 'Pembelian Kayu RST ', route: { name: 'PembelianKayu' } },
       { name: 'Faktur Pembelian', route: { name: 'DaftarFakturPembelian' } },
+      { name: 'Laporan Harga', route: { name: 'LaporanHarga' } },
     ],
   },
   {
