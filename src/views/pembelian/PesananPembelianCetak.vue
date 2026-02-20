@@ -112,7 +112,7 @@ body {
 }
 
 .invoice-box {
-  padding: 15mm;
+  padding: 0 10mm 10mm 10mm;
   font-family: Arial, sans-serif;
   font-size: 12px;
   line-height: 1.5;
@@ -121,8 +121,8 @@ body {
 
 .po-title-section {
   text-align: center;
-  margin: 20px 0 25px 0;
-  padding-bottom: 15px;
+  margin: 10px 0 15px 0;
+  padding-bottom: 10px;
 }
 
 .po-title {
@@ -144,7 +144,7 @@ body {
 
 .invoice-info {
   margin-top: 0;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .date-line {
@@ -235,7 +235,7 @@ body {
   }
 
   .invoice-box {
-    padding: 10mm;
+    padding: 3mm 8mm 8mm 8mm;
   }
   .po-title {
     font-size: 15px;

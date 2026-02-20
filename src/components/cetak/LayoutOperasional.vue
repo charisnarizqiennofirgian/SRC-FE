@@ -1,6 +1,5 @@
 <template>
   <TabelCetakOperasional :details="details" :po="po" />
-  <TotalCetak :po="po" />
 
   <div v-if="po.notes" class="notes-section">
     <span class="notes-label">Catatan:</span>
@@ -13,14 +12,14 @@
 <script setup>
 import TabelCetakOperasional from './TabelCetakOperasional.vue'
 import FooterOperasional from './FooterOperasional.vue'
-import TotalCetak from './TotalCetak.vue'
 defineProps(['details', 'po'])
 </script>
 
 <style scoped>
 .notes-section {
   margin-top: 10px;
-  font-size: 11px;
+  font-size: 12px;
+  font-family: Arial, sans-serif;
   display: flex;
   gap: 8px;
 }
@@ -30,5 +29,6 @@ defineProps(['details', 'po'])
 }
 .notes-value {
   color: #333;
+  font-weight: 400;
 }
 </style>

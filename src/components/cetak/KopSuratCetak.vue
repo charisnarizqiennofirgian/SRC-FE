@@ -18,9 +18,7 @@
       <p class="company-phone">Ph/Fax : +6224 76583167 / +6224 76412468</p>
     </div>
     <div class="svlk-wrapper">
-      <div class="svlk-content">
-        <img :src="logoSVLK" alt="SVLK Logo" class="svlk-logo" />
-      </div>
+      <img :src="logoSVLK" alt="SVLK Logo" class="svlk-logo" />
     </div>
   </header>
 </template>
@@ -34,47 +32,48 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
 .invoice-header {
   display: flex;
   align-items: center;
-  border-bottom: 2.5px solid #000;
-  padding: 5px 0 10px 0;
-  gap: 0;
+  border-bottom: 3px solid #000;
+  padding: 0 0 4px 0;
   width: 100%;
   box-sizing: border-box;
+  margin-top: -12px;
 }
 
 .company-logo {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  padding-right: 15px;
+  flex: 0 0 auto;
+  padding-right: 0;
 }
 
 .logo-img {
-  width: 110px;
-  height: 110px;
+  width: 120px;
+  height: 120px;
   object-fit: contain;
+  display: block;
 }
 
 .company-details {
   flex: 1;
-  padding: 0;
+  padding: 0 15px;
+  min-width: 0;
+  margin-top: -10px;
 }
 
 .company-name {
-  font-family: 'Times New Roman', Times, serif;
-  font-size: 24px;
-  font-weight: bold;
-  margin: 0 0 -2px 0;
+  font-family: Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  margin: 0 0 1px 0;
   color: #000;
-  letter-spacing: -0.5px;
+  letter-spacing: 0.2px;
 }
 
 .company-tagline {
   font-family: Arial, sans-serif;
-  font-size: 11px;
-  font-weight: bold;
-  margin: 0 0 5px 0;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
   color: #000;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.3px;
 }
 
 .highlight-S,
@@ -88,50 +87,61 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
 .company-location,
 .company-contact,
 .company-phone {
-  font-family: 'Times New Roman', Times, serif;
-  font-size: 14px;
+  font-family: Arial, sans-serif;
+  font-size: 11px;
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.45;
   color: #000;
   font-weight: 400;
 }
 
+.company-location {
+  font-style: italic;
+}
+
 .company-contact a {
   color: #0066cc;
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .svlk-wrapper {
-  flex-shrink: 0;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-left: 10px;
-}
-
-.svlk-content {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 
 .svlk-logo {
-  width: 140px;
+  width: 145px;
   height: auto;
   object-fit: contain;
+  display: block;
 }
 
 @media print {
   .invoice-header {
-    padding: 5px 0 8px 0 !important;
+    padding: 0 0 6px 0 !important;
+    page-break-inside: avoid;
   }
   .logo-img {
     width: 100px !important;
     height: 100px !important;
   }
   .svlk-logo {
-    width: 130px !important;
+    width: 120px !important;
+  }
+  .company-name {
+    font-size: 17px !important;
+  }
+  .company-tagline {
+    font-size: 11px !important;
+  }
+  .company-address,
+  .company-location,
+  .company-contact,
+  .company-phone {
+    font-size: 10px !important;
+    line-height: 1.4 !important;
   }
 }
 </style>
