@@ -8,6 +8,7 @@
         <th>Satuan</th>
         <th>Harga Satuan</th>
         <th>Jumlah</th>
+        <th>Tanggal Kirim</th>
       </tr>
     </thead>
     <tbody>
@@ -18,13 +19,15 @@
         <td class="center">{{ item.item.unit.name }}</td>
         <td class="right">{{ formatCurrency(item.price) }}</td>
         <td class="right">{{ formatCurrency(item.subtotal) }}</td>
+        <td class="center">{{ po.delivery_date ? formatTanggal(po.delivery_date) : '-' }}</td>
       </tr>
     </tbody>
   </table>
 </template>
 
 <script setup>
-defineProps(['details'])
+defineProps(['details', 'po'])
+
 const formatCurrency = (value) => {
   if (isNaN(value)) return 'Rp 0'
   return new Intl.NumberFormat('id-ID', {
@@ -33,7 +36,17 @@ const formatCurrency = (value) => {
     minimumFractionDigits: 0,
   }).format(value)
 }
+
+const formatTanggal = (tanggal) => {
+  if (!tanggal) return '-'
+  return new Date(tanggal).toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
 </script>
+
 <style scoped>
 .center {
   text-align: center;

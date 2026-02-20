@@ -1,22 +1,22 @@
 <template>
-  <section class="invoice-summary">
+  <div class="invoice-summary">
     <div class="totals">
       <table>
         <tr>
-          <td>Sub Total</td>
-          <td>{{ formatCurrency(po.subtotal) }}</td>
+          <td class="bg-light font-bold">Sub Total</td>
+          <td class="font-bold">{{ formatCurrency(po.subtotal) }}</td>
         </tr>
         <tr>
-          <td>PPN {{ displayPPN }}%</td>
-          <td>{{ formatCurrency(po.ppn_amount) }}</td>
+          <td class="bg-light font-bold">PPN {{ displayPPN }}%</td>
+          <td class="font-bold">{{ formatCurrency(po.ppn_amount) }}</td>
         </tr>
         <tr class="grand-total">
-          <td>Total</td>
-          <td>{{ formatCurrency(po.grand_total) }}</td>
+          <td class="bg-light font-bold">Total</td>
+          <td class="font-bold">{{ formatCurrency(po.grand_total) }}</td>
         </tr>
       </table>
     </div>
-  </section>
+  </div>
 </template>
 
 <script setup>
@@ -24,15 +24,15 @@ import { computed } from 'vue'
 
 const props = defineProps(['po'])
 
-// Jika ppn_percentage = 11.12 → tampilkan "12", hitung tetap 11%
 const displayPPN = computed(() => {
   const val = parseFloat(props.po.ppn_percentage)
+  // Logic to handle 11.12% -> 12% display if that was what you were doing
   if (val === 11.12) return '12'
   return Number.isInteger(val) ? val : val
 })
 
 const formatCurrency = (value) => {
-  if (value == null || isNaN(value)) return 'Rp 0'
+  if (isNaN(value)) return 'Rp 0'
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
@@ -45,29 +45,38 @@ const formatCurrency = (value) => {
 .invoice-summary {
   display: flex;
   justify-content: flex-end;
-  margin-top: 10px;
+  margin-top: 0;
   page-break-inside: avoid;
 }
 .totals {
   width: 45%;
+  border-top: none;
 }
+
 .totals table {
   width: 100%;
   border-collapse: collapse;
+  border-top: none;
 }
+
 .totals td {
   border: 1px solid #000;
+  border-top: none;
   padding: 4px 8px;
   text-align: right;
-  font-size: 12px;
+  font-size: 11px;
 }
-.totals td:first-child {
-  text-align: left;
-  font-weight: bold;
-  background-color: #f2f2f2;
+
+.bg-light {
+  background-color: #f9f9f9;
 }
-.totals .grand-total td {
-  font-weight: bold;
-  font-size: 14px;
+
+.font-bold {
+  font-weight: 700;
+}
+
+.grand-total td {
+  background-color: #eee;
+  font-size: 13px;
 }
 </style>

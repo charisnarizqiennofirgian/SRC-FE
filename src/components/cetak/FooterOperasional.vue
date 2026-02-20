@@ -6,7 +6,7 @@
       <div class="signature-col">
         <p>Hormat kami,</p>
         <div class="signature-space"></div>
-        <p class="signature-name">louis Sebastian</p>
+        <p class="signature-name">Louis Sebastian Agussoegito</p>
       </div>
     </div>
 
@@ -18,7 +18,7 @@
       </p>
       <p>PHONE : +62 24 76583167</p>
       <p>FAX : +62 24 766412468</p>
-      <p>EMAIL : purchasing@sbcburnifurni.com</p>
+      <p>EMAIL : sunbcfurni.com</p>
     </div>
   </footer>
 </template>

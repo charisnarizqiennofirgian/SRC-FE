@@ -10,7 +10,7 @@
 
       <div class="po-title-section">
         <h2 class="po-title">PURCHASE ORDER</h2>
-        <p class="po-number-line">No. {{ po.po_number }}</p>
+        <p class="po-number-line">{{ po.po_number }}</p>
       </div>
 
       <!-- INFO SUPPLIER -->
@@ -22,18 +22,6 @@
           <p>{{ po.supplier.address_city || po.supplier.address }}</p>
         </div>
 
-        <!-- TANGGAL KIRIM -->
-        <div v-if="po.delivery_date" class="delivery-date-line">
-          <span class="delivery-label">Tanggal Kirim</span>
-          <span class="delivery-sep">:</span>
-          <span class="delivery-value">{{ formatTanggal(po.delivery_date) }}</span>
-        </div>
-
-        <p class="intro-text">Dengan hormat,</p>
-        <p>
-          Dengan ini kami mengirimkan daftar pesanan kami untuk {{ po.supplier.name }} sebagai
-          berikut:
-        </p>
       </section>
 
       <!-- LAYOUT DINAMIS -->
@@ -93,6 +81,16 @@ onMounted(async () => {
   await fetchPODetail()
   if (po.value) {
     await nextTick()
+    // Tunggu semua gambar selesai load dulu
+    const images = document.querySelectorAll('img')
+    const imagePromises = Array.from(images).map((img) => {
+      if (img.complete) return Promise.resolve()
+      return new Promise((resolve) => {
+        img.onload = resolve
+        img.onerror = resolve
+      })
+    })
+    await Promise.all(imagePromises)
     window.print()
   } else {
     alert('Data PO tidak ditemukan atau gagal dimuat.')
@@ -150,8 +148,8 @@ body {
 }
 
 .date-line {
-  text-align: right;
-  margin-bottom: 20px;
+  text-align: left !important;
+  margin-bottom: 2px !important;
   font-size: 11px;
   font-weight: 600;
 }

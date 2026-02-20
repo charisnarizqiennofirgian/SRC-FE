@@ -1,5 +1,5 @@
 <template>
-  <TabelCetakKarton :details="details" />
+  <TabelCetakKarton :details="details" :po="po" />
   <TotalCetak :po="po" />
   <FooterOperasional />
 </template>

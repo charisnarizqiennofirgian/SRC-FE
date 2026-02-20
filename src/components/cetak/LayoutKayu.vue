@@ -1,5 +1,5 @@
 <template>
-  <TabelCetakKayu :details="details" />
+  <TabelCetakKayu :details="details" :po="po" />
   <TotalCetak :po="po" />
   <FooterKayu />
 </template>
