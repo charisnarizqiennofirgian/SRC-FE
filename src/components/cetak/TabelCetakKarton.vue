@@ -76,7 +76,7 @@ const formatCurrency = (value) => {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 20px;
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .items-table th,

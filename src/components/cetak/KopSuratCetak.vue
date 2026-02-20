@@ -60,7 +60,7 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
 
 .company-name {
   font-family: Arial, sans-serif;
-  font-size: 18px;
+  font-size: 40px;
   font-weight: 900;
   margin: 0 0 1px 0;
   color: #000;
@@ -69,7 +69,7 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
 
 .company-tagline {
   font-family: Arial, sans-serif;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 700;
   margin: 0 0 4px 0;
   color: #000;
@@ -88,7 +88,7 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
 .company-contact,
 .company-phone {
   font-family: Arial, sans-serif;
-  font-size: 11px;
+  font-size: 14px;
   margin: 0;
   line-height: 1.45;
   color: #000;

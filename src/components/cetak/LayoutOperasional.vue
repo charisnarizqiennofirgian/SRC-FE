@@ -18,7 +18,7 @@ defineProps(['details', 'po'])
 <style scoped>
 .notes-section {
   margin-top: 10px;
-  font-size: 12px;
+  font-size: 14px;
   font-family: Arial, sans-serif;
   display: flex;
   gap: 8px;
