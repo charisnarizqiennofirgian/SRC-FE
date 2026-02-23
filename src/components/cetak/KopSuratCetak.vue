@@ -57,8 +57,8 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
 }
 
 .company-name {
-  font-family: Arial, sans-serif;
-  font-size: 5.5mm;
+  font-family: 'Constantia', serif;
+  font-size: 18pt;
   font-weight: 900;
   margin: 0;
   color: #000;
@@ -68,7 +68,7 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
 
 .company-tagline {
   font-family: Arial, sans-serif;
-  font-size: 3.5mm;
+  font-size: 12pt;
   font-weight: 700;
   margin: 0 0 1.5mm 0;
   color: #000;
@@ -83,8 +83,8 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
 }
 
 .company-address {
-  font-family: Arial, sans-serif;
-  font-size: 3mm;
+  font-family: 'Times New Roman', serif;
+  font-size: 11pt;
   margin: 0.5mm 0 0 0;
   line-height: 1.3;
   color: #000;
@@ -92,8 +92,8 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
 }
 
 .company-location {
-  font-family: Arial, sans-serif;
-  font-size: 3mm;
+  font-family: 'Times New Roman', serif;
+  font-size: 11pt;
   margin: 0.5mm 0 0 0;
   line-height: 1.3;
   color: #000;
@@ -102,8 +102,8 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
 }
 
 .company-contact {
-  font-family: Arial, sans-serif;
-  font-size: 3mm;
+  font-family: 'Times New Roman', serif;
+  font-size: 11pt;
   margin: 0.5mm 0 0 0;
   line-height: 1.3;
   color: #000;
@@ -111,8 +111,8 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
 }
 
 .company-phone {
-  font-family: Arial, sans-serif;
-  font-size: 3mm;
+  font-family: 'Times New Roman', serif;
+  font-size: 11pt;
   margin: 0.5mm 0 0 0;
   line-height: 1.3;
   color: #000;

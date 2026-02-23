@@ -1,4 +1,8 @@
 <template>
+  <p class="intro-text">
+    Dengan ini kami mengirim daftar pesanan kami untuk {{ extractUsername(po.supplier?.address) }} sebagai berikut :
+  </p>
+
   <TabelCetakOperasional :details="details" :po="po" />
 
   <div v-if="po.notes" class="notes-section">
@@ -12,10 +16,23 @@
 <script setup>
 import TabelCetakOperasional from './TabelCetakOperasional.vue'
 import FooterOperasional from './FooterOperasional.vue'
-defineProps(['details', 'po'])
+
+const props = defineProps(['details', 'po'])
+
+const extractUsername = (address) => {
+  if (!address) return ''
+  const match = address.match(/\(([^)]+)\)/)
+  return match ? match[1] : ''
+}
 </script>
 
 <style scoped>
+.intro-text {
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-family: Arial, sans-serif;
+}
 .notes-section {
   margin-top: 10px;
   font-size: 14px;
