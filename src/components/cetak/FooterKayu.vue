@@ -43,7 +43,8 @@
 .invoice-footer-kayu {
   width: 100%;
   margin-top: 25px;
-  font-size: 12px;
+  font-size: 12pt;
+  font-family: Calibri, 'Candara', 'Segoe UI', sans-serif;
   page-break-inside: avoid;
 }
 .terms-section {
@@ -75,7 +76,6 @@
   height: 60px;
 }
 .signature-name {
-  font-weight: bold;
   margin-top: 5px;
 }
 </style>

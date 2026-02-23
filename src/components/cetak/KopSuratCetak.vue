@@ -12,7 +12,7 @@
       <p class="company-address">Jl. Raya Semarang Purwodadi Km. 18 Karangawen, Demak 59566</p>
       <p class="company-location">Central Java - Indonesia</p>
       <p class="company-contact">
-        Email : sunbcoutdoor@gmail.com / Website :
+        Email : purchasing@sunbcfurni.com / Website :
         <a href="https://www.surya-furniture.com" target="_blank">www.surya-furniture.com</a>
       </p>
       <p class="company-phone">Ph/Fax : +6224 76583167 / +6224 76412468</p>
@@ -33,19 +33,19 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
   display: flex;
   align-items: center;
   border-bottom: 3px solid #000;
-  padding: 0 0 2mm 0;
+  padding: 0;
   width: 100%;
   box-sizing: border-box;
 }
 
 .company-logo {
-  flex: 0 0 28mm;
+  flex: 0 0 38mm;
   padding-right: 2mm;
 }
 
 .logo-img {
-  width: 28mm;
-  height: 28mm;
+  width: 38mm;
+  height: 38mm;
   object-fit: contain;
   display: block;
 }
@@ -58,17 +58,18 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
 
 .company-name {
   font-family: 'Constantia', serif;
-  font-size: 18pt;
+  font-size: 5.8mm;
   font-weight: 900;
   margin: 0;
   color: #000;
   letter-spacing: 0.2px;
   line-height: 1.1;
+  white-space: nowrap;
 }
 
 .company-tagline {
   font-family: Arial, sans-serif;
-  font-size: 12pt;
+  font-size: 3.5mm;
   font-weight: 700;
   margin: 0 0 1.5mm 0;
   color: #000;
@@ -84,7 +85,7 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
 
 .company-address {
   font-family: 'Times New Roman', serif;
-  font-size: 11pt;
+  font-size: 3.5mm;
   margin: 0.5mm 0 0 0;
   line-height: 1.3;
   color: #000;
@@ -93,17 +94,16 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
 
 .company-location {
   font-family: 'Times New Roman', serif;
-  font-size: 11pt;
+  font-size: 3.5mm;
   margin: 0.5mm 0 0 0;
   line-height: 1.3;
   color: #000;
   font-weight: 400;
-  font-style: italic;
 }
 
 .company-contact {
   font-family: 'Times New Roman', serif;
-  font-size: 11pt;
+  font-size: 3.5mm;
   margin: 0.5mm 0 0 0;
   line-height: 1.3;
   color: #000;
@@ -112,7 +112,7 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
 
 .company-phone {
   font-family: 'Times New Roman', serif;
-  font-size: 11pt;
+  font-size: 3.5mm;
   margin: 0.5mm 0 0 0;
   line-height: 1.3;
   color: #000;
@@ -129,12 +129,12 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
-  padding-left: 2mm;
+  padding-left: 1mm;
 }
 
 .svlk-logo {
-  width: 36mm;
-  height: auto;
+  width: auto;
+  height: 38mm;
   object-fit: contain;
   display: block;
 }

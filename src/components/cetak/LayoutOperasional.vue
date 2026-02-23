@@ -28,20 +28,20 @@ const extractUsername = (address) => {
 
 <style scoped>
 .intro-text {
-  font-weight: 600;
+  font-weight: 400;
   margin-bottom: 8px;
-  font-size: 11px;
-  font-family: Arial, sans-serif;
+  font-size: 12pt;
+  font-family: Calibri, 'Candara', 'Segoe UI', sans-serif;
 }
 .notes-section {
   margin-top: 10px;
-  font-size: 14px;
-  font-family: Arial, sans-serif;
+  font-size: 12pt;
+  font-family: Calibri, 'Candara', 'Segoe UI', sans-serif;
   display: flex;
   gap: 8px;
 }
 .notes-label {
-  font-weight: 700;
+  font-weight: 400;
   min-width: 60px;
 }
 .notes-value {

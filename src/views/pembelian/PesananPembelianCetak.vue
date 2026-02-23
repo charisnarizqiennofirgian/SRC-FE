@@ -106,36 +106,38 @@ body {
 .print-container {
   width: 210mm;
   min-height: 297mm;
-  margin: 20px auto;
+  margin: 0 auto;
   background: white;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .invoice-box {
-  padding: 0 10mm 10mm 10mm;
-  font-family: Arial, sans-serif;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #333;
+  padding: 0 8mm 8mm 8mm;
+  font-family: Calibri, 'Candara', 'Segoe UI', sans-serif;
+  font-size: 12pt;
+  line-height: 1.4;
+  color: #000;
 }
 
 .po-title-section {
   text-align: center;
-  margin: 10px 0 15px 0;
-  padding-bottom: 10px;
+  margin: 0 0 10px 0;
+  padding-bottom: 5px;
 }
 
 .po-title {
-  font-size: 16px;
+  font-family: 'Times New Roman', serif;
+  font-size: 12pt;
   font-weight: 900;
-  margin: 0 0 3px 0;
+  margin: 0 0 2px 0;
   text-decoration: underline;
   letter-spacing: 0.8px;
   color: #000;
 }
 
 .po-number-line {
-  font-size: 11px;
+  font-family: 'Times New Roman', serif;
+  font-size: 12pt;
   margin: 0;
   font-weight: 600;
   font-style: italic;
@@ -150,8 +152,9 @@ body {
 .date-line {
   text-align: left !important;
   margin-bottom: 2px !important;
-  font-size: 11px;
-  font-weight: 600;
+  font-family: Calibri, 'Candara', 'Segoe UI', sans-serif;
+  font-size: 12pt;
+  font-weight: 400;
 }
 
 .info-supplier {
@@ -161,11 +164,12 @@ body {
 .info-supplier p {
   margin: 0 0 3px 0;
   line-height: 1.4;
-  font-size: 11px;
+  font-family: Calibri, 'Candara', 'Segoe UI', sans-serif;
+  font-size: 12pt;
 }
 
 .info-supplier .supplier-name {
-  font-weight: 700;
+  font-weight: 400;
   text-decoration: underline;
 }
 
@@ -175,7 +179,7 @@ body {
   align-items: center;
   gap: 6px;
   margin-bottom: 14px;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .delivery-label {
@@ -194,14 +198,14 @@ body {
 .intro-text {
   font-weight: 600;
   margin-bottom: 8px;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .items-table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 20px;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .items-table th,
@@ -215,7 +219,7 @@ body {
   background-color: #fff;
   text-align: center;
   font-weight: 700;
-  font-size: 10px;
+  font-size: 9px;
 }
 
 .items-table .center {
@@ -225,37 +229,22 @@ body {
   text-align: right;
 }
 
+@page {
+  margin: 0 !important;
+}
+
 @media print {
+  html,
   body,
   .print-container {
-    margin: 0;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
     background: white;
     box-shadow: none;
   }
 
   .invoice-box {
-    padding: 3mm 8mm 8mm 8mm;
-  }
-  .po-title {
-    font-size: 15px;
-  }
-  .po-number-line {
-    font-size: 10px;
-  }
-
-  .date-line,
-  .info-supplier p,
-  .intro-text,
-  .delivery-date-line {
-    font-size: 10px;
-  }
-
-  .items-table {
-    font-size: 10px;
-  }
-  .items-table th {
-    font-size: 9px;
+    padding: 0 8mm 8mm 8mm !important;
   }
 }
 </style>

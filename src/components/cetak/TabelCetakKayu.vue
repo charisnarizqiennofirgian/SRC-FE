@@ -44,7 +44,7 @@
       </tr>
       <tr class="total-row">
         <td></td>
-        <td colspan="6" class="left bold">Ppn 11%</td>
+        <td colspan="6" class="left bold">PPN 11%</td>
         <td class="right bold">{{ formatCurrency(ppn) }}</td>
       </tr>
       <tr class="total-row">
@@ -87,7 +87,8 @@ const formatCurrency = (value) => {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 20px;
-  font-size: 14px;
+  font-size: 12pt;
+  font-family: Calibri, 'Candara', 'Segoe UI', sans-serif;
 }
 
 .items-table th,
@@ -100,7 +101,8 @@ const formatCurrency = (value) => {
 .items-table th {
   background-color: #f2f2f2;
   text-align: center;
-  font-weight: 700;
+  font-weight: 400;
+  font-size: 12pt;
 }
 
 .center {
@@ -113,7 +115,7 @@ const formatCurrency = (value) => {
   text-align: left;
 }
 .bold {
-  font-weight: bold;
+  font-weight: 400;
 }
 .total-row td {
   background-color: #ffffff;
