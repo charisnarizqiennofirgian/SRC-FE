@@ -701,6 +701,26 @@
 
               <div class="form-group">
                 <label class="form-label">
+                  Harga Satuan
+                  <span class="label-hint">(Opsional)</span>
+                </label>
+                <div class="input-wrapper">
+                  <span class="input-icon">💰</span>
+                  <input
+                    v-model.number="form.price"
+                    type="number"
+                    class="form-control"
+                    placeholder="0"
+                    min="0"
+                    step="1"
+                    @input="calculateProgress"
+                  />
+                </div>
+                <p class="form-help-text">Harga satuan barang dalam Rupiah</p>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
                   Pilih Gudang
                   <span class="label-hint">(Untuk Stok Awal)</span>
                   <span v-if="mustSelectWarehouse" class="required">*</span>
@@ -787,6 +807,7 @@ const form = reactive({
   category_id: '',
   unit_id: '',
   stock: 0,
+  price: 0,
   initial_warehouse_id: '',
   hs_code: '',
   specifications: {
@@ -957,6 +978,7 @@ const fetchItemData = async (itemId) => {
     form.category_id = data.category_id || ''
     form.unit_id = data.unit_id || ''
     form.stock = parseInt(data.stock) || 0
+    form.price = data.price || 0
     form.hs_code = data.hs_code || ''
     form.initial_warehouse_id = data.initial_warehouse_id || ''
 
@@ -1037,6 +1059,10 @@ const handleSubmit = async () => {
       showError('Validasi Gagal', 'Silakan pilih Gudang untuk Stok Awal.')
       return
     }
+    // Jika bahan operasional tanpa gudang, set null
+    if (!form.initial_warehouse_id) {
+      form.initial_warehouse_id = null
+    }
 
     const payload = {
       code: form.code,
@@ -1045,6 +1071,7 @@ const handleSubmit = async () => {
       category_id: form.category_id,
       unit_id: form.unit_id,
       stock: form.stock || 0,
+      price: form.price || 0,
       initial_warehouse_id: form.initial_warehouse_id || null,
       hs_code: form.hs_code || null,
       specifications: null,

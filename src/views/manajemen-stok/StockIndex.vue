@@ -35,6 +35,15 @@
               <p class="stat-value">{{ formatKubikasi(totalKubikasiSum) }} m³</p>
             </div>
           </div>
+          <div v-if="activeTab === 'operational'" class="stat-card-modern">
+            <div class="stat-icon-wrapper">
+              <span class="stat-icon">💰</span>
+            </div>
+            <div class="stat-content">
+              <p class="stat-label">Total Valuasi</p>
+              <p class="stat-value" style="font-size: 1.1rem">{{ formatRupiah(totalValuasiSum) }}</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -193,13 +202,14 @@
                 <th class="th-category">Kategori</th>
                 <th class="th-unit">Satuan</th>
                 <th class="th-stock">Stok</th>
+                <th class="th-small">Harga Satuan</th>
               </tr>
             </thead>
 
             <tbody>
               <tr v-if="filteredReport.length === 0" class="empty-row-modern">
                 <td
-                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 10 : 6"
+                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 10 : 7"
                   class="empty-cell-modern"
                 >
                   <div class="empty-state-content">
@@ -399,6 +409,9 @@
                     </button>
                   </div>
                 </td>
+                <td class="td-small">
+                  {{ item.price ? formatRupiah(item.price) : 'Rp 0' }}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -514,6 +527,7 @@ const selectedTpk = ref(null)
 const selectedJenisKayu = ref(null)
 const selectedMutu = ref(null)
 const totalKubikasiSum = ref(0)
+const totalValuasiSum = ref(0)
 let searchTimeout = null
 
 const isDetailOpen = ref(false)
@@ -541,7 +555,7 @@ const currentCategory = () => {
 
 const currentCategoryParam = () => {
   if (activeTab.value === 'operational') {
-    return 'Bahan Operasional,Bahan Penolong'
+    return 'Bahan'
   }
   return currentCategory()
 }
@@ -596,6 +610,7 @@ const fetchReport = async () => {
       }
 
       totalKubikasiSum.value = response.data.summary?.total_kubikasi || 0
+      totalValuasiSum.value = response.data.summary?.total_valuasi || 0
     })
   } catch (e) {
     toast.error('Gagal memuat laporan stok.')
@@ -712,6 +727,15 @@ const formatLogVolume = (val) => {
   const num = parseFloat(val)
   if (num % 1 === 0) return formatQty(num)
   return formatKubikasi(num)
+}
+
+const formatRupiah = (val) => {
+  if (!val) return 'Rp 0'
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+  }).format(val)
 }
 
 const totalQty = (stocks) => {

@@ -159,6 +159,9 @@
                             Stok: <strong>{{ formatNumber(item.stock) }}</strong>
                             {{ item.unit?.name }}
                           </span>
+                          <span class="item-stock">
+                            Harga: <strong>{{ formatRupiah(item.price) }}</strong>
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -196,6 +199,9 @@
                       <p v-else-if="item.qty > 0" class="input-hint success-hint">
                         ✅ Sisa stok setelah pemakaian: {{ formatNumber(item.stock - item.qty) }}
                         {{ item.unit?.name }}
+                      </p>
+                      <p v-if="item.qty > 0 && item.price > 0" class="input-hint total-hint">
+                        💰 Total Nilai: <strong>{{ formatRupiah(item.qty * item.price) }}</strong>
                       </p>
                     </div>
                   </div>
@@ -264,6 +270,7 @@
                 <span class="summary-item">📦 {{ selectedItems.length }} jenis barang</span>
                 <span class="summary-item">🏢 {{ form.division || '-' }}</span>
                 <span class="summary-item">📅 {{ formatDate(form.date) }}</span>
+                <span class="summary-item">💰 Total Nilai: <strong>{{ formatRupiah(totalNilai) }}</strong></span>
               </div>
             </div>
 
@@ -307,6 +314,8 @@
               <th>Tanggal</th>
               <th>Barang</th>
               <th class="col-center">Qty</th>
+              <th>Harga Satuan</th>
+              <th>Total Nilai</th>
               <th>Divisi</th>
             </tr>
           </thead>
@@ -320,6 +329,8 @@
               <td class="cell-qty">
                 <span class="qty-badge">-{{ formatNumber(log.qty) }}</span>
               </td>
+              <td>{{ formatRupiah(log.item?.price || 0) }}</td>
+              <td><strong>{{ formatRupiah((log.qty || 0) * (log.item?.price || 0)) }}</strong></td>
               <td class="cell-division">{{ log.division }}</td>
             </tr>
           </tbody>
@@ -383,6 +394,21 @@ const isFormValid = computed(() => {
   const hasValidItems = selectedItems.value.every((item) => item.qty > 0 && item.qty <= item.stock)
   return selectedItems.value.length > 0 && hasValidItems && form.division
 })
+
+const totalNilai = computed(() => {
+  return selectedItems.value.reduce((sum, item) => {
+    return sum + (item.qty || 0) * (item.price || 0)
+  }, 0)
+})
+
+const formatRupiah = (val) => {
+  if (!val) return 'Rp 0'
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+  }).format(val)
+}
 
 const fetchItems = async () => {
   isLoadingItems.value = true
@@ -467,6 +493,7 @@ const addItemToList = (item) => {
     category: item.category,
     category_id: item.category_id,
     stock: item.stock,
+    price: item.price || 0,
     qty: 0,
   })
 
@@ -1509,6 +1536,10 @@ onMounted(() => {
 
   .input-qty-wrapper {
     max-width: 100%;
+  }
+
+  .input-hint.total-hint {
+    color: #d97706;
   }
 }
 </style>
