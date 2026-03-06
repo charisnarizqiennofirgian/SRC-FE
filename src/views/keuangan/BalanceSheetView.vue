@@ -1,200 +1,218 @@
 <template>
   <DashboardLayout>
-    <div class="balance-sheet-professional">
-      <!-- Header -->
+    <div class="neraca-wrap">
+
+      <!-- PAGE HEADER -->
       <div class="page-header">
-        <div class="header-content">
-          <div class="header-left">
-            <div class="header-icon">
-              <i class="fas fa-balance-scale"></i>
-            </div>
-            <div class="header-text">
-              <h1 class="page-title">Neraca</h1>
-              <p class="page-subtitle">Balance Sheet</p>
-            </div>
+        <div class="header-left">
+          <div class="icon-badge">⚖️</div>
+          <div>
+            <div class="hero-eyebrow">Laporan Keuangan</div>
+            <h1 class="page-title">Neraca <span class="accent">Balance Sheet</span></h1>
+            <p class="page-subtitle">PT. Surya Bangkit Cemerlang</p>
           </div>
-          <div class="header-actions">
-            <button class="btn btn-export-pdf" @click="exportPDF" :disabled="!hasData">
-              <i class="fas fa-file-pdf"></i> PDF
-            </button>
-            <button class="btn btn-export-excel" @click="exportExcel" :disabled="!hasData">
-              <i class="fas fa-file-excel"></i> Excel
+        </div>
+        <div class="header-actions">
+          <button class="btn-export pdf" @click="exportPDF" :disabled="!hasData">
+            <span class="btn-icon-sm">📄</span> Export PDF
+          </button>
+          <button class="btn-export excel" @click="exportExcel" :disabled="!hasData">
+            <span class="btn-icon-sm">📊</span> Export Excel
+          </button>
+        </div>
+      </div>
+
+      <!-- FILTER CARD -->
+      <div class="filter-card">
+        <div class="filter-inner">
+          <div class="filter-field">
+            <label class="filter-label">Per Tanggal <span class="req">*</span></label>
+            <input v-model="filters.as_of_date" type="date" class="form-control" required />
+          </div>
+          <div class="filter-btns">
+            <button class="btn-reset" @click="resetFilters">↺ Reset</button>
+            <button class="btn-generate" @click="fetchData" :disabled="!canFilter || loading">
+              <span v-if="loading" class="loading-dots">Memproses<span class="dot-anim">...</span></span>
+              <span v-else>🔍 Tampilkan Neraca</span>
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Filter Section -->
-      <div class="filter-section">
-        <div class="filter-panel">
-          <div class="filter-row">
-            <div class="filter-group">
-              <label class="form-label">Per Tanggal <span class="required">*</span></label>
-              <input v-model="filters.as_of_date" type="date" class="form-control" required />
-            </div>
-            <div class="filter-buttons">
-              <button class="btn btn-primary" @click="fetchData" :disabled="!canFilter || loading">
-                <i v-if="loading" class="fas fa-spinner fa-spin"></i>
-                <i v-else class="fas fa-search"></i>
-                {{ loading ? 'Memproses...' : 'Tampilkan Neraca' }}
-              </button>
-              <button class="btn btn-outline-secondary" @click="resetFilters">
-                <i class="fas fa-refresh"></i> Reset
-              </button>
-            </div>
-          </div>
-        </div>
+      <!-- EMPTY STATE -->
+      <div v-if="!hasData && !loading" class="state-card empty-state">
+        <div class="state-icon">⚖️</div>
+        <div class="state-title">Pilih Tanggal Neraca</div>
+        <div class="state-desc">Tentukan tanggal untuk menampilkan posisi keuangan perusahaan</div>
       </div>
 
-      <!-- Content -->
-      <div class="main-content">
-        <!-- Empty State -->
-        <div v-if="!hasData && !loading" class="empty-state">
-          <div class="empty-icon">
-            <i class="fas fa-balance-scale"></i>
+      <!-- LOADING -->
+      <div v-else-if="loading" class="state-card loading-state">
+        <div class="spinner-ring"></div>
+        <p class="state-desc">Memuat data neraca...</p>
+      </div>
+
+      <!-- REPORT -->
+      <div v-else class="report-card">
+
+        <!-- REPORT HEADER BAND -->
+        <div class="report-band">
+          <div class="band-identity">
+            <div class="band-company">PT. Surya Bangkit Cemerlang</div>
+            <div class="band-title">NERACA</div>
+            <div class="band-period">Per Tanggal: <strong>{{ formatDate(reportData.as_of_date) }}</strong></div>
           </div>
-          <h3>Pilih Tanggal Neraca</h3>
-          <p>Silakan tentukan tanggal untuk menampilkan posisi keuangan</p>
+          <div :class="['balance-badge', reportData.is_balanced ? 'badge-ok' : 'badge-err']">
+            <span class="badge-dot"></span>
+            <span>{{ reportData.is_balanced ? 'Neraca Balance' : 'Tidak Balance' }}</span>
+            <span v-if="!reportData.is_balanced" class="badge-selisih">Selisih: {{ formatRupiah(reportData.selisih) }}</span>
+          </div>
         </div>
 
-        <!-- Loading -->
-        <div v-else-if="loading" class="loading-state">
-          <div class="loading-indicator">
-            <i class="fas fa-spinner fa-spin"></i>
-            <span>Memuat Neraca...</span>
+        <!-- SUMMARY STRIP -->
+        <div class="summary-strip">
+          <div class="summary-item">
+            <div class="si-label">Total Aset</div>
+            <div class="si-value aset-val">{{ formatRupiah(reportData.aset.total) }}</div>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-item">
+            <div class="si-label">Total Kewajiban</div>
+            <div class="si-value liab-val">{{ formatRupiah(reportData.kewajiban.total) }}</div>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-item">
+            <div class="si-label">Total Modal</div>
+            <div class="si-value modal-val">{{ formatRupiah(reportData.modal.total + reportData.laba_tahun_berjalan) }}</div>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-item">
+            <div class="si-label">Laba Tahun Berjalan</div>
+            <div :class="['si-value', reportData.laba_tahun_berjalan >= 0 ? 'profit-val' : 'loss-val']">
+              {{ reportData.laba_tahun_berjalan >= 0 ? '+' : '' }}{{ formatRupiah(reportData.laba_tahun_berjalan) }}
+            </div>
           </div>
         </div>
 
-        <!-- Report -->
-        <div v-else class="report-container">
-          <!-- Report Header -->
-          <div class="report-header">
-            <div class="report-identification">
-              <h1>NERACA</h1>
-              <div class="report-period">
-                <strong>Per Tanggal:</strong> {{ formatDate(reportData.as_of_date) }}
+        <!-- TWO-COLUMN TABLE -->
+        <div class="bs-grid">
+
+          <!-- ASET -->
+          <div class="bs-col">
+            <div class="col-title-bar aset-bar">
+              <span class="ctb-label">ASET</span>
+              <span class="ctb-total">{{ formatRupiah(reportData.aset.total) }}</span>
+            </div>
+
+            <div class="account-table">
+              <div class="at-head">
+                <span>Nama Akun</span>
+                <span>Jumlah</span>
               </div>
-              <div class="report-company">
-                <strong>PT.Surya Bangkit Cemerlang</strong>
+              <div
+                v-for="(account, i) in reportData.aset.accounts"
+                :key="account.account_id"
+                :class="['at-row', i % 2 === 0 ? 'at-row-even' : '']"
+              >
+                <span class="at-name">{{ account.account_name }}</span>
+                <span class="at-amount">{{ formatRupiah(account.amount) }}</span>
+              </div>
+              <div v-if="reportData.aset.accounts.length === 0" class="at-empty">
+                <span>Belum ada data aset</span>
               </div>
             </div>
 
-            <!-- Balance Status -->
-            <div class="balance-status" :class="reportData.is_balanced ? 'balanced' : 'imbalanced'">
-              <div class="status-icon">
-                <i v-if="reportData.is_balanced" class="fas fa-check-circle"></i>
-                <i v-else class="fas fa-exclamation-triangle"></i>
-              </div>
-              <div class="status-text">
-                {{ reportData.is_balanced ? 'Neraca Balance' : 'Neraca Tidak Balance' }}
-                <span v-if="!reportData.is_balanced" class="selisih">
-                  (Selisih: {{ formatRupiah(reportData.selisih) }})
-                </span>
-              </div>
+            <div class="col-total-bar aset-total-bar">
+              <span class="ctb-total-label">TOTAL ASET</span>
+              <span class="ctb-total-value">{{ formatRupiah(reportData.aset.total) }}</span>
             </div>
           </div>
 
-          <!-- Balance Sheet Grid -->
-          <div class="balance-sheet-grid">
-            <!-- ASET Column -->
-            <div class="balance-column assets-column">
-              <div class="column-header">
-                <h3>ASET</h3>
+          <!-- COLUMN DIVIDER -->
+          <div class="grid-divider"></div>
+
+          <!-- PASIVA -->
+          <div class="bs-col">
+            <div class="col-title-bar pasiva-bar">
+              <span class="ctb-label">KEWAJIBAN &amp; MODAL</span>
+              <span class="ctb-total">{{ formatRupiah(reportData.total_pasiva) }}</span>
+            </div>
+
+            <!-- Kewajiban -->
+            <div class="sub-section">
+              <div class="sub-head">
+                <div class="sub-indicator liab-indicator"></div>
+                <span class="sub-label">KEWAJIBAN</span>
               </div>
-              <div class="balance-table">
+              <div class="account-table">
+                <div class="at-head">
+                  <span>Nama Akun</span>
+                  <span>Jumlah</span>
+                </div>
                 <div
-                  v-for="account in reportData.aset.accounts"
+                  v-for="(account, i) in reportData.kewajiban.accounts"
                   :key="account.account_id"
-                  class="table-row"
+                  :class="['at-row', i % 2 === 0 ? 'at-row-even' : '']"
                 >
-                  <div class="account-description">{{ account.account_name }}</div>
-                  <div class="amount">{{ formatRupiah(account.amount) }}</div>
+                  <span class="at-name">{{ account.account_name }}</span>
+                  <span class="at-amount">{{ formatRupiah(account.amount) }}</span>
                 </div>
-                <div v-if="reportData.aset.accounts.length === 0" class="table-row empty">
-                  <div class="account-description text-muted">Belum ada data aset</div>
-                  <div class="amount">-</div>
+                <div v-if="reportData.kewajiban.accounts.length === 0" class="at-empty">
+                  <span>Belum ada data kewajiban</span>
                 </div>
-                <div class="table-total">
-                  <div class="total-label">TOTAL ASET</div>
-                  <div class="total-amount primary">{{ formatRupiah(reportData.aset.total) }}</div>
-                </div>
+              </div>
+              <div class="subtotal-row">
+                <span>Total Kewajiban</span>
+                <span>{{ formatRupiah(reportData.kewajiban.total) }}</span>
               </div>
             </div>
 
-            <!-- PASIVA Column -->
-            <div class="balance-column liabilities-column">
-              <div class="column-header">
-                <h3>KEWAJIBAN DAN MODAL</h3>
+            <!-- Modal -->
+            <div class="sub-section">
+              <div class="sub-head">
+                <div class="sub-indicator modal-indicator"></div>
+                <span class="sub-label">MODAL</span>
               </div>
-
-              <!-- Kewajiban -->
-              <div class="sub-section">
-                <h4 class="sub-title">KEWAJIBAN</h4>
-                <div class="balance-table">
-                  <div
-                    v-for="account in reportData.kewajiban.accounts"
-                    :key="account.account_id"
-                    class="table-row"
-                  >
-                    <div class="account-description">{{ account.account_name }}</div>
-                    <div class="amount">{{ formatRupiah(account.amount) }}</div>
-                  </div>
-                  <div v-if="reportData.kewajiban.accounts.length === 0" class="table-row empty">
-                    <div class="account-description text-muted">Belum ada data kewajiban</div>
-                    <div class="amount">-</div>
-                  </div>
-                  <div class="table-subtotal">
-                    <div class="subtotal-label">Total Kewajiban</div>
-                    <div class="subtotal-amount">
-                      {{ formatRupiah(reportData.kewajiban.total) }}
-                    </div>
-                  </div>
+              <div class="account-table">
+                <div class="at-head">
+                  <span>Nama Akun</span>
+                  <span>Jumlah</span>
+                </div>
+                <div
+                  v-for="(account, i) in reportData.modal.accounts"
+                  :key="account.account_id"
+                  :class="['at-row', i % 2 === 0 ? 'at-row-even' : '']"
+                >
+                  <span class="at-name">{{ account.account_name }}</span>
+                  <span class="at-amount">{{ formatRupiah(account.amount) }}</span>
+                </div>
+                <!-- Laba Row -->
+                <div class="at-row laba-row">
+                  <span class="at-name laba-name">Laba Tahun Berjalan</span>
+                  <span :class="['at-amount', reportData.laba_tahun_berjalan >= 0 ? 'profit-text' : 'loss-text']">
+                    {{ formatRupiah(reportData.laba_tahun_berjalan) }}
+                  </span>
                 </div>
               </div>
-
-              <!-- Modal -->
-              <div class="sub-section">
-                <h4 class="sub-title">MODAL</h4>
-                <div class="balance-table">
-                  <div
-                    v-for="account in reportData.modal.accounts"
-                    :key="account.account_id"
-                    class="table-row"
-                  >
-                    <div class="account-description">{{ account.account_name }}</div>
-                    <div class="amount">{{ formatRupiah(account.amount) }}</div>
-                  </div>
-                  <div class="table-row laba-row">
-                    <div class="account-description">Laba Tahun Berjalan</div>
-                    <div class="amount" :class="profitClass(reportData.laba_tahun_berjalan)">
-                      {{ formatRupiah(reportData.laba_tahun_berjalan) }}
-                    </div>
-                  </div>
-                  <div
-                    v-if="reportData.modal.accounts.length === 0 && !reportData.laba_tahun_berjalan"
-                    class="table-row empty"
-                  >
-                    <div class="account-description text-muted">Belum ada data modal</div>
-                    <div class="amount">-</div>
-                  </div>
-                  <div class="table-subtotal">
-                    <div class="subtotal-label">Total Modal</div>
-                    <div class="subtotal-amount">
-                      {{ formatRupiah(reportData.modal.total + reportData.laba_tahun_berjalan) }}
-                    </div>
-                  </div>
-                </div>
+              <div class="subtotal-row">
+                <span>Total Modal</span>
+                <span>{{ formatRupiah(reportData.modal.total + reportData.laba_tahun_berjalan) }}</span>
               </div>
+            </div>
 
-              <!-- Total Pasiva -->
-              <div class="table-total">
-                <div class="total-label">TOTAL KEWAJIBAN DAN MODAL</div>
-                <div class="total-amount primary">{{ formatRupiah(reportData.total_pasiva) }}</div>
-              </div>
+            <div class="col-total-bar pasiva-total-bar">
+              <span class="ctb-total-label">TOTAL KEWAJIBAN &amp; MODAL</span>
+              <span class="ctb-total-value">{{ formatRupiah(reportData.total_pasiva) }}</span>
             </div>
           </div>
+
+        </div>
+        <!-- FOOTER NOTE -->
+        <div class="report-footer">
+          <span>Dicetak pada {{ new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) }} · Sistem ERP SBC</span>
         </div>
       </div>
+
     </div>
   </DashboardLayout>
 </template>
@@ -208,29 +226,21 @@ export default {
   components: { DashboardLayout },
   data() {
     return {
-      filters: {
-        as_of_date: '',
-      },
+      filters: { as_of_date: '' },
       reportData: null,
       loading: false,
     }
   },
   computed: {
-    hasData() {
-      return this.reportData !== null
-    },
-    canFilter() {
-      return this.filters.as_of_date !== ''
-    },
+    hasData() { return this.reportData !== null },
+    canFilter() { return this.filters.as_of_date !== '' },
   },
-  mounted() {
-    this.setDefaultDate()
-  },
+  mounted() { this.setDefaultDate() },
   methods: {
     setDefaultDate() {
       const today = new Date()
-      const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
-      this.filters.as_of_date = lastDayOfMonth.toISOString().split('T')[0]
+      const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+      this.filters.as_of_date = lastDay.toISOString().split('T')[0]
     },
     async fetchData() {
       if (!this.canFilter) return
@@ -241,437 +251,180 @@ export default {
           params: this.filters,
           headers: { Authorization: `Bearer ${token}` },
         })
-        if (response.data.success) {
-          this.reportData = response.data.data
-        }
+        if (response.data.success) this.reportData = response.data.data
       } catch (error) {
         console.error('Error:', error)
       } finally {
         this.loading = false
       }
     },
-    resetFilters() {
-      this.setDefaultDate()
-      this.reportData = null
-    },
-    exportPDF() {
-      // PDF export logic
-    },
-    exportExcel() {
-      // Excel export logic
-    },
+    resetFilters() { this.setDefaultDate(); this.reportData = null },
+    exportPDF() {},
+    exportExcel() {},
     formatDate(date) {
-      return new Date(date).toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-      })
+      return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
     },
     formatRupiah(num) {
-      const absNum = Math.abs(num)
-      return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-      }).format(absNum)
-    },
-    profitClass(amount) {
-      return amount >= 0 ? 'profit' : 'loss'
+      const absNum = Math.abs(num || 0)
+      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(absNum)
     },
   },
 }
 </script>
 
 <style scoped>
-.balance-sheet-professional {
-  padding: 24px;
-  background: #f8f9fa;
-  min-height: 100vh;
-}
+/* ===== WRAPPER ===== */
+.neraca-wrap { display: flex; flex-direction: column; gap: 18px; }
 
-/* Page Header */
+/* ===== PAGE HEADER ===== */
 .page-header {
-  background: white;
-  border-radius: 12px;
-  padding: 32px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  background: #fff; border: 1.5px solid #f3f4f6; border-left: 5px solid #7c3aed;
+  border-radius: 14px; padding: 22px 28px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
 }
+.header-left { display: flex; align-items: center; gap: 16px; }
+.icon-badge { width: 50px; height: 50px; background: #ede9fe; border: 1.5px solid #ddd6fe; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+.hero-eyebrow { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #7c3aed; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+.hero-eyebrow::before { content: ''; display: inline-block; width: 14px; height: 2px; background: #7c3aed; border-radius: 2px; }
+.page-title { font-size: 24px; font-weight: 800; color: #111827; letter-spacing: -0.5px; margin: 0 0 3px; line-height: 1.1; }
+.page-title .accent { color: #7c3aed; }
+.page-subtitle { font-size: 13px; color: #6b7280; margin: 0; }
+.header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-export { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1.5px solid; transition: all 0.2s; font-family: inherit; }
+.btn-export:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-export.pdf { background: #fff5f5; color: #dc2626; border-color: #fecaca; }
+.btn-export.pdf:hover:not(:disabled) { background: #fee2e2; }
+.btn-export.excel { background: #f0fdf4; color: #059669; border-color: #a7f3d0; }
+.btn-export.excel:hover:not(:disabled) { background: #d1fae5; }
+.btn-icon-sm { font-size: 14px; }
 
-.header-icon {
-  width: 56px;
-  height: 56px;
-  background: linear-gradient(135deg, #7c3aed, #6d28d9);
-  color: white;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  margin-right: 20px;
+/* ===== FILTER CARD ===== */
+.filter-card {
+  background: #fff; border: 1.5px solid #f3f4f6; border-radius: 14px;
+  padding: 18px 28px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
 }
+.filter-inner { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.filter-field { display: flex; flex-direction: column; gap: 6px; min-width: 200px; flex: 1; max-width: 280px; }
+.filter-label { font-size: 11.5px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.5px; }
+.req { color: #dc2626; }
+.form-control { padding: 10px 14px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 14px; font-family: inherit; background: #fafafa; color: #111827; transition: all 0.2s; outline: none; box-sizing: border-box; }
+.form-control:focus { border-color: #7c3aed; background: #fff; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+.filter-btns { display: flex; gap: 10px; flex-shrink: 0; }
+.btn-reset { padding: 10px 16px; border-radius: 8px; font-size: 13.5px; font-weight: 600; cursor: pointer; background: #fff; color: #374151; border: 1.5px solid #e5e7eb; transition: all 0.2s; font-family: inherit; }
+.btn-reset:hover { background: #f9fafb; }
+.btn-generate { padding: 10px 20px; border-radius: 8px; font-size: 13.5px; font-weight: 700; cursor: pointer; background: #7c3aed; color: #fff; border: none; transition: all 0.2s; font-family: inherit; box-shadow: 0 3px 10px rgba(124,58,237,0.25); }
+.btn-generate:hover:not(:disabled) { background: #6d28d9; transform: translateY(-1px); }
+.btn-generate:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.page-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 4px 0;
+/* ===== STATE CARDS ===== */
+.state-card { background: #fff; border: 1.5px solid #f3f4f6; border-radius: 14px; padding: 80px 20px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.06); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.state-icon { font-size: 52px; opacity: 0.15; }
+.state-title { font-size: 18px; font-weight: 800; color: #374151; }
+.state-desc { font-size: 13.5px; color: #9ca3af; }
+.spinner-ring { width: 44px; height: 44px; border: 4px solid #f3f4f6; border-top-color: #7c3aed; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== REPORT CARD ===== */
+.report-card { background: #fff; border: 1.5px solid #f3f4f6; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); overflow: hidden; }
+
+/* ===== REPORT BAND ===== */
+.report-band {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+  padding: 28px 32px;
+  display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;
 }
+.band-company { font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.6); font-weight: 700; margin-bottom: 8px; }
+.band-title { font-size: 30px; font-weight: 900; color: #fff; letter-spacing: 2px; margin-bottom: 6px; }
+.band-period { font-size: 13px; color: rgba(255,255,255,0.75); }
+.band-period strong { color: #fff; }
+.balance-badge { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 700; }
+.badge-ok { background: rgba(16,185,129,0.2); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+.badge-err { background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+.badge-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.badge-ok .badge-dot { background: #10b981; box-shadow: 0 0 8px rgba(16,185,129,0.8); }
+.badge-err .badge-dot { background: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,0.8); }
+.badge-selisih { font-size: 11px; font-weight: 500; opacity: 0.8; }
 
-.page-subtitle {
-  color: #6b7280;
-  font-size: 16px;
-  margin: 0;
+/* ===== SUMMARY STRIP ===== */
+.summary-strip {
+  display: flex; align-items: stretch;
+  border-bottom: 1.5px solid #f3f4f6;
+  background: #fafafa;
 }
+.summary-item { flex: 1; padding: 18px 24px; display: flex; flex-direction: column; gap: 5px; }
+.summary-divider { width: 1px; background: #f3f4f6; }
+.si-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #9ca3af; font-weight: 700; }
+.si-value { font-family: 'Courier New', monospace; font-size: 15px; font-weight: 800; }
+.aset-val { color: #1e293b; }
+.liab-val { color: #dc2626; }
+.modal-val { color: #7c3aed; }
+.profit-val { color: #059669; }
+.loss-val { color: #dc2626; }
 
-/* Export Buttons */
-.btn-export-pdf,
-.btn-export-excel {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-left: 12px;
+/* ===== BS GRID ===== */
+.bs-grid { display: grid; grid-template-columns: 1fr 1px 1fr; padding: 28px 32px; gap: 0; }
+.grid-divider { background: #f3f4f6; margin: 0 28px; }
+.bs-col { display: flex; flex-direction: column; gap: 20px; }
+
+/* column title bar */
+.col-title-bar { display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; border-radius: 8px; }
+.aset-bar { background: #1e293b; }
+.pasiva-bar { background: #4c1d95; }
+.ctb-label { font-size: 11.5px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.9); }
+.ctb-total { font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.75); }
+
+/* account table */
+.account-table { border: 1.5px solid #f3f4f6; border-radius: 10px; overflow: hidden; }
+.at-head { display: flex; justify-content: space-between; padding: 9px 16px; background: #f8f9fa; border-bottom: 1.5px solid #f3f4f6; }
+.at-head span { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #9ca3af; }
+.at-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f9fafb; transition: background 0.15s; }
+.at-row:last-child { border-bottom: none; }
+.at-row:hover { background: #f5f3ff; }
+.at-row-even { background: #fcfcfd; }
+.at-row-even:hover { background: #f5f3ff; }
+.at-name { font-size: 13.5px; font-weight: 500; color: #374151; flex: 1; }
+.at-amount { font-family: 'Courier New', monospace; font-size: 13.5px; font-weight: 700; color: #111827; min-width: 130px; text-align: right; }
+.at-empty { padding: 24px; text-align: center; font-size: 13px; color: #9ca3af; font-style: italic; }
+.laba-row { background: #fffbeb !important; }
+.laba-name { font-weight: 700; color: #78350f; }
+.profit-text { color: #059669 !important; }
+.loss-text { color: #dc2626 !important; }
+
+/* subtotal row */
+.subtotal-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; background: #f8f9fa; border: 1.5px solid #f3f4f6; border-radius: 8px; font-size: 13px; font-weight: 700; color: #374151; }
+.subtotal-row span:last-child { font-family: 'Courier New', monospace; font-size: 13.5px; color: #111827; }
+
+/* sub section */
+.sub-section { display: flex; flex-direction: column; gap: 10px; }
+.sub-head { display: flex; align-items: center; gap: 8px; }
+.sub-indicator { width: 3px; height: 16px; border-radius: 2px; flex-shrink: 0; }
+.liab-indicator { background: #dc2626; }
+.modal-indicator { background: #7c3aed; }
+.sub-label { font-size: 10.5px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: #9ca3af; }
+
+/* col total bar */
+.col-total-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-radius: 10px; }
+.aset-total-bar { background: linear-gradient(135deg, #1e293b, #334155); }
+.pasiva-total-bar { background: linear-gradient(135deg, #4c1d95, #6d28d9); }
+.ctb-total-label { font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.8); }
+.ctb-total-value { font-family: 'Courier New', monospace; font-size: 16px; font-weight: 800; color: #fff; }
+
+/* ===== REPORT FOOTER ===== */
+.report-footer { padding: 14px 32px; border-top: 1.5px solid #f3f4f6; background: #fafafa; font-size: 11.5px; color: #9ca3af; text-align: center; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1100px) {
+  .bs-grid { grid-template-columns: 1fr; gap: 28px; }
+  .grid-divider { display: none; }
 }
-
-.btn-export-pdf {
-  background: #dc3545;
-  color: white;
-}
-
-.btn-export-excel {
-  background: #28a745;
-  color: white;
-}
-
-.btn-export-pdf:hover:not(:disabled),
-.btn-export-excel:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* Filter Section */
-.filter-section {
-  background: white;
-  border-radius: 12px;
-  padding: 32px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.filter-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  gap: 24px;
-}
-
-.filter-group {
-  flex: 1;
-}
-
-.form-label {
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 12px;
-  display: block;
-}
-
-.required {
-  color: #dc3545;
-}
-
-.form-control {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 16px;
-}
-
-.filter-buttons {
-  display: flex;
-  gap: 12px;
-}
-
-/* Main Content */
-.main-content {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-}
-
-/* States */
-.empty-state,
-.loading-state {
-  padding: 80px 40px;
-  text-align: center;
-}
-
-.empty-icon i {
-  font-size: 64px;
-  color: #d1d5db;
-  margin-bottom: 24px;
-}
-
-.empty-state h3 {
-  color: #374151;
-  font-size: 24px;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-
-.loading-indicator {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-.loading-indicator i {
-  font-size: 48px;
-  color: #2563eb;
-}
-
-/* Report Container */
-.report-container {
-  padding: 40px;
-}
-
-.report-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding-bottom: 32px;
-  border-bottom: 3px solid #e5e7eb;
-  margin-bottom: 40px;
-  gap: 24px;
-}
-
-.report-identification h1 {
-  font-size: 32px;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 16px 0;
-  letter-spacing: 1px;
-}
-
-.report-period,
-.report-company {
-  color: #6b7280;
-  font-size: 16px;
-  margin-bottom: 8px;
-}
-
-.report-company {
-  font-weight: 600;
-  color: #374151;
-}
-
-.balance-status {
-  padding: 16px 24px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-weight: 600;
-}
-
-.balance-status.balanced {
-  background: #d1fae5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
-}
-
-.balance-status.imbalanced {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
-}
-
-.status-icon i {
-  font-size: 20px;
-}
-
-.selisih {
-  font-size: 14px;
-  font-weight: 500;
-}
-
-/* Balance Sheet Grid */
-.balance-sheet-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 40px;
-}
-
-.balance-column {
-  display: flex;
-  flex-direction: column;
-}
-
-.column-header {
-  text-align: center;
-  padding: 20px;
-  background: linear-gradient(135deg, #7c3aed, #6d28d9);
-  color: white;
-  border-radius: 8px;
-  margin-bottom: 24px;
-}
-
-.column-header h3 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-/* Balance Tables */
-.balance-table {
-  background: #fafbfc;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  margin-bottom: 16px;
-}
-
-.table-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 16px 24px;
-  border-bottom: 1px solid #f1f3f4;
-}
-
-.table-row:last-child {
-  border-bottom: none;
-}
-
-.table-row:hover {
-  background: #f8fafc;
-}
-
-.account-description {
-  flex: 1;
-  font-weight: 500;
-  color: #374151;
-  font-size: 15px;
-}
-
-.amount {
-  font-family:
-    'SF Pro Display',
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
-  font-weight: 600;
-  font-size: 16px;
-  min-width: 200px;
-  text-align: right;
-}
-
-.table-row.empty {
-  justify-content: center;
-  text-align: center;
-  padding: 32px;
-}
-
-.text-muted {
-  color: #9ca3af;
-  font-style: italic;
-}
-
-.table-subtotal,
-.table-total {
-  background: white;
-  padding: 20px 24px;
-  border-top: 2px solid #e5e7eb;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 8px;
-}
-
-.subtotal-label,
-.total-label {
-  font-weight: 700;
-  font-size: 16px;
-  color: #1f2937;
-}
-
-.subtotal-amount,
-.total-amount {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.primary {
-  color: #7c3aed;
-}
-
-.profit {
-  color: #16a34a;
-}
-
-.loss {
-  color: #dc2626;
-}
-
-.laba-row {
-  background: #fef3c7;
-}
-
-/* Sub-sections */
-.sub-section {
-  margin-bottom: 24px;
-}
-
-.sub-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #374151;
-  margin: 0 0 16px 0;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-/* Responsive */
-@media (max-width: 992px) {
-  .balance-sheet-grid {
-    grid-template-columns: 1fr;
-    gap: 32px;
-  }
-
-  .report-header {
-    flex-direction: column;
-    gap: 24px;
-    text-align: center;
-  }
-}
-
 @media (max-width: 768px) {
-  .balance-sheet-professional {
-    padding: 16px;
-  }
-
-  .filter-row {
-    flex-direction: column;
-    gap: 20px;
-    align-items: stretch;
-  }
-
-  .table-row {
-    flex-direction: column;
-    gap: 8px;
-    padding: 20px;
-  }
+  .page-header { padding: 18px 20px; }
+  .report-band { padding: 22px 20px; }
+  .bs-grid { padding: 20px; }
+  .summary-strip { flex-wrap: wrap; }
+  .summary-item { min-width: 50%; border-bottom: 1px solid #f3f4f6; }
+  .filter-inner { flex-direction: column; align-items: stretch; }
+  .filter-field { max-width: 100%; }
 }
 </style>
