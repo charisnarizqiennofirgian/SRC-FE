@@ -153,7 +153,7 @@ body {
   text-align: left !important;
   margin-bottom: 2px !important;
   font-family: Calibri, 'Candara', 'Segoe UI', sans-serif;
-  font-size: 12pt;
+  font-size: 16pt;
   font-weight: 400;
 }
 
@@ -165,7 +165,7 @@ body {
   margin: 0 0 3px 0;
   line-height: 1.4;
   font-family: Calibri, 'Candara', 'Segoe UI', sans-serif;
-  font-size: 12pt;
+  font-size: 16pt;
 }
 
 .info-supplier .supplier-name {

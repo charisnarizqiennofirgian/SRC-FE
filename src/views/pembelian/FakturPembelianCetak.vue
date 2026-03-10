@@ -189,7 +189,7 @@ body {
 .date-line {
   text-align: right;
   margin-bottom: 20px;
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 600;
 }
 
@@ -200,7 +200,7 @@ body {
 .info-supplier p {
   margin: 0 0 3px 0;
   line-height: 1.4;
-  font-size: 11px;
+  font-size: 15px;
 }
 
 .info-supplier .supplier-name {
@@ -211,7 +211,7 @@ body {
 .intro-text {
   font-weight: 600;
   margin-bottom: 8px;
-  font-size: 11px;
+  font-size: 15px;
 }
 
 .items-table {
