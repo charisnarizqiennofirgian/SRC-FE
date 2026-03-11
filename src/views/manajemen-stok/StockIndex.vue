@@ -202,14 +202,14 @@
                 <th class="th-category">Kategori</th>
                 <th class="th-unit">Satuan</th>
                 <th class="th-stock">Stok</th>
-                <th class="th-small">Harga Satuan</th>
+                <th v-if="activeTab === 'operational'" class="th-small">Harga Satuan</th>
               </tr>
             </thead>
 
             <tbody>
               <tr v-if="filteredReport.length === 0" class="empty-row-modern">
                 <td
-                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 10 : 7"
+                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 10 : activeTab === 'operational' ? 7 : 6"
                   class="empty-cell-modern"
                 >
                   <div class="empty-state-content">
@@ -409,7 +409,7 @@
                     </button>
                   </div>
                 </td>
-                <td class="td-small">
+                <td v-if="activeTab === 'operational'" class="td-small">
                   {{ item.price ? formatRupiah(item.price) : 'Rp 0' }}
                 </td>
               </tr>
