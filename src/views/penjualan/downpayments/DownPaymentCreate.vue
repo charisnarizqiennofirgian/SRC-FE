@@ -404,7 +404,6 @@ export default {
       try {
         const response = await apiClient.get('/coa', {
           params: {
-            account_type: 'CASH,BANK',
             is_active: 1,
           },
         })
