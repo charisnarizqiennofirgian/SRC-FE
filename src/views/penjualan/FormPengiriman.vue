@@ -367,7 +367,7 @@ INDONESIA</textarea
           <div class="card-body">
             <div class="form-group-modern">
               <label class="form-label-modern">
-                Upload Barcode (PNG/JPG) <span class="required">*</span>
+                Upload Barcode (PNG/JPG)
               </label>
               <div class="file-upload-area">
                 <input
@@ -376,7 +376,6 @@ INDONESIA</textarea
                   class="file-input-hidden"
                   id="barcodeInput"
                   @change="handleBarcodeImageUpload"
-                  required
                 />
                 <label for="barcodeInput" class="file-upload-label">
                   <span class="upload-icon">📁</span>
