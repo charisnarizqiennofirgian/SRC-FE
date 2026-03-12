@@ -380,31 +380,7 @@ const generateProductionOrder = async (id, soNumber) => {
 
   try {
     const { data } = await apiClient.post(`/sales-orders/${id}/production-orders`, {})
-
     toast.success(`PO Produksi ${data.data.po_number} berhasil dibuat untuk ${soNumber}.`)
-
-    const nextStep = await Swal.fire({
-      title: 'Lanjut ke mana?',
-      text: 'Pilih proses lanjutan untuk PO ini.',
-      icon: 'info',
-      showCancelButton: true,
-      showDenyButton: true,
-      confirmButtonText: 'Ke Sawmill',
-      denyButtonText: 'Ke Pembahanan',
-      cancelButtonText: 'Tutup saja',
-    })
-
-    if (nextStep.isConfirmed) {
-      router.push({
-        name: 'ProduksiSawmill',
-        query: { so_id: id },
-      })
-    } else if (nextStep.isDenied) {
-      router.push({
-        name: 'ProduksiPembahanan',
-        query: { so_id: id },
-      })
-    }
   } catch (error) {
     console.error('Gagal generate PO Produksi:', error)
     toast.error(error.response?.data?.message || 'Gagal membuat PO Produksi.')
