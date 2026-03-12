@@ -573,7 +573,7 @@ INDONESIA</textarea
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
@@ -611,7 +611,7 @@ const form = reactive({
   container_number: '',
   seal_number: '',
   rex_date: null,
-  goods_description: '',
+  goods_description: 'TEAK GARDEN FURNITURE AND ACCESSORIES',
   rex_certificate_file: null,
   consignee_info: { name: '', address: '' },
   applicant_info: { name: '', address: '' },
@@ -648,6 +648,19 @@ const onSalesOrderSelect = () => {
   if (found) {
     selectedSalesOrder.value = found
     form.buyer_id = found.buyer_id
+
+    // ✅ Auto-fill dari data buyer
+    form.consignee_info.name = found.buyer?.name || ''
+    form.consignee_info.address = found.buyer?.address || ''
+    form.applicant_info.name = found.buyer?.name || ''
+    form.applicant_info.address = found.buyer?.address || ''
+    form.notify_info.name = found.buyer?.name || ''
+    form.notify_info.address = found.buyer?.address || ''
+    form.port_of_loading = form.shipment_mode === 'AIR'
+      ? 'SOEKARNO HATTA, INDONESIA'
+      : 'TANJUNG EMAS, INDONESIA'
+    form.goods_description = 'TEAK GARDEN FURNITURE AND ACCESSORIES'
+
     form.details = found.details
       .map((detail) => {
         const qtySisa = parseFloat(detail.quantity) - parseFloat(detail.quantity_shipped)
@@ -716,6 +729,14 @@ const grandTotalM3 = computed(() => {
 const grandTotalWood = computed(() => {
   return form.details.reduce((sum, item) => sum + (parseFloat(item.total_wood_consumed) || 0), 0)
 })
+
+watch(
+  () => form.shipment_mode,
+  (newMode) => {
+    form.port_of_loading =
+      newMode === 'AIR' ? 'SOEKARNO HATTA, INDONESIA' : 'TANJUNG EMAS, INDONESIA'
+  },
+)
 
 const handleBarcodeImageUpload = (event) => {
   const file = event.target.files[0]

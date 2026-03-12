@@ -55,7 +55,7 @@
             </div>
 
             <div class="form-group-so">
-              <label class="form-label-so">No. PO Customer</label>
+              <label class="form-label-so">No. PO Buyer</label>
               <input
                 v-model="form.customer_po_number"
                 type="text"
