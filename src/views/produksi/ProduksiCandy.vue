@@ -133,19 +133,30 @@
                   <input
                     v-model="item.searchQuery"
                     @input="onProductSearch(index)"
-                    @focus="item.showDropdown = true"
+                    @focus="onProductSearch(index)"
                     type="text"
                     class="search-input-product"
                     placeholder="Ketik nama atau kode produk..."
                   />
-                  <button
-                    v-if="item.item_id"
-                    @click="clearProductSelection(index)"
-                    class="btn-clear-product"
-                    type="button"
-                  >
-                    ✕
-                  </button>
+                  <div class="search-actions-product">
+                    <button
+                      v-if="item.item_id"
+                      @click="clearProductSelection(index)"
+                      class="btn-clear-product"
+                      type="button"
+                      title="Hapus pilihan"
+                    >
+                      ✕
+                    </button>
+                    <button
+                      @click="toggleDropdown(index)"
+                      class="btn-toggle-dropdown"
+                      type="button"
+                      :class="{ active: item.showDropdown }"
+                    >
+                      <span class="chevron-icon">▼</span>
+                    </button>
+                  </div>
 
                   <!-- DROPDOWN SEARCH RESULTS -->
                   <div
@@ -163,7 +174,7 @@
                         <span class="product-name">{{ inv.item?.name || 'N/A' }}</span>
                       </div>
                       <div class="product-option-sub">
-                        Stok: <strong>{{ inv.qty }} pcs</strong>
+                        Stok: <strong>{{ inv.qty_pcs }} pcs</strong>
                       </div>
                     </div>
                   </div>
@@ -185,7 +196,7 @@
                 <p v-if="getSelectedInventory(index)" class="helper-inline">
                   Gudang: {{ getSelectedInventory(index).warehouse?.name || 'Gudang Sanwil' }} •
                   Produk: {{ getSelectedInventory(index).item?.name }} • Total Stok:
-                  <strong>{{ getSelectedInventory(index).qty }} pcs</strong>
+                  <strong>{{ getSelectedInventory(index).qty_pcs }} pcs</strong>
                 </p>
               </div>
 
@@ -200,7 +211,7 @@
                       v-model.number="item.qty"
                       type="number"
                       min="1"
-                      :max="getSelectedInventory(index).qty"
+                      :max="getSelectedInventory(index).qty_pcs"
                       step="1"
                       class="form-input-modern"
                       placeholder="Jumlah pcs"
@@ -209,7 +220,7 @@
                     <span class="input-suffix">pcs</span>
                   </div>
                   <p class="help-text">
-                    Stok tersedia: <strong>{{ getSelectedInventory(index).qty }}</strong> pcs
+                    Stok tersedia: <strong>{{ getSelectedInventory(index).qty_pcs }}</strong> pcs
                   </p>
                 </div>
 
@@ -217,15 +228,53 @@
                   <label class="form-label-modern">
                     Jadikan Barang Kering <span class="required-star">*</span>
                   </label>
-                  <div class="select-wrapper-modern">
-                    <span class="select-icon">🎯</span>
-                    <select v-model="item.target_item_id" class="form-select-modern" required>
-                      <option value="">-- Pilih Item RST Kering --</option>
-                      <option v-for="dryItem in dryItems" :key="dryItem.id" :value="dryItem.id">
-                        {{ dryItem.code }} - {{ dryItem.name }}
-                      </option>
-                    </select>
-                    <span class="select-arrow">▼</span>
+                  <div class="search-wrapper-product">
+                    <span class="search-icon-product">🎯</span>
+                    <input
+                      v-model="item.searchTargetQuery"
+                      @input="onTargetSearch(index)"
+                      @focus="onTargetSearch(index)"
+                      type="text"
+                      class="search-input-product"
+                      placeholder="Cari item RST Kering..."
+                    />
+                    <div class="search-actions-product">
+                      <button
+                        v-if="item.target_item_id"
+                        @click="clearTargetSelection(index)"
+                        class="btn-clear-product"
+                        type="button"
+                        title="Hapus pilihan"
+                      >
+                        ✕
+                      </button>
+                      <button
+                        @click="toggleTargetDropdown(index)"
+                        class="btn-toggle-dropdown"
+                        type="button"
+                        :class="{ active: item.showTargetDropdown }"
+                      >
+                        <span class="chevron-icon">▼</span>
+                      </button>
+                    </div>
+
+                    <!-- DROPDOWN TARGET RESULTS -->
+                    <div
+                      v-if="item.showTargetDropdown && item.targetSearchResults.length > 0"
+                      class="product-dropdown"
+                    >
+                      <div
+                        v-for="dryItem in item.targetSearchResults"
+                        :key="dryItem.id"
+                        class="product-option"
+                        @click="selectTargetItem(index, dryItem)"
+                      >
+                        <div class="product-option-main">
+                          <span class="product-code">[{{ dryItem.code }}]</span>
+                          <span class="product-name">{{ dryItem.name }}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <p v-if="item.target_item_id" class="help-text">
                     Item tujuan akan menerima stok kering di Gudang KD.
@@ -275,9 +324,12 @@ const form = reactive({
       warehouse_id: '',
       target_item_id: '',
       qty: null,
-      searchQuery: '', // ✅ NEW
-      showDropdown: false, // ✅ NEW
-      searchResults: [], // ✅ NEW
+      searchQuery: '', 
+      showDropdown: false, 
+      searchResults: [],
+      searchTargetQuery: '', // ✅ NEW
+      showTargetDropdown: false, // ✅ NEW
+      targetSearchResults: [], // ✅ NEW
     },
   ],
 })
@@ -319,7 +371,7 @@ const getSelectedInventory = (index) => {
 }
 
 const getWarehouseIdByName = (name) => {
-  const wh = warehouses.value.find((w) => w.name === name)
+  const wh = warehouses.value.find((w) => w.name.includes(name))
   return wh ? wh.id : null
 }
 
@@ -329,8 +381,9 @@ const onProductSearch = (index) => {
   const item = form.items[index]
   item.showDropdown = true
 
+  // Jika query kosong, tampilkan 15 item pertama
   if (!item.searchQuery || item.searchQuery.length < 1) {
-    item.searchResults = []
+    item.searchResults = filteredInventoriesByPO.value.slice(0, 15)
     return
   }
 
@@ -348,6 +401,16 @@ const onProductSearch = (index) => {
 
     isSearching.value = false
   }, 300)
+}
+
+// ✅ NEW: Toggle dropdown manual
+const toggleDropdown = (index) => {
+  const item = form.items[index]
+  if (item.showDropdown) {
+    item.showDropdown = false
+  } else {
+    onProductSearch(index)
+  }
 }
 
 // ✅ NEW: Select produk dari dropdown
@@ -381,8 +444,54 @@ const onPoChange = () => {
   showSuccess('Berhasil', 'PO dipilih. Silakan pilih produk yang sesuai dengan PO ini.')
 }
 
+// ✅ NEW: Search target (Barang Kering)
+const onTargetSearch = (index) => {
+  const item = form.items[index]
+  item.showTargetDropdown = true
+
+  const query = item.searchTargetQuery.toLowerCase()
+
+  if (!query) {
+    item.targetSearchResults = dryItems.value.slice(0, 15)
+    return
+  }
+
+  item.targetSearchResults = dryItems.value.filter((di) => {
+    const name = di.name?.toLowerCase() || ''
+    const code = di.code?.toLowerCase() || ''
+    return name.includes(query) || code.includes(query)
+  })
+}
+
+// ✅ NEW: Toggle target dropdown manual
+const toggleTargetDropdown = (index) => {
+  const item = form.items[index]
+  if (item.showTargetDropdown) {
+    item.showTargetDropdown = false
+  } else {
+    onTargetSearch(index)
+  }
+}
+
+// ✅ NEW: Select target item
+const selectTargetItem = (index, dryItem) => {
+  const item = form.items[index]
+  item.target_item_id = dryItem.id
+  item.searchTargetQuery = `[${dryItem.code}] ${dryItem.name}`
+  item.showTargetDropdown = false
+}
+
+// ✅ NEW: Clear target selection
+const clearTargetSelection = (index) => {
+  const item = form.items[index]
+  item.target_item_id = ''
+  item.searchTargetQuery = ''
+  item.targetSearchResults = []
+  item.showTargetDropdown = false
+}
+
 const addItem = () => {
-  const sanwilId = getWarehouseIdByName('Gudang Sanwil (RST Basah)')
+  const sanwilId = getWarehouseIdByName('Gudang Sanwil')
   form.items.push({
     item_id: '',
     warehouse_id: sanwilId || '',
@@ -391,6 +500,9 @@ const addItem = () => {
     searchQuery: '',
     showDropdown: false,
     searchResults: [],
+    searchTargetQuery: '',
+    showTargetDropdown: false,
+    targetSearchResults: [],
   })
   showSuccess('Berhasil', 'Item baru ditambahkan')
 }
@@ -413,7 +525,7 @@ const fetchData = async () => {
     productionOrders.value = poRes.data.data || poRes.data || []
     console.log('✅ Production Orders:', productionOrders.value.length, 'items')
 
-    const sanwilId = getWarehouseIdByName('Gudang Sanwil (RST Basah)')
+    const sanwilId = getWarehouseIdByName('Gudang Sanwil')
     if (!sanwilId) {
       showError('Konfigurasi', 'Gudang Sanwil tidak ditemukan di master')
       console.log('❌ WAREHOUSES:', warehouses.value)
@@ -443,14 +555,14 @@ const fetchData = async () => {
         groupedMap[key] = {
           warehouse_id: inv.warehouse_id,
           item_id: inv.item_id,
-          qty: 0,
+          qty_pcs: 0,
           item: inv.item,
           warehouse: inv.warehouse,
           inventory_ids: [],
         }
       }
 
-      groupedMap[key].qty += Number(inv.qty || 0)
+     groupedMap[key].qty_pcs += Number(inv.qty || 0)
       groupedMap[key].inventory_ids.push(inv.id)
     })
 
@@ -498,10 +610,10 @@ const handleSubmit = async () => {
         showError('Validasi', `Item #${i + 1}: Qty wajib lebih dari 0`)
         return
       }
-      if (selectedInv && item.qty > selectedInv.qty) {
+      if (selectedInv && item.qty > selectedInv.qty_pcs) {
         showError(
           'Validasi',
-          `Item #${i + 1}: Qty (${item.qty} pcs) melebihi stok tersedia (${selectedInv.qty} pcs)`,
+          `Item #${i + 1}: Qty (${item.qty} pcs) melebihi stok tersedia (${selectedInv.qty_pcs} pcs)`,
         )
         return
       }
@@ -546,6 +658,7 @@ const handleClickOutside = (event) => {
   form.items.forEach((item, index) => {
     if (!event.target.closest(`.search-wrapper-product`)) {
       item.showDropdown = false
+      item.showTargetDropdown = false
     }
   })
 }
@@ -1017,7 +1130,7 @@ onMounted(() => {
 
 .search-input-product {
   width: 100%;
-  padding: 1rem 3.25rem 1rem 3.25rem;
+  padding: 1rem 5rem 1rem 3.25rem;
   border: 2.5px solid #e5e7eb;
   border-radius: 12px;
   font-size: 1rem;
@@ -1057,6 +1170,45 @@ onMounted(() => {
 .btn-clear-product:hover {
   background: #fecaca;
   transform: scale(1.1);
+}
+
+.search-actions-product {
+  position: absolute;
+  right: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 2;
+}
+
+.btn-toggle-dropdown {
+  background: #f1f5f9;
+  color: #64748b;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-toggle-dropdown:hover {
+  background: #e2e8f0;
+  color: #f97316;
+}
+
+.btn-toggle-dropdown.active {
+  background: #fef3c7;
+  color: #f97316;
+  transform: rotate(180deg);
+}
+
+.chevron-icon {
+  font-size: 0.75rem;
+  transition: transform 0.3s ease;
 }
 
 .product-dropdown {

@@ -568,7 +568,7 @@ export default {
               stock_qty: 0,
             }
           }
-          itemMap[itemId].stock_qty += Number(inv.qty || 0)
+          itemMap[itemId].stock_qty += Number(inv.qty_pcs || inv.qty || 0)
         })
 
         this.allKayu = Object.values(itemMap)
@@ -584,7 +584,7 @@ export default {
         const res = await apiClient.get('/inventories', {
           params: {
             per_page: 9999,
-            // item_type: 'component', // Hapus filter ini agar semua muncul
+            item_type: 'component',
           },
         })
 
@@ -720,10 +720,11 @@ export default {
 
       this.submitting = true
       try {
-        await apiClient.post('/operator-mesin/produce', payload)
+        const res = await apiClient.post('/operator-mesin/produce', payload)
         alert('✅ Produksi mesin berhasil disimpan!')
-        this.form.materials = []
-        this.form.components = []
+        
+        // Redirect to assembling
+        this.$router.push({ name: 'AssemblingView' })
       } catch (error) {
         console.error('Error:', error)
         alert('❌ ' + (error.response?.data?.message || 'Gagal menyimpan'))

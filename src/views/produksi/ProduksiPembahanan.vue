@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <DashboardLayout>
     <div class="page-header-roughmill">
       <div class="header-content-wrapper">
@@ -445,7 +445,7 @@ const fetchKdInventories = async () => {
         }
       }
 
-      groupedMap[key].qty += Number(inv.qty || 0)
+      groupedMap[key].qty += Number(inv.qty_pcs || 0)
     })
 
     kdInventories.value = Object.values(groupedMap)
