@@ -159,12 +159,12 @@ INDONESIA</textarea
               <div class="form-grid-3col">
                 <div class="form-group-modern">
                   <label class="form-label-modern">Incoterm</label>
-                  <input
-                    v-model="form.incoterm"
-                    type="text"
-                    class="form-input-modern"
-                    placeholder="FOB, CIF, dll"
-                  />
+                  <select v-model="form.incoterm" class="form-input-modern">
+                    <option value="">-- Pilih Incoterm --</option>
+                    <option value="FOB">FOB</option>
+                    <option value="CIF">CIF</option>
+                    <option value="EXW">EXW</option>
+                  </select>
                 </div>
 
                 <div class="form-group-modern">
@@ -660,6 +660,7 @@ const onSalesOrderSelect = () => {
       ? 'SOEKARNO HATTA, INDONESIA'
       : 'TANJUNG EMAS, INDONESIA'
     form.goods_description = 'TEAK GARDEN FURNITURE AND ACCESSORIES'
+    form.eu_factory_number = found.buyer?.eu_factory_number || ''
 
     form.details = found.details
       .map((detail) => {

@@ -196,6 +196,19 @@
                 </select>
               </div>
             </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                <span class="label-icon">🏭</span>
+                EU Factory Number
+              </label>
+              <input
+                type="text"
+                v-model="buyerForm.eu_factory_number"
+                placeholder="Contoh: EU-12345"
+                class="form-control"
+              />
+            </div>
           </div>
 
           <div class="modal-footer">
@@ -253,6 +266,7 @@ const buyerForm = ref({
   address: '',
   phone: '',
   receivable_account_id: null,
+  eu_factory_number: '',
 })
 
 const currentPage = ref(1)
@@ -327,6 +341,7 @@ const openAddModal = () => {
     address: '',
     phone: '',
     receivable_account_id: null,
+    eu_factory_number: '',
   }
   showModal.value = true
 }
@@ -340,6 +355,7 @@ const openEditModal = (buyer) => {
     address: buyer.address,
     phone: buyer.phone,
     receivable_account_id: buyer.receivable_account_id,
+    eu_factory_number: buyer.eu_factory_number || '',
   }
   showModal.value = true
 }
