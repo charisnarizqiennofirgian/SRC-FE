@@ -156,6 +156,13 @@
                         🚚
                       </button>
                       <button
+                        @click="goToCetakPage(sj.id)"
+                        class="btn-action btn-print"
+                        title="Cetak SJ"
+                      >
+                        🖨️
+                      </button>
+                      <button
                         @click="goToEditPage(sj.id)"
                         class="btn-action btn-edit"
                         title="Edit SJ"
