@@ -368,6 +368,11 @@ const initializeChoices = async () => {
         removeItemButton: false,
       })
 
+      // Set nilai awal jika ada (penting untuk mode edit)
+      if (item.item_id) {
+        choices.setChoiceByValue(String(item.item_id))
+      }
+
       selectElement.addEventListener('change', (event) => {
         item.item_id = parseInt(event.target.value) || ''
       })
@@ -453,7 +458,7 @@ const fetchPOData = async () => {
     poNumber.value = data.po_number
     form.supplier_id = data.supplier_id
     form.order_date = data.order_date
-    form.delivery_date = data.delivery_date || '' // ✅ TAMBAH INI
+    form.delivery_date = data.delivery_date || ''
     form.notes = data.notes || ''
     form.ppn_percentage = parseFloat(data.ppn_percentage ?? 12)
 
@@ -467,17 +472,18 @@ const fetchPOData = async () => {
         tinggi: null,
         kualitas: '',
         jenis: '',
-        model: '', // ✅ TAMBAH
-        keterangan: '', // ✅ TAMBAH
+        model: '',
+        keterangan: '',
       },
     }))
-
-    await nextTick()
-    initializeChoices()
   } catch {
     toast.error('Gagal memuat data PO.')
   } finally {
+    // ✅ Set loading=false DULU, baru init Choices.js
+    // Karena form pakai v-if="!loading", DOM select belum ada sebelum loading=false
     loading.value = false
+    await nextTick()
+    initializeChoices()
   }
 }
 
@@ -813,7 +819,7 @@ textarea.form-control {
 .detail-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 900px;
+  min-width: 1000px;
   background: white;
 }
 
@@ -832,23 +838,24 @@ textarea.form-control {
 }
 
 .th-material {
-  width: 35%;
+  width: 52%;
+  min-width: 320px;
 }
 
 .th-qty {
-  width: 15%;
+  width: 11%;
 }
 
 .th-price {
-  width: 20%;
+  width: 14%;
 }
 
 .th-subtotal {
-  width: 18%;
+  width: 13%;
 }
 
 .th-action {
-  width: 12%;
+  width: 10%;
   text-align: center;
 }
 
@@ -968,6 +975,9 @@ textarea.form-control {
   background: #fafbfc;
   font-size: 14px;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .choices__inner:hover {

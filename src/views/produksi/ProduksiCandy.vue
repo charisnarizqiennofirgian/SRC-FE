@@ -72,10 +72,41 @@
                   </select>
                   <span class="select-arrow">▼</span>
                 </div>
-                <p v-if="selectedPO" class="helper-inline">
-                  Buyer: {{ selectedPO.buyer_name || '-' }} • SO:
-                  {{ selectedPO.so_number || '-' }} • Product: {{ selectedPO.product_name || '-' }}
-                </p>
+                <!-- RINGKASAN KEBUTUHAN PO (SEPERTI SAWMILL) -->
+                <div v-if="poTargets.length" class="po-hint-box">
+                  <div class="po-hint-header">
+                    <div class="po-hint-title-wrap">
+                      <span class="po-hint-icon">📌</span>
+                      <div>
+                        <div class="po-hint-title">Ringkasan Kebutuhan PO</div>
+                        <div class="po-hint-sub">
+                          {{ poInfo.buyer_name || 'Tanpa buyer' }} •
+                          {{ poInfo.so_number || 'Tanpa SO' }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="po-hint-badge">{{ poTargets.length }} item</div>
+                  </div>
+
+                  <div class="po-hint-list-wrapper">
+                    <table class="po-hint-table">
+                      <thead>
+                        <tr>
+                          <th>Item</th>
+                          <th class="col-qty">Qty</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="t in poTargets" :key="t.item_id">
+                          <td class="cell-name">
+                            {{ t.name || t.code || 'Item #' + t.item_id }}
+                          </td>
+                          <td class="cell-qty">{{ parseInt(t.qty_planned) }} unit</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -341,6 +372,9 @@ const productionOrders = ref([])
 const isSubmitting = ref(false)
 const isSearching = ref(false)
 
+const poTargets = ref([])
+const poInfo = ref({ buyer_name: null, so_number: null })
+
 let searchTimeout = null
 
 const selectedPO = computed(() => {
@@ -421,6 +455,28 @@ const selectProduct = (index, inv) => {
   item.searchQuery = `[${inv.item?.code}] ${inv.item?.name}`
   item.showDropdown = false
   item.searchResults = []
+
+  // ✅ AUTO-FILL: cari item kering yang cocok berdasarkan code yang sama
+  const sourceCode = inv.item?.code || ''
+  const matchedDryItem = dryItems.value.find(
+    (di) => di.code === sourceCode
+  )
+
+  if (matchedDryItem) {
+    item.target_item_id = matchedDryItem.id
+    item.searchTargetQuery = `[${matchedDryItem.code}] ${matchedDryItem.name}`
+  } else {
+    // Tidak ada match persis — coba cocokkan berdasarkan nama yang mirip
+    const sourceName = inv.item?.name?.toLowerCase() || ''
+    const loosematch = dryItems.value.find(
+      (di) => di.name?.toLowerCase() === sourceName
+    )
+    if (loosematch) {
+      item.target_item_id = loosematch.id
+      item.searchTargetQuery = `[${loosematch.code}] ${loosematch.name}`
+    }
+    // Jika benar-benar tidak ditemukan, biarkan kosong untuk diisi manual
+  }
 }
 
 // ✅ NEW: Clear product selection
@@ -433,13 +489,31 @@ const clearProductSelection = (index) => {
   item.showDropdown = false
 }
 
-const onPoChange = () => {
+const onPoChange = async () => {
   console.log('✅ PO dipilih:', form.ref_po_id, selectedPO.value)
 
   // Reset semua item search saat PO berubah
   form.items.forEach((item) => {
     clearProductSelection(form.items.indexOf(item))
   })
+
+  // Ambil detail PO untuk ringkasan
+  poTargets.value = []
+  poInfo.value = { buyer_name: null, so_number: null }
+
+  if (form.ref_po_id) {
+    try {
+      const res = await apiClient.get(`/production-orders/${form.ref_po_id}`)
+      const data = res.data.data || {}
+      poInfo.value = {
+        buyer_name: data.sales_order?.buyer_name || null,
+        so_number: data.sales_order?.so_number || null,
+      }
+      poTargets.value = data.targets || []
+    } catch (e) {
+      console.error('Gagal ambil detail PO:', e)
+    }
+  }
 
   showSuccess('Berhasil', 'PO dipilih. Silakan pilih produk yang sesuai dengan PO ini.')
 }
@@ -1328,4 +1402,117 @@ onMounted(() => {
     width: 100%;
   }
 }
+
+/* ========================================
+   PO HINT BOX (RINGKASAN KEBUTUHAN PO)
+   ======================================== */
+.po-hint-box {
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #fefce8, #fef9c3);
+  border: 2px solid #facc15;
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(250, 204, 21, 0.15);
+}
+
+.po-hint-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.po-hint-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.po-hint-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: rgba(250, 204, 21, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.po-hint-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #92400e;
+}
+
+.po-hint-sub {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.po-hint-badge {
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.po-hint-list-wrapper {
+  max-height: 180px;
+  overflow-y: auto;
+  margin-top: 0.25rem;
+  border-radius: 12px;
+  border: 1px solid #facc15;
+  background: white;
+}
+
+.po-hint-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.po-hint-table thead {
+  position: sticky;
+  top: 0;
+  background: #fefce8;
+  z-index: 1;
+}
+
+.po-hint-table th,
+.po-hint-table td {
+  padding: 0.45rem 0.75rem;
+}
+
+.po-hint-table th {
+  text-align: left;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  border-bottom: 1px solid #feeeb2;
+}
+
+.po-hint-table .col-qty {
+  width: 80px;
+  text-align: right;
+}
+
+.po-hint-table .cell-name {
+  color: #374151;
+  font-weight: 500;
+}
+
+.po-hint-table .cell-qty {
+  text-align: right;
+  color: #92400e;
+  font-weight: 700;
+}
+
+.po-hint-table tbody tr:nth-child(even) {
+  background: #f9fafb;
+}
 </style>
+

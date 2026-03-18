@@ -153,6 +153,7 @@
                         :get-option-label="(opt) => getInventoryLabel(opt)"
                         placeholder="-- Pilih Stok Gudang KD --"
                         class="form-select-modern-search"
+                        @option:selected="(opt) => handleSourceSelected(index, opt)"
                       >
                         <template #option="option">
                           <div>
@@ -340,6 +341,34 @@ const getInventoryLabel = (opt) => {
   return `${opt.item.code || ''} - ${opt.item.name || ''} (${opt.qty} pcs)`
 }
 
+// ✅ NEW: Auto-fill Item RST Hasil berdasarkan code/nama yang sama
+const handleSourceSelected = (index, opt) => {
+  const item = form.items[index]
+  if (!opt || !opt.item) {
+    item.output_item_id = ''
+    return
+  }
+
+  const sourceCode = opt.item.code || ''
+  const sourceName = opt.item.name?.toLowerCase() || ''
+
+  // 1. Cari berdasarkan Code persis sama
+  const matchedOutput = outputItems.value.find((out) => out.code === sourceCode)
+
+  if (matchedOutput) {
+    item.output_item_id = matchedOutput.id
+  } else {
+    // 2. Jika code tak sama (misal beda penamaan prefix), cari dari Nama yang persis
+    const looseMatch = outputItems.value.find((out) => out.name?.toLowerCase() === sourceName)
+    if (looseMatch) {
+      item.output_item_id = looseMatch.id
+    } else {
+      // 3. Biarkan kosong jika benar-benar tak ditemukan
+      item.output_item_id = ''
+    }
+  }
+}
+
 const autoSelectPoFromSo = () => {
   const soId = Number(route.query.so_id)
   if (!soId || !productionOrders.value.length) return
@@ -359,17 +388,9 @@ const fetchPoOnProgress = async () => {
 
     const raw = res.data.data || []
     productionOrders.value = raw.map((p) => {
-      // Format sesuai permintaan revisi: Buyer - SO Number (hilangkan PO Number)
-      // Ambil buyer name dari berbagai kemungkinan field
-      const buyer = p.buyer_name || p.sales_order?.buyer_name || p.buyer?.name || '-'
-      // Ambil so number dari berbagai kemungkinan field
-      const so = p.so_number || p.sales_order?.so_number || '-'
-
-      const cleanLabel = `${buyer} - ${so}`
-
       return {
         ...p,
-        label: cleanLabel, // Paksa gunakan format kita agar konsisten
+        label: p.label || p.po_number,
       }
     })
 

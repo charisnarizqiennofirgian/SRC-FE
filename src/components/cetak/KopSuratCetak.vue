@@ -12,7 +12,7 @@
       <p class="company-address">Jl. Raya Semarang Purwodadi Km. 18 Karangawen, Demak 59566</p>
       <p class="company-location">Central Java - Indonesia</p>
       <p class="company-contact">
-        Email : purchasing@sunbcfurni.com / Website :
+        Email : sunbcoutdoor@gmail.com / Website :
         <a href="https://www.surya-furniture.com" target="_blank">www.surya-furniture.com</a>
       </p>
       <p class="company-phone">Ph/Fax : +6224 76583167 / +6224 76412468</p>
@@ -34,6 +34,7 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
   align-items: center;
   border-bottom: 3px solid #000;
   padding: 0;
+  margin-top: -10mm;
   width: 100%;
   box-sizing: border-box;
 }

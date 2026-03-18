@@ -111,18 +111,25 @@
 
               <div class="form-group">
                 <label class="form-label required">Akun Kas/Bank</label>
-                <div class="select-wrapper">
-                  <select v-model="cashForm.account_id" class="form-input" required>
-                    <option value="">Pilih akun...</option>
-                    <option
-                      v-for="account in cashBankAccounts"
-                      :key="account.id"
-                      :value="account.id"
+                <div class="coa-search-wrapper" v-click-outside="() => showCoaDropdown = false">
+                  <input
+                    v-model="coaSearch"
+                    @focus="showCoaDropdown = true"
+                    type="text"
+                    class="form-input"
+                    :placeholder="selectedAccountName || 'Cari kode atau nama akun...'"
+                  />
+                  <div v-if="showCoaDropdown && filteredCOA.length > 0" class="coa-dropdown">
+                    <div
+                      v-for="acc in filteredCOA"
+                      :key="acc.id"
+                      class="coa-option"
+                      @mousedown="cashForm.account_id = acc.id; coaSearch = ''; showCoaDropdown = false"
                     >
-                      {{ account.code }} - {{ account.name }}
-                    </option>
-                  </select>
-                  <i class="fas fa-chevron-down"></i>
+                      <span class="coa-code">{{ acc.code }}</span>
+                      <span class="coa-name">{{ acc.name }}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -309,10 +316,24 @@ import apiClient from '@/api/axios'
 export default {
   name: 'InvoicePayment',
 
+  directives: {
+    'click-outside': {
+      bind(el, binding) {
+        el._clickOutside = (e) => { if (!el.contains(e.target)) binding.value(e) }
+        document.addEventListener('click', el._clickOutside)
+      },
+      unbind(el) {
+        document.removeEventListener('click', el._clickOutside)
+      }
+    }
+  },
+
   data() {
     return {
       invoice: {},
       cashBankAccounts: [],
+      coaSearch: '',
+      showCoaDropdown: false,
       availableDPs: [],
       selectedDP: null,
       payments: [],
@@ -338,6 +359,19 @@ export default {
   },
 
   computed: {
+    filteredCOA() {
+      if (!this.coaSearch) return this.cashBankAccounts
+      const q = this.coaSearch.toLowerCase()
+      return this.cashBankAccounts.filter(
+        acc => acc.code?.toLowerCase().includes(q) || acc.name?.toLowerCase().includes(q)
+      )
+    },
+    
+    selectedAccountName() {
+      const acc = this.cashBankAccounts.find(a => a.id == this.cashForm.account_id)
+      return acc ? `${acc.code} - ${acc.name}` : ''
+    },
+
     isCashFormValid() {
       return (
         this.cashForm.payment_date &&
@@ -398,31 +432,10 @@ export default {
 
     async loadCashBankAccounts() {
       try {
-        // Try different endpoints
-        let response
-        try {
-          response = await apiClient.get('/chart-of-accounts', {
-            params: { type: 'ASET', is_active: 1 },
-          })
-        } catch {
-          response = await apiClient.get('/coa', {
-            params: { is_active: 1 },
-          })
-        }
-
-        const accounts = response.data.data || response.data || []
-
-        // Filter kas/bank accounts
-        this.cashBankAccounts = accounts.filter(
-          (acc) =>
-            acc.code?.startsWith('1-1') || // Kas & Bank codes usually start with 1-1
-            acc.name?.toLowerCase().includes('kas') ||
-            acc.name?.toLowerCase().includes('bank'),
-        )
-
-        console.log('Cash/Bank accounts:', this.cashBankAccounts)
+        const response = await apiClient.get('/coa/all')
+        this.cashBankAccounts = response.data.data || response.data || []
       } catch (error) {
-        console.error('Error loading cash/bank accounts:', error)
+        console.error('Error loading accounts:', error)
       }
     },
 
@@ -1156,5 +1169,40 @@ export default {
   .tabs-header {
     flex-direction: column;
   }
+}
+
+.coa-search-wrapper {
+  position: relative;
+}
+.coa-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+.coa-option {
+  padding: 12px 16px;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.coa-option:hover {
+  background: #f0f9ff;
+}
+.coa-code {
+  font-weight: 700;
+  color: #3b82f6;
+  min-width: 80px;
+}
+.coa-name {
+  color: #374151;
 }
 </style>

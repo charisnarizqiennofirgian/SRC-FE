@@ -168,6 +168,7 @@
                       "
                       placeholder="-- Pilih Barang Gudang Pembahanan --"
                       class="form-select-modern-search"
+                      @option:selected="(opt) => handleSourceSelected(index, opt)"
                     >
                       <template #no-options="{ search, searching }">
                         <template v-if="searching">
@@ -337,6 +338,32 @@ const getSelectedSource = (index) => {
   return sourceInventories.value.find((inv) => inv.id === Number(item.source_inventory_id)) || null
 }
 
+// ✅ NEW: Auto-fill Item Hasil Moulding berdasarkan kecocokan nama/kode
+const handleSourceSelected = (index, opt) => {
+  const item = form.items[index]
+  if (!opt || !opt.item_name) {
+    item.output_item_id = ''
+    return
+  }
+
+  const sourceNameFull = opt.item_name.toLowerCase()
+
+  // Skenario matching:
+  // 1. Cari item di outputItems yang kodenya ada di dalam item_name sumber
+  // 2. Atau yang namanya ada di dalam item_name sumber
+  const matchedOutput = outputItems.value.find((out) => {
+    const code = out.code?.toLowerCase()
+    const name = out.name?.toLowerCase()
+    return (code && sourceNameFull.includes(code)) || (name && sourceNameFull.includes(name))
+  })
+
+  if (matchedOutput) {
+    item.output_item_id = matchedOutput.id
+  } else {
+    item.output_item_id = ''
+  }
+}
+
 const fetchProductionOrders = async () => {
   try {
     const res = await apiClient.get('/production-orders', {
@@ -347,14 +374,9 @@ const fetchProductionOrders = async () => {
     })
     const raw = res.data.data?.data || res.data.data || []
     productionOrders.value = raw.map((p) => {
-      // Ambil buyer name dari berbagai kemungkinan field
-      const buyer = p.buyer_name || p.sales_order?.buyer_name || p.buyer?.name || '-'
-      // Ambil so number dari berbagai kemungkinan field
-      const so = p.so_number || p.sales_order?.so_number || '-'
-
       return {
         ...p,
-        label: `${buyer} - ${so}`,
+        label: p.label || p.po_number,
       }
     })
   } catch (error) {

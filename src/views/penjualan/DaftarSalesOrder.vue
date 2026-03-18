@@ -375,9 +375,7 @@ const generateProductionOrder = async (id, soNumber) => {
     confirmButtonText: 'Ya, Buat',
     cancelButtonText: 'Batal',
   })
-
   if (!result.isConfirmed) return
-
   try {
     const { data } = await apiClient.post(`/sales-orders/${id}/production-orders`, {})
     toast.success(`PO Produksi ${data.data.po_number} berhasil dibuat untuk ${soNumber}.`)
