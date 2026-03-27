@@ -729,7 +729,7 @@ const handleSubmit = async () => {
 
 // Close dropdown when clicking outside
 const handleClickOutside = (event) => {
-  form.items.forEach((item, index) => {
+  form.items.forEach((item) => {
     if (!event.target.closest(`.search-wrapper-product`)) {
       item.showDropdown = false
       item.showTargetDropdown = false

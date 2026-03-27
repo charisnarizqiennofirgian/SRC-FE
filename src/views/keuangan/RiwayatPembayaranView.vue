@@ -264,7 +264,7 @@ const viewDetail = async (id) => {
     const response = await apiClient.get(`/purchase-payments/${id}`)
     selectedPayment.value = response.data.data
     showModal.value = true
-  } catch (error) {
+  } catch {
     showError('Gagal', 'Gagal memuat detail pembayaran')
   }
 }

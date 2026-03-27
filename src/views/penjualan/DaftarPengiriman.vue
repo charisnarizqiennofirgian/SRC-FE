@@ -327,9 +327,6 @@ const goToCetakPage = (id) => {
   window.open(routeData.href, '_blank')
 }
 
-const goToCetakBarcodePage = (id) => {
-  router.push({ name: 'CetakBarcodeKemendag', params: { id } })
-}
 
 const shipDeliveryOrder = async (id) => {
   Swal.fire({

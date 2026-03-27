@@ -720,7 +720,7 @@ export default {
 
       this.submitting = true
       try {
-        const res = await apiClient.post('/operator-mesin/produce', payload)
+        await apiClient.post('/operator-mesin/produce', payload)
         alert('✅ Produksi mesin berhasil disimpan!')
         
         // Redirect to assembling
