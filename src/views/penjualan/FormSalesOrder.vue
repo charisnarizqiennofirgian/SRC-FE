@@ -344,7 +344,7 @@ onMounted(async () => {
       soId.value = route.params.id
       await fetchSalesOrder(soId.value)
     }
-  } catch (error) {
+  } catch {
     toast.error('Gagal memuat data master.')
   } finally {
     loading.value = false
@@ -490,17 +490,23 @@ watch(
   { deep: true },
 )
 
+// ✅ Sync form values based on subtotal, ppnRate, and discount
+watch(
+  [() => form.subtotal, ppnRate, () => form.discount],
+  ([subtotal, rate, discount]) => {
+    form.tax_ppn = subtotal * rate
+    form.tax_rate = rate * 100
+    form.grand_total = subtotal - (discount || 0) + form.tax_ppn
+  },
+  { immediate: true },
+)
+
 const taxAmount = computed(() => {
-  const amount = form.subtotal * ppnRate.value
-  form.tax_ppn = amount
-  form.tax_rate = ppnRate.value * 100 // ← TAMBAH INI! Simpan sebagai 0, 11, atau 12
-  return amount
+  return form.subtotal * ppnRate.value
 })
 
 const grandTotal = computed(() => {
-  const total = form.subtotal - (form.discount || 0) + taxAmount.value
-  form.grand_total = total
-  return total
+  return form.subtotal - (form.discount || 0) + taxAmount.value
 })
 
 const handleSubmit = async () => {

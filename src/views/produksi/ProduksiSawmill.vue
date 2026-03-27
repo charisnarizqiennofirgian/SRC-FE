@@ -28,6 +28,7 @@
     <div class="content-card-sawmill">
       <div class="card-body-sawmill">
         <form @submit.prevent="handleSubmit" @keydown.enter.prevent>
+
           <!-- SECTION 1: INFO UMUM -->
           <div class="form-section-modern">
             <div class="section-header">
@@ -36,11 +37,11 @@
               </div>
               <div class="section-title-group">
                 <h3 class="section-title">Informasi Umum</h3>
-                <p class="section-subtitle">Tanggal, PO, dan catatan produksi</p>
+                <p class="section-subtitle">Tanggal, PO (opsional), dan catatan produksi</p>
               </div>
             </div>
 
-            <div class="form-grid-2col">
+            <div class="form-grid-3col">
               <div class="form-group-modern">
                 <label class="form-label-modern">
                   Tanggal Produksi <span class="required-star">*</span>
@@ -48,6 +49,18 @@
                 <div class="input-wrapper-icon">
                   <span class="input-icon">📅</span>
                   <input v-model="form.date" type="date" class="form-input-modern" required />
+                </div>
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">Estimasi Selesai</label>
+                <div class="input-wrapper-icon">
+                  <span class="input-icon">🏁</span>
+                  <input
+                    v-model="form.estimated_finish_date"
+                    type="date"
+                    class="form-input-modern"
+                  />
                 </div>
               </div>
 
@@ -65,11 +78,12 @@
               </div>
             </div>
 
-            <!-- ✅ PO SEARCHABLE SELECT (BUYER + SO) -->
+            <!-- PO SEARCHABLE SELECT — OPSIONAL -->
             <div class="form-grid-2col">
               <div class="form-group-modern">
                 <label class="form-label-modern">
-                  Pilih Production Order <span class="required-star">*</span>
+                  Production Order
+                  <span class="optional-tag">Opsional</span>
                 </label>
 
                 <vue-select
@@ -77,7 +91,7 @@
                   :options="productionOrdersForSelect"
                   :reduce="(option) => option.id"
                   label="label"
-                  placeholder="🔍 Cari Production Order..."
+                  placeholder="🔍 Kosongkan jika tidak ada PO..."
                   :filterable="true"
                   :clearable="true"
                   class="vue-select-po"
@@ -88,33 +102,33 @@
                     <span v-if="search">Tidak ditemukan "{{ search }}"</span>
                     <span v-else>Ketik untuk mencari PO...</span>
                   </template>
-
-                  <!-- ✅ TAMPILKAN: BUYER - SO NUMBER -->
-                  <template #option="option">
-                    {{ option.display_name }}
-                  </template>
-
-                  <template #selected-option="option">
-                    {{ option.display_name }}
-                  </template>
+                  <template #option="option">{{ option.display_name }}</template>
+                  <template #selected-option="option">{{ option.display_name }}</template>
                 </vue-select>
+
+                <!-- Info jika tidak ada PO -->
+                <p v-if="!selectedProductionOrderId" class="field-hint">
+                  ℹ️ Sawmill bisa jalan tanpa PO — hasil RST masuk sebagai stok umum.
+                </p>
               </div>
 
               <div class="form-group-modern">
                 <label class="form-label-modern">&nbsp;</label>
-                <div class="input-wrapper-icon">
-                  <span class="input-icon">ℹ️</span>
-                  <input
-                    type="text"
-                    class="form-input-modern readonly-input"
-                    readonly
-                    value="Pilih PO untuk melihat kebutuhan item di bawah"
-                  />
+                <!-- Kotak info PO jika ada PO dipilih -->
+                <div v-if="selectedProductionOrderId && poInfo.buyer_name" class="po-selected-info">
+                  <span class="po-info-icon">👤</span>
+                  <div>
+                    <div class="po-info-buyer">{{ poInfo.buyer_name }}</div>
+                    <div class="po-info-so">{{ poInfo.so_number }}</div>
+                  </div>
+                </div>
+                <div v-else-if="!selectedProductionOrderId" class="po-empty-info">
+                  <span>📦 Stok Umum — Tanpa PO</span>
                 </div>
               </div>
             </div>
 
-            <!-- KOTAK CONTEKAN TARGET DARI PO -->
+            <!-- KOTAK CONTEKAN TARGET DARI PO (hanya jika ada PO) -->
             <div v-if="poTargets.length" class="po-hint-box">
               <div class="po-hint-header">
                 <div class="po-hint-title-wrap">
@@ -122,28 +136,27 @@
                   <div>
                     <div class="po-hint-title">Ringkasan Kebutuhan PO</div>
                     <div class="po-hint-sub">
-                      {{ poInfo.buyer_name || 'Tanpa buyer' }} •
-                      {{ poInfo.so_number || 'Tanpa SO' }}
+                      {{ poInfo.buyer_name }} • {{ poInfo.so_number }}
                     </div>
                   </div>
                 </div>
                 <div class="po-hint-badge">{{ poTargets.length }} item</div>
               </div>
-
               <div class="po-hint-list-wrapper">
                 <table class="po-hint-table">
                   <thead>
                     <tr>
                       <th>Item</th>
-                      <th class="col-qty">Qty</th>
+                      <th>Qty Target</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="t in poTargets" :key="t.item_id">
-                      <td class="cell-name">
-                        {{ t.name || t.code || 'Item #' + t.item_id }}
+                      <td>
+                        <div style="font-weight:600;">{{ t.name }}</div>
+                        <div style="font-size:0.78rem;color:#9ca3af;">{{ t.code }}</div>
                       </td>
-                      <td class="cell-qty">{{ parseInt(t.qty_planned) }} unit</td>
+                      <td>{{ Number(t.qty_planned).toLocaleString('id-ID') }} pcs</td>
                     </tr>
                   </tbody>
                 </table>
@@ -151,209 +164,165 @@
             </div>
           </div>
 
-          <!-- ✅ SECTION 2: BAHAN BAKU (MULTIPLE LOGS WITH SEARCHABLE SELECT) -->
+          <!-- SECTION 2: KAYU LOG (INPUT) -->
           <div class="form-section-modern">
             <div class="section-header">
-              <div class="section-icon-badge log-badge">
+              <div class="section-icon-badge section-icon-badge--log">
                 <span class="section-icon">🪵</span>
               </div>
               <div class="section-title-group">
-                <h3 class="section-title">Bahan Baku (Kayu Log)</h3>
-                <p class="section-subtitle">Input material yang akan diproses</p>
+                <h3 class="section-title">Kayu Log yang Dibelah</h3>
+                <p class="section-subtitle">Stok dari Gudang Log yang digunakan</p>
               </div>
             </div>
 
-            <!-- ✅ MULTIPLE LOGS CONTAINER -->
-            <div class="log-items-container">
-              <div v-for="(log, index) in form.logs" :key="log.local_id" class="log-item-card">
-                <div class="log-item-header">
-                  <div class="log-item-number">
-                    <span class="item-number-badge">{{ index + 1 }}</span>
-                    <span class="item-number-text">Kayu Log</span>
-                  </div>
-                  <button
-                    v-if="form.logs.length > 1"
-                    type="button"
-                    class="btn-remove-log"
-                    @click="removeLogRow(index)"
+            <div
+              v-for="(log, index) in form.logs"
+              :key="log.local_id"
+              class="item-row-card"
+            >
+              <div class="item-row-header">
+                <span class="item-row-number">Log #{{ index + 1 }}</span>
+                <button
+                  v-if="form.logs.length > 1"
+                  type="button"
+                  class="btn-remove-row"
+                  @click="removeLogRow(index)"
+                >✕</button>
+              </div>
+
+              <div class="form-grid-2col">
+                <div class="form-group-modern">
+                  <label class="form-label-modern">Item Kayu Log <span class="required-star">*</span></label>
+                  <vue-select
+                    v-model="log.item_log_id"
+                    :options="logItemsForSelect"
+                    :reduce="(o) => o.id"
+                    label="label"
+                    placeholder="🔍 Cari kayu log..."
+                    class="vue-select-rst"
                   >
-                    <span class="remove-icon">🗑️</span>
-                    <span class="remove-text">Hapus</span>
-                  </button>
+                    <template #option="o">
+                      <div class="rst-option-item">
+                        <span class="rst-option-code">{{ o.code }}</span>
+                        <span class="rst-option-name">{{ o.name }}</span>
+                        <span class="rst-option-spec">SKSHHK: {{ o.no_skshhk }} | TPK: {{ o.tpk }}</span>
+                      </div>
+                    </template>
+                  </vue-select>
                 </div>
 
-                <div class="log-item-body">
-                  <!-- ✅ SEARCHABLE SELECT untuk Kayu Log -->
-                  <div class="form-group-modern log-select-group">
-                    <label class="form-label-modern">
-                      Pilih Kayu Log <span class="required-star">*</span>
-                    </label>
-
-                    <vue-select
-                      v-model="log.item_log_id"
-                      :options="logItemsForSelect"
-                      :reduce="(option) => option.id"
-                      label="label"
-                      placeholder="🔍 Cari atau pilih kayu log..."
-                      :filterable="true"
-                      :clearable="true"
-                      class="vue-select-log"
-                    >
-                      <template #no-options="{ search }">
-                        <span v-if="search">Tidak ditemukan "{{ search }}"</span>
-                        <span v-else>Ketik untuk mencari kayu log...</span>
-                      </template>
-
-                      <template #option="option">
-                        <div class="log-option-item">
-                          <div class="log-option-code">{{ option.code }}</div>
-                          <div class="log-option-details">
-                            NO SKSHHK: {{ option.no_skshhk }} | TPK: {{ option.tpk }}
-                          </div>
-                        </div>
-                      </template>
-                    </vue-select>
-                  </div>
-
-                  <!-- QTY LOG -->
-                  <div class="form-group-modern">
-                    <label class="form-label-modern">
-                      Jumlah Log <span class="required-star">*</span>
-                    </label>
-                    <div class="input-wrapper-icon">
-                      <span class="input-icon">🔢</span>
-                      <input
-                        v-model.number="log.qty_log_pcs"
-                        type="number"
-                        min="1"
-                        step="1"
-                        class="form-input-modern"
-                        placeholder="Masukkan jumlah batang"
-                        required
-                      />
-                      <span class="input-suffix">batang</span>
-                    </div>
+                <div class="form-group-modern">
+                  <label class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
+                  <div class="input-wrapper-icon">
+                    <span class="input-icon">🔢</span>
+                    <input
+                      v-model.number="log.qty_log_pcs"
+                      type="number"
+                      min="1"
+                      class="form-input-modern"
+                      placeholder="0"
+                    />
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- ✅ TOMBOL TAMBAH LOG -->
-            <div class="add-log-section">
-              <button type="button" class="btn-add-log" @click="addLogRow">
+            <div class="add-rst-section">
+              <button type="button" class="btn-add-rst" @click="addLogRow">
                 <span class="add-icon">➕</span>
-                <span class="add-text">Tambah Kayu Log Lainnya</span>
+                <span class="add-text">Tambah Item Log Lainnya</span>
               </button>
             </div>
           </div>
 
-          <!-- SECTION 3: HASIL PRODUKSI dengan SEARCHABLE SELECT -->
+          <!-- SECTION 3: HASIL RST (OUTPUT) -->
           <div class="form-section-modern">
             <div class="section-header">
-              <div class="section-icon-badge rst-badge">
+              <div class="section-icon-badge section-icon-badge--rst">
                 <span class="section-icon">📦</span>
               </div>
               <div class="section-title-group">
-                <h3 class="section-title">Hasil Produksi (Kayu RST Basah)</h3>
-                <p class="section-subtitle">Output dari proses sawmill</p>
+                <h3 class="section-title">Hasil RST Basah</h3>
+                <p class="section-subtitle">Hasil belahan yang masuk ke Gudang Sanwil (RST Basah)</p>
               </div>
             </div>
 
-            <div class="rst-items-container">
-              <div v-for="(row, index) in form.rsts" :key="row.local_id" class="rst-item-card">
-                <div class="rst-item-header">
-                  <div class="rst-item-number">
-                    <span class="item-number-badge">{{ index + 1 }}</span>
-                    <span class="item-number-text">Item RST</span>
-                  </div>
-                  <button
-                    v-if="form.rsts.length > 1"
-                    type="button"
-                    class="btn-remove-rst"
-                    @click="removeRstRow(index)"
+            <div
+              v-for="(rst, index) in form.rsts"
+              :key="rst.local_id"
+              class="item-row-card"
+            >
+              <div class="item-row-header">
+                <span class="item-row-number">RST #{{ index + 1 }}</span>
+                <button
+                  v-if="form.rsts.length > 1"
+                  type="button"
+                  class="btn-remove-row"
+                  @click="removeRstRow(index)"
+                >✕</button>
+              </div>
+
+              <div class="form-grid-3col">
+                <div class="form-group-modern">
+                  <label class="form-label-modern">
+                    Item RST <span class="required-star">*</span>
+                    <button type="button" class="btn-quick-add" @click="openModalTambahRst" title="Tambah item RST baru">
+                      ➕ Item Baru
+                    </button>
+                  </label>
+                  <vue-select
+                    v-model="rst.item_rst_id"
+                    :options="rstItemsForSelect"
+                    :reduce="(o) => o.id"
+                    label="label"
+                    placeholder="🔍 Cari item RST..."
+                    class="vue-select-rst"
+                    @option:selected="(opt) => { rst.item_rst_id = opt.id; updateRstVolume(index) }"
                   >
-                    <span class="remove-icon">🗑️</span>
-                    <span class="remove-text">Hapus</span>
-                  </button>
+                    <template #option="o">
+                      <div class="rst-option-item">
+                        <span class="rst-option-code">{{ o.code }}</span>
+                        <span class="rst-option-name">{{ o.name }}</span>
+                      </div>
+                    </template>
+                  </vue-select>
                 </div>
 
-                <div class="rst-item-body">
-                  <!-- ✅ SEARCHABLE SELECT untuk RST -->
-                  <div class="form-group-modern rst-select-group">
-                    <label class="form-label-modern">
-                      Pilih Barang RST <span class="required-star">*</span>
-                    </label>
-
-                    <vue-select
-                      v-model="row.item_rst_id"
-                      :options="rstItemsForSelect"
-                      :reduce="(option) => option.id"
-                      label="label"
-                      placeholder="🔍 Cari atau pilih item RST..."
-                      :filterable="true"
-                      :clearable="true"
-                      class="vue-select-rst"
-                      @option:selected="updateRstVolume(index)"
-                      @option:deselected="updateRstVolume(index)"
-                    >
-                      <template #no-options="{ search }">
-                        <span v-if="search">Tidak ditemukan "{{ search }}"</span>
-                        <span v-else>Ketik untuk mencari item RST...</span>
-                      </template>
-
-                      <template #option="option">
-                        <div class="rst-option-item">
-                          <div class="rst-option-code">{{ option.code }}</div>
-                          <div class="rst-option-name">{{ option.name }}</div>
-                        </div>
-                      </template>
-                    </vue-select>
-
-                    <!-- Dimension info -->
-                    <div v-if="row.item_rst_id" class="dimension-info">
-                      <span class="dimension-icon">📐</span>
-                      <span class="dimension-text">
-                        Dimensi Master: {{ getRstDimensionText(row.item_rst_id) }}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div class="form-grid-2col rst-qty-grid">
-                    <div class="form-group-modern">
-                      <label class="form-label-modern">
-                        Quantity <span class="required-star">*</span>
-                      </label>
-                      <div class="input-wrapper-icon">
-                        <span class="input-icon">🔢</span>
-                        <input
-                          v-model.number="row.qty_rst_pcs"
-                          type="number"
-                          min="1"
-                          step="1"
-                          class="form-input-modern"
-                          placeholder="Jumlah pcs"
-                          @input="updateRstVolume(index)"
-                          required
-                        />
-                        <span class="input-suffix">pcs</span>
-                      </div>
-                    </div>
-
-                    <div class="form-group-modern">
-                      <label class="form-label-modern">Volume Total</label>
-                      <div class="input-wrapper-icon volume-readonly">
-                        <span class="input-icon">📊</span>
-                        <input
-                          :value="row.volume_rst_m3"
-                          type="number"
-                          class="form-input-modern readonly-input"
-                          readonly
-                        />
-                        <span class="input-suffix">m³</span>
-                      </div>
-                    </div>
+                <div class="form-group-modern">
+                  <label class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
+                  <div class="input-wrapper-icon">
+                    <span class="input-icon">🔢</span>
+                    <input
+                      v-model.number="rst.qty_rst_pcs"
+                      type="number"
+                      min="1"
+                      class="form-input-modern"
+                      placeholder="0"
+                      @input="updateRstVolume(index)"
+                    />
                   </div>
                 </div>
+
+                <div class="form-group-modern">
+                  <label class="form-label-modern">Volume (m³)</label>
+                  <div class="input-wrapper-icon">
+                    <span class="input-icon">📐</span>
+                    <input
+                      v-model.number="rst.volume_rst_m3"
+                      type="number"
+                      step="0.0001"
+                      min="0"
+                      class="form-input-modern"
+                      placeholder="0.0000"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dimensi item RST -->
+              <div v-if="rst.item_rst_id" class="rst-dimension-hint">
+                📐 {{ getRstDimensionText(rst.item_rst_id) }}
               </div>
             </div>
 
@@ -365,6 +334,7 @@
             </div>
           </div>
 
+          <!-- FORM ACTIONS -->
           <div class="form-actions-modern">
             <button
               type="button"
@@ -374,15 +344,81 @@
               <span class="btn-icon">↩️</span>
               <span class="btn-text">Batal</span>
             </button>
-            <button type="submit" class="btn-action btn-submit-modern">
+            <button type="submit" class="btn-action btn-submit-modern" :disabled="isSubmitting">
               <span class="btn-icon">💾</span>
-              <span class="btn-text">Simpan Produksi Sawmill</span>
+              <span class="btn-text">{{ isSubmitting ? 'Menyimpan...' : 'Simpan Produksi Sawmill' }}</span>
             </button>
           </div>
+
         </form>
       </div>
     </div>
   </DashboardLayout>
+
+  <!-- MODAL TAMBAH ITEM RST BARU -->
+  <div v-if="showModalTambahRst" class="modal-overlay" @click.self="closeModalTambahRst">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>➕ Tambah Item RST Baru</h3>
+        <button type="button" @click="closeModalTambahRst" class="modal-close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-hint">Item baru akan otomatis masuk ke Master Data & Stok.</p>
+
+        <div class="form-group-modern">
+          <label class="form-label-modern">Nama Dasar <span class="required-star">*</span></label>
+          <input v-model="formRstBaru.nama_dasar" type="text" class="form-input-modern input-plain"
+            placeholder="Contoh: Kayu Jati RST" />
+        </div>
+
+        <div class="form-grid-3col">
+          <div class="form-group-modern">
+            <label class="form-label-modern">Tebal (mm) <span class="required-star">*</span></label>
+            <input v-model.number="formRstBaru.tebal_mm" type="number" min="0" class="form-input-modern input-plain"
+              placeholder="0" />
+          </div>
+          <div class="form-group-modern">
+            <label class="form-label-modern">Lebar (mm)</label>
+            <input v-model.number="formRstBaru.lebar_mm" type="number" min="0" class="form-input-modern input-plain"
+              placeholder="0" />
+          </div>
+          <div class="form-group-modern">
+            <label class="form-label-modern">Panjang (mm)</label>
+            <input v-model.number="formRstBaru.panjang_mm" type="number" min="0" class="form-input-modern input-plain"
+              placeholder="0" />
+          </div>
+        </div>
+
+        <div class="form-grid-2col">
+          <div class="form-group-modern">
+            <label class="form-label-modern">Kode Barang</label>
+            <input v-model="formRstBaru.kode_barang" type="text" class="form-input-modern input-plain"
+              placeholder="Kosongkan = auto generate" />
+          </div>
+          <div class="form-group-modern">
+            <label class="form-label-modern">Jenis</label>
+            <input v-model="formRstBaru.jenis" type="text" class="form-input-modern input-plain"
+              placeholder="Contoh: Jati, Mahoni" />
+          </div>
+        </div>
+
+        <!-- Preview nama otomatis -->
+        <div v-if="formRstBaru.nama_dasar && formRstBaru.tebal_mm" class="preview-nama">
+          📦 Preview nama: <strong>{{ previewNamaRst }}</strong>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-action btn-cancel-modern" @click="closeModalTambahRst">
+          Batal
+        </button>
+        <button type="button" class="btn-action btn-submit-modern" :disabled="isSavingRst" @click="simpanRstBaru">
+          {{ isSavingRst ? '⏳ Menyimpan...' : '💾 Simpan & Pilih' }}
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -396,69 +432,71 @@ import 'vue-select/dist/vue-select.css'
 
 const router = useRouter()
 const { showSuccess, showError } = useNotification()
+const isSubmitting = ref(false)
+
+// === MODAL TAMBAH RST BARU ===
+const showModalTambahRst = ref(false)
+const isSavingRst = ref(false)
+const formRstBaru = reactive({
+  nama_dasar: '',
+  kode_barang: '',
+  tebal_mm: null,
+  lebar_mm: null,
+  panjang_mm: null,
+  jenis: '',
+})
+
+const previewNamaRst = computed(() => {
+  const t = formRstBaru.tebal_mm || 0
+  const l = formRstBaru.lebar_mm || 0
+  const p = formRstBaru.panjang_mm || 0
+  return `${formRstBaru.nama_dasar} ${t}x${l}x${p}`
+})
 
 const form = reactive({
   date: new Date().toISOString().slice(0, 10),
+  estimated_finish_date: '',   // ✅ tambah ini
   notes: '',
-  logs: [
-    {
-      local_id: Date.now(),
-      item_log_id: null,
-      qty_log_pcs: null,
-    },
-  ],
-  rsts: [
-    {
-      local_id: Date.now() + 1,
-      item_rst_id: null,
-      qty_rst_pcs: null,
-      volume_rst_m3: 0,
-    },
-  ],
+  logs: [{ local_id: Date.now(), item_log_id: null, qty_log_pcs: null }],
+  rsts: [{ local_id: Date.now() + 1, item_rst_id: null, qty_rst_pcs: null, volume_rst_m3: 0 }],
 })
 
-const logItems = ref([])
-const rstItems = ref([])
-const warehouses = ref([])
-
+const logItems         = ref([])
+const rstItems         = ref([])
+const warehouses       = ref([])
 const productionOrders = ref([])
-const selectedProductionOrderId = ref('')
 
+// ✅ PO opsional — tidak wajib dipilih
+const selectedProductionOrderId = ref(null)
 const poTargets = ref([])
-const poInfo = ref({
-  buyer_name: null,
-  so_number: null,
-})
+const poInfo    = ref({ buyer_name: null, so_number: null })
 
-// ✅ COMPUTED: Format PO untuk vue-select (BUYER - SO NUMBER)
-const productionOrdersForSelect = computed(() => {
-  return productionOrders.value.map((po) => {
-    const displayName = po.label || po.po_number
+// ============================================================
+// COMPUTED
+// ============================================================
 
-    return {
-      id: po.id,
-      po_number: po.po_number,
-      display_name: displayName,
-      label: displayName,
-    }
-  })
-})
+const productionOrdersForSelect = computed(() =>
+  productionOrders.value.map((po) => ({
+    id: po.id,
+    po_number: po.po_number,
+    display_name: po.label || po.po_number,
+    label: po.label || po.po_number,
+  }))
+)
 
-// ✅ COMPUTED: Format LOG items untuk vue-select (UPDATE!)
-const logItemsForSelect = computed(() => {
-  return logItems.value.map((item) => ({
+const logItemsForSelect = computed(() =>
+  logItems.value.map((item) => ({
     id: item.id,
     code: item.code,
     name: item.name,
     no_skshhk: item.no_skshhk || '-',
     tpk: item.tpk || '-',
-    label: `${item.code} - NO SKSHHK: ${item.no_skshhk || '-'} | TPK: ${item.tpk || '-'}`,
+    label: `${item.code} - ${item.name}`,
   }))
-})
+)
 
-// ✅ COMPUTED: Format RST items untuk vue-select
-const rstItemsForSelect = computed(() => {
-  return rstItems.value.map((item) => ({
+const rstItemsForSelect = computed(() =>
+  rstItems.value.map((item) => ({
     id: item.id,
     code: item.code,
     name: item.name,
@@ -466,7 +504,11 @@ const rstItemsForSelect = computed(() => {
     specifications: item.specifications || {},
     label: `${item.code} - ${item.name}`,
   }))
-})
+)
+
+// ============================================================
+// METHODS
+// ============================================================
 
 const fetchItems = async () => {
   try {
@@ -474,48 +516,28 @@ const fetchItems = async () => {
       apiClient.get('/materials', { params: { category_name: 'Kayu Log', per_page: 500 } }),
       apiClient.get('/materials', { params: { category_name: 'Kayu RST', per_page: 500 } }),
       apiClient.get('/warehouses'),
-      apiClient.get('/production-orders', {
-        params: {
-          status_not: 'completed',
-          include: 'sales_order',
-        },
-      }),
+      apiClient.get('/production-orders', { params: { status_not: 'completed', for_sawmill: 1, include: 'sales_order' } }),
     ])
 
-    logItems.value = logsRes.data.data?.data || logsRes.data.data || []
-    rstItems.value = rstRes.data.data?.data || rstRes.data.data || []
-    warehouses.value = whRes.data.data || whRes.data || []
-
-    const poData = poRes.data.data?.data || poRes.data.data || []
-    productionOrders.value = poData
-
-    console.log('✅ LOG Items loaded:', logItems.value.length)
-    console.log('✅ RST Items loaded:', rstItems.value.length)
-    console.log('✅ PO loaded:', productionOrders.value.length)
-    console.log('🔍 Sample LOG item:', logItems.value[0])
+    logItems.value         = logsRes.data.data?.data || logsRes.data.data || []
+    rstItems.value         = rstRes.data.data?.data  || rstRes.data.data  || []
+    warehouses.value       = whRes.data.data         || whRes.data        || []
+    productionOrders.value = poRes.data.data?.data   || poRes.data.data   || []
   } catch (error) {
     console.error(error)
-    showError('Gagal', 'Gagal mengambil data log / RST / gudang / Production Order')
+    showError('Gagal', 'Gagal mengambil data awal')
   }
 }
 
 const handlePoChange = async () => {
   poTargets.value = []
-  poInfo.value = { buyer_name: null, so_number: null }
-
-  if (!selectedProductionOrderId.value) {
-    return
-  }
+  poInfo.value    = { buyer_name: null, so_number: null }
+  if (!selectedProductionOrderId.value) return
 
   try {
-    const res = await apiClient.get(`/production-orders/${selectedProductionOrderId.value}`)
+    const res  = await apiClient.get(`/production-orders/${selectedProductionOrderId.value}`)
     const data = res.data.data || {}
-
-    poInfo.value = {
-      buyer_name: data.sales_order?.buyer_name || null,
-      so_number: data.sales_order?.so_number || null,
-    }
-
+    poInfo.value    = { buyer_name: data.sales_order?.buyer_name || null, so_number: data.sales_order?.so_number || null }
     poTargets.value = data.targets || []
   } catch (error) {
     console.error(error)
@@ -525,126 +547,151 @@ const handlePoChange = async () => {
 
 const handlePoDeselect = () => {
   poTargets.value = []
-  poInfo.value = { buyer_name: null, so_number: null }
+  poInfo.value    = { buyer_name: null, so_number: null }
 }
 
-const getWarehouseIdByName = (namePart) => {
-  const wh = warehouses.value.find((w) => w.name.includes(namePart))
+const getWarehouseIdByCode = (code) => {
+  const wh = warehouses.value.find((w) => w.code === code)
   return wh ? wh.id : null
 }
 
-const getRstItem = (itemId) => {
-  return rstItems.value.find((i) => i.id === itemId) || null
-}
+const getRstItem = (itemId) => rstItems.value.find((i) => i.id === itemId) || null
 
 const getRstDimensionText = (itemId) => {
   const item = getRstItem(itemId)
   if (!item) return '-'
   const specs = item.specifications || {}
-  const t = specs.t ?? null
-  const l = specs.l ?? null
-  const p = specs.p ?? null
-  if (t && l && p) {
-    return `${t} x ${l} x ${p} mm`
-  }
-  return item.name
+  const { t, l, p } = specs
+  return t && l && p ? `${t} x ${l} x ${p} mm` : item.name
 }
 
 const updateRstVolume = (index) => {
-  const row = form.rsts[index]
-  if (!row || !row.item_rst_id || !row.qty_rst_pcs) {
-    row.volume_rst_m3 = 0
-    return
-  }
-
+  const row  = form.rsts[index]
+  if (!row) return
   const item = getRstItem(row.item_rst_id)
-  if (!item || !item.volume_m3) {
-    row.volume_rst_m3 = 0
+  row.volume_rst_m3 = (item?.volume_m3 && row.qty_rst_pcs)
+    ? Number((row.qty_rst_pcs * Number(item.volume_m3)).toFixed(4))
+    : 0
+}
+
+const addLogRow = () => form.logs.push({ local_id: Date.now() + Math.random(), item_log_id: null, qty_log_pcs: null })
+const removeLogRow = (i) => form.logs.splice(i, 1)
+
+const openModalTambahRst = () => {
+  formRstBaru.nama_dasar = ''
+  formRstBaru.kode_barang = ''
+  formRstBaru.tebal_mm = null
+  formRstBaru.lebar_mm = null
+  formRstBaru.panjang_mm = null
+  formRstBaru.jenis = ''
+  showModalTambahRst.value = true
+}
+
+const closeModalTambahRst = () => {
+  showModalTambahRst.value = false
+}
+
+const simpanRstBaru = async () => {
+  if (!formRstBaru.nama_dasar || !formRstBaru.tebal_mm) {
+    showError('Validasi', 'Nama dasar dan tebal wajib diisi')
     return
   }
 
-  row.volume_rst_m3 = Number((row.qty_rst_pcs * Number(item.volume_m3)).toFixed(4))
+  isSavingRst.value = true
+  try {
+    const res = await apiClient.post('/materials/quick-store-rst', {
+      nama_dasar:  formRstBaru.nama_dasar,
+      kode_barang: formRstBaru.kode_barang || null,
+      tebal_mm:    formRstBaru.tebal_mm,
+      lebar_mm:    formRstBaru.lebar_mm || 0,
+      panjang_mm:  formRstBaru.panjang_mm || 0,
+      jenis:       formRstBaru.jenis || null,
+    })
+
+    const itemBaru = res.data.data
+
+    // Tambah ke list RST supaya langsung bisa dipilih
+    rstItems.value.push({
+      id:             itemBaru.id,
+      code:           itemBaru.code,
+      name:           itemBaru.name,
+      volume_m3:      itemBaru.volume_m3,
+      specifications: itemBaru.specifications || {},
+    })
+
+    // Otomatis pilih item baru di baris RST terakhir
+    const lastRst = form.rsts[form.rsts.length - 1]
+    if (lastRst && !lastRst.item_rst_id) {
+      lastRst.item_rst_id = itemBaru.id
+    } else {
+      // Kalau semua baris sudah terisi, tambah baris baru
+      form.rsts.push({
+        local_id:      Date.now() + Math.random(),
+        item_rst_id:   itemBaru.id,
+        qty_rst_pcs:   null,
+        volume_rst_m3: 0,
+      })
+    }
+
+    showSuccess('Berhasil', `Item '${itemBaru.name}' berhasil ditambahkan`)
+    closeModalTambahRst()
+  } catch (error) {
+    const message = error.response?.data?.message || 'Gagal menyimpan item RST baru'
+    showError('Gagal', message)
+  } finally {
+    isSavingRst.value = false
+  }
 }
 
-// ✅ ADD/REMOVE LOG ROWS
-const addLogRow = () => {
-  form.logs.push({
-    local_id: Date.now() + Math.random(),
-    item_log_id: null,
-    qty_log_pcs: null,
-  })
-}
-
-const removeLogRow = (index) => {
-  form.logs.splice(index, 1)
-}
-
-// ✅ ADD/REMOVE RST ROWS
-const addRstRow = () => {
-  form.rsts.push({
-    local_id: Date.now() + Math.random(),
-    item_rst_id: null,
-    qty_rst_pcs: null,
-    volume_rst_m3: 0,
-  })
-}
-
-const removeRstRow = (index) => {
-  form.rsts.splice(index, 1)
-}
+const addRstRow = () => form.rsts.push({ local_id: Date.now() + Math.random(), item_rst_id: null, qty_rst_pcs: null, volume_rst_m3: 0 })
+const removeRstRow = (i) => form.rsts.splice(i, 1)
 
 const handleSubmit = async () => {
+  // Validasi baris log
+  const validLogs = form.logs.filter((l) => l.item_log_id && l.qty_log_pcs > 0)
+  if (validLogs.length === 0) {
+    showError('Validasi', 'Minimal satu baris kayu log wajib diisi')
+    return
+  }
+
+  // Validasi baris RST
+  const validRsts = form.rsts.filter((r) => r.item_rst_id && r.qty_rst_pcs > 0)
+  if (validRsts.length === 0) {
+    showError('Validasi', 'Minimal satu baris hasil RST wajib diisi')
+    return
+  }
+
+  // Ambil warehouse dari kode (lebih aman daripada nama)
+  const warehouseFromId = getWarehouseIdByCode('LOG')
+  const warehouseToId   = getWarehouseIdByCode('RSTB')
+
+  if (!warehouseFromId || !warehouseToId) {
+    showError('Konfigurasi', 'Gudang LOG atau RSTB tidak ditemukan di master data')
+    return
+  }
+
+  isSubmitting.value = true
+
   try {
-    if (!selectedProductionOrderId.value) {
-      showError('Validasi', 'Production Order wajib dipilih')
-      return
-    }
-
-    const validLogs = form.logs.filter(
-      (log) => log.item_log_id && log.qty_log_pcs && log.qty_log_pcs > 0,
-    )
-
-    if (validLogs.length === 0) {
-      showError('Validasi', 'Minimal satu baris kayu log wajib diisi')
-      return
-    }
-
-    const validRsts = form.rsts.filter(
-      (row) => row.item_rst_id && row.qty_rst_pcs && row.qty_rst_pcs > 0,
-    )
-
-    if (validRsts.length === 0) {
-      showError('Validasi', 'Minimal satu baris hasil RST wajib diisi')
-      return
-    }
-
-    const warehouseFromId = getWarehouseIdByName('Gudang Log')
-    const warehouseToId = getWarehouseIdByName('Gudang Sanwil')
-
-    if (!warehouseFromId || !warehouseToId) {
-      showError('Konfigurasi', 'Gudang Log / Gudang Sanwil tidak ditemukan di master')
-      return
-    }
-
     const payload = {
-      date: form.date,
-      warehouse_from_id: warehouseFromId,
-      warehouse_to_id: warehouseToId,
-      notes: form.notes || null,
-      ref_po_id: Number(selectedProductionOrderId.value),
-      ref_product_id: null,
-      logs: validLogs.map((log) => ({
-        item_log_id: log.item_log_id,
-        qty_log_pcs: log.qty_log_pcs,
+      date:                  form.date,
+      estimated_finish_date: form.estimated_finish_date || null,  // ✅ tambah ini
+      warehouse_from_id:     warehouseFromId,
+      warehouse_to_id:   warehouseToId,
+      notes:             form.notes || null,
+      // ✅ Kirim null jika tidak ada PO — backend sudah nullable
+      ref_po_id:         selectedProductionOrderId.value ? Number(selectedProductionOrderId.value) : null,
+      ref_product_id:    null,
+      logs: validLogs.map((l) => ({
+        item_log_id:  l.item_log_id,
+        qty_log_pcs:  l.qty_log_pcs,
       })),
-      rsts: validRsts.map((row) => ({
-        item_rst_id: row.item_rst_id,
-        qty_rst_pcs: row.qty_rst_pcs,
-        volume_rst_m3: row.volume_rst_m3,
+      rsts: validRsts.map((r) => ({
+        item_rst_id:   r.item_rst_id,
+        qty_rst_pcs:   r.qty_rst_pcs,
+        volume_rst_m3: r.volume_rst_m3,
       })),
     }
-
-    console.log('📤 PAYLOAD:', payload)
 
     await apiClient.post('/sawmill-productions', payload)
     showSuccess('Sukses', 'Produksi Sawmill berhasil dicatat')
@@ -655,112 +702,117 @@ const handleSubmit = async () => {
       (error.response?.data?.errors && JSON.stringify(error.response.data.errors)) ||
       'Gagal mencatat produksi Sawmill'
     showError('Gagal', message)
+  } finally {
+    isSubmitting.value = false
   }
 }
 
-onMounted(() => {
-  fetchItems()
-})
+onMounted(fetchItems)
 </script>
+
 <style scoped>
-/* ========================================
-   VUE-SELECT CUSTOM STYLE (TAMBAHAN BARU)
-   ======================================== */
-.vue-select-rst {
-  --vs-border-color: #e5e7eb;
-  --vs-border-width: 2.5px;
-  --vs-border-radius: 12px;
-  --vs-dropdown-max-height: 300px;
-}
-
-.vue-select-rst :deep(.vs__dropdown-toggle) {
-  padding: 0.875rem 1.25rem;
-  border: var(--vs-border-width) solid var(--vs-border-color);
-  border-radius: var(--vs-border-radius);
-  transition: all 0.3s ease;
-  background: white;
-  min-height: 54px;
-}
-
-.vue-select-rst :deep(.vs__dropdown-toggle):hover {
-  border-color: #d1d5db;
-}
-
-.vue-select-rst.vs--open :deep(.vs__dropdown-toggle) {
-  border-color: #f59e0b;
-  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
-}
-
-.vue-select-rst :deep(.vs__search) {
-  font-size: 1rem;
-  font-weight: 500;
-  padding: 0;
-  margin: 0;
-}
-
-.vue-select-rst :deep(.vs__search::placeholder) {
-  color: #9ca3af;
-  font-weight: 400;
-}
-
-.vue-select-rst :deep(.vs__dropdown-menu) {
-  border: 2.5px solid #e5e7eb;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  max-height: var(--vs-dropdown-max-height);
-  margin-top: 0.5rem;
-}
-
-.vue-select-rst :deep(.vs__dropdown-option) {
-  padding: 0;
-  transition: all 0.2s;
-}
-
-.vue-select-rst :deep(.vs__dropdown-option--highlight) {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.vue-select-rst :deep(.vs__selected) {
-  font-size: 1rem;
+.optional-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.72rem;
   font-weight: 600;
-  color: #111827;
-  margin: 0;
-  padding: 0;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
 }
 
-.vue-select-rst :deep(.vs__clear),
-.vue-select-rst :deep(.vs__open-indicator) {
-  fill: #6b7280;
+.field-hint {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  color: #6b7280;
 }
 
-.vue-select-rst :deep(.vs__actions) {
-  padding-top: 0;
-}
-
-/* Custom option template */
-.rst-option-item {
-  padding: 0.875rem 1.125rem;
+.po-selected-info {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  margin-top: 4px;
 }
 
-.rst-option-code {
-  font-size: 0.875rem;
+.po-info-icon { font-size: 1.25rem; }
+.po-info-buyer { font-weight: 700; font-size: 0.95rem; color: #111827; }
+.po-info-so { font-size: 0.82rem; color: #6b7280; }
+
+.po-empty-info {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+.form-grid-3col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.item-row-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.item-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.item-row-number {
+  font-size: 0.82rem;
   font-weight: 700;
-  color: #f59e0b;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.rst-option-name {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #374151;
+.btn-remove-row {
+  background: #fee2e2;
+  color: #ef4444;
+  border: none;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background 0.2s;
+}
+.btn-remove-row:hover { background: #fecaca; }
+
+.rst-dimension-hint {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: #6b7280;
+  padding: 4px 8px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  display: inline-block;
 }
 
-/* ========================================
-   PAGE HEADER - GRADIENT
-   ======================================== */
+.section-icon-badge--log { background: linear-gradient(135deg, #d97706, #b45309); }
+.section-icon-badge--rst { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+
+/* Reuse styles dari file asli (tidak duplikasi, hanya override) */
 .page-header-sawmill {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   padding: 2rem 2.5rem;
@@ -768,644 +820,131 @@ onMounted(() => {
   margin-bottom: 2rem;
   box-shadow: 0 10px 40px rgba(245, 158, 11, 0.3);
 }
+.header-content-wrapper { display: flex; justify-content: space-between; align-items: center; gap: 2rem; }
+.header-left-section { display: flex; align-items: center; gap: 1.5rem; flex: 1; }
+.icon-badge-sawmill { width: 72px; height: 72px; border-radius: 18px; background: rgba(255,255,255,0.25); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; }
+.sawmill-icon { font-size: 2.5rem; }
+.page-title-sawmill { font-size: 2rem; font-weight: 800; color: white; margin: 0 0 0.5rem; }
+.page-subtitle-sawmill { color: rgba(255,255,255,0.95); font-size: 1rem; margin: 0; font-weight: 500; }
+.process-badge { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.5rem; background: rgba(255,255,255,0.95); border-radius: 16px; }
+.process-icon { font-size: 1.5rem; }
+.process-arrow { font-size: 1.25rem; color: #d97706; font-weight: 700; }
 
-.header-content-wrapper {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 2rem;
+.content-card-sawmill { background: white; border-radius: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border: 1px solid #f0f2f5; overflow: hidden; }
+.card-body-sawmill { padding: 2.5rem; }
+
+.form-section-modern { margin-bottom: 2.5rem; padding-bottom: 2.5rem; border-bottom: 3px solid #e5e7eb; }
+.form-section-modern:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+
+.section-header { display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.75rem; padding: 1.25rem 1.5rem; background: linear-gradient(135deg, #f9fafb, #f3f4f6); border-radius: 14px; border-left: 5px solid #f59e0b; }
+.section-icon-badge { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #f59e0b, #d97706); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.section-icon { font-size: 1.25rem; }
+.section-title { font-size: 1.1rem; font-weight: 700; color: #111827; margin: 0 0 0.2rem; }
+.section-subtitle { font-size: 0.875rem; color: #6b7280; margin: 0; }
+
+.form-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+.form-group-modern { display: flex; flex-direction: column; }
+.form-label-modern { font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem; }
+.required-star { color: #ef4444; }
+.input-wrapper-icon { position: relative; display: flex; align-items: center; }
+.input-icon { position: absolute; left: 1.125rem; font-size: 1rem; z-index: 1; pointer-events: none; }
+.form-input-modern { width: 100%; padding: 0.9rem 1.25rem 0.9rem 3.25rem; border: 2.5px solid #e5e7eb; border-radius: 12px; font-size: 1rem; font-weight: 500; transition: all 0.3s ease; background: white; }
+.form-input-modern:focus { outline: none; border-color: #f59e0b; box-shadow: 0 0 0 4px rgba(245,158,11,0.15); }
+
+.add-rst-section { margin-top: 0.75rem; }
+.btn-add-rst { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; background: #fef3c7; border: 2px dashed #f59e0b; border-radius: 10px; color: #92400e; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
+.btn-add-rst:hover { background: #fde68a; }
+
+.po-hint-box { margin-top: 1.25rem; border-radius: 16px; border: 1px solid #fde68a; background: linear-gradient(135deg, #fffbeb, #fef3c7); padding: 1.25rem 1.5rem; }
+.po-hint-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+.po-hint-title-wrap { display: flex; align-items: center; gap: 0.75rem; }
+.po-hint-icon { font-size: 1.25rem; }
+.po-hint-title { font-weight: 700; font-size: 0.95rem; color: #92400e; }
+.po-hint-sub { font-size: 0.82rem; color: #b45309; }
+.po-hint-badge { background: #f59e0b; color: white; border-radius: 999px; padding: 2px 12px; font-size: 0.8rem; font-weight: 700; }
+.po-hint-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.po-hint-table th { padding: 6px 10px; text-align: left; color: #92400e; font-size: 0.78rem; text-transform: uppercase; border-bottom: 1px solid #fde68a; }
+.po-hint-table td { padding: 6px 10px; color: #374151; border-bottom: 1px solid #fef3c7; }
+
+.form-actions-modern { display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1.5rem; border-top: 2px solid #e5e7eb; }
+.btn-action { display: flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1.75rem; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; }
+.btn-cancel-modern { background: #f3f4f6; color: #374151; }
+.btn-cancel-modern:hover { background: #e5e7eb; }
+.btn-submit-modern { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; box-shadow: 0 4px 12px rgba(245,158,11,0.35); }
+.btn-submit-modern:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(245,158,11,0.45); }
+.btn-submit-modern:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.vue-select-rst { --vs-border-color: #e5e7eb; --vs-border-width: 2.5px; --vs-border-radius: 12px; }
+.vue-select-rst :deep(.vs__dropdown-toggle) { padding: 0.875rem 1.25rem; border: var(--vs-border-width) solid var(--vs-border-color); border-radius: var(--vs-border-radius); min-height: 54px; }
+.vue-select-rst.vs--open :deep(.vs__dropdown-toggle) { border-color: #f59e0b; box-shadow: 0 0 0 4px rgba(245,158,11,0.15); }
+.rst-option-item { padding: 0.75rem 1rem; display: flex; flex-direction: column; gap: 0.2rem; }
+.rst-option-code { font-size: 0.82rem; font-weight: 700; color: #f59e0b; }
+.rst-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
+.rst-option-spec { font-size: 0.78rem; color: #9ca3af; }
+
+@media (max-width: 768px) {
+  .form-grid-2col, .form-grid-3col { grid-template-columns: 1fr; }
+  .card-body-sawmill { padding: 1.25rem; }
 }
 
-.header-left-section {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  flex: 1;
+.btn-quick-add {
+  margin-left: 8px;
+  padding: 2px 10px;
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: all 0.2s;
 }
+.btn-quick-add:hover { background: #bbf7d0; }
 
-.icon-badge-sawmill {
-  width: 72px;
-  height: 72px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(10px);
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
-
-.sawmill-icon {
-  font-size: 2.5rem;
-}
-
-.header-text-content {
-  flex: 1;
-}
-
-.page-title-sawmill {
-  font-size: 2rem;
-  font-weight: 800;
-  color: white;
-  margin: 0 0 0.5rem 0;
-  letter-spacing: -0.5px;
-}
-
-.page-subtitle-sawmill {
-  color: rgba(255, 255, 255, 0.95);
-  font-size: 1rem;
-  margin: 0;
-  font-weight: 500;
-  line-height: 1.5;
-}
-
-.header-badge-section {
-  display: flex;
-}
-
-.process-badge {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
-.process-icon {
-  font-size: 1.5rem;
-}
-
-.process-arrow {
-  font-size: 1.25rem;
-  color: #d97706;
-  font-weight: 700;
-}
-
-/* ========================================
-   CONTENT CARD
-   ======================================== */
-.content-card-sawmill {
+.modal-card {
   background: white;
   border-radius: 20px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  border: 1px solid #f0f2f5;
+  width: 100%;
+  max-width: 560px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
   overflow: hidden;
 }
-
-.card-body-sawmill {
-  padding: 2.5rem;
-}
-
-/* ========================================
-   FORM SECTIONS
-   ======================================== */
-.form-section-modern {
-  margin-bottom: 2.5rem;
-  padding-bottom: 2.5rem;
-  border-bottom: 3px solid #e5e7eb;
-}
-
-.form-section-modern:last-child {
-  margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: none;
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  margin-bottom: 1.75rem;
-  padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, #f9fafb, #f3f4f6);
-  border-radius: 14px;
-  border-left: 5px solid #f59e0b;
-}
-
-.section-icon-badge {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
-}
-
-.section-icon-badge.log-badge {
-  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-}
-
-.section-icon-badge.rst-badge {
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-}
-
-.section-icon {
-  font-size: 1.75rem;
-}
-
-.section-title-group {
-  flex: 1;
-}
-
-.section-title {
-  font-size: 1.375rem;
-  font-weight: 800;
-  color: #111827;
-  margin: 0 0 0.25rem 0;
-  letter-spacing: -0.25px;
-}
-
-.section-subtitle {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 0;
-  font-weight: 500;
-}
-
-/* ========================================
-   PO HINT BOX
-   ======================================== */
-.po-hint-box {
-  margin-top: 1rem;
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-  background: linear-gradient(135deg, #fefce8, #fffbeb);
-  padding: 1.25rem 1.5rem;
-  box-shadow: 0 4px 12px rgba(250, 204, 21, 0.12);
-}
-
-.po-hint-header {
+.modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.po-hint-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.po-hint-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background: rgba(250, 204, 21, 0.18);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-}
-
-.po-hint-title {
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: #92400e;
-}
-
-.po-hint-sub {
-  font-size: 0.8rem;
-  color: #6b7280;
-}
-
-.po-hint-badge {
-  padding: 0.3rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.po-hint-list-wrapper {
-  max-height: 180px;
-  overflow-y: auto;
-  margin-top: 0.25rem;
-  border-radius: 12px;
-  border: 1px solid #facc15;
-  background: white;
-}
-
-.po-hint-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-}
-
-.po-hint-table thead {
-  position: sticky;
-  top: 0;
-  background: #fefce8;
-  z-index: 1;
-}
-
-.po-hint-table th,
-.po-hint-table td {
-  padding: 0.45rem 0.75rem;
-}
-
-.po-hint-table th {
-  text-align: left;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #6b7280;
-  border-bottom: 1px solid #feeeb2;
-}
-
-.po-hint-table .col-qty {
-  width: 80px;
-  text-align: right;
-}
-
-.po-hint-table .cell-name {
-  color: #374151;
-  font-weight: 500;
-}
-
-.po-hint-table .cell-qty {
-  text-align: right;
-  color: #92400e;
-  font-weight: 700;
-}
-
-.po-hint-table tbody tr:nth-child(even) {
-  background: #f9fafb;
-}
-
-/* ========================================
-   FORM GRID
-   ======================================== */
-.form-grid-2col {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.75rem;
-}
-
-@media (max-width: 768px) {
-  .form-grid-2col {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ========================================
-   FORM ELEMENTS
-   ======================================== */
-.form-group-modern {
-  margin-bottom: 0;
-}
-
-.form-label-modern {
-  display: block;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: #111827;
-  margin-bottom: 0.75rem;
-  letter-spacing: 0.015em;
-}
-
-.required-star {
-  color: #ef4444;
-  margin-left: 0.25rem;
-}
-
-.input-wrapper-icon {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.input-icon {
-  position: absolute;
-  left: 1.125rem;
-  font-size: 1.125rem;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.form-input-modern {
-  width: 100%;
-  padding: 1rem 1.25rem 1rem 3.25rem;
-  border: 2.5px solid #e5e7eb;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  background: white;
-  color: #111827;
-}
-
-.form-input-modern::placeholder {
-  color: #9ca3af;
-  font-weight: 400;
-}
-
-.form-input-modern:focus {
-  outline: none;
-  border-color: #f59e0b;
-  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
-  transform: translateY(-1px);
-}
-
-.input-suffix {
-  position: absolute;
-  right: 1.125rem;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #6b7280;
-  pointer-events: none;
-}
-
-.readonly-input {
-  background: #f9fafb;
-  cursor: not-allowed;
-  font-weight: 700;
-  color: #374151;
-}
-
-.volume-readonly .input-suffix {
-  color: #059669;
-}
-
-.select-wrapper-modern {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.select-icon {
-  position: absolute;
-  left: 1.125rem;
-  font-size: 1.125rem;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.form-select-modern {
-  width: 100%;
-  padding: 1rem 3.25rem 1rem 3.25rem;
-  border: 2.5px solid #e5e7eb;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  background: white;
-  color: #111827;
-  appearance: none;
-  cursor: pointer;
-}
-
-.form-select-modern:focus {
-  outline: none;
-  border-color: #f59e0b;
-  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
-  transform: translateY(-1px);
-}
-
-.select-arrow {
-  position: absolute;
-  right: 1.125rem;
-  font-size: 0.75rem;
-  color: #6b7280;
-  pointer-events: none;
-}
-
-/* ========================================
-   RST ITEMS CONTAINER
-   ======================================== */
-.rst-items-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.rst-item-card {
-  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
-  border: 2.5px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 1.5rem;
-  transition: all 0.3s ease;
-}
-
-.rst-item-card:hover {
-  border-color: #f59e0b;
-  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
-  transform: translateY(-2px);
-}
-
-.rst-item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
+  padding: 1.25rem 1.5rem;
   border-bottom: 2px solid #e5e7eb;
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
 }
-
-.rst-item-number {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+.modal-header h3 { font-size: 1.1rem; font-weight: 700; color: #111827; margin: 0; }
+.modal-close {
+  background: #fee2e2; color: #ef4444; border: none;
+  border-radius: 8px; padding: 4px 10px; cursor: pointer; font-weight: 700;
 }
-
-.item-number-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
+.modal-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+.modal-hint { font-size: 0.85rem; color: #6b7280; margin: 0; }
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: 1rem;
+  padding: 1.25rem 1.5rem; border-top: 2px solid #e5e7eb;
+}
+.input-plain { padding-left: 1.25rem !important; }
+.preview-nama {
+  padding: 10px 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
   border-radius: 10px;
-  font-weight: 800;
-  font-size: 1.125rem;
-  color: #92400e;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
-}
-
-.item-number-text {
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 0.88rem;
   color: #374151;
-}
-
-.btn-remove-rst {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1.125rem;
-  background: linear-gradient(135deg, #fee2e2, #fecaca);
-  border: 2px solid #fca5a5;
-  border-radius: 10px;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #dc2626;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-remove-rst:hover {
-  background: linear-gradient(135deg, #fecaca, #fca5a5);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
-}
-
-.remove-icon {
-  font-size: 1rem;
-}
-
-.rst-item-body {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.rst-select-group {
-  margin-bottom: 0;
-}
-
-.dimension-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-  padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
-  border-radius: 10px;
-  border: 2px solid #bfdbfe;
-}
-
-.dimension-icon {
-  font-size: 1rem;
-}
-
-.dimension-text {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #1e40af;
-}
-
-.rst-qty-grid {
-  margin-top: 0;
-}
-
-/* ========================================
-   ADD RST BUTTON
-   ======================================== */
-.add-rst-section {
-  margin-top: 1.5rem;
-}
-
-.btn-add-rst {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  width: 100%;
-  padding: 1.125rem 2rem;
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-  border: 3px dashed #93c5fd;
-  border-radius: 14px;
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1e40af;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-add-rst:hover {
-  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
-  border-color: #60a5fa;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.25);
-}
-
-.add-icon {
-  font-size: 1.25rem;
-}
-
-/* ========================================
-   FORM ACTIONS
-   ======================================== */
-.form-actions-modern {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1.25rem;
-  margin-top: 2.5rem;
-  padding-top: 2rem;
-  border-top: 3px solid #e5e7eb;
-}
-
-.btn-action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 1.125rem 2.25rem;
-  border: none;
-  border-radius: 14px;
-  font-size: 1.0625rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 180px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.btn-icon {
-  font-size: 1.25rem;
-}
-
-.btn-cancel-modern {
-  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-  color: #374151;
-  border: 2.5px solid #d1d5db;
-}
-
-.btn-cancel-modern:hover {
-  background: linear-gradient(135deg, #e5e7eb, #d1d5db);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-}
-
-.btn-submit-modern {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-}
-
-.btn-submit-modern:hover {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-  transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4);
-}
-
-/* ========================================
-   RESPONSIVE
-   ======================================== */
-@media (max-width: 768px) {
-  .page-header-sawmill {
-    padding: 1.5rem;
-  }
-
-  .header-content-wrapper {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .card-body-sawmill {
-    padding: 1.5rem;
-  }
-
-  .form-actions-modern {
-    flex-direction: column;
-  }
-
-  .btn-action {
-    width: 100%;
-  }
 }
 </style>

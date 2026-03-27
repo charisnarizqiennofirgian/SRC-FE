@@ -742,21 +742,32 @@ const totalQty = (stocks) => {
   return (stocks || []).reduce((sum, s) => sum + parseFloat(s.qty || 0), 0)
 }
 
-const totalKubikasi = (item, stocksFiltered) => {
+const totalKubikasi = (item, stocks) => {
   if (!item) return 0
 
   if (activeTab.value === 'logs') {
     return Number(item.kubikasi || 0)
   }
 
-  if (!item.specifications) return 0
-  const t = Number(item.specifications.t || 0)
-  const l = Number(item.specifications.l || 0)
-  const p = Number(item.specifications.p || 0)
-  if (!t || !l || !p) return 0
-  const volumePerPcs = (t * l * p) / 1_000_000_000
-  const qty = totalQty(stocksFiltered || [])
-  return volumePerPcs * qty
+  // Hitung total qty dari stok
+  const totalQtyPcs = stocks?.reduce((acc, s) => acc + (parseFloat(s.qty_pcs) || 0), 0) ?? 0
+
+  // Ambil m3_per_pcs dari specifications
+  const spec = item.specifications
+  let m3PerPcs = 0
+
+  if (spec?.m3_per_pcs) {
+    // Data dari Excel upload — sudah ada m3_per_pcs
+    m3PerPcs = parseFloat(spec.m3_per_pcs) || 0
+  } else if (spec?.t && spec?.l && spec?.p) {
+    // Data dari quick store — hitung manual dari dimensi mm
+    m3PerPcs = (parseFloat(spec.t) * parseFloat(spec.l) * parseFloat(spec.p)) / 1_000_000_000
+  } else if (item.volume_m3) {
+    // Fallback ke volume_m3 di item
+    m3PerPcs = parseFloat(item.volume_m3) || 0
+  }
+
+  return totalQtyPcs * m3PerPcs
 }
 
 const openDetail = (item) => {

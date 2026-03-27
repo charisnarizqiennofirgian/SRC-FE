@@ -17,7 +17,7 @@
 import TabelCetakOperasional from './TabelCetakOperasional.vue'
 import FooterOperasional from './FooterOperasional.vue'
 
-const props = defineProps(['details', 'po'])
+defineProps(['details', 'po'])
 
 const extractUsername = (address) => {
   if (!address) return ''
