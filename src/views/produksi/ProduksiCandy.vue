@@ -42,7 +42,7 @@
               </div>
             </div>
 
-            <div class="form-grid-2col">
+            <div class="form-grid-3col">
               <div class="form-group-modern">
                 <label class="form-label-modern">
                   Tanggal Proses <span class="required-star">*</span>
@@ -53,6 +53,31 @@
                 </div>
               </div>
 
+              <div class="form-group-modern">
+                <label class="form-label-modern">
+                  Estimasi Selesai
+                </label>
+                <div class="input-wrapper-icon">
+                  <span class="input-icon">🏁</span>
+                  <input v-model="form.estimated_finish_date" type="date" class="form-input-modern" />
+                </div>
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">Catatan</label>
+                <div class="input-wrapper-icon">
+                  <span class="input-icon">📝</span>
+                  <input
+                    v-model="form.notes"
+                    type="text"
+                    class="form-input-modern"
+                    placeholder="Catatan proses oven..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-grid-2col" style="margin-top:1.25rem;">
               <div class="form-group-modern">
                 <label class="form-label-modern">
                   Production Order <span class="required-star">*</span>
@@ -72,55 +97,49 @@
                   </select>
                   <span class="select-arrow">▼</span>
                 </div>
-                <!-- RINGKASAN KEBUTUHAN PO (SEPERTI SAWMILL) -->
-                <div v-if="poTargets.length" class="po-hint-box">
-                  <div class="po-hint-header">
-                    <div class="po-hint-title-wrap">
-                      <span class="po-hint-icon">📌</span>
-                      <div>
-                        <div class="po-hint-title">Ringkasan Kebutuhan PO</div>
-                        <div class="po-hint-sub">
-                          {{ poInfo.buyer_name || 'Tanpa buyer' }} •
-                          {{ poInfo.so_number || 'Tanpa SO' }}
-                        </div>
-                      </div>
-                    </div>
-                    <div class="po-hint-badge">{{ poTargets.length }} item</div>
-                  </div>
+              </div>
 
-                  <div class="po-hint-list-wrapper">
-                    <table class="po-hint-table">
-                      <thead>
-                        <tr>
-                          <th>Item</th>
-                          <th class="col-qty">Qty</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="t in poTargets" :key="t.item_id">
-                          <td class="cell-name">
-                            {{ t.name || t.code || 'Item #' + t.item_id }}
-                          </td>
-                          <td class="cell-qty">{{ parseInt(t.qty_planned) }} unit</td>
-                        </tr>
-                      </tbody>
-                    </table>
+              <div class="form-group-modern">
+                <label class="form-label-modern">&nbsp;</label>
+                <div v-if="form.ref_po_id && poInfo.buyer_name" class="po-selected-info">
+                  <span class="po-info-icon">👤</span>
+                  <div>
+                    <div class="po-info-buyer">{{ poInfo.buyer_name }}</div>
+                    <div class="po-info-so">{{ poInfo.so_number }}</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="form-group-modern">
-              <label class="form-label-modern">Catatan</label>
-              <div class="input-wrapper-icon">
-                <span class="input-icon">📝</span>
-                <input
-                  v-model="form.notes"
-                  type="text"
-                  class="form-input-modern"
-                  placeholder="Contoh: Oven batch #1, Kiln A"
-                />
+            <!-- Ringkasan kebutuhan PO -->
+            <div v-if="poTargets.length" class="po-hint-box" style="margin-top:1rem;">
+              <div class="po-hint-header">
+                <div class="po-hint-title-wrap">
+                  <span class="po-hint-icon">📌</span>
+                  <div>
+                    <div class="po-hint-title">Ringkasan Kebutuhan PO</div>
+                    <div class="po-hint-sub">{{ poInfo.buyer_name }} • {{ poInfo.so_number }}</div>
+                  </div>
+                </div>
+                <div class="po-hint-badge">{{ poTargets.length }} item</div>
               </div>
+              <table class="po-hint-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Qty Target</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="t in poTargets" :key="t.item_id">
+                    <td>
+                      <div style="font-weight:600;">{{ t.name }}</div>
+                      <div style="font-size:0.78rem;color:#9ca3af;">{{ t.code }}</div>
+                    </td>
+                    <td>{{ Number(t.qty_planned).toLocaleString('id-ID') }} pcs</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -347,6 +366,7 @@ const { showSuccess, showError } = useNotification()
 
 const form = reactive({
   date: new Date().toISOString().slice(0, 10),
+  estimated_finish_date: '',
   notes: '',
   ref_po_id: '',
   items: [
@@ -697,6 +717,7 @@ const handleSubmit = async () => {
 
     const payload = {
       date: form.date,
+      estimated_finish_date: form.estimated_finish_date || null,
       notes: form.notes || null,
       ref_po_id: form.ref_po_id,
       items: form.items.map((item) => ({
@@ -1513,6 +1534,69 @@ onMounted(() => {
 
 .po-hint-table tbody tr:nth-child(even) {
   background: #f9fafb;
+}
+.form-grid-3col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.po-selected-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  margin-top: 4px;
+}
+.po-info-icon { font-size: 1.25rem; }
+.po-info-buyer { font-weight: 700; font-size: 0.95rem; color: #111827; }
+.po-info-so { font-size: 0.82rem; color: #6b7280; }
+
+.po-hint-box {
+  border-radius: 16px;
+  border: 1px solid #fed7aa;
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  padding: 1.25rem 1.5rem;
+}
+.po-hint-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+.po-hint-title-wrap { display: flex; align-items: center; gap: 0.75rem; }
+.po-hint-icon { font-size: 1.25rem; }
+.po-hint-title { font-weight: 700; font-size: 0.95rem; color: #92400e; }
+.po-hint-sub { font-size: 0.82rem; color: #b45309; }
+.po-hint-badge {
+  background: #f97316;
+  color: white;
+  border-radius: 999px;
+  padding: 2px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.po-hint-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.po-hint-table th {
+  padding: 6px 10px;
+  text-align: left;
+  color: #92400e;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  border-bottom: 1px solid #fed7aa;
+}
+.po-hint-table td {
+  padding: 6px 10px;
+  color: #374151;
+  border-bottom: 1px solid #ffedd5;
+}
+
+@media (max-width: 768px) {
+  .form-grid-3col { grid-template-columns: 1fr; }
 }
 </style>
 
