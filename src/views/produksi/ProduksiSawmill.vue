@@ -516,7 +516,7 @@ const fetchItems = async () => {
       apiClient.get('/materials', { params: { category_name: 'Kayu Log', per_page: 500 } }),
       apiClient.get('/materials', { params: { category_name: 'Kayu RST', per_page: 500 } }),
       apiClient.get('/warehouses'),
-      apiClient.get('/production-orders', { params: { status_not: 'completed', for_sawmill: 1, include: 'sales_order' } }),
+      apiClient.get('/production-orders', { params: { status_not: 'completed', include: 'sales_order' } }),
     ])
 
     logItems.value         = logsRes.data.data?.data || logsRes.data.data || []
