@@ -7,20 +7,21 @@
             <span class="material-icon">📦</span>
           </div>
           <div class="header-text-content">
-            <h1 class="page-title-material">Form Pemakaian Bahan</h1>
+            <h1 class="page-title-material">Pemakaian Bahan</h1>
             <p class="page-subtitle-material">
-              Catat pengambilan bahan pendukung (lem, sekrup, paku, karton box, dll) dengan tracking
-              yang akurat.
+              Catat pengambilan bahan operasional & karton box dari stok gudang.
             </p>
           </div>
         </div>
-        <div class="header-right-section">
-          <div class="process-flow-badge-material">
-            <span class="flow-icon">📋</span>
-            <span class="flow-arrow">→</span>
-            <span class="flow-icon">✅</span>
+        <div class="header-badge-section">
+          <div class="process-badge">
+            <span class="process-icon">🏭</span>
+            <span class="process-arrow">→</span>
+            <span class="process-icon">📦</span>
+            <span class="process-arrow">→</span>
+            <span class="process-icon">✅</span>
           </div>
-          <div class="flow-label-material">Pilih → Catat → Simpan</div>
+          <div class="flow-label-material">Stok → Pakai → Catat</div>
         </div>
       </div>
     </div>
@@ -596,97 +597,23 @@ onMounted(() => {
 
 <style scoped>
 .page-header-material {
-  background: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #fb923c 100%);
-  padding: 2.5rem 3rem;
-  border-radius: 24px;
-  margin-bottom: 2.5rem;
-  box-shadow: 0 12px 48px rgba(245, 158, 11, 0.35);
-}
-
-.header-content-wrapper {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 2.5rem;
-}
-
-.header-left-section {
-  display: flex;
-  align-items: center;
-  gap: 1.75rem;
-  flex: 1;
-}
-
-.icon-badge-material {
-  width: 80px;
-  height: 80px;
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  padding: 2rem 2.5rem;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 40px rgba(217, 119, 6, 0.3);
 }
-
-.material-icon {
-  font-size: 2.75rem;
-}
-
-.header-text-content {
-  flex: 1;
-}
-
-.page-title-material {
-  font-size: 2.25rem;
-  font-weight: 900;
-  color: #ffffff;
-  margin: 0 0 0.6rem 0;
-  letter-spacing: -0.6px;
-}
-
-.page-subtitle-material {
-  color: rgba(255, 255, 255, 0.95);
-  font-size: 1.05rem;
-  margin: 0;
-  font-weight: 500;
-  line-height: 1.6;
-}
-
-.header-right-section {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.6rem;
-}
-
-.process-flow-badge-material {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  padding: 0.9rem 1.75rem;
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(12px);
-  border-radius: 999px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.flow-icon {
-  font-size: 1.25rem;
-}
-
-.flow-arrow {
-  font-size: 1rem;
-  color: #fed7aa;
-  font-weight: 800;
-}
-
-.flow-label-material {
-  color: #fed7aa;
-  font-size: 0.9rem;
-  font-weight: 700;
-}
+.header-content-wrapper { display: flex; justify-content: space-between; align-items: center; gap: 2rem; }
+.header-left-section { display: flex; align-items: center; gap: 1.5rem; flex: 1; }
+.icon-badge-material { width: 72px; height: 72px; border-radius: 18px; background: rgba(255,255,255,0.25); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; }
+.material-icon { font-size: 2.5rem; }
+.page-title-material { font-size: 2rem; font-weight: 800; color: white; margin: 0 0 0.5rem; }
+.page-subtitle-material { color: rgba(255,255,255,0.95); font-size: 1rem; margin: 0; font-weight: 500; }
+.process-badge { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.25rem; background: rgba(255,255,255,0.95); border-radius: 16px; }
+.process-icon { font-size: 1.5rem; }
+.process-arrow { font-size: 1.25rem; color: #b45309; font-weight: 700; }
+.flow-label-material { color: rgba(255,255,255,0.9); font-size: 0.85rem; font-weight: 600; margin-top: 6px; text-align: center; }
+.header-badge-section { display: flex; flex-direction: column; align-items: center; }
 
 .alert-box {
   display: flex;

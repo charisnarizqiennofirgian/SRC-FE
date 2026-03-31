@@ -434,6 +434,12 @@ const router = createRouter({
       meta: { title: 'Produksi Mesin', requiresAuth: true },
     },
     {
+      path: '/admin/produksi/rustik-komponen',
+      name: 'RustikKomponenView',
+      component: () => import('../views/produksi/RustikKomponenView.vue'),
+      meta: { title: 'Rustik Komponen', requiresAuth: true },
+    },
+    {
       path: '/admin/produksi/assembling',
       name: 'AssemblingView',
       component: () => import('../views/produksi/AssemblingView.vue'),
@@ -456,6 +462,12 @@ const router = createRouter({
       name: 'FinishingView',
       component: FinishingView,
       meta: { title: 'Finishing', requiresAuth: true },
+    },
+    {
+      path: '/admin/produksi/qc-final',
+      name: 'QcFinalView',
+      component: () => import('../views/produksi/QcFinalView.vue'),
+      meta: { title: 'QC Final', requiresAuth: true },
     },
     {
       path: '/admin/produksi/packing',

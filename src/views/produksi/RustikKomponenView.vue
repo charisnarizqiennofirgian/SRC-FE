@@ -1,16 +1,16 @@
 <template>
   <DashboardLayout>
     <!-- HEADER -->
-    <div class="page-header-assembling">
+    <div class="page-header-ruskomp">
       <div class="header-content-wrapper">
         <div class="header-left-section">
-          <div class="icon-badge-assembling">
-            <span class="assembling-icon">🔧</span>
+          <div class="icon-badge-ruskomp">
+            <span class="ruskomp-icon">🪵</span>
           </div>
           <div class="header-text-content">
-            <h1 class="page-title-assembling">Produksi Assembling</h1>
-            <p class="page-subtitle-assembling">
-              Sub Assembling & Rakit komponen menjadi produk setengah jadi.
+            <h1 class="page-title-ruskomp">Rustik Komponen</h1>
+            <p class="page-subtitle-ruskomp">
+              Proses semprot/rustik komponen dari Gudang Mesin sebelum lanjut ke Finishing atau Assembling.
             </p>
           </div>
         </div>
@@ -18,58 +18,32 @@
           <div class="process-badge">
             <span class="process-icon">🔩</span>
             <span class="process-arrow">→</span>
-            <span class="process-icon">🔧</span>
+            <span class="process-icon">🪵</span>
             <span class="process-arrow">→</span>
-            <span class="process-icon">📦</span>
+            <span class="process-icon">🎨</span>
           </div>
-          <div class="flow-label-assembling">Komponen → Assembling → Setengah Jadi</div>
+          <div class="flow-label-ruskomp">Mesin → Rustik Komponen → Finishing/Assembling</div>
         </div>
       </div>
     </div>
 
-    <div class="content-card-assembling">
-      <div class="card-body-assembling">
+    <div class="content-card-ruskomp">
+      <div class="card-body-ruskomp">
         <form @submit.prevent="handleSubmit" @keydown.enter.prevent>
 
           <!-- SECTION 1: INFO UMUM -->
           <div class="form-section-modern">
-            <div class="section-header section-header-assembling">
+            <div class="section-header section-header-ruskomp">
               <div class="section-icon-badge">
                 <span class="section-icon">📅</span>
               </div>
               <div class="section-title-group">
                 <h3 class="section-title">Informasi Umum</h3>
-                <p class="section-subtitle">Tanggal, jenis proses, PO, dan catatan</p>
+                <p class="section-subtitle">Tanggal, PO, dan catatan proses</p>
               </div>
             </div>
 
-            <!-- PILIH JENIS PROSES -->
-            <div class="process-type-toggle">
-              <button
-                type="button"
-                :class="['process-type-btn', form.process_type === 'sub_assembling' ? 'active' : '']"
-                @click="form.process_type = 'sub_assembling'"
-              >
-                <span class="process-type-icon">🔩</span>
-                <div>
-                  <div class="process-type-label">Sub Assembling</div>
-                  <div class="process-type-desc">Rangkai sebagian komponen</div>
-                </div>
-              </button>
-              <button
-                type="button"
-                :class="['process-type-btn', form.process_type === 'rakit' ? 'active' : '']"
-                @click="form.process_type = 'rakit'"
-              >
-                <span class="process-type-icon">🔧</span>
-                <div>
-                  <div class="process-type-label">Rakit</div>
-                  <div class="process-type-desc">Rakit jadi produk setengah jadi</div>
-                </div>
-              </button>
-            </div>
-
-            <div class="form-grid-3col" style="margin-top:1.25rem;">
+            <div class="form-grid-3col">
               <div class="form-group-modern">
                 <label class="form-label-modern">
                   Tanggal <span class="required-star">*</span>
@@ -105,7 +79,7 @@
                     v-model="form.notes"
                     type="text"
                     class="form-input-modern"
-                    placeholder="Catatan proses assembling..."
+                    placeholder="Catatan proses rustik komponen..."
                   />
                 </div>
               </div>
@@ -149,23 +123,23 @@
             </div>
           </div>
 
-          <!-- SECTION 2: INPUT KOMPONEN -->
+          <!-- SECTION 2: INPUT KOMPONEN DARI GUDANG MESIN -->
           <div class="form-section-modern">
-            <div class="section-header section-header-assembling">
+            <div class="section-header section-header-ruskomp">
               <div class="section-icon-badge section-badge-input">
                 <span class="section-icon">🔩</span>
               </div>
               <div class="section-title-group">
-                <h3 class="section-title">Komponen yang Dipakai</h3>
+                <h3 class="section-title">Komponen Masuk Rustik</h3>
                 <p class="section-subtitle">
-                  Pilih dari Gudang Mesin, Rustik Komponen, atau Assembling
+                  Pilih dari stok Gudang Mesin
                   <span v-if="loadingItems" class="loading-inline">⏳ memuat...</span>
                 </p>
               </div>
             </div>
 
-            <div v-if="sourceItems.length === 0 && !loadingItems" class="empty-hint">
-              📭 Tidak ada stok di Gudang Mesin, Rustik Komponen, maupun Assembling
+            <div v-if="mesinItems.length === 0 && !loadingItems" class="empty-hint">
+              📭 Tidak ada stok di Gudang Mesin
             </div>
 
             <template v-else>
@@ -189,16 +163,16 @@
                       Item Komponen <span class="required-star">*</span>
                     </label>
                     <vue-select
-                      v-model="row.key"
-                      :options="sourceItemsForSelect"
+                      v-model="row.item_id"
+                      :options="mesinItemsForSelect"
+                      :reduce="(o) => o.item_id"
                       label="label"
-                      placeholder="🔍 Pilih komponen..."
+                      placeholder="🔍 Pilih komponen dari Gudang Mesin..."
                       class="vue-select-item"
                       @option:selected="(opt) => onItemSelected(index, opt)"
                     >
                       <template #option="o">
                         <div class="item-option">
-                          <span class="item-option-badge">{{ o.warehouse_code }}</span>
                           <span class="item-option-code">{{ o.item_code }}</span>
                           <span class="item-option-name">{{ o.item_name }}</span>
                           <span class="item-option-stock">Stok: {{ o.qty_available }} pcs</span>
@@ -223,16 +197,13 @@
                         :max="row.max_qty"
                         class="form-input-modern"
                         placeholder="0"
+                        @input="syncOutput(index)"
                       />
                     </div>
                     <p v-if="row.qty > row.max_qty && row.max_qty > 0" class="qty-warning">
                       ⚠️ Melebihi stok tersedia
                     </p>
                   </div>
-                </div>
-                <!-- Info gudang sumber -->
-                <div v-if="row.warehouse_name" class="source-info">
-                  📦 Sumber: <strong>{{ row.warehouse_name }}</strong>
                 </div>
               </div>
 
@@ -244,13 +215,13 @@
 
           <!-- SECTION 3: OUTPUT -->
           <div class="form-section-modern">
-            <div class="section-header section-header-assembling">
+            <div class="section-header section-header-ruskomp">
               <div class="section-icon-badge section-badge-output">
-                <span class="section-icon">📦</span>
+                <span class="section-icon">🪵</span>
               </div>
               <div class="section-title-group">
-                <h3 class="section-title">Hasil {{ form.process_type === 'sub_assembling' ? 'Sub Assembling' : 'Rakit' }}</h3>
-                <p class="section-subtitle">Hasil → masuk Gudang Assembling</p>
+                <h3 class="section-title">Hasil Rustik Komponen</h3>
+                <p class="section-subtitle">Komponen hasil rustik → masuk Gudang Rustik Komponen</p>
               </div>
             </div>
 
@@ -271,20 +242,20 @@
               <div class="form-grid-2col">
                 <div class="form-group-modern">
                   <label class="form-label-modern">
-                    Item Output <span class="required-star">*</span>
+                    Item Komponen <span class="required-star">*</span>
                   </label>
                   <vue-select
                     v-model="row.item_id"
-                    :options="allItemsForSelect"
-                    :reduce="(o) => o.id"
+                    :options="mesinItemsForSelect"
+                    :reduce="(o) => o.item_id"
                     label="label"
-                    placeholder="🔍 Cari item output..."
+                    placeholder="🔍 Pilih komponen..."
                     class="vue-select-item"
                   >
                     <template #option="o">
                       <div class="item-option">
-                        <span class="item-option-code">{{ o.code }}</span>
-                        <span class="item-option-name">{{ o.name }}</span>
+                        <span class="item-option-code">{{ o.item_code }}</span>
+                        <span class="item-option-name">{{ o.item_name }}</span>
                       </div>
                     </template>
                   </vue-select>
@@ -312,7 +283,7 @@
 
           <!-- SECTION 4: REJECT -->
           <div class="form-section-modern">
-            <div class="section-header section-header-assembling">
+            <div class="section-header section-header-ruskomp">
               <div class="section-icon-badge section-badge-reject">
                 <span class="section-icon">⚠️</span>
               </div>
@@ -321,7 +292,7 @@
                   Reject
                   <span class="optional-tag">Opsional</span>
                 </h3>
-                <p class="section-subtitle">Catat item reject beserta keterangannya</p>
+                <p class="section-subtitle">Catat komponen reject beserta keterangannya</p>
               </div>
             </div>
 
@@ -344,8 +315,8 @@
                   <label class="form-label-modern">Item Reject <span class="required-star">*</span></label>
                   <vue-select
                     v-model="row.item_id"
-                    :options="allItemsForSelect"
-                    :reduce="(o) => o.id"
+                    :options="mesinItemsForSelect"
+                    :reduce="(o) => o.item_id"
                     label="label"
                     placeholder="🔍 Cari item..."
                     class="vue-select-item"
@@ -398,9 +369,7 @@
             </button>
             <button type="submit" class="btn-action btn-submit-modern" :disabled="isSubmitting">
               <span class="btn-icon">💾</span>
-              <span class="btn-text">
-                {{ isSubmitting ? 'Menyimpan...' : `Simpan ${form.process_type === 'sub_assembling' ? 'Sub Assembling' : 'Rakit'}` }}
-              </span>
+              <span class="btn-text">{{ isSubmitting ? 'Menyimpan...' : 'Simpan Rustik Komponen' }}</span>
             </button>
           </div>
 
@@ -425,57 +394,38 @@ const isSubmitting = ref(false)
 const loadingItems = ref(false)
 
 const productionOrders = ref([])
-const sourceItems      = ref([])
-const allItems         = ref([])
+const mesinItems       = ref([])
 const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
 
 const form = reactive({
-  date:         new Date().toISOString().slice(0, 10),
-  process_type: 'sub_assembling',
-  ref_po_id:    null,
-  notes:        '',
-  inputs:  [{ local_id: Date.now(), key: null, item_id: null, warehouse_id: null, qty: null, max_qty: 0, warehouse_name: '' }],
+  date:      new Date().toISOString().slice(0, 10),
+  ref_po_id: null,
+  notes:     '',
+  inputs:  [{ local_id: Date.now(),     item_id: null, qty: null, max_qty: 0 }],
   outputs: [{ local_id: Date.now() + 1, item_id: null, qty: null }],
   rejects: [],
 })
 
-// === COMPUTED ===
-const sourceItemsForSelect = computed(() =>
-  sourceItems.value.map((i) => ({
-    key:            `${i.item_id}-${i.warehouse_id}`,
-    item_id:        i.item_id,
-    item_code:      i.item_code,
-    item_name:      i.item_name,
-    qty_available:  i.qty_available,
-    warehouse_id:   i.warehouse_id,
-    warehouse_code: i.warehouse_code,
-    warehouse_name: i.warehouse_name,
-    label:          `[${i.warehouse_code}] ${i.item_code} - ${i.item_name}`,
+const mesinItemsForSelect = computed(() =>
+  mesinItems.value.map((i) => ({
+    item_id:       i.item_id,
+    item_code:     i.item_code,
+    item_name:     i.item_name,
+    qty_available: i.qty_available,
+    label:         `${i.item_code} - ${i.item_name}`,
   }))
 )
 
-const allItemsForSelect = computed(() =>
-  allItems.value.map((i) => ({
-    id:    i.id,
-    code:  i.code,
-    name:  i.name,
-    label: `${i.code} - ${i.name}`,
-  }))
-)
-
-// === FETCH ===
 const fetchInitialData = async () => {
   loadingItems.value = true
   try {
-    const [poRes, sourceRes, itemRes] = await Promise.all([
-      apiClient.get('/assembling-produksi/available-pos'),
-      apiClient.get('/assembling-produksi/source-items'),
-      apiClient.get('/produksi/moulding/komponen-items'),
+    const [poRes, itemRes] = await Promise.all([
+      apiClient.get('/rustik-komponen/available-pos'),
+      apiClient.get('/rustik-komponen/mesin-items'),
     ])
-    productionOrders.value = poRes.data.data    || []
-    sourceItems.value      = sourceRes.data.data || []
-    allItems.value         = itemRes.data.data   || []
+    productionOrders.value = poRes.data.data  || []
+    mesinItems.value       = itemRes.data.data || []
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil data awal')
@@ -505,38 +455,32 @@ const handlePoDeselect = () => {
 }
 
 const onItemSelected = (index, opt) => {
-  form.inputs[index].item_id       = opt?.item_id       ?? null
-  form.inputs[index].warehouse_id  = opt?.warehouse_id  ?? null
-  form.inputs[index].warehouse_name = opt?.warehouse_name ?? ''
-  form.inputs[index].max_qty       = opt?.qty_available ?? 0
-
-  // Auto sync output item
-  if (form.outputs[index] && !form.outputs[index].item_id) {
+  form.inputs[index].max_qty = opt?.qty_available ?? 0
+  // Auto sync output
+  if (form.outputs[index]) {
     form.outputs[index].item_id = opt?.item_id ?? null
   }
 }
 
-// === INPUT ===
-const addInput = () => form.inputs.push({
-  local_id: Date.now() + Math.random(),
-  key: null, item_id: null, warehouse_id: null,
-  qty: null, max_qty: 0, warehouse_name: ''
-})
+const syncOutput = (index) => {
+  if (form.outputs[index]) {
+    form.outputs[index].qty = form.inputs[index].qty
+  }
+}
+
+const addInput    = () => form.inputs.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, max_qty: 0 })
 const removeInput = (i) => form.inputs.splice(i, 1)
 
-// === OUTPUT ===
 const addOutput    = () => form.outputs.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null })
 const removeOutput = (i) => form.outputs.splice(i, 1)
 
-// === REJECT ===
 const addReject    = () => form.rejects.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, keterangan: '' })
 const removeReject = (i) => form.rejects.splice(i, 1)
 
-// === SUBMIT ===
 const handleSubmit = async () => {
   if (!form.ref_po_id) { showError('Validasi', 'Production Order wajib dipilih'); return }
 
-  const validInputs = form.inputs.filter((i) => i.item_id && i.warehouse_id && i.qty > 0)
+  const validInputs = form.inputs.filter((i) => i.item_id && i.qty > 0)
   if (validInputs.length === 0) { showError('Validasi', 'Minimal satu input komponen wajib diisi'); return }
 
   for (let i = 0; i < validInputs.length; i++) {
@@ -554,49 +498,35 @@ const handleSubmit = async () => {
   isSubmitting.value = true
   try {
     const payload = {
-      date:         form.date,
-      process_type: form.process_type,
-      ref_po_id:    Number(form.ref_po_id),
-      notes:        form.notes || null,
-      inputs:  validInputs.map((i) => ({
-        item_id:      Number(i.item_id),
-        warehouse_id: Number(i.warehouse_id),
-        qty:          Number(i.qty),
-      })),
-      outputs: validOutputs.map((o) => ({
-        item_id: Number(o.item_id),
-        qty:     Number(o.qty),
-      })),
-      rejects: validRejects.map((r) => ({
+      date:      form.date,
+      ref_po_id: Number(form.ref_po_id),
+      notes:     form.notes || null,
+      inputs:    validInputs.map((i)  => ({ item_id: Number(i.item_id), qty: Number(i.qty) })),
+      outputs:   validOutputs.map((o) => ({ item_id: Number(o.item_id), qty: Number(o.qty) })),
+      rejects:   validRejects.map((r) => ({
         item_id:    Number(r.item_id),
         qty:        Number(r.qty),
         keterangan: r.keterangan || null,
       })),
     }
 
-    await apiClient.post('/assembling-produksi/store', payload)
-    showSuccess('Sukses', `${form.process_type === 'sub_assembling' ? 'Sub Assembling' : 'Rakit'} berhasil dicatat`)
+    await apiClient.post('/rustik-komponen/store', payload)
+    showSuccess('Sukses', 'Proses Rustik Komponen berhasil dicatat')
 
-    // Reset form tapi pertahankan process_type
-    const currentType  = form.process_type
-    form.ref_po_id     = null
-    form.notes         = ''
-    form.process_type  = currentType
-    form.inputs        = [{ local_id: Date.now(), key: null, item_id: null, warehouse_id: null, qty: null, max_qty: 0, warehouse_name: '' }]
-    form.outputs       = [{ local_id: Date.now() + 1, item_id: null, qty: null }]
-    form.rejects       = []
-    poInfo.value       = { buyer_name: null, so_number: null }
-    poTargets.value    = []
-
-    // Refresh source items
-    const res = await apiClient.get('/assembling-produksi/source-items')
-    sourceItems.value = res.data.data || []
+    // Reset form
+    form.ref_po_id = null
+    form.notes     = ''
+    form.inputs    = [{ local_id: Date.now(), item_id: null, qty: null, max_qty: 0 }]
+    form.outputs   = [{ local_id: Date.now() + 1, item_id: null, qty: null }]
+    form.rejects   = []
+    poInfo.value   = { buyer_name: null, so_number: null }
+    poTargets.value = []
 
   } catch (error) {
     const message =
       error.response?.data?.message ||
       (error.response?.data?.errors && JSON.stringify(error.response.data.errors)) ||
-      'Gagal menyimpan assembling'
+      'Gagal menyimpan rustik komponen'
     showError('Gagal', message)
   } finally {
     isSubmitting.value = false
@@ -607,44 +537,36 @@ onMounted(fetchInitialData)
 </script>
 
 <style scoped>
-.page-header-assembling {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+.page-header-ruskomp {
+  background: linear-gradient(135deg, #92400e 0%, #78350f 100%);
   padding: 2rem 2.5rem; border-radius: 20px; margin-bottom: 2rem;
-  box-shadow: 0 10px 40px rgba(124,58,237,0.3);
+  box-shadow: 0 10px 40px rgba(146,64,14,0.3);
 }
 .header-content-wrapper { display: flex; justify-content: space-between; align-items: center; gap: 2rem; }
 .header-left-section { display: flex; align-items: center; gap: 1.5rem; flex: 1; }
-.icon-badge-assembling { width: 72px; height: 72px; border-radius: 18px; background: rgba(255,255,255,0.25); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; }
-.assembling-icon { font-size: 2.5rem; }
-.page-title-assembling { font-size: 2rem; font-weight: 800; color: white; margin: 0 0 0.5rem; }
-.page-subtitle-assembling { color: rgba(255,255,255,0.95); font-size: 1rem; margin: 0; font-weight: 500; }
+.icon-badge-ruskomp { width: 72px; height: 72px; border-radius: 18px; background: rgba(255,255,255,0.25); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; }
+.ruskomp-icon { font-size: 2.5rem; }
+.page-title-ruskomp { font-size: 2rem; font-weight: 800; color: white; margin: 0 0 0.5rem; }
+.page-subtitle-ruskomp { color: rgba(255,255,255,0.95); font-size: 1rem; margin: 0; font-weight: 500; }
 .process-badge { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.25rem; background: rgba(255,255,255,0.95); border-radius: 16px; }
 .process-icon { font-size: 1.5rem; }
-.process-arrow { font-size: 1.25rem; color: #6d28d9; font-weight: 700; }
-.flow-label-assembling { color: rgba(255,255,255,0.9); font-size: 0.85rem; font-weight: 600; margin-top: 6px; text-align: center; }
+.process-arrow { font-size: 1.25rem; color: #78350f; font-weight: 700; }
+.flow-label-ruskomp { color: rgba(255,255,255,0.9); font-size: 0.85rem; font-weight: 600; margin-top: 6px; text-align: center; }
 
-.content-card-assembling { background: white; border-radius: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border: 1px solid #f0f2f5; overflow: hidden; }
-.card-body-assembling { padding: 2.5rem; }
+.content-card-ruskomp { background: white; border-radius: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border: 1px solid #f0f2f5; overflow: hidden; }
+.card-body-ruskomp { padding: 2.5rem; }
 
 .form-section-modern { margin-bottom: 2.5rem; padding-bottom: 2.5rem; border-bottom: 3px solid #e5e7eb; }
 .form-section-modern:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
 
-.section-header { display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.75rem; padding: 1.25rem 1.5rem; background: linear-gradient(135deg, #f9fafb, #f5f3ff); border-radius: 14px; border-left: 5px solid #7c3aed; }
-.section-icon-badge { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #7c3aed, #6d28d9); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.section-header { display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.75rem; padding: 1.25rem 1.5rem; background: linear-gradient(135deg, #f9fafb, #fef3c7); border-radius: 14px; border-left: 5px solid #92400e; }
+.section-icon-badge { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #92400e, #78350f); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .section-badge-input  { background: linear-gradient(135deg, #0891b2, #0e7490) !important; }
-.section-badge-output { background: linear-gradient(135deg, #16a34a, #15803d) !important; }
+.section-badge-output { background: linear-gradient(135deg, #92400e, #78350f) !important; }
 .section-badge-reject { background: linear-gradient(135deg, #dc2626, #b91c1c) !important; }
 .section-icon { font-size: 1.25rem; }
 .section-title { font-size: 1.1rem; font-weight: 700; color: #111827; margin: 0 0 0.2rem; display: flex; align-items: center; gap: 0.5rem; }
 .section-subtitle { font-size: 0.875rem; color: #6b7280; margin: 0; }
-
-.process-type-toggle { display: flex; gap: 1rem; margin-bottom: 0.5rem; }
-.process-type-btn { flex: 1; display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.5rem; border: 2px solid #e5e7eb; border-radius: 14px; background: white; cursor: pointer; transition: all 0.2s; text-align: left; }
-.process-type-btn:hover { border-color: #7c3aed; }
-.process-type-btn.active { border-color: #7c3aed; background: #f5f3ff; }
-.process-type-icon { font-size: 2rem; }
-.process-type-label { font-weight: 700; font-size: 1rem; color: #111827; }
-.process-type-desc { font-size: 0.82rem; color: #6b7280; margin-top: 2px; }
 
 .form-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
 .form-grid-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
@@ -654,71 +576,67 @@ onMounted(fetchInitialData)
 .input-wrapper-icon { position: relative; display: flex; align-items: center; }
 .input-icon { position: absolute; left: 1.125rem; font-size: 1rem; z-index: 1; pointer-events: none; }
 .form-input-modern { width: 100%; padding: 0.9rem 1.25rem 0.9rem 3.25rem; border: 2.5px solid #e5e7eb; border-radius: 12px; font-size: 1rem; font-weight: 500; transition: all 0.3s ease; background: white; }
-.form-input-modern:focus { outline: none; border-color: #7c3aed; box-shadow: 0 0 0 4px rgba(124,58,237,0.15); }
+.form-input-modern:focus { outline: none; border-color: #92400e; box-shadow: 0 0 0 4px rgba(146,64,14,0.15); }
 
-.po-selected-info { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 10px; margin-bottom: 1rem; }
+.po-selected-info { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 10px; margin-bottom: 1rem; }
 .po-info-icon { font-size: 1.25rem; }
 .po-info-buyer { font-weight: 700; font-size: 0.95rem; color: #111827; }
 .po-info-so { font-size: 0.82rem; color: #6b7280; }
 
-.po-hint-box { border-radius: 16px; border: 1px solid #ddd6fe; background: linear-gradient(135deg, #f5f3ff, #ede9fe); padding: 1.25rem 1.5rem; }
+.po-hint-box { border-radius: 16px; border: 1px solid #fde68a; background: linear-gradient(135deg, #fffbeb, #fef3c7); padding: 1.25rem 1.5rem; }
 .po-hint-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
 .po-hint-title-wrap { display: flex; align-items: center; gap: 0.75rem; }
 .po-hint-icon { font-size: 1.25rem; }
-.po-hint-title { font-weight: 700; font-size: 0.95rem; color: #5b21b6; }
-.po-hint-sub { font-size: 0.82rem; color: #7c3aed; }
-.po-hint-badge { background: #7c3aed; color: white; border-radius: 999px; padding: 2px 12px; font-size: 0.8rem; font-weight: 700; }
+.po-hint-title { font-weight: 700; font-size: 0.95rem; color: #92400e; }
+.po-hint-sub { font-size: 0.82rem; color: #b45309; }
+.po-hint-badge { background: #92400e; color: white; border-radius: 999px; padding: 2px 12px; font-size: 0.8rem; font-weight: 700; }
 .po-hint-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-.po-hint-table th { padding: 6px 10px; text-align: left; color: #5b21b6; font-size: 0.78rem; text-transform: uppercase; border-bottom: 1px solid #ddd6fe; }
-.po-hint-table td { padding: 6px 10px; color: #374151; border-bottom: 1px solid #ede9fe; }
+.po-hint-table th { padding: 6px 10px; text-align: left; color: #92400e; font-size: 0.78rem; text-transform: uppercase; border-bottom: 1px solid #fde68a; }
+.po-hint-table td { padding: 6px 10px; color: #374151; border-bottom: 1px solid #fef3c7; }
 
 .item-row-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
-.item-row-card--output { border-color: #bbf7d0; background: #f0fdf4; }
+.item-row-card--output { border-color: #fde68a; background: #fffbeb; }
 .item-row-card--reject { border-color: #fecaca; background: #fff5f5; }
 .item-row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 .item-row-number { font-size: 0.82rem; font-weight: 700; color: #6b7280; text-transform: uppercase; }
 .btn-remove-row { background: #fee2e2; color: #ef4444; border: none; border-radius: 6px; padding: 3px 10px; font-size: 0.82rem; cursor: pointer; font-weight: 700; }
 
-.stock-hint { margin-left: 8px; font-size: 0.78rem; color: #7c3aed; font-weight: 600; }
+.stock-hint { margin-left: 8px; font-size: 0.78rem; color: #92400e; font-weight: 600; }
 .qty-warning { margin-top: 4px; font-size: 0.82rem; color: #ef4444; }
 .loading-inline { font-size: 0.82rem; color: #6b7280; margin-left: 8px; }
-.source-info { margin-top: 6px; font-size: 0.82rem; color: #6b7280; padding: 4px 8px; background: #f3f4f6; border-radius: 6px; display: inline-block; }
-
-.item-option { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; }
-.item-option-badge { display: inline-block; padding: 1px 6px; background: #7c3aed; color: white; border-radius: 4px; font-size: 0.72rem; font-weight: 700; width: fit-content; }
-.item-option-code { font-size: 0.82rem; font-weight: 700; color: #374151; }
-.item-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
-.item-option-stock { font-size: 0.78rem; color: #6b7280; }
 
 .btn-add-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; margin-top: 0.5rem; border: 2px dashed; }
-.btn-add-input  { background: #f5f3ff; border-color: #7c3aed; color: #6d28d9; }
-.btn-add-input:hover { background: #ede9fe; }
-.btn-add-output { background: #f0fdf4; border-color: #16a34a; color: #15803d; }
-.btn-add-output:hover { background: #dcfce7; }
+.btn-add-input  { background: #ecfeff; border-color: #0891b2; color: #0e7490; }
+.btn-add-input:hover { background: #cffafe; }
+.btn-add-output { background: #fef3c7; border-color: #92400e; color: #78350f; }
+.btn-add-output:hover { background: #fde68a; }
 .btn-add-reject { background: #fff5f5; border-color: #dc2626; color: #b91c1c; }
 .btn-add-reject:hover { background: #fecaca; }
 
 .optional-tag { display: inline-block; padding: 1px 8px; border-radius: 999px; background: #e0f2fe; color: #0369a1; font-size: 0.72rem; font-weight: 600; vertical-align: middle; }
 .empty-reject { padding: 1rem; text-align: center; color: #9ca3af; font-size: 0.9rem; }
 .empty-hint { padding: 2rem; text-align: center; color: #9ca3af; font-size: 0.95rem; background: #f9fafb; border-radius: 12px; border: 1px dashed #d1d5db; }
-.btn-link { background: none; border: none; color: #7c3aed; font-weight: 600; cursor: pointer; text-decoration: underline; font-size: 0.9rem; }
+.btn-link { background: none; border: none; color: #92400e; font-weight: 600; cursor: pointer; text-decoration: underline; font-size: 0.9rem; }
 
 .form-actions-modern { display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1.5rem; border-top: 2px solid #e5e7eb; }
 .btn-action { display: flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1.75rem; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; }
 .btn-cancel-modern { background: #f3f4f6; color: #374151; }
 .btn-cancel-modern:hover { background: #e5e7eb; }
-.btn-submit-modern { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; box-shadow: 0 4px 12px rgba(124,58,237,0.35); }
+.btn-submit-modern { background: linear-gradient(135deg, #92400e, #78350f); color: white; box-shadow: 0 4px 12px rgba(146,64,14,0.35); }
 .btn-submit-modern:hover:not(:disabled) { transform: translateY(-1px); }
 .btn-submit-modern:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .vue-select-po :deep(.vs__dropdown-toggle),
 .vue-select-item :deep(.vs__dropdown-toggle) { padding: 0.875rem 1.25rem; border: 2.5px solid #e5e7eb; border-radius: 12px; min-height: 54px; }
 .vue-select-po.vs--open :deep(.vs__dropdown-toggle),
-.vue-select-item.vs--open :deep(.vs__dropdown-toggle) { border-color: #7c3aed; box-shadow: 0 0 0 4px rgba(124,58,237,0.15); }
+.vue-select-item.vs--open :deep(.vs__dropdown-toggle) { border-color: #92400e; box-shadow: 0 0 0 4px rgba(146,64,14,0.15); }
+.item-option { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; }
+.item-option-code { font-size: 0.82rem; font-weight: 700; color: #92400e; }
+.item-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
+.item-option-stock { font-size: 0.78rem; color: #6b7280; }
 
 @media (max-width: 768px) {
   .form-grid-2col, .form-grid-3col { grid-template-columns: 1fr; }
-  .process-type-toggle { flex-direction: column; }
-  .card-body-assembling { padding: 1.25rem; }
+  .card-body-ruskomp { padding: 1.25rem; }
 }
 </style>

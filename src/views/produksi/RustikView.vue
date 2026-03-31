@@ -1,9 +1,5 @@
-✅ RUSTIK VUE - UPDATED (FULL CODE): text
 <template>
   <DashboardLayout>
-    <!-- ========================================
-         PAGE HEADER - RUSTIK THEME
-         ======================================== -->
     <div class="page-header-rustik">
       <div class="header-content-wrapper">
         <div class="header-left-section">
@@ -13,1052 +9,410 @@
           <div class="header-text-content">
             <h1 class="page-title-rustik">Proses Rustik</h1>
             <p class="page-subtitle-rustik">
-              Proses finishing rustik barang jadi dari Gudang Sanding/Assembling ke Gudang Rustik
-              dengan tracking qty yang akurat.
+              Proses rustik barang — ambil dari gudang manapun, masuk Gudang Rustik.
             </p>
           </div>
         </div>
-        <div class="header-right-section">
-          <div class="process-flow-badge-rustik">
-            <span class="flow-icon">✨</span>
-            <span class="flow-arrow">→</span>
-            <span class="flow-icon">🪵</span>
-            <span class="flow-arrow">→</span>
-            <span class="flow-icon">🎨</span>
+        <div class="header-badge-section">
+          <div class="process-badge">
+            <span class="process-icon">📦</span>
+            <span class="process-arrow">→</span>
+            <span class="process-icon">🪵</span>
+            <span class="process-arrow">→</span>
+            <span class="process-icon">✨</span>
           </div>
-          <div class="flow-label-rustik">Sanding → Rustik → Finishing</div>
+          <div class="flow-label-rustik">Gudang → Rustik → Selesai</div>
         </div>
       </div>
     </div>
 
-    <!-- ========================================
-         FORM CARD
-         ======================================== -->
     <div class="content-card-rustik">
       <div class="card-body-rustik">
-        <!-- SECTION 1: PILIH PO -->
-        <div class="form-section-modern">
-          <div class="section-header section-header-rustik">
-            <div class="section-icon-badge rustik-po-badge">
-              <span class="section-icon">📄</span>
-            </div>
-            <div class="section-title-group">
-              <h3 class="section-title">Pilih Production Order</h3>
-              <p class="section-subtitle">
-                PO akan menampilkan stok yang tersedia di semua gudang.
-              </p>
-            </div>
-          </div>
+        <form @submit.prevent="handleSubmit" @keydown.enter.prevent>
 
-          <div class="form-group-modern">
-            <label class="form-label-modern">
-              Production Order <span class="required-star">*</span>
-            </label>
-            <div class="select-wrapper-modern">
-              <span class="select-icon">📄</span>
-              <select v-model="selectedPoId" class="form-select-modern" @change="onPoChange">
-                <option value="">-- Pilih PO --</option>
-                <option v-for="po in poList" :key="po.id" :value="po.id">
-                  {{ po.label }}
-                </option>
-              </select>
-              <span class="select-arrow">▼</span>
+          <!-- SECTION 1: INFO UMUM -->
+          <div class="form-section-modern">
+            <div class="section-header section-header-rustik">
+              <div class="section-icon-badge">
+                <span class="section-icon">📅</span>
+              </div>
+              <div class="section-title-group">
+                <h3 class="section-title">Informasi Umum</h3>
+                <p class="section-subtitle">Tanggal, PO, gudang sumber, dan catatan</p>
+              </div>
             </div>
-          </div>
 
-          <!-- RINGKASAN KEBUTUHAN PO -->
-          <div v-if="poTargets.length" class="po-hint-box-rustik">
-            <div class="po-hint-header">
-              <div class="po-hint-title-wrap">
-                <span class="po-hint-icon">📌</span>
-                <div>
-                  <div class="po-hint-title">Ringkasan Kebutuhan PO</div>
-                  <div class="po-hint-sub">
-                    {{ poInfo.buyer_name || 'Tanpa buyer' }} •
-                    {{ poInfo.so_number || 'Tanpa SO' }}
-                  </div>
+            <div class="form-grid-3col">
+              <div class="form-group-modern">
+                <label class="form-label-modern">
+                  Tanggal <span class="required-star">*</span>
+                </label>
+                <div class="input-wrapper-icon">
+                  <span class="input-icon">📅</span>
+                  <input v-model="form.date" type="date" class="form-input-modern" required />
                 </div>
               </div>
-              <div class="po-hint-badge">{{ poTargets.length }} item</div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">
+                  Production Order <span class="required-star">*</span>
+                </label>
+                <vue-select
+                  v-model="form.ref_po_id"
+                  :options="productionOrders"
+                  :reduce="(po) => po.id"
+                  label="label"
+                  placeholder="🔍 Cari PO..."
+                  :clearable="true"
+                  class="vue-select-po"
+                  @option:selected="handlePoChange"
+                  @option:deselected="handlePoDeselect"
+                />
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">Catatan</label>
+                <div class="input-wrapper-icon">
+                  <span class="input-icon">📝</span>
+                  <input v-model="form.notes" type="text" class="form-input-modern" placeholder="Catatan..." />
+                </div>
+              </div>
             </div>
 
-            <div class="po-hint-list-wrapper">
-              <table class="po-hint-table">
-                <thead>
-                  <tr>
-                    <th>ITEM</th>
-                    <th class="col-qty">QTY</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="target in poTargets" :key="target.item_id">
-                    <td class="cell-name">
-                      {{
-                        target.item_name || target.name || target.code || 'Item #' + target.item_id
-                      }}
-                    </td>
-                    <td class="col-qty">{{ parseInt(target.qty_planned) }} unit</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- SECTION 2: STOK & PROSES RUSTIK -->
-        <div v-if="selectedPoId && stocks.length > 0" class="form-section-modern">
-          <div class="section-header section-header-stock">
-            <div class="section-icon-badge rustik-stock-badge">
-              <span class="section-icon">📦</span>
-            </div>
-            <div class="section-title-group">
-              <h3 class="section-title">Stok Tersedia (Semua Gudang)</h3>
-              <p class="section-subtitle">
-                Sistem akan otomatis mengambil dari gudang yang tersedia.
-              </p>
-            </div>
-          </div>
-
-          <!-- ✅ NEW: INFO STOK PER GUDANG -->
-          <div v-if="stocks.length > 0 && stocks[0].source_details" class="stock-info-card">
-            <div class="stock-info-header">
-              <span class="info-icon">📊</span>
-              <span class="info-title">Rincian Stok Per Gudang</span>
-            </div>
-            <div class="stock-info-grid">
-              <div
-                v-for="source in stocks[0].source_details"
-                :key="source.warehouse_code"
-                class="stock-info-item"
-              >
-                <div class="warehouse-name">{{ source.warehouse_name }}</div>
-                <div
-                  class="warehouse-stock"
-                  :class="{ 'stock-zero': source.stock_available === 0 }"
+            <!-- Pilih Gudang Sumber -->
+            <div class="form-group-modern">
+              <label class="form-label-modern">
+                Gudang Sumber <span class="required-star">*</span>
+              </label>
+              <div class="warehouse-toggle">
+                <button
+                  v-for="wh in sourceWarehouses"
+                  :key="wh.id"
+                  type="button"
+                  :class="['toggle-btn', form.source_warehouse_id === wh.id ? 'active' : '']"
+                  @click="selectWarehouse(wh)"
                 >
-                  {{ formatNumber(source.stock_available) }} pcs
-                </div>
+                  {{ wh.name }}
+                </button>
               </div>
             </div>
-            <div class="stock-info-total">
-              <span>Total Stok:</span>
-              <strong>{{ formatNumber(stocks[0].total_stock_available) }} pcs</strong>
-            </div>
-          </div>
 
-          <div class="stock-table-wrapper">
-            <table class="stock-table">
-              <thead>
-                <tr>
-                  <th>Produk</th>
-                  <th class="col-center">Target PO</th>
-                  <th class="col-center">Sudah Produksi</th>
-                  <th class="col-center">Total Stok</th>
-                  <th class="col-center">Selesai Rustik</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="stock in stocks" :key="stock.detail_id">
-                  <td class="cell-product">
-                    <span class="product-dot"></span>
-                    {{ stock.item_name }}
-                  </td>
-                  <td class="cell-center">{{ formatNumber(stock.qty_planned) }}</td>
-                  <td class="cell-center">{{ formatNumber(stock.qty_produced) }}</td>
-                  <td class="cell-center cell-stock-highlight">
-                    <span class="stock-badge">
-                      {{ formatNumber(stock.total_stock_available) }} Pcs
-                    </span>
-                  </td>
-                  <td class="cell-center">
-                    <input
-                      v-model.number="stock.qty_rustik"
-                      type="number"
-                      min="0"
-                      :max="stock.total_stock_available"
-                      class="qty-rustik-input"
-                      placeholder="0"
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- EMPTY STATE -->
-        <div v-else-if="selectedPoId && stocks.length === 0" class="empty-state-card">
-          <div class="empty-icon">⚠️</div>
-          <div class="empty-title">Tidak Ada Stok</div>
-          <div class="empty-message">Tidak ada stok tersedia untuk PO ini.</div>
-        </div>
-
-        <!-- SECTION 3: RINGKASAN & AKSI -->
-        <div
-          v-if="selectedPoId && stocks.length > 0"
-          class="form-section-modern rustik-footer-section"
-        >
-          <div class="rustik-summary-card">
-            <div class="summary-header">
-              <span class="summary-icon">📊</span>
+            <!-- Info PO -->
+            <div v-if="poInfo.buyer_name" class="po-selected-info">
+              <span class="po-info-icon">👤</span>
               <div>
-                <div class="summary-title">Ringkasan Rustik</div>
-                <div class="summary-subtitle">
-                  Total {{ totalItemsToProcess }} item siap untuk proses rustik
-                </div>
+                <div class="po-info-buyer">{{ poInfo.buyer_name }}</div>
+                <div class="po-info-so">{{ poInfo.so_number }}</div>
               </div>
             </div>
-            <div class="summary-grid">
-              <div class="summary-block">
-                <p class="summary-label">Total Item</p>
-                <p class="summary-value">{{ stocks.length }}</p>
+          </div>
+
+          <!-- SECTION 2: ITEM -->
+          <div class="form-section-modern">
+            <div class="section-header section-header-rustik">
+              <div class="section-icon-badge section-badge-item">
+                <span class="section-icon">📦</span>
               </div>
-              <div class="summary-block">
-                <p class="summary-label">Akan Diproses</p>
-                <p class="summary-value">{{ totalItemsToProcess }}</p>
-              </div>
-              <div class="summary-block">
-                <p class="summary-label">Total Qty Rustik</p>
-                <p class="summary-value">{{ totalQtyRustik }}</p>
-              </div>
-              <div class="summary-block">
-                <p class="summary-label">Status</p>
-                <p
-                  class="summary-value"
-                  :class="{ 'text-green-600': canSubmit, 'text-gray-400': !canSubmit }"
-                >
-                  {{ canSubmit ? 'Siap Simpan' : 'Belum Ada Input' }}
+              <div class="section-title-group">
+                <h3 class="section-title">Item yang Diproses</h3>
+                <p class="section-subtitle">
+                  Stok dari <strong>{{ selectedWarehouseName || 'gudang sumber' }}</strong>
+                  <span v-if="loadingItems" class="loading-inline">⏳ memuat...</span>
                 </p>
               </div>
             </div>
+
+            <div v-if="!form.source_warehouse_id" class="empty-hint">
+              ⬆️ Pilih gudang sumber dulu
+            </div>
+
+            <div v-else-if="sourceItems.length === 0 && !loadingItems" class="empty-hint">
+              📭 Tidak ada stok di {{ selectedWarehouseName }}
+            </div>
+
+            <template v-else>
+              <div
+                v-for="(row, index) in form.items"
+                :key="row.local_id"
+                class="item-row-card"
+              >
+                <div class="item-row-header">
+                  <span class="item-row-number">Item #{{ index + 1 }}</span>
+                  <button
+                    v-if="form.items.length > 1"
+                    type="button"
+                    class="btn-remove-row"
+                    @click="removeItem(index)"
+                  >✕</button>
+                </div>
+                <div class="form-grid-2col">
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">Item <span class="required-star">*</span></label>
+                    <vue-select
+                      v-model="row.item_id"
+                      :options="sourceItemsForSelect"
+                      :reduce="(o) => o.item_id"
+                      label="label"
+                      placeholder="🔍 Pilih item..."
+                      class="vue-select-item"
+                      @option:selected="(opt) => onItemSelected(index, opt)"
+                    >
+                      <template #option="o">
+                        <div class="item-option">
+                          <span class="item-option-code">{{ o.item_code }}</span>
+                          <span class="item-option-name">{{ o.item_name }}</span>
+                          <span class="item-option-stock">Stok: {{ o.qty_available }} pcs</span>
+                        </div>
+                      </template>
+                    </vue-select>
+                  </div>
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">
+                      Qty (pcs) <span class="required-star">*</span>
+                      <span v-if="row.max_qty > 0" class="stock-hint">Tersedia: {{ row.max_qty }} pcs</span>
+                    </label>
+                    <div class="input-wrapper-icon">
+                      <span class="input-icon">🔢</span>
+                      <input
+                        v-model.number="row.qty"
+                        type="number"
+                        min="1"
+                        :max="row.max_qty"
+                        class="form-input-modern"
+                        placeholder="0"
+                      />
+                    </div>
+                    <p v-if="row.qty > row.max_qty && row.max_qty > 0" class="qty-warning">
+                      ⚠️ Melebihi stok tersedia
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <button type="button" class="btn-add-row btn-add-item" @click="addItem">
+                ➕ Tambah Item Lainnya
+              </button>
+            </template>
           </div>
 
-          <div class="form-actions-modern rustik-actions">
-            <button type="button" class="btn-action btn-cancel-modern" @click="resetForm">
-              <span class="btn-icon">♻️</span>
-              <span class="btn-text">Reset Form</span>
+          <!-- FORM ACTIONS -->
+          <div class="form-actions-modern">
+            <button type="button" class="btn-action btn-cancel-modern" @click="router.back()">
+              <span class="btn-icon">↩️</span>
+              <span class="btn-text">Batal</span>
             </button>
-            <button
-              type="button"
-              class="btn-action btn-submit-rustik"
-              :disabled="!canSubmit || submitting"
-              @click="handleSubmit"
-            >
-              <span class="btn-icon">
-                <span v-if="submitting">⏳</span>
-                <span v-else>💾</span>
-              </span>
-              <span class="btn-text">
-                <span v-if="submitting">Menyimpan...</span>
-                <span v-else>Simpan Hasil Rustik</span>
-              </span>
+            <button type="submit" class="btn-action btn-submit-rustik" :disabled="isSubmitting">
+              <span class="btn-icon">💾</span>
+              <span class="btn-text">{{ isSubmitting ? 'Menyimpan...' : 'Simpan Rustik' }}</span>
             </button>
           </div>
-        </div>
+
+        </form>
       </div>
     </div>
   </DashboardLayout>
 </template>
 
-<script>
-import DashboardLayout from '@/components/DashboardLayout.vue'
-import apiClient from '@/api/axios'
+<script setup>
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import apiClient from '../../api/axios'
+import DashboardLayout from '../../components/DashboardLayout.vue'
+import { useNotification } from '../../composables/useNotification.js'
+import VueSelect from 'vue-select'
+import 'vue-select/dist/vue-select.css'
 
-export default {
-  name: 'RustikView',
-  components: { DashboardLayout },
+const router = useRouter()
+const { showSuccess, showError } = useNotification()
+const isSubmitting          = ref(false)
+const loadingItems          = ref(false)
+const productionOrders      = ref([])
+const sourceWarehouses      = ref([])
+const sourceItems           = ref([])
+const selectedWarehouseName = ref('')
+const poInfo = ref({ buyer_name: null, so_number: null })
 
-  data() {
-    return {
-      poList: [],
-      selectedPoId: '',
-      stocks: [],
-      submitting: false,
+const form = reactive({
+  date:                new Date().toISOString().slice(0, 10),
+  ref_po_id:           null,
+  source_warehouse_id: null,
+  notes:               '',
+  items: [{ local_id: Date.now(), item_id: null, qty: null, max_qty: 0 }],
+})
 
-      // Data ringkasan PO
-      poTargets: [],
-      poInfo: {
-        buyer_name: null,
-        so_number: null,
-      },
-    }
-  },
+const sourceItemsForSelect = computed(() =>
+  sourceItems.value.map((i) => ({
+    item_id:       i.item_id,
+    item_code:     i.item_code,
+    item_name:     i.item_name,
+    qty_available: i.qty_available,
+    label:         `${i.item_code} - ${i.item_name}`,
+  }))
+)
 
-  computed: {
-    canSubmit() {
-      return this.selectedPoId && this.stocks.some((s) => Number(s.qty_rustik) > 0)
-    },
-
-    totalItemsToProcess() {
-      return this.stocks.filter((s) => Number(s.qty_rustik) > 0).length
-    },
-
-    totalQtyRustik() {
-      return this.stocks.reduce((sum, s) => sum + (Number(s.qty_rustik) || 0), 0)
-    },
-  },
-
-  mounted() {
-    this.loadPoList()
-  },
-
-  methods: {
-    formatNumber(value) {
-      const num = Number(value ?? 0)
-      if (Number.isNaN(num)) return value
-      return num.toLocaleString('en-US', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 4,
-      })
-    },
-
-    async loadPoList() {
-      try {
-        const res = await apiClient.get('/production-orders', {
-          params: { status_not: 'completed' },
-        })
-        const rawData = res.data.data?.data || res.data.data || []
-
-        this.poList = rawData.map((po) => ({
-          ...po,
-          label:
-            po.label ||
-            `${po.po_number} - ${po.sales_order?.buyer_name || ''} - ${po.sales_order?.so_number || ''}`,
-        }))
-      } catch (error) {
-        console.error('Error loading PO:', error)
-        alert('Gagal memuat daftar PO')
-      }
-    },
-
-    async onPoChange() {
-      // Reset
-      this.stocks = []
-      this.poTargets = []
-      this.poInfo = { buyer_name: null, so_number: null }
-
-      if (!this.selectedPoId) return
-
-      // Load detail PO untuk ringkasan
-      try {
-        const res = await apiClient.get(`/production-orders/${this.selectedPoId}`)
-        const poData = res.data.data || {}
-
-        this.poInfo = {
-          buyer_name: poData.sales_order?.buyer_name || null,
-          so_number: poData.sales_order?.so_number || null,
-        }
-
-        if (poData.targets && poData.targets.length > 0) {
-          this.poTargets = poData.targets
-        } else if (poData.details && poData.details.length > 0) {
-          this.poTargets = poData.details.map((d) => ({
-            item_id: d.item_id,
-            item_name: d.item?.name || 'Unknown',
-            name: d.item?.name || 'Unknown',
-            code: d.item?.code,
-            qty_planned: d.qty_planned,
-          }))
-        }
-      } catch (error) {
-        console.error('Error loading PO details:', error)
-      }
-
-      // ✅ Load stok (tanpa parameter source_warehouse_code)
-      await this.loadStock()
-    },
-
-    // ✅ NEW: Load stock method terpisah
-    async loadStock() {
-      try {
-        const res = await apiClient.get('/rustik/available-stock', {
-          params: { production_order_id: this.selectedPoId },
-        })
-
-        this.stocks = (res.data.data || []).map((s) => ({
-          ...s,
-          qty_rustik: 0,
-        }))
-
-        console.log('✅ Loaded Stock:', this.stocks)
-      } catch (error) {
-        console.error('Error loading stock:', error)
-        alert('Gagal memuat stok: ' + (error.response?.data?.message || error.message))
-      }
-    },
-
-    resetForm() {
-      this.stocks.forEach((s) => {
-        s.qty_rustik = 0
-      })
-    },
-
-    async handleSubmit() {
-      if (!this.canSubmit) return
-
-      const itemsToProcess = this.stocks.filter((s) => Number(s.qty_rustik) > 0)
-
-      if (itemsToProcess.length === 0) {
-        alert('Masukkan jumlah yang sudah selesai proses rustik!')
-        return
-      }
-
-      this.submitting = true
-
-      try {
-        for (const stock of itemsToProcess) {
-          if (Number(stock.qty_rustik) > stock.total_stock_available) {
-            alert(`Stok ${stock.item_name} tidak cukup! (Tersedia: ${stock.total_stock_available})`)
-            this.submitting = false
-            return
-          }
-
-          // ✅ UPDATED: Tidak kirim source_warehouse_id
-          await apiClient.post('/rustik/process', {
-            production_order_detail_id: stock.detail_id,
-            qty_rustik: Number(stock.qty_rustik),
-          })
-        }
-
-        alert('✅ Proses Rustik berhasil! Barang sudah dipindahkan ke Gudang Rustik.')
-
-        await this.loadStock() // ✅ Reload stock
-      } catch (error) {
-        console.error('Error:', error)
-        alert('❌ ' + (error.response?.data?.message || 'Gagal menyimpan'))
-      } finally {
-        this.submitting = false
-      }
-    },
-  },
+const fetchInitialData = async () => {
+  try {
+    const [poRes, whRes] = await Promise.all([
+      apiClient.get('/production-orders', { params: { status_not: 'completed' } }),
+      apiClient.get('/warehouses'),
+    ])
+    const poRaw = poRes.data.data?.data || poRes.data.data || []
+    productionOrders.value = poRaw.map((po) => ({
+      id: po.id, po_number: po.po_number, label: po.po_number,
+      buyer_name: po.buyer_name, so_number: po.so_number,
+    }))
+    const excludeCodes = ['RUSTIK', 'LOG', 'RSTB', 'RSTK', 'BUFFER']
+    const allWh = whRes.data.data || whRes.data || []
+    sourceWarehouses.value = allWh.filter((w) => !excludeCodes.includes(w.code))
+  } catch {
+    showError('Gagal', 'Gagal mengambil data awal')
+  }
 }
+
+const selectWarehouse = async (wh) => {
+  form.source_warehouse_id = wh.id
+  selectedWarehouseName.value = wh.name
+  form.items = [{ local_id: Date.now(), item_id: null, qty: null, max_qty: 0 }]
+  await fetchSourceItems()
+}
+
+const fetchSourceItems = async () => {
+  if (!form.source_warehouse_id) return
+  loadingItems.value = true
+  try {
+    const res = await apiClient.get('/produksi/transfer/source-items', {
+      params: { warehouse_id: form.source_warehouse_id }
+    })
+    sourceItems.value = res.data.data || []
+  } catch {
+    showError('Gagal', 'Gagal mengambil stok gudang')
+  } finally {
+    loadingItems.value = false
+  }
+}
+
+const handlePoChange = async (opt) => {
+  poInfo.value = { buyer_name: null, so_number: null }
+  if (!opt) return
+  try {
+    const res = await apiClient.get(`/production-orders/${opt.id}`)
+    const data = res.data.data || {}
+    poInfo.value = {
+      buyer_name: data.sales_order?.buyer_name || opt.buyer_name || null,
+      so_number:  data.sales_order?.so_number  || opt.so_number  || null,
+    }
+  } catch (e) { console.error(e) }
+}
+
+const handlePoDeselect = () => { poInfo.value = { buyer_name: null, so_number: null } }
+const onItemSelected = (index, opt) => { form.items[index].max_qty = opt?.qty_available ?? 0 }
+const addItem    = () => form.items.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, max_qty: 0 })
+const removeItem = (i) => form.items.splice(i, 1)
+
+const handleSubmit = async () => {
+  if (!form.ref_po_id)           { showError('Validasi', 'PO wajib dipilih'); return }
+  if (!form.source_warehouse_id) { showError('Validasi', 'Gudang sumber wajib dipilih'); return }
+  const validItems = form.items.filter((i) => i.item_id && i.qty > 0)
+  if (validItems.length === 0)   { showError('Validasi', 'Minimal satu item wajib diisi'); return }
+  for (let i = 0; i < validItems.length; i++) {
+    if (validItems[i].qty > validItems[i].max_qty && validItems[i].max_qty > 0) {
+      showError('Validasi', `Item #${i + 1}: Qty melebihi stok (${validItems[i].max_qty} pcs)`); return
+    }
+  }
+  isSubmitting.value = true
+  try {
+    await apiClient.post('/produksi/rustik/store', {
+      date:                form.date,
+      ref_po_id:           Number(form.ref_po_id),
+      source_warehouse_id: Number(form.source_warehouse_id),
+      notes:               form.notes || null,
+      items: validItems.map((i) => ({ item_id: Number(i.item_id), qty: Number(i.qty) })),
+    })
+    showSuccess('Sukses', 'Proses Rustik berhasil dicatat')
+    router.back()
+  } catch (error) {
+    showError('Gagal', error.response?.data?.message || 'Gagal menyimpan rustik')
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+onMounted(fetchInitialData)
 </script>
 
 <style scoped>
-/* HEADER – tema brown/coklat */
 .page-header-rustik {
-  background: linear-gradient(135deg, #92400e 0%, #b45309 40%, #d97706 100%);
-  padding: 2rem 2.5rem;
-  border-radius: 20px;
-  margin-bottom: 2rem;
-  box-shadow: 0 10px 40px rgba(146, 64, 14, 0.35);
-}
-
-.header-content-wrapper {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 2rem;
-}
-
-.header-left-section {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  flex: 1;
-}
-
-.icon-badge-rustik {
-  width: 72px;
-  height: 72px;
-  border-radius: 18px;
-  background: rgba(15, 23, 42, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.55);
-}
-
-.rustik-icon {
-  font-size: 2.5rem;
-}
-
-.header-text-content {
-  flex: 1;
-}
-
-.page-title-rustik {
-  font-size: 2rem;
-  font-weight: 800;
-  color: #f9fafb;
-  margin: 0 0 0.5rem 0;
-  letter-spacing: -0.5px;
-}
-
-.page-subtitle-rustik {
-  color: rgba(241, 245, 249, 0.98);
-  font-size: 1rem;
-  margin: 0;
-  font-weight: 500;
-  line-height: 1.5;
-}
-
-.header-right-section {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.5rem;
-}
-
-.process-flow-badge-rustik {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1.5rem;
-  background: rgba(15, 23, 42, 0.92);
-  border-radius: 999px;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.5);
-}
-
-.flow-icon {
-  font-size: 1.1rem;
-}
-
-.flow-arrow {
-  font-size: 0.9rem;
-  color: #a5f3fc;
-  font-weight: 700;
-}
-
-.flow-label-rustik {
-  color: #fde68a;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-/* CONTENT CARD */
-.content-card-rustik {
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
-  width: 100%;
-}
-
-.card-body-rustik {
-  padding: 2.5rem;
-}
-
-/* FORM SECTIONS */
-.form-section-modern {
-  margin-bottom: 2.5rem;
-  padding-bottom: 2.5rem;
-  border-bottom: 3px solid #e5e7eb;
-}
-
-.form-section-modern:last-child {
-  margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: none;
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  margin-bottom: 1.75rem;
-  padding: 1.25rem 1.5rem;
-  border-radius: 14px;
-}
-
-.section-header-rustik {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  border-left: 5px solid #92400e;
-}
-
-.section-header-stock {
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-  border-left: 5px solid #3b82f6;
-}
-
-.section-icon-badge {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(146, 64, 14, 0.25);
-  background: linear-gradient(135deg, #fde68a, #fcd34d);
-}
-
-.rustik-po-badge {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
-}
-
-.rustik-stock-badge {
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
-}
-
-.section-icon {
-  font-size: 1.75rem;
-}
-
-.section-title-group {
-  flex: 1;
-}
-
-.section-title {
-  font-size: 1.375rem;
-  font-weight: 800;
-  color: #111827;
-  margin: 0 0 0.25rem 0;
-}
-
-.section-subtitle {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 0;
-}
-
-/* FORM ELEMENTS */
-.form-group-modern {
-  margin-bottom: 0;
-}
-
-.form-label-modern {
-  display: block;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: #111827;
-  margin-bottom: 0.75rem;
-}
-
-.required-star {
-  color: #ef4444;
-  margin-left: 0.15rem;
-}
-
-.select-wrapper-modern {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.select-icon {
-  position: absolute;
-  left: 1.125rem;
-  font-size: 1.125rem;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.form-select-modern {
-  width: 100%;
-  padding: 0.9rem 3.25rem 0.9rem 3.25rem;
-  border: 2.5px solid #e5e7eb;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  background: white;
-  color: #111827;
-  appearance: none;
-  cursor: pointer;
-}
-
-.form-select-modern:focus {
-  outline: none;
-  border-color: #92400e;
-  box-shadow: 0 0 0 4px rgba(146, 64, 14, 0.15);
-  transform: translateY(-1px);
-}
-
-.select-arrow {
-  position: absolute;
-  right: 1.125rem;
-  font-size: 0.75rem;
-  color: #6b7280;
-  pointer-events: none;
-}
-
-/* PO HINT BOX */
-.po-hint-box-rustik {
-  margin-top: 1rem;
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-  background: linear-gradient(135deg, #fefce8, #fef9c3);
-  padding: 1.25rem 1.5rem;
-  box-shadow: 0 4px 12px rgba(146, 64, 14, 0.12);
-}
-
-.po-hint-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.po-hint-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.po-hint-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background: rgba(146, 64, 14, 0.18);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-}
-
-.po-hint-title {
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: #78350f;
-}
-
-.po-hint-sub {
-  font-size: 0.8rem;
-  color: #92400e;
-}
-
-.po-hint-badge {
-  padding: 0.3rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  background: #fde68a;
-  color: #78350f;
-}
-
-.po-hint-list-wrapper {
-  max-height: 180px;
-  overflow-y: auto;
-  margin-top: 0.25rem;
-  border-radius: 12px;
-  border: 1px solid #fde68a;
-  background: white;
-}
-
-.po-hint-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-}
-
-.po-hint-table thead {
-  position: sticky;
-  top: 0;
-  background: #fefce8;
-  z-index: 1;
-}
-
-.po-hint-table th,
-.po-hint-table td {
-  padding: 0.45rem 0.75rem;
-}
-
-.po-hint-table th {
-  text-align: left;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #6b7280;
-  border-bottom: 1px solid #fde68a;
-}
-
-.po-hint-table .col-qty {
-  width: 100px;
-  text-align: right;
-}
-
-.po-hint-table .cell-name {
-  color: #374151;
-  font-weight: 500;
-}
-
-.po-hint-table .cell-qty {
-  text-align: right;
-  color: #92400e;
-  font-weight: 700;
-}
-
-.po-hint-table tbody tr:nth-child(even) {
-  background: #fafafa;
-}
-
-/* STOCK TABLE */
-.stock-table-wrapper {
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
-  margin-bottom: 1rem;
-}
-
-.stock-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.stock-table thead {
-  background: #f9fafb;
-}
-
-.stock-table th {
-  padding: 0.85rem 1rem;
-  text-align: left;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #374151;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.stock-table .col-center {
-  text-align: center;
-}
-
-.stock-table td {
-  padding: 0.95rem 1rem;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.stock-table tbody tr:hover {
-  background: #fafafa;
-}
-
-.cell-product {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  color: #111827;
-}
-
-.product-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: #92400e;
-}
-
-.cell-center {
-  text-align: center;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.cell-stock-highlight {
-  font-weight: 700;
-}
-
-.stock-badge {
-  display: inline-block;
-  padding: 0.35rem 0.75rem;
-  background: #dbeafe;
-  color: #1e40af;
-  border-radius: 999px;
-  font-size: 0.875rem;
-  font-weight: 700;
-}
-
-.qty-rustik-input {
-  width: 120px;
-  padding: 0.5rem 0.75rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  text-align: center;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-
-.qty-rustik-input:focus {
-  outline: none;
-  border-color: #92400e;
-  box-shadow: 0 0 0 3px rgba(146, 64, 14, 0.1);
-}
-
-/* EMPTY STATE */
-.empty-state-card {
-  text-align: center;
-  padding: 3rem 2rem;
-  background: linear-gradient(135deg, #fef9c3, #fef08a);
-  border-radius: 16px;
-  border: 1px solid #fde047;
-}
-
-.empty-icon {
-  font-size: 3rem;
-  margin-bottom: 0.75rem;
-}
-
-.empty-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #713f12;
-  margin-bottom: 0.5rem;
-}
-
-.empty-message {
-  font-size: 0.95rem;
-  color: #854d0e;
-  line-height: 1.5;
-}
-
-/* SUMMARY */
-.rustik-footer-section {
-  border-bottom: none;
-  padding-bottom: 0;
-  margin-bottom: 0;
-}
-
-.rustik-summary-card {
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-  background: linear-gradient(135deg, #fefce8, #fef9c3);
-  padding: 1.1rem 1.25rem 1.25rem;
-  margin-bottom: 1.5rem;
-}
-
-.summary-header {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  margin-bottom: 0.6rem;
-}
-
-.summary-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background: #92400e;
-  color: #fef9c3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.summary-title {
-  font-size: 0.98rem;
-  font-weight: 700;
-  color: #78350f;
-}
-
-.summary-subtitle {
-  font-size: 0.8rem;
-  color: #92400e;
-}
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.8rem;
-}
-
-.summary-block {
-  border-radius: 12px;
-  background: #ffffff;
-  padding: 0.6rem 0.7rem;
-  border: 1px solid #e5e7eb;
-}
-
-.summary-label {
-  margin: 0 0 0.2rem;
-  font-size: 0.75rem;
-  color: #6b7280;
-}
-
-.summary-value {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-/* BUTTONS */
-.form-actions-modern.rustik-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1.25rem;
-  margin-top: 1.75rem;
-  padding-top: 1.75rem;
-  border-top: 3px solid #e5e7eb;
-}
-
-.btn-action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 1rem 2.1rem;
-  border-radius: 14px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  border: none;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.btn-icon {
-  font-size: 1.15rem;
-}
-
-.btn-cancel-modern {
-  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-  color: #374151;
-  border: 2.5px solid #d1d5db;
-}
-
-.btn-cancel-modern:hover {
-  background: linear-gradient(135deg, #e5e7eb, #d1d5db);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-}
-
-.btn-submit-rustik {
-  background: linear-gradient(135deg, #92400e 0%, #b45309 100%);
-  color: white;
-}
-
-.btn-submit-rustik:disabled {
-  background: #9ca3af;
-  box-shadow: none;
-  cursor: not-allowed;
-}
-
-.btn-submit-rustik:not(:disabled):hover {
-  background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
-  transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(146, 64, 14, 0.4);
-}
-
-/* RESPONSIVE */
-@media (max-width: 900px) {
-  .page-header-rustik {
-    padding: 1.5rem;
-  }
-
-  .header-content-wrapper {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .card-body-rustik {
-    padding: 1.5rem;
-  }
-
-  .summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .header-right-section {
-    align-items: flex-start;
-  }
-}
-
-@media (max-width: 640px) {
-  .summary-grid {
-    grid-template-columns: 1fr;
-  }
+  background: linear-gradient(135deg, #7c2d12 0%, #6b2309 100%);
+  padding: 2rem 2.5rem; border-radius: 20px; margin-bottom: 2rem;
+  box-shadow: 0 10px 40px rgba(124,45,18,0.3);
+}
+.header-content-wrapper { display: flex; justify-content: space-between; align-items: center; gap: 2rem; }
+.header-left-section { display: flex; align-items: center; gap: 1.5rem; flex: 1; }
+.icon-badge-rustik { width: 72px; height: 72px; border-radius: 18px; background: rgba(255,255,255,0.25); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; }
+.rustik-icon { font-size: 2.5rem; }
+.page-title-rustik { font-size: 2rem; font-weight: 800; color: white; margin: 0 0 0.5rem; }
+.page-subtitle-rustik { color: rgba(255,255,255,0.95); font-size: 1rem; margin: 0; font-weight: 500; }
+.process-badge { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.25rem; background: rgba(255,255,255,0.95); border-radius: 16px; }
+.process-icon { font-size: 1.5rem; }
+.process-arrow { font-size: 1.25rem; color: #6b2309; font-weight: 700; }
+.flow-label-rustik { color: rgba(255,255,255,0.9); font-size: 0.85rem; font-weight: 600; margin-top: 6px; text-align: center; }
+.header-badge-section { display: flex; flex-direction: column; align-items: center; }
+.content-card-rustik { background: white; border-radius: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border: 1px solid #f0f2f5; overflow: hidden; }
+.card-body-rustik { padding: 2.5rem; }
+.form-section-modern { margin-bottom: 2.5rem; padding-bottom: 2.5rem; border-bottom: 3px solid #e5e7eb; }
+.form-section-modern:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+.section-header { display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.75rem; padding: 1.25rem 1.5rem; background: linear-gradient(135deg, #f9fafb, #fff7ed); border-radius: 14px; border-left: 5px solid #7c2d12; }
+.section-icon-badge { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #7c2d12, #6b2309); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.section-badge-item { background: linear-gradient(135deg, #16a34a, #15803d) !important; }
+.section-icon { font-size: 1.25rem; }
+.section-title { font-size: 1.1rem; font-weight: 700; color: #111827; margin: 0 0 0.2rem; }
+.section-subtitle { font-size: 0.875rem; color: #6b7280; margin: 0; }
+.form-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+.form-grid-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+.form-group-modern { display: flex; flex-direction: column; }
+.form-label-modern { font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem; }
+.required-star { color: #ef4444; }
+.input-wrapper-icon { position: relative; display: flex; align-items: center; }
+.input-icon { position: absolute; left: 1.125rem; font-size: 1rem; z-index: 1; pointer-events: none; }
+.form-input-modern { width: 100%; padding: 0.9rem 1.25rem 0.9rem 3.25rem; border: 2.5px solid #e5e7eb; border-radius: 12px; font-size: 1rem; font-weight: 500; transition: all 0.3s ease; background: white; }
+.form-input-modern:focus { outline: none; border-color: #7c2d12; box-shadow: 0 0 0 4px rgba(124,45,18,0.15); }
+.warehouse-toggle { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.toggle-btn { padding: 0.6rem 1rem; border: 2px solid #e5e7eb; border-radius: 10px; background: white; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; color: #374151; }
+.toggle-btn:hover { border-color: #7c2d12; color: #7c2d12; }
+.toggle-btn.active { border-color: #7c2d12; background: #fff7ed; color: #7c2d12; }
+.po-selected-info { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; margin-top: 1rem; }
+.po-info-icon { font-size: 1.25rem; }
+.po-info-buyer { font-weight: 700; font-size: 0.95rem; color: #111827; }
+.po-info-so { font-size: 0.82rem; color: #6b7280; }
+.item-row-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+.item-row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.item-row-number { font-size: 0.82rem; font-weight: 700; color: #6b7280; text-transform: uppercase; }
+.btn-remove-row { background: #fee2e2; color: #ef4444; border: none; border-radius: 6px; padding: 3px 10px; font-size: 0.82rem; cursor: pointer; font-weight: 700; }
+.stock-hint { margin-left: 8px; font-size: 0.78rem; color: #7c2d12; font-weight: 600; }
+.qty-warning { margin-top: 4px; font-size: 0.82rem; color: #ef4444; }
+.loading-inline { font-size: 0.82rem; color: #6b7280; margin-left: 8px; }
+.empty-hint { padding: 2rem; text-align: center; color: #9ca3af; font-size: 0.95rem; background: #f9fafb; border-radius: 12px; border: 1px dashed #d1d5db; }
+.btn-add-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; margin-top: 0.5rem; border: 2px dashed; }
+.btn-add-item { background: #fff7ed; border-color: #7c2d12; color: #6b2309; }
+.btn-add-item:hover { background: #fed7aa; }
+.form-actions-modern { display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1.5rem; border-top: 2px solid #e5e7eb; }
+.btn-action { display: flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1.75rem; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; }
+.btn-cancel-modern { background: #f3f4f6; color: #374151; }
+.btn-cancel-modern:hover { background: #e5e7eb; }
+.btn-submit-rustik { background: linear-gradient(135deg, #7c2d12, #6b2309); color: white; box-shadow: 0 4px 12px rgba(124,45,18,0.35); }
+.btn-submit-rustik:hover:not(:disabled) { transform: translateY(-1px); }
+.btn-submit-rustik:disabled { opacity: 0.6; cursor: not-allowed; }
+.item-option { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; }
+.item-option-code { font-size: 0.82rem; font-weight: 700; color: #7c2d12; }
+.item-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
+.item-option-stock { font-size: 0.78rem; color: #6b7280; }
+.vue-select-po :deep(.vs__dropdown-toggle),
+.vue-select-item :deep(.vs__dropdown-toggle) { padding: 0.875rem 1.25rem; border: 2.5px solid #e5e7eb; border-radius: 12px; min-height: 54px; }
+.vue-select-po.vs--open :deep(.vs__dropdown-toggle),
+.vue-select-item.vs--open :deep(.vs__dropdown-toggle) { border-color: #7c2d12; box-shadow: 0 0 0 4px rgba(124,45,18,0.15); }
+@media (max-width: 768px) {
+  .form-grid-2col, .form-grid-3col { grid-template-columns: 1fr; }
+  .warehouse-toggle { flex-direction: column; }
+  .card-body-rustik { padding: 1.25rem; }
 }
 </style>
