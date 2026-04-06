@@ -236,7 +236,114 @@
             </div>
           </div>
 
-          <!-- SECTION 3: HASIL RST (OUTPUT) -->
+          <!-- SECTION 3: JEBLOSAN (OUTPUT 1) -->
+          <div class="form-section-modern">
+            <div class="section-header">
+              <div class="section-icon-badge section-icon-badge--jeblosan">
+                <span class="section-icon">🪓</span>
+              </div>
+              <div class="section-title-group">
+                <h3 class="section-title">Jeblosan</h3>
+                <p class="section-subtitle">
+                  Hasil belahan kayu log → masuk Gudang Sawmill
+                </p>
+              </div>
+            </div>
+
+            <div
+              v-for="(jeblosan, index) in form.jeblosans"
+              :key="jeblosan.local_id"
+              class="item-row-card"
+              :class="jeblosan.is_sisa ? 'item-row-sisa' : ''"
+            >
+              <div class="item-row-header">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <span class="item-row-number">Jeblosan #{{ index + 1 }}</span>
+                  <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:#6b7280;cursor:pointer;">
+                    <input type="checkbox" v-model="jeblosan.is_sisa" />
+                    Sisa
+                  </label>
+                </div>
+                <button
+                  v-if="form.jeblosans.length > 1"
+                  type="button"
+                  class="btn-remove-row"
+                  @click="removeJeblosanRow(index)"
+                >✕</button>
+              </div>
+
+              <div class="form-grid-3col">
+                <div class="form-group-modern">
+                  <label class="form-label-modern">
+                    Item Jeblosan <span class="required-star">*</span>
+                    <button type="button" class="btn-quick-add" @click="openModalTambahJeblosan">
+                      ➕ Item Baru
+                    </button>
+                  </label>
+                  <vue-select
+                    v-model="jeblosan.item_id"
+                    :options="jeblosanItemsForSelect"
+                    :reduce="(o) => o.id"
+                    label="label"
+                    placeholder="🔍 Cari item jeblosan..."
+                    class="vue-select-rst"
+                    @option:selected="(opt) => updateJeblosanVolume(index)"
+                  >
+                    <template #option="o">
+                      <div class="rst-option-item">
+                        <span class="rst-option-code">{{ o.code }}</span>
+                        <span class="rst-option-name">{{ o.name }}</span>
+                      </div>
+                    </template>
+                  </vue-select>
+                </div>
+
+                <div class="form-group-modern">
+                  <label class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
+                  <div class="input-wrapper-icon">
+                    <span class="input-icon">🔢</span>
+                    <input
+                      v-model.number="jeblosan.qty_pcs"
+                      type="number"
+                      min="1"
+                      class="form-input-modern"
+                      placeholder="0"
+                      @input="updateJeblosanVolume(index)"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group-modern">
+                  <label class="form-label-modern">Volume (m³)</label>
+                  <div class="input-wrapper-icon">
+                    <span class="input-icon">📐</span>
+                    <input
+                      v-model.number="jeblosan.volume_m3"
+                      type="number"
+                      step="0.0001"
+                      min="0"
+                      class="form-input-modern"
+                      placeholder="0.0000"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="rst-dimension-hint">
+                📦 → Gudang Sawmill
+                <span v-if="jeblosan.is_sisa" class="sisa-dest-hint">♻️ Sisa</span>
+              </div>
+            </div>
+
+            <div class="add-rst-section">
+              <button type="button" class="btn-add-rst btn-add-jeblosan" @click="addJeblosanRow">
+                <span class="add-icon">➕</span>
+                <span class="add-text">Tambah Jeblosan Lainnya</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- SECTION 4: HASIL RST BASAH (OUTPUT 2) -->
           <div class="form-section-modern">
             <div class="section-header">
               <div class="section-icon-badge section-icon-badge--rst">
@@ -267,7 +374,7 @@
                 <div class="form-group-modern">
                   <label class="form-label-modern">
                     Item RST <span class="required-star">*</span>
-                    <button type="button" class="btn-quick-add" @click="openModalTambahRst" title="Tambah item RST baru">
+                    <button type="button" class="btn-quick-add" @click="openModalTambahRst">
                       ➕ Item Baru
                     </button>
                   </label>
@@ -320,7 +427,6 @@
                 </div>
               </div>
 
-              <!-- Dimensi item RST -->
               <div v-if="rst.item_rst_id" class="rst-dimension-hint">
                 📐 {{ getRstDimensionText(rst.item_rst_id) }}
               </div>
@@ -354,6 +460,51 @@
       </div>
     </div>
   </DashboardLayout>
+
+  <!-- MODAL TAMBAH ITEM JEBLOSAN BARU -->
+  <div v-if="showModalTambahJeblosan" class="modal-overlay" @click.self="closeModalTambahJeblosan">
+    <div class="modal-card">
+      <div class="modal-header" style="background: linear-gradient(135deg, #fef3c7, #fde68a);">
+        <h3>🪓 Tambah Item Jeblosan Baru</h3>
+        <button type="button" @click="closeModalTambahJeblosan" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group-modern">
+          <label class="form-label-modern">Nama Dasar <span class="required-star">*</span></label>
+          <input v-model="formJeblosanBaru.nama_dasar" type="text" class="form-input-modern input-plain"
+            placeholder="Contoh: Jeblosan Jati" />
+        </div>
+        <div class="form-grid-3col">
+          <div class="form-group-modern">
+            <label class="form-label-modern">Tebal (mm) <span class="required-star">*</span></label>
+            <input v-model.number="formJeblosanBaru.tebal_mm" type="number" min="0"
+              class="form-input-modern input-plain" placeholder="0" />
+          </div>
+          <div class="form-group-modern">
+            <label class="form-label-modern">Lebar (mm)</label>
+            <input v-model.number="formJeblosanBaru.lebar_mm" type="number" min="0"
+              class="form-input-modern input-plain" placeholder="0" />
+          </div>
+          <div class="form-group-modern">
+            <label class="form-label-modern">Panjang (mm)</label>
+            <input v-model.number="formJeblosanBaru.panjang_mm" type="number" min="0"
+              class="form-input-modern input-plain" placeholder="0" />
+          </div>
+        </div>
+        <div class="form-group-modern">
+          <label class="form-label-modern">Kode Barang</label>
+          <input v-model="formJeblosanBaru.kode_barang" type="text" class="form-input-modern input-plain"
+            placeholder="Kosongkan = auto generate" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-action btn-cancel-modern" @click="closeModalTambahJeblosan">Batal</button>
+        <button type="button" class="btn-action btn-submit-modern" :disabled="isSavingRst" @click="simpanJeblosanBaru">
+          {{ isSavingRst ? '⏳ Menyimpan...' : '💾 Simpan & Pilih' }}
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL TAMBAH ITEM RST BARU -->
   <div v-if="showModalTambahRst" class="modal-overlay" @click.self="closeModalTambahRst">
@@ -455,14 +606,16 @@ const previewNamaRst = computed(() => {
 
 const form = reactive({
   date: new Date().toISOString().slice(0, 10),
-  estimated_finish_date: '',   // ✅ tambah ini
+  estimated_finish_date: '',
   notes: '',
-  logs: [{ local_id: Date.now(), item_log_id: null, qty_log_pcs: null }],
-  rsts: [{ local_id: Date.now() + 1, item_rst_id: null, qty_rst_pcs: null, volume_rst_m3: 0 }],
+  logs:      [{ local_id: Date.now(), item_log_id: null, qty_log_pcs: null }],
+  jeblosans: [{ local_id: Date.now() + 1, item_id: null, qty_pcs: null, volume_m3: 0, is_sisa: false }],
+  rsts:      [{ local_id: Date.now() + 2, item_rst_id: null, qty_rst_pcs: null, volume_rst_m3: 0 }],
 })
 
 const logItems         = ref([])
 const rstItems         = ref([])
+const jeblosanItems    = ref([])
 const warehouses       = ref([])
 const productionOrders = ref([])
 
@@ -506,23 +659,43 @@ const rstItemsForSelect = computed(() =>
   }))
 )
 
+const jeblosanItemsForSelect = computed(() =>
+  jeblosanItems.value.map((item) => ({
+    id:    item.id,
+    code:  item.code,
+    name:  item.name,
+    volume_m3: item.volume_m3 || 0,
+    specifications: item.specifications || {},
+    label: `${item.code} - ${item.name}`,
+  }))
+)
+
 // ============================================================
 // METHODS
 // ============================================================
 
 const fetchItems = async () => {
   try {
-    const [logsRes, rstRes, whRes, poRes] = await Promise.all([
+    const [logsRes, rstRes, jeblosanRes, whRes, poRes] = await Promise.all([
       apiClient.get('/materials', { params: { category_name: 'Kayu Log', per_page: 500 } }),
       apiClient.get('/materials', { params: { category_name: 'Kayu RST', per_page: 500 } }),
+      apiClient.get('/materials', { params: { category_name: 'Jeblosan', per_page: 500 } }),
       apiClient.get('/warehouses'),
       apiClient.get('/production-orders', { params: { status_not: 'completed', include: 'sales_order' } }),
     ])
 
-    logItems.value         = logsRes.data.data?.data || logsRes.data.data || []
-    rstItems.value         = rstRes.data.data?.data  || rstRes.data.data  || []
-    warehouses.value       = whRes.data.data         || whRes.data        || []
-    productionOrders.value = poRes.data.data?.data   || poRes.data.data   || []
+    const parseItems = (res) => {
+      const d = res.data.data
+      if (Array.isArray(d)) return d
+      if (d?.data && Array.isArray(d.data)) return d.data
+      return []
+    }
+
+    logItems.value         = parseItems(logsRes)
+    rstItems.value         = parseItems(rstRes)
+    jeblosanItems.value    = parseItems(jeblosanRes)
+    warehouses.value       = whRes.data.data || whRes.data || []
+    productionOrders.value = parseItems(poRes)
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil data awal')
@@ -577,6 +750,26 @@ const updateRstVolume = (index) => {
 const addLogRow = () => form.logs.push({ local_id: Date.now() + Math.random(), item_log_id: null, qty_log_pcs: null })
 const removeLogRow = (i) => form.logs.splice(i, 1)
 
+const getJeblosanItem = (itemId) => jeblosanItems.value.find((i) => i.id === itemId) || null
+
+const updateJeblosanVolume = (index) => {
+  const row  = form.jeblosans[index]
+  if (!row) return
+  const item = getJeblosanItem(row.item_id)
+  row.volume_m3 = (item?.volume_m3 && row.qty_pcs)
+    ? Number((row.qty_pcs * Number(item.volume_m3)).toFixed(4))
+    : 0
+}
+
+const addJeblosanRow = () => form.jeblosans.push({
+  local_id:  Date.now() + Math.random(),
+  item_id:   null,
+  qty_pcs:   null,
+  volume_m3: 0,
+  is_sisa:   false,
+})
+const removeJeblosanRow = (i) => form.jeblosans.splice(i, 1)
+
 const openModalTambahRst = () => {
   formRstBaru.nama_dasar = ''
   formRstBaru.kode_barang = ''
@@ -589,6 +782,71 @@ const openModalTambahRst = () => {
 
 const closeModalTambahRst = () => {
   showModalTambahRst.value = false
+}
+
+const showModalTambahJeblosan = ref(false)
+const formJeblosanBaru = reactive({
+  nama_dasar: '',
+  kode_barang: '',
+  tebal_mm: null,
+  lebar_mm: null,
+  panjang_mm: null,
+})
+
+const openModalTambahJeblosan = () => {
+  formJeblosanBaru.nama_dasar  = ''
+  formJeblosanBaru.kode_barang = ''
+  formJeblosanBaru.tebal_mm    = null
+  formJeblosanBaru.lebar_mm    = null
+  formJeblosanBaru.panjang_mm  = null
+  showModalTambahJeblosan.value = true
+}
+
+const closeModalTambahJeblosan = () => {
+  showModalTambahJeblosan.value = false
+}
+
+const simpanJeblosanBaru = async () => {
+  if (!formJeblosanBaru.nama_dasar || !formJeblosanBaru.tebal_mm) {
+    showError('Validasi', 'Nama dasar dan tebal wajib diisi')
+    return
+  }
+  isSavingRst.value = true
+  try {
+    const res = await apiClient.post('/materials/quick-store-jeblosan', {
+      nama_dasar:  formJeblosanBaru.nama_dasar,
+      kode_barang: formJeblosanBaru.kode_barang || null,
+      tebal_mm:    formJeblosanBaru.tebal_mm,
+      lebar_mm:    formJeblosanBaru.lebar_mm || 0,
+      panjang_mm:  formJeblosanBaru.panjang_mm || 0,
+    })
+    const itemBaru = res.data.data
+    jeblosanItems.value.push({
+      id:    itemBaru.id,
+      code:  itemBaru.code,
+      name:  itemBaru.name,
+      volume_m3: itemBaru.volume_m3,
+      specifications: itemBaru.specifications || {},
+    })
+    const lastRow = form.jeblosans[form.jeblosans.length - 1]
+    if (lastRow && !lastRow.item_id) {
+      lastRow.item_id = itemBaru.id
+    } else {
+      form.jeblosans.push({
+        local_id:  Date.now() + Math.random(),
+        item_id:   itemBaru.id,
+        qty_pcs:   null,
+        volume_m3: 0,
+        is_sisa:   false,
+      })
+    }
+    showSuccess('Berhasil', `Item '${itemBaru.name}' berhasil ditambahkan`)
+    closeModalTambahJeblosan()
+  } catch (error) {
+    showError('Gagal', error.response?.data?.message || 'Gagal menyimpan')
+  } finally {
+    isSavingRst.value = false
+  }
 }
 
 const simpanRstBaru = async () => {
@@ -646,11 +904,19 @@ const simpanRstBaru = async () => {
 const addRstRow = () => form.rsts.push({ local_id: Date.now() + Math.random(), item_rst_id: null, qty_rst_pcs: null, volume_rst_m3: 0 })
 const removeRstRow = (i) => form.rsts.splice(i, 1)
 
+
+
 const handleSubmit = async () => {
   // Validasi baris log
   const validLogs = form.logs.filter((l) => l.item_log_id && l.qty_log_pcs > 0)
   if (validLogs.length === 0) {
     showError('Validasi', 'Minimal satu baris kayu log wajib diisi')
+    return
+  }
+
+  const validJeblosans = form.jeblosans.filter((j) => j.item_id && j.qty_pcs > 0)
+  if (validJeblosans.length === 0) {
+    showError('Validasi', 'Minimal satu baris jeblosan wajib diisi')
     return
   }
 
@@ -675,16 +941,21 @@ const handleSubmit = async () => {
   try {
     const payload = {
       date:                  form.date,
-      estimated_finish_date: form.estimated_finish_date || null,  // ✅ tambah ini
+      estimated_finish_date: form.estimated_finish_date || null,
       warehouse_from_id:     warehouseFromId,
-      warehouse_to_id:   warehouseToId,
-      notes:             form.notes || null,
-      // ✅ Kirim null jika tidak ada PO — backend sudah nullable
-      ref_po_id:         selectedProductionOrderId.value ? Number(selectedProductionOrderId.value) : null,
-      ref_product_id:    null,
+      warehouse_to_id:       warehouseToId,
+      notes:                 form.notes || null,
+      ref_po_id:             selectedProductionOrderId.value ? Number(selectedProductionOrderId.value) : null,
+      ref_product_id:        null,
       logs: validLogs.map((l) => ({
-        item_log_id:  l.item_log_id,
-        qty_log_pcs:  l.qty_log_pcs,
+        item_log_id: l.item_log_id,
+        qty_log_pcs: l.qty_log_pcs,
+      })),
+      jeblosans: validJeblosans.map((j) => ({
+        item_id:   j.item_id,
+        qty_pcs:   j.qty_pcs,
+        volume_m3: j.volume_m3,
+        is_sisa:   j.is_sisa,
       })),
       rsts: validRsts.map((r) => ({
         item_rst_id:   r.item_rst_id,
@@ -946,5 +1217,36 @@ onMounted(fetchItems)
   border-radius: 10px;
   font-size: 0.88rem;
   color: #374151;
+}
+.section-icon-badge--sisa { 
+  background: linear-gradient(135deg, #16a34a, #15803d); 
+}
+.item-row-sisa { 
+  border-left: 4px solid #16a34a; 
+}
+.btn-add-sisa { 
+  background: #f0fdf4 !important; 
+  border-color: #16a34a !important; 
+  color: #14532d !important; 
+}
+.btn-add-sisa:hover { 
+  background: #dcfce7 !important; 
+}
+.sisa-dest-hint {
+  margin-left: 12px;
+  font-size: 0.78rem;
+  color: #16a34a;
+  font-weight: 600;
+}
+.section-icon-badge--jeblosan {
+  background: linear-gradient(135deg, #d97706, #92400e);
+}
+.btn-add-jeblosan {
+  background: #fef3c7 !important;
+  border-color: #d97706 !important;
+  color: #92400e !important;
+}
+.btn-add-jeblosan:hover {
+  background: #fde68a !important;
 }
 </style>

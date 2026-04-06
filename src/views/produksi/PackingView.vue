@@ -283,7 +283,7 @@ const fetchInitialData = async () => {
     productionOrders.value = poRes.data.data || []
     const raw = itemRes.data.data?.data || itemRes.data.data || []
     allProdukJadi.value = raw
-  } catch (_) {
+  } catch {
     showError('Gagal', 'Gagal mengambil data awal')
   }
 }

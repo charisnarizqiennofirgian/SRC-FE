@@ -99,7 +99,7 @@
             <span class="search-icon-box">🔍</span>
             <input
               v-model="searchQuery"
-              @input="handleSearch"
+              @keyup.enter="handleSearch"
               type="text"
               placeholder="Cari kode atau nama barang..."
               class="search-input-modern"
@@ -508,6 +508,7 @@ const toast = useToast()
 const tabs = [
   { key: 'logs', label: 'Kayu Log', category: 'Kayu Log', icon: '🪵' },
   { key: 'rst', label: 'Kayu RST', category: 'Kayu RST', icon: '🪚' },
+  { key: 'jeblosan', label: 'Jeblosan', category: 'Jeblosan', icon: '🪓' },
   { key: 'finished', label: 'Produk Jadi', category: 'Produk Jadi', icon: '🪑' },
   { key: 'operational', label: 'Bahan Operasional', category: 'Bahan Operasional', icon: '🔧' },
   { key: 'packaging', label: 'Karton Box', category: 'Karton Box', icon: '📦' },
@@ -528,7 +529,6 @@ const selectedJenisKayu = ref(null)
 const selectedMutu = ref(null)
 const totalKubikasiSum = ref(0)
 const totalValuasiSum = ref(0)
-let searchTimeout = null
 
 const isDetailOpen = ref(false)
 const detailItem = ref(null)
@@ -643,11 +643,8 @@ watch([selectedTpk, selectedJenisKayu, selectedMutu], () => {
 })
 
 const handleSearch = () => {
-  if (searchTimeout) clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
-    currentPage.value = 1
-    fetchReport()
-  }, 500)
+  currentPage.value = 1
+  fetchReport()
 }
 
 const clearSearch = () => {
