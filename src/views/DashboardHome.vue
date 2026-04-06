@@ -59,7 +59,7 @@
                   <span class="zone-icon">🌲</span> Persiapan Bahan
                 </th>
                 <!-- Zona Hilir -->
-                <th colspan="5" class="zone-header zone-hilir">
+                <th colspan="7" class="zone-header zone-hilir">
                   <span class="zone-icon">⚙️</span> Produksi
                 </th>
                 <th class="col-num" rowspan="2">Sisa</th>
@@ -72,10 +72,12 @@
                 <th class="col-status stage-moulding">Moulding</th>
                 <th class="col-status stage-mesin">Mesin</th>
                 <!-- Hilir -->
+                <th class="col-num stage-ruskomp">Rustik Komp</th>
                 <th class="col-num stage-assembling">Assembling</th>
                 <th class="col-num stage-rustik">Rustik</th>
                 <th class="col-num stage-sanding">Sanding</th>
                 <th class="col-num stage-finishing">Finishing</th>
+                <th class="col-num stage-qcfinal">QC Final</th>
                 <th class="col-num stage-packing">Packing</th>
               </tr>
             </thead>
@@ -132,6 +134,11 @@
                 </td>
 
                 <!-- Zona Hilir (Angka) -->
+                <td class="col-num stage-ruskomp">
+                  <span :class="['qty-value', row.qty_ruskomp > 0 ? 'has-value' : 'no-value']">
+                    {{ formatNumber(row.qty_ruskomp) }}
+                  </span>
+                </td>
                 <td class="col-num stage-assembling">
                   <span :class="['qty-value', row.qty_assembling > 0 ? 'has-value' : 'no-value']">
                     {{ formatNumber(row.qty_assembling) }}
@@ -152,6 +159,11 @@
                     {{ formatNumber(row.qty_finishing) }}
                   </span>
                 </td>
+                <td class="col-num stage-qcfinal">
+                  <span :class="['qty-value', row.qty_qc_final > 0 ? 'has-value' : 'no-value']">
+                    {{ formatNumber(row.qty_qc_final) }}
+                  </span>
+                </td>
                 <td class="col-num stage-packing">
                   <span :class="['qty-value', row.qty_packing > 0 ? 'has-value' : 'no-value']">
                     {{ formatNumber(row.qty_packing) }}
@@ -160,10 +172,15 @@
 
                 <!-- Sisa -->
                 <td class="col-num">
-                  <span v-if="row.is_done" class="completion-badge">
-                    <span class="badge-icon">✓</span> DONE
-                  </span>
-                  <span v-else class="sisa-value">{{ formatNumber(row.sisa) }}</span>
+                  <div class="sisa-cell">
+                    <span v-if="row.is_done" class="completion-badge">
+                      <span class="badge-icon">✓</span> DONE
+                    </span>
+                    <span v-else class="sisa-value">{{ formatNumber(row.sisa) }}</span>
+                    <button class="detail-btn" @click="goToDetail(row)" title="Lihat Detail">
+                      🔍
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -199,8 +216,10 @@
 <script setup>
 import DashboardLayout from '../components/DashboardLayout.vue'
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from '@/api/axios'
 
+const router = useRouter()
 const userName = ref('User')
 const monitoringData = ref([])
 const isLoading = ref(false)
@@ -256,6 +275,10 @@ const getStatusClass = (status) => {
     default:
       return 'status-waiting'
   }
+}
+
+const goToDetail = (row) => {
+  router.push({ name: 'ProductionMonitoring', query: { so_id: row.so_id, item_id: row.item_id } })
 }
 
 const doneCount = computed(() => {
@@ -610,6 +633,11 @@ onMounted(() => {
   background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%) !important;
 }
 
+.stage-ruskomp {
+  background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%) !important;
+  color: #9a3412 !important;
+}
+
 .stage-rustik {
   background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%) !important;
 }
@@ -620,6 +648,10 @@ onMounted(() => {
 
 .stage-finishing {
   background: linear-gradient(180deg, #faf5ff 0%, #f3e8ff 100%) !important;
+}
+
+.stage-qcfinal {
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%) !important;
 }
 
 .stage-packing {
@@ -874,6 +906,33 @@ onMounted(() => {
 .stat-divider {
   color: var(--color-gray-400);
   font-weight: 300;
+}
+
+/* ============================================
+   SISA CELL - DETAIL BUTTON
+   ============================================ */
+.sisa-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.detail-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 6px;
+  transition: var(--transition-base);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.detail-btn:hover {
+  background: #eff6ff;
+  transform: scale(1.2);
 }
 
 /* ============================================

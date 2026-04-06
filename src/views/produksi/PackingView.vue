@@ -103,14 +103,13 @@
               <div class="section-title-group">
                 <h3 class="section-title">Item yang Dikemas</h3>
                 <p class="section-subtitle">
-                  Pilih dari stok Gudang Packing
-                  <span v-if="loadingItems" class="loading-inline">⏳ memuat...</span>
+                  Item dari detail PO — isi qty yang sudah dikemas hari ini
                 </p>
               </div>
             </div>
 
-            <div v-if="packingItems.length === 0 && !loadingItems" class="empty-hint">
-              📭 Tidak ada stok di Gudang Packing — pastikan QC Final sudah dilakukan
+            <div v-if="!form.ref_po_id" class="empty-hint">
+              ⬆️ Pilih PO dulu untuk melihat item yang perlu dikemas
             </div>
 
             <template v-else>
@@ -120,42 +119,56 @@
                 class="item-row-card"
               >
                 <div class="item-row-header">
-                  <span class="item-row-number">Item #{{ index + 1 }}</span>
+                  <div class="item-row-info">
+                    <span class="item-row-number">Item #{{ index + 1 }}</span>
+                    <span v-if="row.item_name" class="item-row-name">
+                      {{ row.item_code }} — {{ row.item_name }}
+                    </span>
+                    <span v-if="row.qty_planned > 0" class="item-row-planned">
+                      Target: {{ row.qty_planned }} pcs
+                    </span>
+                  </div>
                   <button
-                    v-if="form.items.length > 1"
+                    v-if="!row.from_po && form.items.length > 1"
                     type="button"
                     class="btn-remove-row"
                     @click="removeItem(index)"
                   >✕</button>
                 </div>
                 <div class="form-grid-2col">
+                  <!-- Item (auto dari PO atau manual) -->
                   <div class="form-group-modern">
                     <label class="form-label-modern">
                       Item <span class="required-star">*</span>
                     </label>
+                    <div v-if="row.from_po" class="item-from-po">
+                      <span class="item-from-po-code">{{ row.item_code }}</span>
+                      <span class="item-from-po-name">{{ row.item_name }}</span>
+                    </div>
                     <vue-select
+                      v-else
                       v-model="row.item_id"
-                      :options="packingItemsForSelect"
-                      :reduce="(o) => o.item_id"
+                      :options="allProdukJadiForSelect"
+                      :reduce="(o) => o.id"
                       label="label"
-                      placeholder="🔍 Pilih item..."
+                      placeholder="🔍 Pilih produk jadi..."
                       class="vue-select-item"
-                      @option:selected="(opt) => onItemSelected(index, opt)"
                     >
                       <template #option="o">
                         <div class="item-option">
-                          <span class="item-option-code">{{ o.item_code }}</span>
-                          <span class="item-option-name">{{ o.item_name }}</span>
-                          <span class="item-option-stock">Stok: {{ o.qty_available }} pcs</span>
+                          <span class="item-option-code">{{ o.code }}</span>
+                          <span class="item-option-name">{{ o.name }}</span>
                         </div>
                       </template>
                     </vue-select>
                   </div>
+
+                  <!-- Qty -->
                   <div class="form-group-modern">
                     <label class="form-label-modern">
                       Qty Dikemas (pcs) <span class="required-star">*</span>
-                      <span v-if="row.max_qty > 0" class="stock-hint">
-                        Tersedia: {{ row.max_qty }} pcs
+                      <span v-if="row.qty_planned > 0" class="stock-hint">
+                        Target: {{ row.qty_planned }} pcs
                       </span>
                     </label>
                     <div class="input-wrapper-icon">
@@ -164,18 +177,15 @@
                         v-model.number="row.qty"
                         type="number"
                         min="1"
-                        :max="row.max_qty"
                         class="form-input-modern"
                         placeholder="0"
                       />
                     </div>
-                    <p v-if="row.qty > row.max_qty && row.max_qty > 0" class="qty-warning">
-                      ⚠️ Melebihi stok tersedia
-                    </p>
                   </div>
                 </div>
               </div>
 
+              <!-- Tambah item manual -->
               <button type="button" class="btn-add-row btn-add-item" @click="addItem">
                 ➕ Tambah Item Lainnya
               </button>
@@ -183,14 +193,16 @@
           </div>
 
           <!-- SUMMARY -->
-          <div v-if="form.ref_po_id" class="packing-summary">
+          <div v-if="form.ref_po_id && form.items.length > 0" class="packing-summary">
             <div class="summary-icon-big">📦</div>
             <div>
-              <div class="summary-title">Total Dikemas</div>
+              <div class="summary-title">Total Dikemas Hari Ini</div>
               <div class="summary-value">
                 {{ form.items.reduce((s, i) => s + (Number(i.qty) || 0), 0).toLocaleString('id-ID') }} pcs
               </div>
-              <div class="summary-sub">{{ form.items.filter(i => i.item_id && i.qty > 0).length }} jenis item</div>
+              <div class="summary-sub">
+                {{ form.items.filter(i => (i.from_po || i.item_id) && i.qty > 0).length }} jenis item
+              </div>
             </div>
           </div>
 
@@ -201,7 +213,6 @@
               <span class="btn-text">Batal</span>
             </button>
 
-            <!-- TOMBOL SELESAI PACKING -->
             <button
               v-if="form.ref_po_id"
               type="button"
@@ -242,85 +253,88 @@ const router = useRouter()
 const { showSuccess, showError } = useNotification()
 const isSubmitting  = ref(false)
 const isMarkingDone = ref(false)
-const loadingItems  = ref(false)
 
 const productionOrders = ref([])
-const packingItems     = ref([])
+const allProdukJadi    = ref([])
 const poInfo = ref({ buyer_name: null, so_number: null })
 
 const form = reactive({
   date:      new Date().toISOString().slice(0, 10),
   ref_po_id: null,
   notes:     '',
-  items: [{ local_id: Date.now(), item_id: null, qty: null, max_qty: 0 }],
+  items:     [],
 })
 
-const packingItemsForSelect = computed(() =>
-  packingItems.value.map((i) => ({
-    item_id:       i.item_id,
-    item_code:     i.item_code,
-    item_name:     i.item_name,
-    qty_available: i.qty_available,
-    label:         `${i.item_code} - ${i.item_name}`,
+const allProdukJadiForSelect = computed(() =>
+  allProdukJadi.value.map((i) => ({
+    id:    i.id,
+    code:  i.code,
+    name:  i.name,
+    label: `${i.code} - ${i.name}`,
   }))
 )
 
 const fetchInitialData = async () => {
-  loadingItems.value = true
   try {
     const [poRes, itemRes] = await Promise.all([
       apiClient.get('/packing/available-pos'),
-      apiClient.get('/packing/packing-items'),
+      apiClient.get('/materials', { params: { category_name: 'Produk Jadi', per_page: 200 } }),
     ])
-    productionOrders.value = poRes.data.data  || []
-    packingItems.value     = itemRes.data.data || []
-  } catch (error) {
-    console.error('Error fetching initial data:', error)
+    productionOrders.value = poRes.data.data || []
+    const raw = itemRes.data.data?.data || itemRes.data.data || []
+    allProdukJadi.value = raw
+  } catch (_) {
     showError('Gagal', 'Gagal mengambil data awal')
-  } finally {
-    loadingItems.value = false
   }
 }
 
-const handlePoChange = async (opt) => {
+const handlePoChange = (opt) => {
   poInfo.value = { buyer_name: null, so_number: null }
+  form.items   = []
   if (!opt) return
-  try {
-    const res  = await apiClient.get(`/production-orders/${opt.id}`)
-    const data = res.data.data || {}
-    poInfo.value = {
-      buyer_name: data.sales_order?.buyer_name || opt.buyer_name || null,
-      so_number:  data.sales_order?.so_number  || opt.so_number  || null,
-    }
-  } catch (error) {
-    console.error('Error fetching PO detail:', error)
+
+  poInfo.value = {
+    buyer_name: opt.buyer_name || null,
+    so_number:  opt.so_number  || null,
+  }
+
+  // Auto-fill item dari detail PO
+  if (opt.details && opt.details.length > 0) {
+    form.items = opt.details.map((d) => ({
+      local_id:    Date.now() + Math.random(),
+      from_po:     true,
+      item_id:     d.item_id,
+      item_code:   d.item_code,
+      item_name:   d.item_name,
+      qty_planned: d.qty_planned,
+      qty:         null,
+    }))
+  } else {
+    // Tidak ada detail PO → manual
+    form.items = [{ local_id: Date.now(), from_po: false, item_id: null, qty: null, qty_planned: 0 }]
   }
 }
 
 const handlePoDeselect = () => {
   poInfo.value = { buyer_name: null, so_number: null }
+  form.items   = []
 }
 
-const onItemSelected = (index, opt) => {
-  form.items[index].max_qty = opt?.qty_available ?? 0
-}
-
-const addItem    = () => form.items.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, max_qty: 0 })
+const addItem = () => form.items.push({
+  local_id:    Date.now() + Math.random(),
+  from_po:     false,
+  item_id:     null,
+  qty:         null,
+  qty_planned: 0,
+})
 const removeItem = (i) => form.items.splice(i, 1)
 
 // === SIMPAN PACKING ===
 const handleSubmit = async () => {
   if (!form.ref_po_id) { showError('Validasi', 'PO wajib dipilih'); return }
 
-  const validItems = form.items.filter((i) => i.item_id && i.qty > 0)
-  if (validItems.length === 0) { showError('Validasi', 'Minimal satu item wajib diisi'); return }
-
-  for (let i = 0; i < validItems.length; i++) {
-    if (validItems[i].qty > validItems[i].max_qty && validItems[i].max_qty > 0) {
-      showError('Validasi', `Item #${i + 1}: Qty melebihi stok (${validItems[i].max_qty} pcs)`)
-      return
-    }
-  }
+  const validItems = form.items.filter((i) => (i.from_po ? i.item_id : i.item_id) && i.qty > 0)
+  if (validItems.length === 0) { showError('Validasi', 'Minimal satu item dengan qty wajib diisi'); return }
 
   isSubmitting.value = true
   try {
@@ -334,20 +348,14 @@ const handleSubmit = async () => {
       })),
     })
 
-    showSuccess('Sukses', 'Packing berhasil dicatat')
+    showSuccess('Sukses', 'Packing berhasil dicatat — stok produk jadi bertambah')
 
-    // Reset form tapi tetap di halaman
-    form.notes  = ''
-    form.items  = [{ local_id: Date.now(), item_id: null, qty: null, max_qty: 0 }]
-
-    // Refresh stok packing
-    const res = await apiClient.get('/packing/packing-items')
-    packingItems.value = res.data.data || []
+    // Reset qty tapi pertahankan item dari PO
+    form.items.forEach((i) => { i.qty = null })
+    form.notes = ''
 
   } catch (error) {
-    const message = error.response?.data?.message ||
-      (error.response?.data?.errors && JSON.stringify(error.response.data.errors)) ||
-      'Gagal menyimpan packing'
+    const message = error.response?.data?.message || 'Gagal menyimpan packing'
     showError('Gagal', message)
   } finally {
     isSubmitting.value = false
@@ -370,13 +378,11 @@ const selesaiPacking = async () => {
     await apiClient.post(`/packing/selesai/${form.ref_po_id}`)
     showSuccess('Selesai!', `PO ${poLabel} selesai — produk jadi siap dikirim! 🎉`)
 
-    // Reset semua
     form.ref_po_id = null
     form.notes     = ''
-    form.items     = [{ local_id: Date.now(), item_id: null, qty: null, max_qty: 0 }]
+    form.items     = []
     poInfo.value   = { buyer_name: null, so_number: null }
 
-    // Refresh PO list (PO yang baru selesai tidak akan muncul lagi)
     const poRes = await apiClient.get('/packing/available-pos')
     productionOrders.value = poRes.data.data || []
 
@@ -439,12 +445,17 @@ onMounted(fetchInitialData)
 
 .item-row-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
 .item-row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.item-row-info { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 .item-row-number { font-size: 0.82rem; font-weight: 700; color: #6b7280; text-transform: uppercase; }
+.item-row-name { font-size: 0.9rem; font-weight: 600; color: #111827; }
+.item-row-planned { font-size: 0.78rem; color: #1e40af; font-weight: 600; background: #dbeafe; padding: 2px 8px; border-radius: 999px; }
 .btn-remove-row { background: #fee2e2; color: #ef4444; border: none; border-radius: 6px; padding: 3px 10px; font-size: 0.82rem; cursor: pointer; font-weight: 700; }
 
+.item-from-po { display: flex; flex-direction: column; gap: 4px; padding: 0.875rem 1.25rem; border: 2.5px solid #bfdbfe; border-radius: 12px; background: #eff6ff; }
+.item-from-po-code { font-size: 0.82rem; font-weight: 700; color: #1e40af; }
+.item-from-po-name { font-size: 0.95rem; font-weight: 600; color: #111827; }
+
 .stock-hint { margin-left: 8px; font-size: 0.78rem; color: #1e40af; font-weight: 600; }
-.qty-warning { margin-top: 4px; font-size: 0.82rem; color: #ef4444; }
-.loading-inline { font-size: 0.82rem; color: #6b7280; margin-left: 8px; }
 .empty-hint { padding: 2rem; text-align: center; color: #9ca3af; font-size: 0.95rem; background: #f9fafb; border-radius: 12px; border: 1px dashed #d1d5db; }
 
 .btn-add-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; margin-top: 0.5rem; border: 2px dashed; }
@@ -471,7 +482,6 @@ onMounted(fetchInitialData)
 .item-option { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; }
 .item-option-code { font-size: 0.82rem; font-weight: 700; color: #1e40af; }
 .item-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
-.item-option-stock { font-size: 0.78rem; color: #6b7280; }
 
 .vue-select-po :deep(.vs__dropdown-toggle),
 .vue-select-item :deep(.vs__dropdown-toggle) { padding: 0.875rem 1.25rem; border: 2.5px solid #e5e7eb; border-radius: 12px; min-height: 54px; }

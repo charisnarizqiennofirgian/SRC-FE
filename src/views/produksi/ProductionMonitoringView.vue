@@ -141,7 +141,7 @@
                   <span class="zone-text">Persiapan Bahan</span>
                 </th>
                 <!-- Zona Hilir -->
-                <th colspan="5" class="zone-header zone-hilir">
+                <th colspan="7" class="zone-header zone-hilir">
                   <span class="zone-icon">⚙️</span>
                   <span class="zone-text">Produksi</span>
                 </th>
@@ -155,17 +155,19 @@
                 <th class="th-stage stage-hulu">Moulding</th>
                 <th class="th-stage stage-hulu">Mesin</th>
                 <!-- Hilir -->
+                <th class="th-stage stage-ruskomp">Rustik Komp</th>
                 <th class="th-stage stage-assembling">Assembling</th>
-                <th class="th-stage stage-rustik">Rustik</th>
                 <th class="th-stage stage-sanding">Sanding</th>
+                <th class="th-stage stage-rustik">Rustik</th>
                 <th class="th-stage stage-finishing">Finishing</th>
+                <th class="th-stage stage-qcfinal">QC Final</th>
                 <th class="th-stage stage-packing">Packing</th>
               </tr>
             </thead>
             <tbody class="table-body">
               <!-- Empty State -->
               <tr v-if="data.length === 0" class="empty-row">
-                <td colspan="15" class="empty-cell">
+                <td colspan="16" class="empty-cell">
                   <div class="empty-state">
                     <span class="empty-icon">📭</span>
                     <p class="empty-text">Tidak ada data Sales Order aktif.</p>
@@ -234,6 +236,11 @@
                 </td>
 
                 <!-- Zona Hilir (Qty) -->
+                <td class="td-qty stage-ruskomp">
+                  <span :class="['qty-value', row.qty_ruskomp > 0 ? 'has-value' : 'no-value']">
+                    {{ formatNumber(row.qty_ruskomp) }}
+                  </span>
+                </td>
                 <td class="td-qty stage-assembling">
                   <span :class="['qty-value', row.qty_assembling > 0 ? 'has-value' : 'no-value']">
                     {{ formatNumber(row.qty_assembling) }}
@@ -254,6 +261,11 @@
                     {{ formatNumber(row.qty_finishing) }}
                   </span>
                 </td>
+                <td class="td-qty stage-qcfinal">
+                  <span :class="['qty-value', row.qty_qc_final > 0 ? 'has-value' : 'no-value']">
+                    {{ formatNumber(row.qty_qc_final) }}
+                  </span>
+                </td>
                 <td class="td-qty stage-packing">
                   <span :class="['qty-value', row.qty_packing > 0 ? 'has-value' : 'no-value']">
                     {{ formatNumber(row.qty_packing) }}
@@ -262,11 +274,17 @@
 
                 <!-- Sisa -->
                 <td class="td-num">
-                  <span v-if="row.is_done" class="completion-badge">
-                    <span class="badge-icon">✓</span>
-                    DONE
-                  </span>
-                  <span v-else class="sisa-value">{{ formatNumber(row.sisa) }}</span>
+                  <div class="sisa-cell">
+                    <span v-if="row.is_done" class="completion-badge">
+                      <span class="badge-icon">✓</span> DONE
+                    </span>
+                    <span v-else class="sisa-value">{{ formatNumber(row.sisa) }}</span>
+                    <button
+                      class="btn-detail"
+                      @click="openDetail(row)"
+                      title="Lihat Detail"
+                    >🔍</button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -325,6 +343,165 @@
               »
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL DETAIL -->
+    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-left">
+            <span class="modal-icon">🔍</span>
+            <div>
+              <h3 class="modal-title">Detail Produksi</h3>
+              <p class="modal-subtitle">
+                {{ selectedRow?.so_number }} — {{ selectedRow?.item_name }}
+                <span class="modal-buyer">{{ selectedRow?.buyer_name }}</span>
+              </p>
+            </div>
+          </div>
+          <button class="modal-close" @click="closeModal">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Loading -->
+          <div v-if="loadingDetail" class="modal-loading">
+            <div class="loading-spinner"></div>
+            <p>Memuat detail...</p>
+          </div>
+
+          <template v-else-if="detailData">
+            <!-- Per Stage -->
+            <div
+              v-for="stage in detailData.stages"
+              :key="stage.type"
+              class="stage-block"
+              :class="getStageClass(stage.type)"
+            >
+              <div class="stage-block-header">
+                <span class="stage-block-icon">{{ getStageIcon(stage.type) }}</span>
+                <div>
+                  <div class="stage-block-title">{{ stage.stage }}</div>
+                  <div class="stage-block-totals">
+                    <span class="total-in">📥 Input: {{ formatNumber(stage.total_out) }} pcs</span>
+                    <span class="total-out">📤 Output: {{ formatNumber(stage.total_in) }} pcs</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- INPUT (yang diambil/dipakai) -->
+              <div v-if="stage.outputs && stage.outputs.length > 0" class="sub-section">
+                <div class="sub-section-title input-title">📥 Bahan Masuk / Dipakai</div>
+                <table class="detail-table">
+                  <thead>
+                    <tr>
+                      <th>Tanggal</th>
+                      <th>No. Dokumen</th>
+                      <th>Item</th>
+                      <th>Gudang</th>
+                      <th class="col-right">Qty</th>
+                      <th>Catatan</th>
+                      <th>User</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(tx, i) in stage.outputs" :key="'out-'+i" class="input-row">
+                      <td>{{ tx.date }}</td>
+                      <td><span class="doc-number">{{ tx.reference_number }}</span></td>
+                      <td>
+                        <div class="tx-item-code">{{ tx.item_code }}</div>
+                        <div class="tx-item-name">{{ tx.item_name }}</div>
+                      </td>
+                      <td>{{ tx.warehouse_name }}</td>
+                      <td class="col-right"><strong>{{ formatNumber(tx.qty) }}</strong></td>
+                      <td class="tx-notes">{{ tx.notes }}</td>
+                      <td>{{ tx.user_name }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- OUTPUT (hasil produksi) -->
+              <div v-if="stage.inputs && stage.inputs.length > 0" class="sub-section">
+                <div class="sub-section-title output-title">📤 Hasil / Keluar</div>
+                <table class="detail-table">
+                  <thead>
+                    <tr>
+                      <th>Tanggal</th>
+                      <th>No. Dokumen</th>
+                      <th>Item</th>
+                      <th>Gudang</th>
+                      <th class="col-right">Qty</th>
+                      <th>Catatan</th>
+                      <th>User</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(tx, i) in stage.inputs" :key="'in-'+i" class="output-row">
+                      <td>{{ tx.date }}</td>
+                      <td><span class="doc-number">{{ tx.reference_number }}</span></td>
+                      <td>
+                        <div class="tx-item-code">{{ tx.item_code }}</div>
+                        <div class="tx-item-name">{{ tx.item_name }}</div>
+                      </td>
+                      <td>{{ tx.warehouse_name }}</td>
+                      <td class="col-right"><strong>{{ formatNumber(tx.qty) }}</strong></td>
+                      <td class="tx-notes">{{ tx.notes }}</td>
+                      <td>{{ tx.user_name }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Reject Section -->
+            <div v-if="detailData.rejects && detailData.rejects.length > 0" class="reject-block">
+              <div class="stage-block-header reject-header">
+                <span class="stage-block-icon">⚠️</span>
+                <div>
+                  <div class="stage-block-title">Reject</div>
+                  <div class="stage-block-total">
+                    Total: {{ formatNumber(detailData.rejects.reduce((s,r) => s + r.qty, 0)) }} pcs
+                  </div>
+                </div>
+              </div>
+
+              <table class="detail-table">
+                <thead>
+                  <tr>
+                    <th>Tanggal</th>
+                    <th>No. Dokumen</th>
+                    <th>Item</th>
+                    <th>Jenis Reject</th>
+                    <th class="col-right">Qty</th>
+                    <th>Keterangan</th>
+                    <th>User</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(r, i) in detailData.rejects" :key="i" class="reject-row">
+                    <td>{{ r.date }}</td>
+                    <td><span class="doc-number">{{ r.reference_number }}</span></td>
+                    <td>
+                      <div class="tx-item-code">{{ r.item_code }}</div>
+                      <div class="tx-item-name">{{ r.item_name }}</div>
+                    </td>
+                    <td><span class="reject-type-badge">{{ r.transaction_type }}</span></td>
+                    <td class="col-right reject-qty"><strong>{{ formatNumber(r.qty) }}</strong></td>
+                    <td class="tx-notes reject-notes">{{ r.notes }}</td>
+                    <td>{{ r.user_name }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Empty -->
+            <div v-if="detailData.stages.length === 0 && (!detailData.rejects || detailData.rejects.length === 0)" class="modal-empty">
+              <span class="empty-icon">📭</span>
+              <p>Belum ada transaksi produksi untuk item ini</p>
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -438,6 +615,77 @@ const pendingCount = computed(() => {
 onMounted(() => {
   fetchData()
 })
+
+// === MODAL DETAIL ===
+const showModal     = ref(false)
+const loadingDetail = ref(false)
+const detailData    = ref(null)
+const selectedRow   = ref(null)
+
+const openDetail = async (row) => {
+  selectedRow.value  = row
+  showModal.value    = true
+  loadingDetail.value = true
+  detailData.value   = null
+
+  try {
+    const res = await axios.get('/production-monitoring/detail', {
+      params: {
+        so_id:   row.so_id,
+        item_id: row.item_id,
+      }
+    })
+    if (res.data.success) {
+      detailData.value = res.data
+    }
+  } catch (error) {
+    console.error('Error fetching detail:', error)
+  } finally {
+    loadingDetail.value = false
+  }
+}
+
+const closeModal = () => {
+  showModal.value  = false
+  detailData.value = null
+  selectedRow.value = null
+}
+
+const getStageIcon = (type) => {
+  const icons = {
+    'SAWMILL':         '🪚',
+    'PEMBAHANAN':      '🪵',
+    'MOULDING':        '🔨',
+    'MESIN':           '⚙️',
+    'RUSTIK_KOMPONEN': '🪵',
+    'SUB_ASSEMBLING':  '🔩',
+    'RAKIT':           '🔧',
+    'SANDING':         '✨',
+    'RUSTIK':          '🪵',
+    'FINISHING':       '🎨',
+    'QC_FINAL':        '🔍',
+    'PACKING':         '📦',
+  }
+  return icons[type] || '📋'
+}
+
+const getStageClass = (type) => {
+  const classes = {
+    'SAWMILL':         'stage-sawmill-block',
+    'PEMBAHANAN':      'stage-pembahanan-block',
+    'MOULDING':        'stage-moulding-block',
+    'MESIN':           'stage-mesin-block',
+    'RUSTIK_KOMPONEN': 'stage-ruskomp-block',
+    'SUB_ASSEMBLING':  'stage-assembling-block',
+    'RAKIT':           'stage-assembling-block',
+    'SANDING':         'stage-sanding-block',
+    'RUSTIK':          'stage-rustik-block',
+    'FINISHING':       'stage-finishing-block',
+    'QC_FINAL':        'stage-qc-block',
+    'PACKING':         'stage-packing-block',
+  }
+  return classes[type] || ''
+}
 </script>
 
 <style scoped>
@@ -1422,5 +1670,284 @@ onMounted(() => {
   .pagination-controls {
     justify-content: center;
   }
+}
+
+/* ===== QC FINAL COLUMN ===== */
+.stage-qcfinal {
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%) !important;
+  color: #065f46 !important;
+}
+
+/* ===== SISA CELL ===== */
+.sisa-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-detail {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.btn-detail:hover {
+  background: #dbeafe;
+  transform: scale(1.1);
+}
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 1100px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, #1e3a5f, #1e40af);
+  color: white;
+}
+
+.modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.modal-icon { font-size: 2rem; }
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.modal-subtitle {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-buyer {
+  background: rgba(255,255,255,0.2);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+}
+
+.modal-close {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.modal-close:hover { background: rgba(255,255,255,0.3); }
+
+.modal-body {
+  padding: 1.5rem 2rem;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.modal-loading {
+  text-align: center;
+  padding: 3rem;
+  color: #6b7280;
+}
+
+.modal-empty {
+  text-align: center;
+  padding: 3rem;
+  color: #9ca3af;
+}
+
+/* ===== STAGE BLOCKS ===== */
+.stage-block {
+  margin-bottom: 1.5rem;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.stage-block-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.stage-block-icon { font-size: 1.5rem; }
+
+.stage-block-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #111827;
+}
+
+.stage-block-total {
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.stage-block-totals {
+  display: flex;
+  gap: 1rem;
+  margin-top: 4px;
+}
+
+.total-in {
+  font-size: 0.82rem;
+  color: #9a3412;
+  font-weight: 600;
+}
+
+.total-out {
+  font-size: 0.82rem;
+  color: #065f46;
+  font-weight: 600;
+}
+
+.sub-section { border-top: 1px solid #e5e7eb; }
+
+.sub-section-title {
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input-title  { background: #fff7ed; color: #9a3412; }
+.output-title { background: #f0fdf4; color: #065f46; }
+
+.input-row  { background: #fffbeb; }
+.output-row { background: #f0fdf4; }
+
+.stage-sawmill-block .stage-block-header    { background: #f0fdf4; border-bottom: 2px solid #bbf7d0; }
+.stage-pembahanan-block .stage-block-header { background: #f0fdf4; border-bottom: 2px solid #bbf7d0; }
+.stage-moulding-block .stage-block-header   { background: #eff6ff; border-bottom: 2px solid #bfdbfe; }
+.stage-mesin-block .stage-block-header      { background: #ecfeff; border-bottom: 2px solid #a5f3fc; }
+.stage-ruskomp-block .stage-block-header    { background: #fff7ed; border-bottom: 2px solid #fed7aa; }
+.stage-assembling-block .stage-block-header { background: #f5f3ff; border-bottom: 2px solid #ddd6fe; }
+.stage-sanding-block .stage-block-header    { background: #fefce8; border-bottom: 2px solid #fef08a; }
+.stage-rustik-block .stage-block-header     { background: #fff7ed; border-bottom: 2px solid #fed7aa; }
+.stage-finishing-block .stage-block-header  { background: #fdf2f8; border-bottom: 2px solid #fbcfe8; }
+.stage-qc-block .stage-block-header         { background: #f0fdf4; border-bottom: 2px solid #bbf7d0; }
+.stage-packing-block .stage-block-header    { background: #eff6ff; border-bottom: 2px solid #bfdbfe; }
+
+/* ===== DETAIL TABLE ===== */
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.detail-table th {
+  padding: 8px 12px;
+  background: #f9fafb;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.detail-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+}
+
+.col-right { text-align: right !important; }
+
+.doc-number {
+  font-family: monospace;
+  font-size: 0.8rem;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #374151;
+}
+
+.tx-item-code {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #1e40af;
+}
+
+.tx-item-name {
+  font-size: 0.85rem;
+  color: #111827;
+}
+
+.tx-notes {
+  font-size: 0.8rem;
+  color: #6b7280;
+  max-width: 200px;
+}
+
+/* ===== REJECT BLOCK ===== */
+.reject-block {
+  margin-bottom: 1.5rem;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #fecaca;
+}
+
+.reject-header {
+  background: #fff5f5 !important;
+  border-bottom: 2px solid #fecaca !important;
+}
+
+.reject-row { background: #fff5f5; }
+
+.reject-qty { color: #dc2626 !important; }
+
+.reject-notes { color: #dc2626 !important; font-weight: 600; }
+
+.reject-type-badge {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.stage-ruskomp {
+  background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%) !important;
+  color: #9a3412 !important;
 }
 </style>
