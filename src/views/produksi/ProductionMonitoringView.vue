@@ -145,6 +145,7 @@
                   <span class="zone-icon">⚙️</span>
                   <span class="zone-text">Produksi</span>
                 </th>
+                <th class="th-num" rowspan="2" style="background:#fee2e2;color:#dc2626;">⚠️ Reject</th>
                 <th class="th-num" rowspan="2">Sisa</th>
               </tr>
               <tr class="header-row-sub">
@@ -167,7 +168,7 @@
             <tbody class="table-body">
               <!-- Empty State -->
               <tr v-if="data.length === 0" class="empty-row">
-                <td colspan="16" class="empty-cell">
+                <td colspan="17" class="empty-cell">
                   <div class="empty-state">
                     <span class="empty-icon">📭</span>
                     <p class="empty-text">Tidak ada data Sales Order aktif.</p>
@@ -272,6 +273,19 @@
                   </span>
                 </td>
 
+                <!-- Reject -->
+                <td class="td-qty">
+                  <span
+                    v-if="row.has_reject"
+                    class="reject-badge-table"
+                    @click="openRejectDetail(row)"
+                    title="Klik untuk lihat detail reject"
+                  >
+                    ⚠️ {{ formatNumber(row.qty_reject) }} pcs
+                  </span>
+                  <span v-else class="no-reject">-</span>
+                </td>
+
                 <!-- Sisa -->
                 <td class="td-num">
                   <div class="sisa-cell">
@@ -361,7 +375,17 @@
               </p>
             </div>
           </div>
-          <button class="modal-close" @click="closeModal">✕</button>
+          <div class="modal-header-actions">
+            <button
+              class="btn-export-excel"
+              @click="exportExcel"
+              :disabled="!selectedRow"
+              title="Export Excel"
+            >
+              📥 Export Excel
+            </button>
+            <button class="modal-close" @click="closeModal">✕</button>
+          </div>
         </div>
 
         <div class="modal-body">
@@ -649,6 +673,49 @@ const closeModal = () => {
   showModal.value  = false
   detailData.value = null
   selectedRow.value = null
+}
+
+const openRejectDetail = async (row) => {
+  selectedRow.value  = row
+  showModal.value    = true
+  loadingDetail.value = true
+  detailData.value   = null
+
+  try {
+    const res = await axios.get('/production-monitoring/detail', {
+      params: { so_id: row.so_id, item_id: row.item_id }
+    })
+    if (res.data.success) {
+      detailData.value = res.data
+      setTimeout(() => {
+        const rejectEl = document.querySelector('.reject-block')
+        if (rejectEl) rejectEl.scrollIntoView({ behavior: 'smooth' })
+      }, 300)
+    }
+  } catch (error) {
+    console.error(error)
+  } finally {
+    loadingDetail.value = false
+  }
+}
+
+const exportExcel = async () => {
+  if (!selectedRow.value) return
+  try {
+    const res = await axios.get('/production-monitoring/export-excel', {
+      params: { so_id: selectedRow.value.so_id },
+      responseType: 'blob',
+    })
+    const url = window.URL.createObjectURL(new Blob([res.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `Laporan_Produksi_${selectedRow.value.so_number}.xlsx`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+  } catch (error) {
+    console.error('Gagal export Excel:', error)
+  }
 }
 
 const getStageIcon = (type) => {
@@ -1700,6 +1767,29 @@ const getStageClass = (type) => {
   transform: scale(1.1);
 }
 
+.reject-badge-table {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.reject-badge-table:hover {
+  background: #fecaca;
+  transform: scale(1.05);
+}
+.no-reject {
+  color: #d1d5db;
+  font-size: 0.82rem;
+}
+
 /* ===== MODAL ===== */
 .modal-overlay {
   position: fixed;
@@ -1773,6 +1863,32 @@ const getStageClass = (type) => {
   transition: all 0.2s;
 }
 .modal-close:hover { background: rgba(255,255,255,0.3); }
+
+.modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-export-excel {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-export-excel:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
+}
+.btn-export-excel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 .modal-body {
   padding: 1.5rem 2rem;

@@ -62,6 +62,7 @@
                 <th colspan="7" class="zone-header zone-hilir">
                   <span class="zone-icon">⚙️</span> Produksi
                 </th>
+                <th class="col-num" rowspan="2" style="background:#fee2e2;color:#dc2626;">⚠️ Reject</th>
                 <th class="col-num" rowspan="2">Sisa</th>
               </tr>
               <tr>
@@ -168,6 +169,19 @@
                   <span :class="['qty-value', row.qty_packing > 0 ? 'has-value' : 'no-value']">
                     {{ formatNumber(row.qty_packing) }}
                   </span>
+                </td>
+
+                <!-- Reject -->
+                <td class="col-num">
+                  <span
+                    v-if="row.has_reject"
+                    class="reject-badge-table"
+                    @click="goToDetail(row)"
+                    title="Klik untuk lihat detail reject"
+                  >
+                    ⚠️ {{ formatNumber(row.qty_reject) }} pcs
+                  </span>
+                  <span v-else class="no-reject">-</span>
                 </td>
 
                 <!-- Sisa -->
@@ -933,6 +947,29 @@ onMounted(() => {
 .detail-btn:hover {
   background: #eff6ff;
   transform: scale(1.2);
+}
+
+.reject-badge-table {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.reject-badge-table:hover {
+  background: #fecaca;
+  transform: scale(1.05);
+}
+.no-reject {
+  color: #d1d5db;
+  font-size: 0.82rem;
 }
 
 /* ============================================
