@@ -43,7 +43,7 @@
               </div>
             </div>
 
-            <div class="form-grid-3col">
+            <div class="form-grid-4col">
               <div class="form-group-modern">
                 <label class="form-label-modern">
                   Tanggal <span class="required-star">*</span>
@@ -51,6 +51,18 @@
                 <div class="input-wrapper-icon">
                   <span class="input-icon">📅</span>
                   <input v-model="form.date" type="date" class="form-input-modern" required />
+                </div>
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">Estimasi Selesai</label>
+                <div class="input-wrapper-icon">
+                  <span class="input-icon">🏁</span>
+                  <input
+                    v-model="form.estimated_finish_date"
+                    type="date"
+                    class="form-input-modern"
+                  />
                 </div>
               </div>
 
@@ -434,9 +446,10 @@ const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
 
 const form = reactive({
-  date:      new Date().toISOString().slice(0, 10),
-  ref_po_id: null,
-  notes:     '',
+  date:                  new Date().toISOString().slice(0, 10),
+  estimated_finish_date: '',
+  ref_po_id:             null,
+  notes:                 '',
   inputs:  [{ local_id: Date.now(),       item_id: null, qty: null }],
   outputs: [{ local_id: Date.now() + 1,   item_id: null, qty: null }],
   rejects: [],
@@ -580,8 +593,9 @@ const handleSubmit = async () => {
   isSubmitting.value = true
   try {
     const payload = {
-      date:      form.date,
-      ref_po_id: Number(form.ref_po_id),
+      date:                  form.date,
+      estimated_finish_date: form.estimated_finish_date || null,
+      ref_po_id:             Number(form.ref_po_id),
       notes:     form.notes || null,
       inputs:    validInputs.map((i)  => ({ item_id: Number(i.item_id),  qty: Number(i.qty) })),
       outputs:   validOutputs.map((o) => ({ item_id: Number(o.item_id), qty: Number(o.qty) })),
@@ -660,6 +674,7 @@ onMounted(fetchInitialData)
 
 .form-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
 .form-grid-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+.form-grid-4col { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
 .form-group-modern { display: flex; flex-direction: column; }
 .form-label-modern { font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem; }
 .required-star { color: #ef4444; }
@@ -752,7 +767,7 @@ onMounted(fetchInitialData)
 .item-option-stock { font-size: 0.78rem; }
 
 @media (max-width: 768px) {
-  .form-grid-2col, .form-grid-3col { grid-template-columns: 1fr; }
+  .form-grid-2col, .form-grid-3col, .form-grid-4col { grid-template-columns: 1fr; }
   .reject-type-toggle { flex-direction: column; }
   .card-body-moulding { padding: 1.25rem; }
 }

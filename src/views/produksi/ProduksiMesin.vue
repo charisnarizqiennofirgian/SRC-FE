@@ -43,7 +43,7 @@
               </div>
             </div>
 
-            <div class="form-grid-2col">
+            <div class="form-grid-3col">
               <div class="form-group-modern">
                 <label class="form-label-modern">
                   Tanggal <span class="required-star">*</span>
@@ -51,6 +51,18 @@
                 <div class="input-wrapper-icon">
                   <span class="input-icon">📅</span>
                   <input v-model="form.date" type="date" class="form-input-modern" required />
+                </div>
+              </div>
+
+              <div class="form-group-modern">
+                <label class="form-label-modern">Estimasi Selesai</label>
+                <div class="input-wrapper-icon">
+                  <span class="input-icon">🏁</span>
+                  <input
+                    v-model="form.estimated_finish_date"
+                    type="date"
+                    class="form-input-modern"
+                  />
                 </div>
               </div>
 
@@ -450,10 +462,11 @@ const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
 
 const form = reactive({
-  date:       new Date().toISOString().slice(0, 10),
-  ref_po_id:  null,
-  machine_id: null,
-  notes:      '',
+  date:                  new Date().toISOString().slice(0, 10),
+  estimated_finish_date: '',
+  ref_po_id:             null,
+  machine_id:            null,
+  notes:                 '',
   inputs:  [{ local_id: Date.now(),     item_id: null, qty: null, max_qty: 0 }],
   outputs: [{ local_id: Date.now() + 1, item_id: null, qty: null }],
   rejects: [],
@@ -588,9 +601,10 @@ const handleSubmit = async () => {
   isSubmitting.value = true
   try {
     const payload = {
-      date:       form.date,
-      ref_po_id:  Number(form.ref_po_id),
-      machine_id: Number(form.machine_id),
+      date:                  form.date,
+      estimated_finish_date: form.estimated_finish_date || null,
+      ref_po_id:             Number(form.ref_po_id),
+      machine_id:            Number(form.machine_id),
       notes:      form.notes || null,
       inputs:  validInputs.map((i)  => ({ item_id: Number(i.item_id),  qty: Number(i.qty) })),
       outputs: validOutputs.map((o) => ({ item_id: Number(o.item_id), qty: Number(o.qty) })),
