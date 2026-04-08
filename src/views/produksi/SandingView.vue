@@ -79,23 +79,7 @@
               </div>
             </div>
 
-            <!-- Pilih Gudang Sumber -->
-            <div class="form-group-modern">
-              <label class="form-label-modern">
-                Gudang Sumber <span class="required-star">*</span>
-              </label>
-              <div class="warehouse-toggle">
-                <button
-                  v-for="wh in sourceWarehouses"
-                  :key="wh.id"
-                  type="button"
-                  :class="['toggle-btn', form.source_warehouse_id === wh.id ? 'active' : '']"
-                  @click="selectWarehouse(wh)"
-                >
-                  {{ wh.name }}
-                </button>
-              </div>
-            </div>
+
 
             <!-- Info PO -->
             <div v-if="poInfo.buyer_name" class="po-selected-info">
@@ -149,7 +133,15 @@
                 <div class="form-grid-2col">
                   <div class="form-group-modern">
                     <label class="form-label-modern">Item <span class="required-star">*</span></label>
+                    <!-- Read-only kalau dari PO -->
+                    <div v-if="row.item_name" class="item-readonly-box">
+                      <span class="item-readonly-code">{{ row.item_code }}</span>
+                      <span class="item-readonly-name">{{ row.item_name }}</span>
+                      <span class="item-readonly-badge">🎯 Dari PO</span>
+                    </div>
+                    <!-- Manual kalau tidak ada PO -->
                     <vue-select
+                      v-else
                       v-model="row.item_id"
                       :options="sourceItemsForSelect"
                       :reduce="(o) => o.item_id"
@@ -178,7 +170,7 @@
                         v-model.number="row.qty"
                         type="number"
                         min="1"
-                        :max="row.max_qty"
+                        :max="row.max_qty || undefined"
                         class="form-input-modern"
                         placeholder="0"
                       />
@@ -229,8 +221,7 @@ const isSubmitting   = ref(false)
 const loadingItems   = ref(false)
 
 const productionOrders    = ref([])
-const sourceWarehouses    = ref([])
-const sourceItems         = ref([])
+const sourceItems           = ref([])
 const selectedWarehouseName = ref('')
 const poInfo = ref({ buyer_name: null, so_number: null })
 
@@ -267,22 +258,21 @@ const fetchInitialData = async () => {
       so_number:  po.so_number,
     }))
 
-    // Semua gudang kecuali SANDING (tujuan), LOG, RSTB, RSTK, BUFFER
-    const excludeCodes = ['SANDING', 'LOG', 'RSTB', 'RSTK', 'BUFFER']
-    const allWh = whRes.data.data || whRes.data || []
-    sourceWarehouses.value = allWh.filter((w) => !excludeCodes.includes(w.code))
+    // Auto-set source warehouse ke ASSEMBLING
+    const whAll = whRes.data.data || whRes.data || []
+    const assemblingWh = whAll.find((w) => w.code === 'ASSEMBLING')
+    if (assemblingWh) {
+      form.source_warehouse_id = assemblingWh.id
+      selectedWarehouseName.value = assemblingWh.name
+      await fetchSourceItems()
+    }
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil data awal')
   }
 }
 
-const selectWarehouse = async (wh) => {
-  form.source_warehouse_id = wh.id
-  selectedWarehouseName.value = wh.name
-  form.items = [{ local_id: Date.now(), item_id: null, qty: null, max_qty: 0 }]
-  await fetchSourceItems()
-}
+
 
 const fetchSourceItems = async () => {
   if (!form.source_warehouse_id) return
@@ -299,8 +289,11 @@ const fetchSourceItems = async () => {
   }
 }
 
+const poTargets = ref([])
+
 const handlePoChange = async (opt) => {
-  poInfo.value = { buyer_name: null, so_number: null }
+  poInfo.value    = { buyer_name: null, so_number: null }
+  poTargets.value = []
   if (!opt) return
   try {
     const res  = await apiClient.get(`/production-orders/${opt.id}`)
@@ -309,11 +302,26 @@ const handlePoChange = async (opt) => {
       buyer_name: data.sales_order?.buyer_name || opt.buyer_name || null,
       so_number:  data.sales_order?.so_number  || opt.so_number  || null,
     }
+    poTargets.value = data.targets || []
+
+    // Auto-fill items dari detail PO
+    if (data.targets?.length > 0) {
+      form.items = data.targets.map((t, i) => ({
+        local_id:  Date.now() + i,
+        item_id:   t.item_id,
+        item_name: t.name,
+        item_code: t.code,
+        qty:       null,
+        max_qty:   0,
+      }))
+    }
   } catch (e) { console.error(e) }
 }
 
 const handlePoDeselect = () => {
-  poInfo.value = { buyer_name: null, so_number: null }
+  poInfo.value    = { buyer_name: null, so_number: null }
+  poTargets.value = []
+  form.items = [{ local_id: Date.now(), item_id: null, qty: null, max_qty: 0 }]
 }
 
 const onItemSelected = (index, opt) => {
@@ -325,7 +333,7 @@ const removeItem = (i) => form.items.splice(i, 1)
 
 const handleSubmit = async () => {
   if (!form.ref_po_id)          { showError('Validasi', 'PO wajib dipilih'); return }
-  if (!form.source_warehouse_id) { showError('Validasi', 'Gudang sumber wajib dipilih'); return }
+
 
   const validItems = form.items.filter((i) => i.item_id && i.qty > 0)
   if (validItems.length === 0) { showError('Validasi', 'Minimal satu item wajib diisi'); return }
@@ -446,5 +454,32 @@ onMounted(fetchInitialData)
   .form-grid-2col, .form-grid-3col { grid-template-columns: 1fr; }
   .warehouse-toggle { flex-direction: column; }
   .card-body-sanding { padding: 1.25rem; }
+}
+
+.item-readonly-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0.9rem 1.25rem;
+  border: 2.5px solid #bae6fd;
+  border-radius: 12px;
+  background: #f0f9ff;
+  min-height: 54px;
+  justify-content: center;
+}
+.item-readonly-code {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0369a1;
+}
+.item-readonly-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+}
+.item-readonly-badge {
+  font-size: 0.72rem;
+  color: #075985;
+  font-weight: 600;
 }
 </style>

@@ -262,35 +262,38 @@
               <div class="item-row-header">
                 <span class="item-row-number">Output #{{ index + 1 }}</span>
                 <button
-                  v-if="form.outputs.length > 1"
+                  v-if="!form.ref_po_id && form.outputs.length > 1"
                   type="button"
                   class="btn-remove-row"
                   @click="removeOutput(index)"
                 >✕</button>
               </div>
+
               <div class="form-grid-2col">
                 <div class="form-group-modern">
-                  <label class="form-label-modern">
-                    Item Output <span class="required-star">*</span>
-                  </label>
+                  <label class="form-label-modern">Item Output</label>
+                  <!-- Kalau dari PO: tampilkan nama item read-only -->
+                  <div v-if="row.item_name" class="item-readonly-box">
+                    <span class="item-readonly-code">{{ row.item_code }}</span>
+                    <span class="item-readonly-name">{{ row.item_name }}</span>
+                    <span class="item-readonly-badge">🎯 Dari PO</span>
+                  </div>
+                  <!-- Kalau manual: vue-select -->
                   <vue-select
+                    v-else
                     v-model="row.item_id"
                     :options="allItemsForSelect"
                     :reduce="(o) => o.id"
                     label="label"
                     placeholder="🔍 Cari item output..."
                     class="vue-select-item"
-                  >
-                    <template #option="o">
-                      <div class="item-option">
-                        <span class="item-option-code">{{ o.code }}</span>
-                        <span class="item-option-name">{{ o.name }}</span>
-                      </div>
-                    </template>
-                  </vue-select>
+                  />
                 </div>
+
                 <div class="form-group-modern">
-                  <label class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
+                  <label class="form-label-modern">
+                    Qty (pcs) <span class="required-star">*</span>
+                  </label>
                   <div class="input-wrapper-icon">
                     <span class="input-icon">🔢</span>
                     <input
@@ -302,6 +305,10 @@
                     />
                   </div>
                 </div>
+              </div>
+
+              <div class="output-dest-hint">
+                📦 → Gudang Assembling
               </div>
             </div>
 
@@ -487,6 +494,7 @@ const fetchInitialData = async () => {
 const handlePoChange = async (opt) => {
   poInfo.value    = { buyer_name: null, so_number: null }
   poTargets.value = []
+  form.outputs    = [{ local_id: Date.now(), item_id: null, qty: null }]
   if (!opt) return
   try {
     const res  = await apiClient.get(`/production-orders/${opt.id}`)
@@ -496,12 +504,24 @@ const handlePoChange = async (opt) => {
       so_number:  data.sales_order?.so_number  || opt.so_number  || null,
     }
     poTargets.value = data.targets || []
+
+    // Auto-fill output dari detail PO
+    if (data.targets?.length > 0) {
+      form.outputs = data.targets.map((t, i) => ({
+        local_id: Date.now() + i,
+        item_id:  t.item_id,
+        item_name: t.name,
+        item_code: t.code,
+        qty:      null, // operator isi sendiri
+      }))
+    }
   } catch (e) { console.error(e) }
 }
 
 const handlePoDeselect = () => {
   poInfo.value    = { buyer_name: null, so_number: null }
   poTargets.value = []
+  form.outputs    = [{ local_id: Date.now(), item_id: null, qty: null }]
 }
 
 const onItemSelected = (index, opt) => {
@@ -720,5 +740,39 @@ onMounted(fetchInitialData)
   .form-grid-2col, .form-grid-3col { grid-template-columns: 1fr; }
   .process-type-toggle { flex-direction: column; }
   .card-body-assembling { padding: 1.25rem; }
+}
+
+.item-readonly-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0.9rem 1.25rem;
+  border: 2.5px solid #bbf7d0;
+  border-radius: 12px;
+  background: #f0fdf4;
+}
+.item-readonly-code {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #16a34a;
+}
+.item-readonly-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+}
+.item-readonly-badge {
+  font-size: 0.72rem;
+  color: #15803d;
+  font-weight: 600;
+}
+.output-dest-hint {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: #6b7280;
+  padding: 4px 8px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  display: inline-block;
 }
 </style>

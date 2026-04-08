@@ -141,10 +141,13 @@
                     <label class="form-label-modern">
                       Item <span class="required-star">*</span>
                     </label>
-                    <div v-if="row.from_po" class="item-from-po">
-                      <span class="item-from-po-code">{{ row.item_code }}</span>
-                      <span class="item-from-po-name">{{ row.item_name }}</span>
+                    <!-- Read-only kalau dari PO -->
+                    <div v-if="row.from_po" class="item-readonly-box">
+                      <span class="item-readonly-code">{{ row.item_code }}</span>
+                      <span class="item-readonly-name">{{ row.item_name }}</span>
+                      <span class="item-readonly-badge">🎯 Dari PO</span>
                     </div>
+                    <!-- Manual kalau tidak ada PO -->
                     <vue-select
                       v-else
                       v-model="row.item_id"
@@ -316,8 +319,8 @@ const handlePoChange = (opt) => {
 }
 
 const handlePoDeselect = () => {
-  poInfo.value = { buyer_name: null, so_number: null }
-  form.items   = []
+  poInfo.value    = { buyer_name: null, so_number: null }
+  form.items      = [{ local_id: Date.now(), from_po: false, item_id: null, qty: null, qty_planned: 0 }]
 }
 
 const addItem = () => form.items.push({
@@ -451,9 +454,32 @@ onMounted(fetchInitialData)
 .item-row-planned { font-size: 0.78rem; color: #1e40af; font-weight: 600; background: #dbeafe; padding: 2px 8px; border-radius: 999px; }
 .btn-remove-row { background: #fee2e2; color: #ef4444; border: none; border-radius: 6px; padding: 3px 10px; font-size: 0.82rem; cursor: pointer; font-weight: 700; }
 
-.item-from-po { display: flex; flex-direction: column; gap: 4px; padding: 0.875rem 1.25rem; border: 2.5px solid #bfdbfe; border-radius: 12px; background: #eff6ff; }
-.item-from-po-code { font-size: 0.82rem; font-weight: 700; color: #1e40af; }
-.item-from-po-name { font-size: 0.95rem; font-weight: 600; color: #111827; }
+.item-readonly-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0.9rem 1.25rem;
+  border: 2.5px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+  min-height: 54px;
+  justify-content: center;
+}
+.item-readonly-code {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1d4ed8;
+}
+.item-readonly-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+}
+.item-readonly-badge {
+  font-size: 0.72rem;
+  color: #1e40af;
+  font-weight: 600;
+}
 
 .stock-hint { margin-left: 8px; font-size: 0.78rem; color: #1e40af; font-weight: 600; }
 .empty-hint { padding: 2rem; text-align: center; color: #9ca3af; font-size: 0.95rem; background: #f9fafb; border-radius: 12px; border: 1px dashed #d1d5db; }
