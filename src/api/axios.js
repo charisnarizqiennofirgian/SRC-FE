@@ -52,6 +52,7 @@ apiClient.interceptors.response.use(
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
+        localStorage.removeItem('permissions')
         if (window.location.pathname !== '/') {
           window.location.href = '/'
         }

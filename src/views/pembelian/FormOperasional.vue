@@ -273,7 +273,11 @@ const initializeChoices = async () => {
     // Skip jika sudah punya instance
     if (selectElement._choicesInstance) return
 
-    selectElement.innerHTML = '<option value="">Pilih Barang</option>'
+    const placeholder = document.createElement('option')
+    placeholder.value = ''
+    placeholder.textContent = 'Pilih Barang'
+    selectElement.replaceChildren(placeholder)
+
     daftarBarang.value.forEach((barang) => {
       const option = document.createElement('option')
       option.value = barang.id
