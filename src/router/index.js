@@ -594,11 +594,22 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const isLoggedIn = !!localStorage.getItem('token')
 
-  if (to.meta.requiresAuth && !isLoggedIn) {
-    next({ name: 'login' })
-  } else {
-    next()
+  // Halaman login — kalau sudah login redirect ke dashboard
+  if (to.name === 'login' && isLoggedIn) {
+    next({ name: 'admin-dashboard' })
+    return
   }
+
+  // Semua route kecuali login dan halaman cetak → wajib login
+  const publicRoutes = ['login']
+  const isPrintRoute = to.path.includes('/cetak')
+
+  if (!publicRoutes.includes(to.name) && !isPrintRoute && !isLoggedIn) {
+    next({ name: 'login' })
+    return
+  }
+
+  next()
 })
 
 export default router

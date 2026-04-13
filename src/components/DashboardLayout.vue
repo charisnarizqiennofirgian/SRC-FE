@@ -108,129 +108,156 @@ const userPermissions = ref([]) // ✅ TAMBAH
 const userMenuOpen = ref(false)
 const sidebarOpen = ref(false)
 
-// ✅ MAPPING PERMISSION → MENU
+// MAPPING PERMISSION → MENU
 const menuPermissionMap = {
+  // Parent menu — tampil kalau punya minimal 1 child permission
   Dashboard: ['view-dashboard'],
   'Master Data': [
-    'manage-categories',
-    'manage-units',
-    'manage-items',
-    'manage-suppliers',
-    'manage-buyers',
+    'master-kategori', 'master-satuan', 'master-barang',
+    'master-supplier', 'master-buyer', 'master-coa', 'master-metode-pembayaran',
   ],
-  Keuangan: [], // Semua user bisa akses (atau bisa dikasih permission khusus)
-  'Manajemen Stok': ['manage-stock-adjustments', 'view-stock-report'],
-  Produksi: ['manage-bom'],
-  Pembelian: ['manage-po', 'manage-grn', 'manage-bills'],
-  Penjualan: ['manage-so', 'manage-do', 'manage-invoices'],
-  Perbaikan: [], // Semua user bisa akses (atau bisa dikasih permission khusus)
+  Keuangan: [
+    'keuangan-jurnal-umum', 'keuangan-buku-besar', 'keuangan-laba-rugi',
+    'keuangan-pembayaran-hutang', 'keuangan-riwayat-pembayaran', 'keuangan-neraca',
+  ],
+  'Manajemen Stok': [
+    'stok-laporan-sawmill', 'stok-index', 'stok-adjustment',
+    'stok-laporan-mutasi', 'stok-monitoring-produksi',
+  ],
+  Produksi: [
+    'produksi-sawmill', 'produksi-kd', 'produksi-pembahanan',
+    'produksi-moulding', 'produksi-mesin', 'produksi-rustik-komponen',
+    'produksi-assembling', 'produksi-pemakaian-bahan', 'produksi-sanding',
+    'produksi-rustik', 'produksi-finishing', 'produksi-qc-final',
+    'produksi-packing', 'produksi-master-bom',
+  ],
+  Pembelian: [
+    'pembelian-operasional', 'pembelian-karton', 'pembelian-kayu',
+    'pembelian-faktur', 'pembelian-laporan-harga',
+  ],
+  Penjualan: [
+    'penjualan-so', 'penjualan-uang-muka',
+    'penjualan-pengiriman', 'penjualan-invoice',
+  ],
+  Perbaikan: ['perbaikan-jurnal-manual'],
 }
 
-// ✅ SEMUA MENU ITEMS
+// SEMUA MENU ITEMS
 const allMenuItems = [
-  { name: 'Dashboard', route: '/dashboard', icon: '📊' },
+  { name: 'Dashboard', route: '/dashboard', icon: '📊', permission: 'view-dashboard' },
   {
     name: 'Master Data',
     icon: '📋',
     children: [
-      { name: 'Data Kategori Produk', route: '/admin/categories' },
-      { name: 'Data Satuan', route: '/admin/units' },
-      { name: 'Data Master Barang', route: { name: 'MasterBarang' } },
-      { name: 'Data Supplier', route: '/admin/suppliers' },
-      { name: 'Data Buyer', route: '/admin/buyers' },
-      { name: 'Chart of Account', route: '/admin/chart-of-account' },
-      { name: 'Metode Pembayaran', route: '/admin/payment-methods' },
+      { name: 'Data Kategori Produk', route: '/admin/categories', permission: 'master-kategori' },
+      { name: 'Data Satuan', route: '/admin/units', permission: 'master-satuan' },
+      { name: 'Data Master Barang', route: { name: 'MasterBarang' }, permission: 'master-barang' },
+      { name: 'Data Supplier', route: '/admin/suppliers', permission: 'master-supplier' },
+      { name: 'Data Buyer', route: '/admin/buyers', permission: 'master-buyer' },
+      { name: 'Chart of Account', route: '/admin/chart-of-account', permission: 'master-coa' },
+      { name: 'Metode Pembayaran', route: '/admin/payment-methods', permission: 'master-metode-pembayaran' },
     ],
   },
   {
     name: 'Keuangan',
     icon: '💵',
     children: [
-      { name: 'Jurnal Umum', route: { name: 'JurnalUmum' } },
-      { name: 'Buku Besar', route: { name: 'BukuBesar' } },
-      { name: 'Laporan Laba Rugi', route: { name: 'LabaRugi' } },
-      { name: 'Pembayaran Hutang', route: { name: 'PembayaranHutang' } },
-      { name: 'Riwayat Pembayaran', route: { name: 'RiwayatPembayaranHutang' } },
-      { name: 'Neraca', route: { name: 'Neraca' } },
+      { name: 'Jurnal Umum', route: { name: 'JurnalUmum' }, permission: 'keuangan-jurnal-umum' },
+      { name: 'Buku Besar', route: { name: 'BukuBesar' }, permission: 'keuangan-buku-besar' },
+      { name: 'Laporan Laba Rugi', route: { name: 'LabaRugi' }, permission: 'keuangan-laba-rugi' },
+      { name: 'Pembayaran Hutang', route: { name: 'PembayaranHutang' }, permission: 'keuangan-pembayaran-hutang' },
+      { name: 'Riwayat Pembayaran', route: { name: 'RiwayatPembayaranHutang' }, permission: 'keuangan-riwayat-pembayaran' },
+      { name: 'Neraca', route: { name: 'Neraca' }, permission: 'keuangan-neraca' },
     ],
   },
   {
     name: 'Manajemen Stok',
     icon: '📦',
     children: [
-      { name: 'Laporan Produksi Sawmill', route: '/reports/sawmill' },
-      { name: 'Stock Index', route: { name: 'StockIndex' } },
-      { name: 'Stock Adjustment', route: '/stock-adjustment' },
-      { name: 'Laporan Mutasi', route: { name: 'LaporanMutasi' } },
-      { name: 'Monitoring Produksi', route: { name: 'ProductionMonitoring' } },
+      { name: 'Laporan Produksi Sawmill', route: '/reports/sawmill', permission: 'stok-laporan-sawmill' },
+      { name: 'Stock Index', route: { name: 'StockIndex' }, permission: 'stok-index' },
+      { name: 'Stock Adjustment', route: '/stock-adjustment', permission: 'stok-adjustment' },
+      { name: 'Laporan Mutasi', route: { name: 'LaporanMutasi' }, permission: 'stok-laporan-mutasi' },
+      { name: 'Monitoring Produksi', route: { name: 'ProductionMonitoring' }, permission: 'stok-monitoring-produksi' },
     ],
   },
   {
     name: 'Produksi',
     icon: '🏭',
     children: [
-      { name: 'Produksi Sawmill', route: { name: 'ProduksiSawmill' } },
-      { name: 'Produksi KD', route: { name: 'ProduksiCandy' } },
-      { name: 'Produksi Pembahanan', route: { name: 'ProduksiPembahanan' } },
-      { name: 'Produksi Moulding', route: { name: 'ProduksiMoulding' } },
-      { name: 'Produksi Mesin', route: { name: 'ProduksiMesin' } },
-      { name: 'Rustik Komponen', route: { name: 'RustikKomponenView' } },
-      { name: 'Assembling', route: { name: 'AssemblingView' } },
-      { name: 'Pemakaian Bahan', route: { name: 'MaterialUsageView' } },
-      { name: 'Sanding', route: { name: 'SandingView' } },
-      { name: 'Rustik', route: { name: 'RustikView' } },
-      { name: 'Finishing', route: { name: 'FinishingView' } },
-      { name: 'QC Final', route: { name: 'QcFinalView' } },
-      { name: 'Packing', route: { name: 'PackingView' } },
-      { name: 'Master BOM / Resep', route: { name: 'MasterBom' } },
+      { name: 'Produksi Sawmill', route: { name: 'ProduksiSawmill' }, permission: 'produksi-sawmill' },
+      { name: 'Produksi KD', route: { name: 'ProduksiCandy' }, permission: 'produksi-kd' },
+      { name: 'Produksi Pembahanan', route: { name: 'ProduksiPembahanan' }, permission: 'produksi-pembahanan' },
+      { name: 'Produksi Moulding', route: { name: 'ProduksiMoulding' }, permission: 'produksi-moulding' },
+      { name: 'Produksi Mesin', route: { name: 'ProduksiMesin' }, permission: 'produksi-mesin' },
+      { name: 'Rustik Komponen', route: { name: 'RustikKomponenView' }, permission: 'produksi-rustik-komponen' },
+      { name: 'Assembling', route: { name: 'AssemblingView' }, permission: 'produksi-assembling' },
+      { name: 'Pemakaian Bahan', route: { name: 'MaterialUsageView' }, permission: 'produksi-pemakaian-bahan' },
+      { name: 'Sanding', route: { name: 'SandingView' }, permission: 'produksi-sanding' },
+      { name: 'Rustik', route: { name: 'RustikView' }, permission: 'produksi-rustik' },
+      { name: 'Finishing', route: { name: 'FinishingView' }, permission: 'produksi-finishing' },
+      { name: 'QC Final', route: { name: 'QcFinalView' }, permission: 'produksi-qc-final' },
+      { name: 'Packing', route: { name: 'PackingView' }, permission: 'produksi-packing' },
+      { name: 'Master BOM / Resep', route: { name: 'MasterBom' }, permission: 'produksi-master-bom' },
     ],
   },
   {
     name: 'Pembelian',
     icon: '🛒',
     children: [
-      { name: 'Pembelian Operasional', route: { name: 'PembelianOperasional' } },
-      { name: 'Pembelian Karton Box', route: { name: 'PembelianKarton' } },
-      { name: 'Pembelian Kayu RST ', route: { name: 'PembelianKayu' } },
-      { name: 'Faktur Pembelian', route: { name: 'DaftarFakturPembelian' } },
-      { name: 'Laporan Harga', route: { name: 'LaporanHarga' } },
+      { name: 'Pembelian Operasional', route: { name: 'PembelianOperasional' }, permission: 'pembelian-operasional' },
+      { name: 'Pembelian Karton Box', route: { name: 'PembelianKarton' }, permission: 'pembelian-karton' },
+      { name: 'Pembelian Kayu RST', route: { name: 'PembelianKayu' }, permission: 'pembelian-kayu' },
+      { name: 'Faktur Pembelian', route: { name: 'DaftarFakturPembelian' }, permission: 'pembelian-faktur' },
+      { name: 'Laporan Harga', route: { name: 'LaporanHarga' }, permission: 'pembelian-laporan-harga' },
     ],
   },
   {
     name: 'Penjualan',
     icon: '💰',
     children: [
-      { name: 'Pesanan Penjualan', route: { name: 'DaftarSalesOrder' } },
-      { name: 'Uang Muka (DP)', route: { name: 'DownPaymentList' } },
-      { name: 'Daftar Pengiriman', route: { name: 'DaftarPengiriman' } },
-      { name: 'Sales Invoice', route: { name: 'InvoiceList' } },
+      { name: 'Pesanan Penjualan', route: { name: 'DaftarSalesOrder' }, permission: 'penjualan-so' },
+      { name: 'Uang Muka (DP)', route: { name: 'DownPaymentList' }, permission: 'penjualan-uang-muka' },
+      { name: 'Daftar Pengiriman', route: { name: 'DaftarPengiriman' }, permission: 'penjualan-pengiriman' },
+      { name: 'Sales Invoice', route: { name: 'InvoiceList' }, permission: 'penjualan-invoice' },
     ],
   },
   {
     name: 'Perbaikan',
     icon: '🔧',
-    children: [{ name: 'Jurnal Manual', route: { name: 'JurnalPerbaikan' } }],
+    children: [
+      { name: 'Jurnal Manual', route: { name: 'JurnalPerbaikan' }, permission: 'perbaikan-jurnal-manual' },
+    ],
   },
 ]
 
-// ✅ COMPUTED: FILTER MENU BERDASARKAN PERMISSION
+// COMPUTED: FILTER MENU BERDASARKAN PERMISSION
 const menuItems = computed(() => {
-  // Jika super-admin, tampilkan semua
-  if (userPermissions.value.includes('*') || userPermissions.value.includes('super-admin')) {
-    return allMenuItems
-  }
+  const isSuperAdmin =
+    userPermissions.value.includes('*') || userPermissions.value.includes('super-admin')
 
-  return allMenuItems.filter((menuItem) => {
-    const requiredPermissions = menuPermissionMap[menuItem.name] || []
+  return allMenuItems
+    .map((menuItem) => {
+      // Menu tunggal (tanpa children)
+      if (!menuItem.children) {
+        if (isSuperAdmin) return menuItem
+        if (!menuItem.permission) return menuItem
+        return userPermissions.value.includes(menuItem.permission) ? menuItem : null
+      }
 
-    // Jika tidak ada permission yang diperlukan, tampilkan (menu public)
-    if (requiredPermissions.length === 0) {
-      return true
-    }
+      // Filter children berdasarkan permission
+      const filteredChildren = isSuperAdmin
+        ? menuItem.children
+        : menuItem.children.filter(
+            (child) => !child.permission || userPermissions.value.includes(child.permission),
+          )
 
-    // Cek apakah user punya salah satu permission yang diperlukan
-    return requiredPermissions.some((perm) => userPermissions.value.includes(perm))
-  })
+      // Sembunyikan parent jika tidak ada child yang bisa diakses
+      if (filteredChildren.length === 0) return null
+
+      return { ...menuItem, children: filteredChildren }
+    })
+    .filter(Boolean)
 })
 
 const openMenus = ref({})

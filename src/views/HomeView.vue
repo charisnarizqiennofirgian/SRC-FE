@@ -34,9 +34,9 @@
           />
         </div>
 
-        <button type="submit" class="login-btn" :disabled="isLoading">
+        <button type="submit" class="login-btn" :disabled="isLoading || isRateLimited">
           <span v-if="isLoading" class="loading-spinner"></span>
-          {{ isLoading ? 'Logging in...' : 'Log in' }}
+          {{ isLoading ? 'Logging in...' : isRateLimited ? `Tunggu ${countdown}s...` : 'Log in' }}
         </button>
 
         <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
@@ -61,6 +61,9 @@ export default {
       errorMessage: '',
       validationErrors: {},
       isLoading: false,
+      isRateLimited: false,
+      countdown: 0,
+      countdownTimer: null,
       debounceTimer: null,
     }
   },
@@ -93,30 +96,23 @@ export default {
         localStorage.setItem('token', response.data.access_token)
         localStorage.setItem('user', JSON.stringify(response.data.user))
 
-        // ✅ TAMBAH: Save permissions
+        // Save permissions
         if (response.data.permissions) {
           localStorage.setItem('permissions', JSON.stringify(response.data.permissions))
-          console.log('✅ Permissions saved:', response.data.permissions)
         } else if (response.data.user?.permissions) {
           localStorage.setItem('permissions', JSON.stringify(response.data.user.permissions))
-          console.log('✅ Permissions saved from user:', response.data.user.permissions)
         } else {
-          // ✅ Fallback: Load permissions from API
-          console.log('⚠️ No permissions in login response, fetching...')
+          // Fallback: load permissions dari API
           try {
             const userResponse = await apiClient.get('/user')
             if (userResponse.data.permissions) {
               localStorage.setItem('permissions', JSON.stringify(userResponse.data.permissions))
-              console.log('✅ Permissions loaded from /user:', userResponse.data.permissions)
             } else {
-              // ✅ Last resort: Load user with roles & permissions
               const user = userResponse.data.user || userResponse.data
               const permissions = user.roles?.[0]?.permissions?.map((p) => p.name) || []
               localStorage.setItem('permissions', JSON.stringify(permissions))
-              console.log('✅ Permissions extracted from roles:', permissions)
             }
-          } catch (err) {
-            console.error('❌ Failed to load permissions:', err)
+          } catch {
             localStorage.setItem('permissions', JSON.stringify([]))
           }
         }
@@ -125,19 +121,20 @@ export default {
         const redirectRoute = response.data.dashboard_route || '/dashboard'
         await this.$router.push(redirectRoute)
       } catch (error) {
-        // Error handling
         if (error.code === 'ECONNABORTED') {
           this.errorMessage = 'Koneksi timeout. Silakan coba lagi.'
-        } else if (error.response && error.response.status === 422) {
+        } else if (error.response?.status === 429) {
+          const retryAfter = parseInt(error.response?.headers['retry-after'] ?? 60)
+          this.startCountdown(retryAfter)
+        } else if (error.response?.status === 422) {
           this.validationErrors = error.response.data.errors
-        } else if (error.response && error.response.status === 401) {
+        } else if (error.response?.status === 401) {
           this.errorMessage = 'Email atau password yang Anda masukkan salah.'
-        } else if (error.response && error.response.status >= 500) {
+        } else if (error.response?.status >= 500) {
           this.errorMessage = 'Server sedang bermasalah. Silakan coba lagi nanti.'
         } else {
           this.errorMessage = 'Terjadi kesalahan. Silakan coba lagi.'
         }
-        console.error('Terjadi kesalahan saat login:', error)
       } finally {
         this.isLoading = false
       }
@@ -151,6 +148,23 @@ export default {
         this.errorMessage = ''
         this.validationErrors = {}
       }, 3000)
+    },
+
+    startCountdown(seconds) {
+      this.isRateLimited = true
+      this.countdown = seconds
+      this.errorMessage = `Terlalu banyak percobaan login. Tunggu ${seconds} detik.`
+
+      this.countdownTimer = setInterval(() => {
+        this.countdown--
+        this.errorMessage = `Terlalu banyak percobaan login. Tunggu ${this.countdown} detik.`
+
+        if (this.countdown <= 0) {
+          clearInterval(this.countdownTimer)
+          this.isRateLimited = false
+          this.errorMessage = ''
+        }
+      }, 1000)
     },
   },
   watch: {
@@ -174,9 +188,8 @@ export default {
     })
   },
   beforeUnmount() {
-    if (this.debounceTimer) {
-      clearTimeout(this.debounceTimer)
-    }
+    if (this.debounceTimer) clearTimeout(this.debounceTimer)
+    if (this.countdownTimer) clearInterval(this.countdownTimer)
   },
 }
 </script>

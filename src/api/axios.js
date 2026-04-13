@@ -46,15 +46,24 @@ apiClient.interceptors.response.use(
     return response
   },
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // Cek apakah di browser
+    const status = error.response?.status
+
+    if (status === 401) {
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
-
         if (window.location.pathname !== '/') {
           window.location.href = '/'
         }
+      }
+    }
+
+    if (status === 429) {
+      const retryAfter = error.response?.headers['retry-after'] ?? 60
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('rate-limit', {
+          detail: { retryAfter }
+        }))
       }
     }
 
