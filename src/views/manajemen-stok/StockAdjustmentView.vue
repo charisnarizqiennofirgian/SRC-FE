@@ -46,6 +46,12 @@
             <span class="btn-text">Upload Produk Jadi</span>
           </button>
 
+          <!-- Jeblosan -->
+          <button class="btn-upload btn-upload-secondary" @click="showUploadModalJeblosan = true">
+            <span class="btn-icon">🪓</span>
+            <span class="btn-text">Upload Jeblosan</span>
+          </button>
+
           <!-- NEW: BOM Produk -->
           <button class="btn-upload btn-upload-secondary" @click="showUploadModalBom = true">
             <span class="btn-icon">🧾</span>
@@ -702,6 +708,82 @@
       </div>
     </div>
 
+    <!-- MODAL: UPLOAD JEBLOSAN -->
+    <div v-if="showUploadModalJeblosan" class="modal-overlay" @click.self="closeModalJeblosan">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-left">
+            <span class="modal-icon">🪓</span>
+            <h3 class="modal-title">Upload Stok Awal (Jeblosan)</h3>
+          </div>
+          <button @click="closeModalJeblosan" class="modal-close-btn">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="info-box info-box-kayu">
+            <span class="info-icon">ℹ️</span>
+            <div class="info-text">
+              <p class="info-main">
+                Gunakan ini untuk upload stok <strong>Jeblosan</strong> dengan dimensi T, L, P.
+              </p>
+              <p class="info-sub">
+                Kolom: <code>kode_barang, nama_dasar, tebal_mm, lebar_mm, panjang_mm, m3_per_pcs, stok_awal, satuan, gudang</code>
+              </p>
+            </div>
+          </div>
+
+          <div class="template-download-box">
+            <div class="template-header">
+              <span class="template-icon">📄</span>
+              <p class="template-title">Template Jeblosan</p>
+            </div>
+            <a href="#" @click.prevent="downloadTemplateJeblosan" class="template-link">
+              <span class="download-icon">⬇️</span>
+              Download template (Jeblosan)
+            </a>
+            <p class="template-note">
+              <strong>Penting:</strong> Kolom <code>gudang</code> diisi dengan
+              <strong>kode gudang</strong> yang sudah ada (mis: SAWMILL).
+            </p>
+          </div>
+
+          <div class="form-group-upload">
+            <label class="form-label-upload" for="file-upload-jeblosan">
+              <span class="label-icon">📁</span>
+              Pilih File (Jeblosan)
+            </label>
+            <input
+              id="file-upload-jeblosan"
+              type="file"
+              @change="handleFileChangeJeblosan"
+              class="form-control-file"
+              accept=".xlsx, .xls"
+            />
+            <small class="form-hint">Format: .xlsx, .xls (Maks. 5MB)</small>
+            <div v-if="uploadFileJeblosan" class="file-info">
+              <span class="file-icon">✅</span>
+              File dipilih: <strong>{{ uploadFileJeblosan.name }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button @click="closeModalJeblosan" class="btn-secondary">
+            <span class="btn-icon-sec">↩️</span>
+            Batal
+          </button>
+          <button
+            @click="handleUploadJeblosan"
+            class="btn-primary-modal"
+            :disabled="!uploadFileJeblosan || isUploadingJeblosan"
+          >
+            <span class="btn-icon-upload">{{ isUploadingJeblosan ? '⏳' : '📤' }}</span>
+            {{ isUploadingJeblosan ? 'Mengupload...' : 'Upload Jeblosan' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- MODAL 5: UPLOAD BOM PRODUK -->
     <div v-if="showUploadModalBom" class="modal-overlay" @click.self="closeModalBom">
       <div class="modal-content">
@@ -880,6 +962,10 @@ const isUploadingKayu = ref(false)
 const showUploadModalProdukJadi = ref(false)
 const uploadFileProdukJadi = ref(null)
 const isUploadingProdukJadi = ref(false)
+
+const showUploadModalJeblosan = ref(false)
+const uploadFileJeblosan      = ref(null)
+const isUploadingJeblosan     = ref(false)
 
 // NEW: BOM Produk
 const showUploadModalBom = ref(false)
@@ -1455,6 +1541,61 @@ const downloadTemplateProdukJadi = async () => {
   } catch (error) {
     console.error('Error downloading template:', error)
     toast.error('Gagal mendownload template produk jadi.')
+  }
+}
+
+// UPLOAD JEBLOSAN
+const handleFileChangeJeblosan = (event) => {
+  const file = event.target.files[0]
+  if (file) uploadFileJeblosan.value = file
+}
+
+const closeModalJeblosan = () => {
+  showUploadModalJeblosan.value = false
+  uploadFileJeblosan.value = null
+  isUploadingJeblosan.value = false
+}
+
+const handleUploadJeblosan = async () => {
+  if (!uploadFileJeblosan.value) {
+    toast.error('Silakan pilih file Excel (Jeblosan) terlebih dahulu.')
+    return
+  }
+
+  isUploadingJeblosan.value = true
+  const formData = new FormData()
+  formData.append('file', uploadFileJeblosan.value)
+
+  try {
+    await apiClient.post('/stock-adjustments/upload-jeblosan', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    toast.success('Stok awal Jeblosan berhasil di-import!')
+    closeModalJeblosan()
+    if (selectedCategory.value) await fetchStokBarang()
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Gagal meng-upload file Jeblosan.')
+  } finally {
+    isUploadingJeblosan.value = false
+  }
+}
+
+const downloadTemplateJeblosan = async () => {
+  try {
+    const response = await apiClient.get('/stock-adjustments/template-jeblosan', {
+      responseType: 'blob',
+    })
+    const url  = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href  = url
+    link.setAttribute('download', 'template_saldo_awal_jeblosan.xlsx')
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+    toast.success('Template Jeblosan berhasil diunduh.')
+  } catch {
+    toast.error('Gagal mendownload template Jeblosan.')
   }
 }
 

@@ -190,6 +190,7 @@
                 <th class="th-small">T (mm)</th>
                 <th class="th-small">L (mm)</th>
                 <th class="th-small">P (mm)</th>
+                <th class="th-small">No Rak</th>
                 <th class="th-small">Stok</th>
                 <th class="th-small">Kubikasi (m³)</th>
               </tr>
@@ -209,7 +210,7 @@
             <tbody>
               <tr v-if="filteredReport.length === 0" class="empty-row-modern">
                 <td
-                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 10 : activeTab === 'operational' ? 7 : 6"
+                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 11 : activeTab === 'operational' ? 7 : 6"
                   class="empty-cell-modern"
                 >
                   <div class="empty-state-content">
@@ -335,6 +336,10 @@
                 </td>
                 <td class="td-small">
                   {{ item.specifications?.p ?? '-' }}
+                </td>
+                <td class="td-small">
+                  <span v-if="item.no_rak" class="badge-unit-modern">{{ item.no_rak }}</span>
+                  <span v-else class="text-gray">-</span>
                 </td>
                 <td class="td-small">
                   <div class="stock-total-inline">
@@ -1363,6 +1368,11 @@ onMounted(() => {
   font-weight: 700;
   font-size: 0.875rem;
   color: #92400e;
+}
+
+.text-gray {
+  color: #9ca3af;
+  font-size: 0.875rem;
 }
 
 /* STOCK PER WAREHOUSE */
