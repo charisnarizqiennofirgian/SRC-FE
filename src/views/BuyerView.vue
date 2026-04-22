@@ -7,12 +7,35 @@
           <h1 class="page-title">👥 Data Buyer</h1>
           <p class="page-subtitle">Kelola informasi pelanggan dan buyer perusahaan</p>
         </div>
-        <button class="btn-add" @click="openAddModal">
-          <span class="btn-icon">➕</span>
-          <span>Tambah Buyer</span>
-        </button>
+        <div class="header-actions">
+          <button class="btn-template" @click="downloadTemplate" :disabled="isDownloading">
+            <span>📄</span>
+            <span>{{ isDownloading ? 'Mengunduh...' : 'Template' }}</span>
+          </button>
+          <button class="btn-import" @click="triggerImport" :disabled="isImporting">
+            <span>📥</span>
+            <span>{{ isImporting ? 'Mengimpor...' : 'Import Excel' }}</span>
+          </button>
+          <button class="btn-export" @click="exportExcel" :disabled="isExporting">
+            <span>📤</span>
+            <span>{{ isExporting ? 'Mengekspor...' : 'Export Excel' }}</span>
+          </button>
+          <button class="btn-add" @click="openAddModal">
+            <span class="btn-icon">➕</span>
+            <span>Tambah Buyer</span>
+          </button>
+        </div>
       </div>
     </div>
+
+    <!-- Hidden file input untuk import -->
+    <input
+      type="file"
+      ref="fileImportRef"
+      accept=".xlsx,.xls"
+      style="display:none"
+      @change="handleImportFile"
+    />
 
     <!-- Main Content Card -->
     <div class="content-card">
@@ -255,6 +278,85 @@ import { useNotification, useConfirmDialog } from '../composables/useNotificatio
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 
 const searchQuery = ref('')
+const isDownloading = ref(false)
+const isImporting   = ref(false)
+const isExporting   = ref(false)
+const fileImportRef = ref(null)
+
+const downloadTemplate = async () => {
+  isDownloading.value = true
+  try {
+    const res = await apiClient.get('/buyers/template', { responseType: 'blob' })
+    const url  = window.URL.createObjectURL(new Blob([res.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', 'Template_Buyer.xlsx')
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch {
+    showError('Gagal', 'Gagal mengunduh template')
+  } finally {
+    isDownloading.value = false
+  }
+}
+
+const triggerImport = () => {
+  fileImportRef.value?.click()
+}
+
+const handleImportFile = async (e) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+
+  isImporting.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const res = await apiClient.post('/buyers/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+
+    showSuccess(
+      'Import Berhasil!',
+      `${res.data.imported} buyer diimport, ${res.data.skipped} dilewati.`
+    )
+
+    if (res.data.errors?.length > 0) {
+      console.warn('Import warnings:', res.data.errors)
+    }
+
+    await fetchBuyers()
+  } catch (error) {
+    const message = error.response?.data?.message || 'Gagal mengimpor file'
+    showError('Import Gagal', message)
+  } finally {
+    isImporting.value = false
+    if (fileImportRef.value) fileImportRef.value.value = ''
+  }
+}
+
+const exportExcel = async () => {
+  isExporting.value = true
+  try {
+    const res = await apiClient.get('/buyers/export', { responseType: 'blob' })
+    const url  = window.URL.createObjectURL(new Blob([res.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `Data_Buyer_${new Date().toISOString().slice(0,10)}.xlsx`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch {
+    showError('Gagal', 'Gagal mengekspor data')
+  } finally {
+    isExporting.value = false
+  }
+}
+
 const buyers = ref([])
 const coaOptions = ref([])
 const showModal = ref(false)
@@ -484,6 +586,79 @@ onMounted(() => {
 
 .btn-icon {
   font-size: 18px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-template {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.15);
+  color: white;
+  border: 2px solid rgba(255,255,255,0.5);
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-template:hover:not(:disabled) {
+  background: rgba(255,255,255,0.25);
+}
+
+.btn-import {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #16a34a;
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(22,163,74,0.3);
+}
+.btn-import:hover:not(:disabled) {
+  background: #15803d;
+  transform: translateY(-1px);
+}
+
+.btn-export {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #0369a1;
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(3,105,161,0.3);
+}
+.btn-export:hover:not(:disabled) {
+  background: #075985;
+  transform: translateY(-1px);
+}
+
+.btn-template:disabled,
+.btn-import:disabled,
+.btn-export:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* ===== CONTENT CARD ===== */

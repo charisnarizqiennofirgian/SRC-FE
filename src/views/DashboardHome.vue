@@ -50,10 +50,9 @@
           <table class="monitoring-table">
             <thead>
               <tr>
-                <th class="col-so" rowspan="2">No. SO</th>
-                <th class="col-item" rowspan="2">Item</th>
-                <th class="col-buyer" rowspan="2">Buyer</th>
-                <th class="col-num" rowspan="2">Target</th>
+                <th class="col-so">No. SO & Buyer</th>
+                <th class="col-item">Item</th>
+                <th class="col-num">Target</th>
                 <!-- Zona Hulu -->
                 <th colspan="5" class="zone-header zone-hulu">
                   <span class="zone-icon">🌲</span> Persiapan Bahan
@@ -83,120 +82,145 @@
               </tr>
             </thead>
             <tbody>
-              <tr
-                v-for="(row, index) in monitoringData"
-                :key="index"
-                :class="{ 'row-done': row.is_done, 'row-even': index % 2 === 0 }"
-              >
-                <td class="col-so">
-                  <div class="so-wrapper">
-                    <span class="so-number">{{ row.so_number }}</span>
-                    <span class="so-date">{{ row.so_date }}</span>
-                  </div>
-                </td>
-                <td class="col-item">
-                  <div class="item-wrapper">
-                    <div class="item-name">{{ row.item_name }}</div>
-                    <div class="item-code">{{ row.item_code }}</div>
-                  </div>
-                </td>
-                <td class="col-buyer">
-                  <span class="buyer-name">{{ row.buyer_name }}</span>
-                </td>
-                <td class="col-num">
-                  <span class="target-value">{{ formatNumber(row.target) }}</span>
-                </td>
-
-                <!-- Zona Hulu (Status 3 Level) -->
-                <td class="col-status stage-sanwil">
-                  <span :class="['status-indicator', getStatusClass(row.status_sanwil)]">
-                    {{ getStatusIcon(row.status_sanwil) }}
-                  </span>
-                </td>
-                <td class="col-status stage-kd">
-                  <span :class="['status-indicator', getStatusClass(row.status_kd)]">
-                    {{ getStatusIcon(row.status_kd) }}
-                  </span>
-                </td>
-                <td class="col-status stage-pembahanan">
-                  <span :class="['status-indicator', getStatusClass(row.status_pembahanan)]">
-                    {{ getStatusIcon(row.status_pembahanan) }}
-                  </span>
-                </td>
-                <td class="col-status stage-moulding">
-                  <span :class="['status-indicator', getStatusClass(row.status_moulding)]">
-                    {{ getStatusIcon(row.status_moulding) }}
-                  </span>
-                </td>
-                <td class="col-status stage-mesin">
-                  <span :class="['status-indicator', getStatusClass(row.status_mesin)]">
-                    {{ getStatusIcon(row.status_mesin) }}
-                  </span>
-                </td>
-
-                <!-- Zona Hilir (Angka) -->
-                <td class="col-num stage-ruskomp">
-                  <span :class="['qty-value', row.qty_ruskomp > 0 ? 'has-value' : 'no-value']">
-                    {{ formatNumber(row.qty_ruskomp) }}
-                  </span>
-                </td>
-                <td class="col-num stage-assembling">
-                  <span :class="['qty-value', row.qty_assembling > 0 ? 'has-value' : 'no-value']">
-                    {{ formatNumber(row.qty_assembling) }}
-                  </span>
-                </td>
-                <td class="col-num stage-rustik">
-                  <span :class="['qty-value', row.qty_rustik > 0 ? 'has-value' : 'no-value']">
-                    {{ formatNumber(row.qty_rustik) }}
-                  </span>
-                </td>
-                <td class="col-num stage-sanding">
-                  <span :class="['qty-value', row.qty_sanding > 0 ? 'has-value' : 'no-value']">
-                    {{ formatNumber(row.qty_sanding) }}
-                  </span>
-                </td>
-                <td class="col-num stage-finishing">
-                  <span :class="['qty-value', row.qty_finishing > 0 ? 'has-value' : 'no-value']">
-                    {{ formatNumber(row.qty_finishing) }}
-                  </span>
-                </td>
-                <td class="col-num stage-qcfinal">
-                  <span :class="['qty-value', row.qty_qc_final > 0 ? 'has-value' : 'no-value']">
-                    {{ formatNumber(row.qty_qc_final) }}
-                  </span>
-                </td>
-                <td class="col-num stage-packing">
-                  <span :class="['qty-value', row.qty_packing > 0 ? 'has-value' : 'no-value']">
-                    {{ formatNumber(row.qty_packing) }}
-                  </span>
-                </td>
-
-                <!-- Reject -->
-                <td class="col-num">
-                  <span
-                    v-if="row.has_reject"
-                    class="reject-badge-table"
-                    @click="goToDetail(row)"
-                    title="Klik untuk lihat detail reject"
+              <template v-for="(so, soIndex) in monitoringData" :key="so.so_id">
+                <tr
+                  v-for="(item, itemIndex) in so.items"
+                  :key="`${so.so_id}-${item.item_id}`"
+                  :class="{
+                    'row-done': item.is_done,
+                    'row-even': soIndex % 2 === 0,
+                    'row-first-item': itemIndex === 0,
+                    'row-last-item': itemIndex === so.items.length - 1,
+                  }"
+                >
+                  <!-- SO Info — hanya tampil di baris pertama (rowspan) -->
+                  <td
+                    v-if="itemIndex === 0"
+                    :rowspan="so.items.length"
+                    class="col-so td-so-group"
                   >
-                    ⚠️ {{ formatNumber(row.qty_reject) }} pcs
-                  </span>
-                  <span v-else class="no-reject">-</span>
-                </td>
+                    <div class="so-wrapper">
+                      <span class="so-number">{{ so.so_number }}</span>
+                      <span class="so-buyer">{{ so.buyer_name }}</span>
+                      <span class="so-date">{{ so.so_date }}</span>
+                      <span v-if="so.is_done" class="so-done-badge">✓ DONE</span>
+                    </div>
+                  </td>
 
-                <!-- Sisa -->
-                <td class="col-num">
-                  <div class="sisa-cell">
-                    <span v-if="row.is_done" class="completion-badge">
-                      <span class="badge-icon">✓</span> DONE
+                  <!-- Item -->
+                  <td class="col-item">
+                    <div class="item-wrapper">
+                      <div class="item-name">{{ item.item_name }}</div>
+                      <div class="item-code">{{ item.item_code }}</div>
+                    </div>
+                  </td>
+
+                  <!-- Target -->
+                  <td class="col-num">
+                    <span class="target-value">{{ formatNumber(item.target) }}</span>
+                  </td>
+
+                  <!-- Zona Hulu -->
+                  <td class="col-status stage-sanwil">
+                    <span :class="['status-indicator', getStatusClass(item.status_sanwil)]">
+                      {{ getStatusIcon(item.status_sanwil) }}
                     </span>
-                    <span v-else class="sisa-value">{{ formatNumber(row.sisa) }}</span>
-                    <button class="detail-btn" @click="goToDetail(row)" title="Lihat Detail">
-                      🔍
-                    </button>
-                  </div>
-                </td>
-              </tr>
+                  </td>
+                  <td class="col-status stage-kd">
+                    <span :class="['status-indicator', getStatusClass(item.status_kd)]">
+                      {{ getStatusIcon(item.status_kd) }}
+                    </span>
+                  </td>
+                  <td class="col-status stage-pembahanan">
+                    <span :class="['status-indicator', getStatusClass(item.status_pembahanan)]">
+                      {{ getStatusIcon(item.status_pembahanan) }}
+                    </span>
+                  </td>
+                  <td class="col-status stage-moulding">
+                    <span :class="['status-indicator', getStatusClass(item.status_moulding)]">
+                      {{ getStatusIcon(item.status_moulding) }}
+                    </span>
+                  </td>
+                  <td class="col-status stage-mesin">
+                    <span :class="['status-indicator', getStatusClass(item.status_mesin)]">
+                      {{ getStatusIcon(item.status_mesin) }}
+                    </span>
+                  </td>
+
+                  <!-- Zona Hilir -->
+                  <td class="col-num stage-ruskomp">
+                    <span :class="['qty-value', item.qty_ruskomp > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_ruskomp) }}
+                    </span>
+                  </td>
+                  <td class="col-num stage-assembling">
+                    <span :class="['qty-value', item.qty_assembling > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_assembling) }}
+                    </span>
+                  </td>
+                  <td class="col-num stage-rustik">
+                    <span :class="['qty-value', item.qty_rustik > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_rustik) }}
+                    </span>
+                  </td>
+                  <td class="col-num stage-sanding">
+                    <span :class="['qty-value', item.qty_sanding > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_sanding) }}
+                    </span>
+                  </td>
+                  <td class="col-num stage-finishing">
+                    <span :class="['qty-value', item.qty_finishing > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_finishing) }}
+                    </span>
+                  </td>
+                  <td class="col-num stage-qcfinal">
+                    <span :class="['qty-value', item.qty_qc_final > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_qc_final) }}
+                    </span>
+                  </td>
+                  <td class="col-num stage-packing">
+                    <span :class="['qty-value', item.qty_packing > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_packing) }}
+                    </span>
+                  </td>
+
+                  <!-- Reject -->
+                  <td class="col-num">
+                    <span
+                      v-if="item.has_reject"
+                      class="reject-badge-table"
+                      @click="goToDetail(so)"
+                      title="Klik untuk lihat detail reject"
+                    >
+                      ⚠️ {{ formatNumber(item.qty_reject) }} pcs
+                    </span>
+                    <span v-else class="no-reject">-</span>
+                  </td>
+
+                  <!-- Sisa -->
+                  <td class="col-num">
+                    <div class="sisa-cell">
+                      <span v-if="item.is_done" class="completion-badge">
+                        <span class="badge-icon">✓</span> DONE
+                      </span>
+                      <span v-else class="sisa-value">{{ formatNumber(item.sisa) }}</span>
+                      <button
+                        v-if="itemIndex === 0"
+                        class="detail-btn"
+                        @click="goToDetail(so)"
+                        title="Lihat Detail"
+                      >
+                        🔍
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Separator antar SO -->
+                <tr class="so-separator">
+                  <td colspan="20"></td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
@@ -291,16 +315,16 @@ const getStatusClass = (status) => {
   }
 }
 
-const goToDetail = (row) => {
-  router.push({ name: 'ProductionMonitoring', query: { so_id: row.so_id, item_id: row.item_id } })
+const goToDetail = (so) => {
+  router.push({ name: 'ProductionMonitoring', query: { so_id: so.so_id } })
 }
 
 const doneCount = computed(() => {
-  return monitoringData.value.filter((row) => row.is_done).length
+  return monitoringData.value.filter((so) => so.is_done).length
 })
 
 const pendingCount = computed(() => {
-  return monitoringData.value.filter((row) => !row.is_done).length
+  return monitoringData.value.filter((so) => !so.is_done).length
 })
 
 onMounted(() => {
@@ -970,6 +994,42 @@ onMounted(() => {
 .no-reject {
   color: #d1d5db;
   font-size: 0.82rem;
+}
+
+.td-so-group {
+  vertical-align: top;
+  padding-top: 16px !important;
+  border-right: 2px solid #e5e7eb;
+  background: #f9fafb !important;
+}
+
+.so-buyer {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.so-done-badge {
+  display: inline-block;
+  margin-top: 6px;
+  background: #d1fae5;
+  color: #065f46;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.row-first-item td {
+  border-top: 2px solid #e5e7eb;
+}
+
+.so-separator td {
+  padding: 4px 0 !important;
+  background: #f3f4f6 !important;
+  border: none !important;
 }
 
 /* ============================================
