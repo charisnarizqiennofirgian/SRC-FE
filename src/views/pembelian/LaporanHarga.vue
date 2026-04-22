@@ -176,6 +176,8 @@ const chartCanvas = ref(null)
 let chartInstance = null
 const barangChoiceInstance = ref(null)
 
+let searchTimer = null
+
 const initBarangChoice = async () => {
   await nextTick()
   const el = document.getElementById('select-barang-filter')
@@ -193,6 +195,36 @@ const initBarangChoice = async () => {
     shouldSort: false,
   })
 
+  // Search dengan debounce — panggil API saat user ketik
+  el.addEventListener('search', async (e) => {
+    const keyword = e.detail?.value ?? ''
+    if (keyword.length < 2) return
+
+    clearTimeout(searchTimer)
+    searchTimer = setTimeout(async () => {
+      try {
+        const res = await apiClient.get('/materials', {
+          params: { search: keyword, per_page: 30 }
+        })
+        const raw = res.data.data
+        const items = Array.isArray(raw) ? raw : (raw?.data ?? [])
+
+        // Update pilihan di Choices
+        barangChoiceInstance.value.clearChoices()
+        barangChoiceInstance.value.setChoices([
+          { value: '', label: 'Semua Barang', selected: !filter.value.item_id },
+          ...items.map((i) => ({
+            value: String(i.id),
+            label: `${i.code} - ${i.name}`,
+            selected: String(i.id) === String(filter.value.item_id),
+          }))
+        ], 'value', 'label', true)
+      } catch {
+        // silent fail
+      }
+    }, 300) // debounce 300ms
+  })
+
   el.addEventListener('change', (e) => {
     filter.value.item_id = e.target.value
   })
@@ -200,12 +232,16 @@ const initBarangChoice = async () => {
 
 const fetchDropdown = async () => {
   try {
-    const [barangRes, supplierRes] = await Promise.all([
-      apiClient.get('/materials?all=true'),
-      apiClient.get('/suppliers?all=true'),
-    ])
-    daftarBarang.value = barangRes.data.data
+    // Supplier tidak banyak, boleh load semua
+    const supplierRes = await apiClient.get('/suppliers?all=true')
     daftarSupplier.value = supplierRes.data.data
+
+    // Barang: load hanya 50 pertama dulu
+    const barangRes = await apiClient.get('/materials', {
+      params: { per_page: 50, page: 1 }
+    })
+    const raw = barangRes.data.data
+    daftarBarang.value = Array.isArray(raw) ? raw : (raw?.data ?? [])
 
     await nextTick()
     initBarangChoice()

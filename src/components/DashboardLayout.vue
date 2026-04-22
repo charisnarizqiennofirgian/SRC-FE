@@ -311,7 +311,7 @@ const logout = () => {
   if (confirm('Apakah Anda yakin ingin logout?')) {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
-    localStorage.removeItem('permissions') // ✅ TAMBAH
+    localStorage.removeItem('permissions') 
     router.push('/')
   }
 }
