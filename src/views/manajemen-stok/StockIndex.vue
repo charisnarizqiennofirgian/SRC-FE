@@ -185,11 +185,13 @@
                 <th class="th-number">No</th>
                 <th class="th-code">Kode</th>
                 <th class="th-name">Nama</th>
-                <th class="th-small">Bentuk</th>
                 <th class="th-small">Kualitas</th>
                 <th class="th-small">T (mm)</th>
                 <th class="th-small">L (mm)</th>
                 <th class="th-small">P (mm)</th>
+                <th class="th-small">C.T (mm)</th>
+                <th class="th-small">C.L (mm)</th>
+                <th class="th-small">C.P (mm)</th>
                 <th class="th-small">No Rak</th>
                 <th class="th-small">Stok</th>
                 <th class="th-small">Kubikasi (m³)</th>
@@ -210,7 +212,7 @@
             <tbody>
               <tr v-if="filteredReport.length === 0" class="empty-row-modern">
                 <td
-                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 11 : activeTab === 'operational' ? 7 : 6"
+                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 13 : activeTab === 'operational' ? 7 : 6"
                   class="empty-cell-modern"
                 >
                   <div class="empty-state-content">
@@ -323,20 +325,14 @@
                   </div>
                 </td>
                 <td class="td-small">
-                  <span class="badge-unit-modern">{{ item.bentuk || '-' }}</span>
-                </td>
-                <td class="td-small">
                   <span class="badge-unit-modern">{{ item.kualitas || '-' }}</span>
                 </td>
-                <td class="td-small">
-                  {{ item.specifications?.t ?? '-' }}
-                </td>
-                <td class="td-small">
-                  {{ item.specifications?.l ?? '-' }}
-                </td>
-                <td class="td-small">
-                  {{ item.specifications?.p ?? '-' }}
-                </td>
+                <td class="td-small">{{ item.specifications?.t ?? '-' }}</td>
+                <td class="td-small">{{ item.specifications?.l ?? '-' }}</td>
+                <td class="td-small">{{ item.specifications?.p ?? '-' }}</td>
+                <td class="td-small">{{ item.cutting_t ?? '-' }}</td>
+                <td class="td-small">{{ item.cutting_l ?? '-' }}</td>
+                <td class="td-small">{{ item.cutting_p ?? '-' }}</td>
                 <td class="td-small">
                   <span v-if="item.no_rak" class="badge-unit-modern">{{ item.no_rak }}</span>
                   <span v-else class="text-gray">-</span>
