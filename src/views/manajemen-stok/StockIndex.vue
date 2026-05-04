@@ -197,6 +197,22 @@
                 <th class="th-small">Kubikasi (m³)</th>
               </tr>
 
+              <!-- HEADER KARTON BOX -->
+              <tr v-else-if="activeTab === 'packaging'">
+                <th class="th-number">No</th>
+                <th class="th-code">Kode</th>
+                <th class="th-name">Nama Barang</th>
+                <th class="th-small">Buyer</th>
+                <th class="th-small">Model</th>
+                <th class="th-small">Jenis</th>
+                <th class="th-small">Kualitas</th>
+                <th class="th-small">P (mm)</th>
+                <th class="th-small">L (mm)</th>
+                <th class="th-small">T (mm)</th>
+                <th class="th-small">Stok</th>
+                <th class="th-small">Aksi</th>
+              </tr>
+
               <!-- HEADER KATEGORI LAIN -->
               <tr v-else>
                 <th class="th-number">No</th>
@@ -212,7 +228,7 @@
             <tbody>
               <tr v-if="filteredReport.length === 0" class="empty-row-modern">
                 <td
-                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 13 : activeTab === 'operational' ? 7 : 6"
+                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 13 : activeTab === 'packaging' ? 12 : activeTab === 'operational' ? 7 : 6"
                   class="empty-cell-modern"
                 >
                   <div class="empty-state-content">
@@ -352,6 +368,79 @@
                 </td>
               </tr>
 
+              <!-- ROWS KARTON BOX -->
+              <tr
+                v-else-if="activeTab === 'packaging'"
+                v-for="(item, index) in filteredReport"
+                :key="'karton-' + item.id"
+                class="data-row-modern"
+              >
+                <td class="td-number">
+                  <div class="number-badge">
+                    {{
+                      pagination
+                        ? (pagination.current_page - 1) * pagination.per_page + index + 1
+                        : index + 1
+                    }}
+                  </div>
+                </td>
+                <td class="td-code">
+                  <div class="code-badge-modern">
+                    <span class="code-icon">🏷️</span>
+                    <span class="code-text">{{ item.code }}</span>
+                  </div>
+                </td>
+                <td class="td-name">
+                  <div class="item-info-modern">
+                    <div class="item-icon-box">
+                      <span class="item-icon">📦</span>
+                    </div>
+                    <div class="item-text">
+                      <span class="item-name-text">{{ item.name }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="td-small">
+                  <span class="badge-unit-modern">{{ item.buyer_name || '-' }}</span>
+                </td>
+                <td class="td-small">
+                  <span class="badge-unit-modern">{{ item.model || '-' }}</span>
+                </td>
+                <td class="td-small">
+                  <span class="badge-unit-modern">{{ item.jenis_karton || '-' }}</span>
+                </td>
+                <td class="td-small">
+                  <span class="badge-unit-modern">{{ item.kualitas || '-' }}</span>
+                </td>
+                <td class="td-small">{{ item.specifications?.p ?? '-' }}</td>
+                <td class="td-small">{{ item.specifications?.l ?? '-' }}</td>
+                <td class="td-small">{{ item.specifications?.t ?? '-' }}</td>
+                <td class="td-small">
+                  <div class="stock-total-inline">
+                    <span class="stock-value">
+                      {{
+                        formatQty(
+                          item.total_stock_from_stocks ?? totalQty(filteredStocks(item.stocks || [])),
+                        )
+                      }}
+                    </span>
+                    <button type="button" class="btn-eye-inline" @click="openDetail(item)">
+                      👁️
+                    </button>
+                  </div>
+                </td>
+                <td class="td-small">
+                  <button
+                    type="button"
+                    class="btn-edit-dim"
+                    @click="openEditDimension(item)"
+                    title="Edit Dimensi"
+                  >
+                    ✏️ Edit
+                  </button>
+                </td>
+              </tr>
+
               <!-- ROWS KATEGORI LAIN -->
               <tr
                 v-else
@@ -458,6 +547,73 @@
           >
             <span class="btn-text-nav">Next</span>
             <span class="btn-icon-nav">→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL EDIT DIMENSI KARTON BOX -->
+    <div v-if="isEditDimOpen" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>✏️ Edit Dimensi — {{ editDimItem?.name }}</h3>
+          <button class="modal-close-btn" @click="closeEditDimension">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="dim-form-grid">
+            <div class="form-group-dim">
+              <label>Panjang / P (mm)</label>
+              <input v-model.number="editDimForm.p" type="number" min="0" class="dim-input" />
+            </div>
+            <div class="form-group-dim">
+              <label>Lebar / L (mm)</label>
+              <input v-model.number="editDimForm.l" type="number" min="0" class="dim-input" />
+            </div>
+            <div class="form-group-dim">
+              <label>Tebal / T (mm)</label>
+              <input v-model.number="editDimForm.t" type="number" min="0" class="dim-input" />
+            </div>
+            <div class="form-group-dim" style="grid-column: span 3">
+              <label>Catatan Perubahan</label>
+              <input
+                v-model="editDimForm.notes"
+                type="text"
+                class="dim-input"
+                placeholder="Alasan perubahan dimensi..."
+              />
+            </div>
+          </div>
+
+          <!-- Riwayat -->
+          <div v-if="dimHistories.length > 0" class="dim-history">
+            <h4>📋 Riwayat Perubahan</h4>
+            <table class="dim-history-table">
+              <thead>
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Oleh</th>
+                  <th>Sebelum (P×L×T)</th>
+                  <th>Sesudah (P×L×T)</th>
+                  <th>Catatan</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="h in dimHistories" :key="h.id">
+                  <td>{{ h.changed_at }}</td>
+                  <td>{{ h.changed_by }}</td>
+                  <td>{{ h.old_p }}×{{ h.old_l }}×{{ h.old_t }}</td>
+                  <td>{{ h.new_p }}×{{ h.new_l }}×{{ h.new_t }}</td>
+                  <td>{{ h.notes || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div v-else class="dim-no-history">Belum ada riwayat perubahan dimensi.</div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-modal-ok" @click="closeEditDimension">Batal</button>
+          <button class="btn-modal-save" @click="saveDimension" :disabled="isSavingDim">
+            {{ isSavingDim ? '⏳ Menyimpan...' : '💾 Simpan' }}
           </button>
         </div>
       </div>
@@ -783,6 +939,60 @@ const closeDetail = () => {
   isDetailOpen.value = false
   detailItem.value = null
   detailStocks.value = []
+}
+
+// Edit Dimensi Karton Box
+const isEditDimOpen = ref(false)
+const editDimItem = ref(null)
+const editDimForm = ref({ p: 0, l: 0, t: 0, notes: '' })
+const dimHistories = ref([])
+const isSavingDim = ref(false)
+
+const openEditDimension = async (item) => {
+  editDimItem.value = item
+  editDimForm.value = {
+    p: item.specifications?.p ?? 0,
+    l: item.specifications?.l ?? 0,
+    t: item.specifications?.t ?? 0,
+    notes: '',
+  }
+  isEditDimOpen.value = true
+  try {
+    const res = await apiClient.get(`/items/${item.id}/dimension-history`)
+    dimHistories.value = res.data.data ?? []
+  } catch {
+    dimHistories.value = []
+  }
+}
+
+const closeEditDimension = () => {
+  isEditDimOpen.value = false
+  editDimItem.value = null
+  dimHistories.value = []
+  isSavingDim.value = false
+}
+
+const saveDimension = async () => {
+  if (!editDimItem.value) return
+  isSavingDim.value = true
+  try {
+    await apiClient.put(`/items/${editDimItem.value.id}/dimensions`, editDimForm.value)
+    toast.success('Dimensi berhasil diperbarui!')
+    const item = reportData.value.find((i) => i.id === editDimItem.value.id)
+    if (item) {
+      item.specifications = {
+        ...item.specifications,
+        p: editDimForm.value.p,
+        l: editDimForm.value.l,
+        t: editDimForm.value.t,
+      }
+    }
+    closeEditDimension()
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Gagal menyimpan dimensi')
+  } finally {
+    isSavingDim.value = false
+  }
 }
 
 onMounted(() => {
@@ -1626,5 +1836,95 @@ onMounted(() => {
     justify-content: center;
     flex-wrap: wrap;
   }
+}
+.btn-edit-dim {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-edit-dim:hover {
+  background: #bfdbfe;
+}
+
+.dim-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.form-group-dim label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+.dim-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+.dim-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.btn-modal-save {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-modal-save:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+.btn-modal-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dim-history {
+  margin-top: 1.5rem;
+}
+.dim-history h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: #111827;
+}
+.dim-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.dim-history-table th {
+  background: #f3f4f6;
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 700;
+  border-bottom: 2px solid #e5e7eb;
+}
+.dim-history-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.dim-no-history {
+  color: #9ca3af;
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 1rem;
 }
 </style>
