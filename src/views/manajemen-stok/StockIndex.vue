@@ -346,9 +346,9 @@
                 <td class="td-small">{{ item.specifications?.t ?? '-' }}</td>
                 <td class="td-small">{{ item.specifications?.l ?? '-' }}</td>
                 <td class="td-small">{{ item.specifications?.p ?? '-' }}</td>
-                <td class="td-small">{{ item.cutting_t ?? '-' }}</td>
-                <td class="td-small">{{ item.cutting_l ?? '-' }}</td>
-                <td class="td-small">{{ item.cutting_p ?? '-' }}</td>
+                <td class="td-small">{{ item.cutting_t != null ? +item.cutting_t : '-' }}</td>
+                <td class="td-small">{{ item.cutting_l != null ? +item.cutting_l : '-' }}</td>
+                <td class="td-small">{{ item.cutting_p != null ? +item.cutting_p : '-' }}</td>
                 <td class="td-small">
                   <span v-if="item.no_rak" class="badge-unit-modern">{{ item.no_rak }}</span>
                   <span v-else class="text-gray">-</span>
