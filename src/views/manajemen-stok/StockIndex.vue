@@ -22,7 +22,7 @@
             <div class="stat-content">
               <p class="stat-label">Total Items</p>
               <p class="stat-value">
-                {{ pagination ? pagination.total : filteredReport.length }}
+                {{ activePagination ? activePagination.total : 0 }}
               </p>
             </div>
           </div>
@@ -87,7 +87,7 @@
         <div class="header-right-info">
           <div class="info-badge-count">
             <span class="badge-icon">📦</span>
-            <span class="badge-text">{{ filteredReport.length }} Items</span>
+            <span class="badge-text">{{ activePagination ? activePagination.total : reportData.length }} Items</span>
           </div>
         </div>
       </div>
@@ -213,6 +213,25 @@
                 <th class="th-small">Aksi</th>
               </tr>
 
+              <!-- HEADER KOMPONEN -->
+              <tr v-else-if="activeTab === 'component'">
+                <th class="th-number">No</th>
+                <th class="th-code">Kode</th>
+                <th class="th-name">Nama Komponen</th>
+                <th class="th-small">Buyer</th>
+                <th class="th-small">Nama Produk</th>
+                <th class="th-small">Jenis Kayu</th>
+                <th class="th-small">T (mm)</th>
+                <th class="th-small">L (mm)</th>
+                <th class="th-small">P (mm)</th>
+                <th class="th-small">Qty/Set</th>
+                <th class="th-small">Qty Natural</th>
+                <th class="th-small">Qty Warna</th>
+                <th class="th-small">Total Stok</th>
+                <th class="th-small">M³ Natural</th>
+                <th class="th-small">M³ Warna</th>
+              </tr>
+
               <!-- HEADER KATEGORI LAIN -->
               <tr v-else>
                 <th class="th-number">No</th>
@@ -228,7 +247,7 @@
             <tbody>
               <tr v-if="filteredReport.length === 0" class="empty-row-modern">
                 <td
-                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 13 : activeTab === 'packaging' ? 12 : activeTab === 'operational' ? 7 : 6"
+                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 13 : activeTab === 'packaging' ? 12 : activeTab === 'component' ? 15 : activeTab === 'operational' ? 7 : 6"
                   class="empty-cell-modern"
                 >
                   <div class="empty-state-content">
@@ -257,8 +276,8 @@
                 <td class="td-number">
                   <div class="number-badge">
                     {{
-                      pagination
-                        ? (pagination.current_page - 1) * pagination.per_page + index + 1
+                      activePagination
+                        ? (activePagination.current_page - 1) * activePagination.per_page + index + 1
                         : index + 1
                     }}
                   </div>
@@ -318,8 +337,8 @@
                 <td class="td-number">
                   <div class="number-badge">
                     {{
-                      pagination
-                        ? (pagination.current_page - 1) * pagination.per_page + index + 1
+                      activePagination
+                        ? (activePagination.current_page - 1) * activePagination.per_page + index + 1
                         : index + 1
                     }}
                   </div>
@@ -378,8 +397,8 @@
                 <td class="td-number">
                   <div class="number-badge">
                     {{
-                      pagination
-                        ? (pagination.current_page - 1) * pagination.per_page + index + 1
+                      activePagination
+                        ? (activePagination.current_page - 1) * activePagination.per_page + index + 1
                         : index + 1
                     }}
                   </div>
@@ -441,6 +460,75 @@
                 </td>
               </tr>
 
+              <!-- ROWS KOMPONEN -->
+              <tr
+                v-else-if="activeTab === 'component'"
+                v-for="(item, index) in filteredReport"
+                :key="'komp-' + item.id"
+                class="data-row-modern"
+              >
+                <td class="td-number">
+                  <div class="number-badge">
+                    {{
+                      activePagination
+                        ? (activePagination.current_page - 1) * activePagination.per_page + index + 1
+                        : index + 1
+                    }}
+                  </div>
+                </td>
+                <td class="td-code">
+                  <div class="code-badge-modern">
+                    <span class="code-icon">🏷️</span>
+                    <span class="code-text">{{ item.code }}</span>
+                  </div>
+                </td>
+                <td class="td-name">
+                  <div class="item-info-modern">
+                    <div class="item-icon-box"><span class="item-icon">🧩</span></div>
+                    <div class="item-text">
+                      <span class="item-name-text">{{ item.name }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="td-small">
+                  <span class="badge-unit-modern">{{ item.buyer_name || '-' }}</span>
+                </td>
+                <td class="td-small">{{ item.nama_produk || '-' }}</td>
+                <td class="td-small">
+                  <span class="badge-unit-modern">{{ item.jenis_kayu || '-' }}</span>
+                </td>
+                <td class="td-small">{{ item.specifications?.t ?? '-' }}</td>
+                <td class="td-small">{{ item.specifications?.l ?? '-' }}</td>
+                <td class="td-small">{{ item.specifications?.p ?? '-' }}</td>
+                <td class="td-small">
+                  <span class="badge-unit-modern">{{ formatQty(item.qty_set || 0) }}</span>
+                </td>
+                <td class="td-small">
+                  <span class="qty-natural">{{ formatQty(item.qty_natural || 0) }}</span>
+                </td>
+                <td class="td-small">
+                  <span class="qty-warna">{{ formatQty(item.qty_warna || 0) }}</span>
+                </td>
+                <td class="td-small">
+                  <div class="stock-total-inline">
+                    <span class="stock-value">
+                      {{
+                        formatQty(
+                          item.total_stock_from_stocks ?? totalQty(filteredStocks(item.stocks || [])),
+                        )
+                      }}
+                    </span>
+                    <button type="button" class="btn-eye-inline" @click="openDetail(item)">👁️</button>
+                  </div>
+                </td>
+                <td class="td-small">
+                  <span class="qty-natural">{{ formatKubikasi(item.m3_natural || 0) }}</span>
+                </td>
+                <td class="td-small">
+                  <span class="qty-warna">{{ formatKubikasi(item.m3_warna || 0) }}</span>
+                </td>
+              </tr>
+
               <!-- ROWS KATEGORI LAIN -->
               <tr
                 v-else
@@ -451,8 +539,8 @@
                 <td class="td-number">
                   <div class="number-badge">
                     {{
-                      pagination
-                        ? (pagination.current_page - 1) * pagination.per_page + index + 1
+                      activePagination
+                        ? (activePagination.current_page - 1) * activePagination.per_page + index + 1
                         : index + 1
                     }}
                   </div>
@@ -509,19 +597,19 @@
       </div>
 
       <!-- PAGINATION -->
-      <div v-if="pagination && pagination.last_page > 1" class="card-footer-modern">
+      <div v-if="activePagination && activePagination.last_page > 1" class="card-footer-modern">
         <div class="pagination-info-modern">
           <span class="info-icon">📄</span>
           <span class="info-text">
-            Menampilkan <strong>{{ pagination.from || 0 }}</strong> -
-            <strong>{{ pagination.to || 0 }}</strong> dari
-            <strong>{{ pagination.total }}</strong> data
+            Menampilkan <strong>{{ activePagination.from || 0 }}</strong> -
+            <strong>{{ activePagination.to || 0 }}</strong> dari
+            <strong>{{ activePagination.total }}</strong> data
           </span>
         </div>
         <div class="pagination-controls-modern">
           <button
-            @click="goToPage(pagination.current_page - 1)"
-            :disabled="pagination.current_page === 1"
+            @click="goToPage(activePagination.current_page - 1)"
+            :disabled="activePagination.current_page === 1"
             class="pagination-btn-modern pagination-prev"
           >
             <span class="btn-icon-nav">←</span>
@@ -534,15 +622,15 @@
             :class="[
               'pagination-btn-modern',
               'pagination-number',
-              { active: page === pagination.current_page, dots: page === '...' },
+              { active: page === activePagination.current_page, dots: page === '...' },
             ]"
             :disabled="page === '...'"
           >
             {{ page }}
           </button>
           <button
-            @click="goToPage(pagination.current_page + 1)"
-            :disabled="pagination.current_page === pagination.last_page"
+            @click="goToPage(activePagination.current_page + 1)"
+            :disabled="activePagination.current_page === activePagination.last_page"
             class="pagination-btn-modern pagination-next"
           >
             <span class="btn-text-nav">Next</span>
@@ -816,17 +904,21 @@ const handlePerPageChange = () => {
 }
 
 const goToPage = (page) => {
-  if (!pagination.value) return
-  if (page < 1 || page > pagination.value.last_page) return
+  const pag = activePagination.value
+  if (!pag) return
+  if (page < 1 || page > pag.last_page) return
   currentPage.value = page
-  fetchReport()
+  if (pagination.value) {
+    fetchReport()
+  }
 }
 
 const paginationPages = computed(() => {
-  if (!pagination.value) return []
+  const pag = activePagination.value
+  if (!pag) return []
   const pages = []
-  const currentPageNum = pagination.value.current_page
-  const lastPageNum = pagination.value.last_page
+  const currentPageNum = pag.current_page
+  const lastPageNum = pag.last_page
 
   if (lastPageNum <= 7) {
     for (let i = 1; i <= lastPageNum; i++) pages.push(i)
@@ -857,8 +949,29 @@ const filteredStocks = (stocks = []) => {
 }
 
 const filteredReport = computed(() => {
-  return reportData.value
+  if (pagination.value) return reportData.value
+  const start = (currentPage.value - 1) * perPage.value
+  return reportData.value.slice(start, start + perPage.value)
 })
+
+const clientPagination = computed(() => {
+  if (pagination.value) return null
+  const total = reportData.value.length
+  if (total === 0) return null
+  const lastPage = Math.ceil(total / perPage.value)
+  const from = (currentPage.value - 1) * perPage.value + 1
+  const to = Math.min(currentPage.value * perPage.value, total)
+  return {
+    current_page: currentPage.value,
+    last_page: lastPage,
+    per_page: perPage.value,
+    total,
+    from,
+    to,
+  }
+})
+
+const activePagination = computed(() => pagination.value || clientPagination.value)
 
 const formatQty = (val) => {
   if (!val && val !== 0) return 0
@@ -1927,4 +2040,24 @@ onMounted(() => {
   text-align: center;
   padding: 1rem;
 }
+.qty-natural {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #d1fae5;
+  color: #065f46;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.qty-warna {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #ede9fe;
+  color: #5b21b6;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
 </style>
