@@ -228,6 +228,7 @@
                 <th class="th-small">Qty Natural</th>
                 <th class="th-small">Qty Warna</th>
                 <th class="th-small">Total Stok</th>
+                <th class="th-small">M³ Total</th>
                 <th class="th-small">M³ Natural</th>
                 <th class="th-small">M³ Warna</th>
               </tr>
@@ -247,7 +248,7 @@
             <tbody>
               <tr v-if="filteredReport.length === 0" class="empty-row-modern">
                 <td
-                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 13 : activeTab === 'packaging' ? 12 : activeTab === 'component' ? 15 : activeTab === 'operational' ? 7 : 6"
+                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 13 : activeTab === 'packaging' ? 12 : activeTab === 'component' ? 16 : activeTab === 'operational' ? 7 : 6"
                   class="empty-cell-modern"
                 >
                   <div class="empty-state-content">
@@ -520,6 +521,9 @@
                     </span>
                     <button type="button" class="btn-eye-inline" @click="openDetail(item)">👁️</button>
                   </div>
+                </td>
+                <td class="td-small">
+                  {{ formatKubikasi((item.m3_natural || 0) + (item.m3_warna || 0)) }}
                 </td>
                 <td class="td-small">
                   <span class="qty-natural">{{ formatKubikasi(item.m3_natural || 0) }}</span>
