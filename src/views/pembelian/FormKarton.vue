@@ -102,17 +102,24 @@
                   <!-- DATA ROW -->
                   <tr class="data-row">
                     <td class="td-material">
-                      <select
-                        :id="'select-barang-' + index"
-                        v-model="item.item_id"
-                        class="choices-select"
-                        required
-                      >
-                        <option disabled value="">Pilih Barang</option>
-                        <option v-for="barang in daftarBarang" :key="barang.id" :value="barang.id">
-                          {{ barang.code }} - {{ barang.name }}
-                        </option>
-                      </select>
+                      <div class="material-select-wrapper">
+                        <select
+                          :id="'select-barang-' + index"
+                          v-model="item.item_id"
+                          class="choices-select"
+                          required
+                        >
+                          <option value="">Pilih Barang</option>
+                        </select>
+                        <button
+                          type="button"
+                          class="btn-quick-add"
+                          @click="openModalTambahBarang"
+                          title="Tambah karton box baru"
+                        >
+                          ➕
+                        </button>
+                      </div>
                     </td>
                     <td class="td-qty">
                       <input
@@ -288,6 +295,128 @@
         </button>
       </div>
     </form>
+
+    <!-- MODAL TAMBAH KARTON BOX BARU -->
+    <div v-if="showModalTambahBarang" class="modal-overlay" @click.self="closeModalTambahBarang">
+      <div class="modal-container-barang">
+        <div class="modal-header-barang">
+          <div class="modal-title-wrapper">
+            <span class="modal-icon">📦</span>
+            <h3 class="modal-title">Tambah Karton Box Baru</h3>
+          </div>
+          <button class="modal-close" @click="closeModalTambahBarang">✕</button>
+        </div>
+        <div class="modal-body-barang">
+          <div class="form-grid-2">
+            <div class="form-group-modal">
+              <label class="form-label-modal">Kode</label>
+              <input
+                v-model="formBarang.code"
+                type="text"
+                class="form-input-modal"
+                placeholder="KRT-001"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">Nama <span class="req">*</span></label>
+              <input
+                v-model="formBarang.name"
+                type="text"
+                class="form-input-modal"
+                placeholder="BOX U. AGAVE..."
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">Buyer</label>
+              <input
+                v-model="formBarang.buyer_name"
+                type="text"
+                class="form-input-modal"
+                placeholder="ETHIMO"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">Model</label>
+              <input
+                v-model="formBarang.model"
+                type="text"
+                class="form-input-modal"
+                placeholder="AGAVE"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">Jenis Karton</label>
+              <input
+                v-model="formBarang.jenis_karton"
+                type="text"
+                class="form-input-modal"
+                placeholder="RST"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">Kualitas</label>
+              <input
+                v-model="formBarang.kualitas"
+                type="text"
+                class="form-input-modal"
+                placeholder="A"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">P (mm)</label>
+              <input
+                v-model.number="formBarang.p"
+                type="number"
+                min="0"
+                class="form-input-modal"
+                placeholder="0"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">L (mm)</label>
+              <input
+                v-model.number="formBarang.l"
+                type="number"
+                min="0"
+                class="form-input-modal"
+                placeholder="0"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">T (mm)</label>
+              <input
+                v-model.number="formBarang.t"
+                type="number"
+                min="0"
+                class="form-input-modal"
+                placeholder="0"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">Stok Awal</label>
+              <input
+                v-model.number="formBarang.stock"
+                type="number"
+                min="0"
+                class="form-input-modal"
+                placeholder="0"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer-barang">
+          <button type="button" class="btn-cancel-modal" @click="closeModalTambahBarang">Batal</button>
+          <button
+            type="button"
+            class="btn-save-modal"
+            @click="simpanBarangBaru"
+            :disabled="isSavingBarang"
+          >
+            {{ isSavingBarang ? '⏳ Menyimpan...' : '💾 Simpan' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </DashboardLayout>
 </template>
 
@@ -312,6 +441,20 @@ const isSaving = ref(false)
 
 const daftarSupplier = ref([])
 const daftarBarang = ref([])
+const showModalTambahBarang = ref(false)
+const isSavingBarang = ref(false)
+const formBarang = ref({
+  code: '',
+  name: '',
+  buyer_name: '',
+  model: '',
+  jenis_karton: '',
+  kualitas: '',
+  p: 0,
+  l: 0,
+  t: 0,
+  stock: 0,
+})
 const choicesInstances = ref([])
 
 const form = reactive({
@@ -441,6 +584,103 @@ const saveOrder = async () => {
     toast.error(errorMessage)
   } finally {
     isSaving.value = false
+  }
+}
+
+const openModalTambahBarang = () => {
+  formBarang.value = {
+    code: '',
+    name: '',
+    buyer_name: '',
+    model: '',
+    jenis_karton: '',
+    kualitas: '',
+    p: 0,
+    l: 0,
+    t: 0,
+    stock: 0,
+  }
+  showModalTambahBarang.value = true
+}
+
+const closeModalTambahBarang = () => {
+  showModalTambahBarang.value = false
+}
+
+const simpanBarangBaru = async () => {
+  if (!formBarang.value.name) {
+    toast.error('Nama barang wajib diisi!')
+    return
+  }
+  isSavingBarang.value = true
+  try {
+    // Cari category_id Karton Box dan unit_id PCS
+    const [catRes, unitRes] = await Promise.all([
+      apiClient.get('/categories/all'),
+      apiClient.get('/units/all'),
+    ])
+    const kartonCat = catRes.data.data.find((c) => c.name === 'Karton Box')
+    const pcUnit = unitRes.data.data.find((u) => u.name === 'PCS' || u.short_name === 'PCS')
+
+    if (!kartonCat) {
+      toast.error('Kategori Karton Box tidak ditemukan!')
+      return
+    }
+    if (!pcUnit) {
+      toast.error('Satuan PCS tidak ditemukan!')
+      return
+    }
+
+    const p = formBarang.value.p || 0
+    const l = formBarang.value.l || 0
+    const t = formBarang.value.t || 0
+    const m3PerPcs = p > 0 && l > 0 && t > 0 ? (p * l * t) / 1000000000 : 0
+
+    const res = await apiClient.post('/materials', {
+      code: formBarang.value.code || null,
+      name: formBarang.value.name,
+      category_id: kartonCat.id,
+      unit_id: pcUnit.id,
+      stock: formBarang.value.stock || 0,
+      buyer_name: formBarang.value.buyer_name || null,
+      model: formBarang.value.model || null,
+      jenis_karton: formBarang.value.jenis_karton || null,
+      kualitas: formBarang.value.kualitas || null,
+      specifications: { p, l, t, m3_per_pcs: m3PerPcs },
+    })
+
+    // Tutup modal segera setelah 2xx berhasil
+    closeModalTambahBarang()
+
+    const barangBaru = res.data?.data ?? res.data
+    if (barangBaru?.id) {
+      daftarBarang.value.push({ id: barangBaru.id, code: barangBaru.code, name: barangBaru.name })
+
+      const label = barangBaru.code
+        ? `${barangBaru.code} - ${barangBaru.name}`
+        : barangBaru.name
+      choicesInstances.value.forEach((instance) => {
+        try {
+          instance.setChoices([{ value: String(barangBaru.id), label }], 'value', 'label', false)
+        } catch {
+          // instance sudah destroyed, abaikan
+        }
+      })
+
+      toast.success(`Karton "${barangBaru.name}" berhasil ditambahkan!`)
+    } else {
+      toast.success('Karton berhasil ditambahkan!')
+    }
+  } catch (error) {
+    const errData = error.response?.data
+    const msg =
+      errData?.message ||
+      (errData?.errors ? Object.values(errData.errors).flat().join(', ') : null) ||
+      error.message ||
+      'Gagal menyimpan karton box'
+    toast.error(msg)
+  } finally {
+    isSavingBarang.value = false
   }
 }
 
@@ -828,13 +1068,13 @@ textarea.form-control {
 }
 
 .detail-table th {
-  padding: 20px 20px;
+  padding: 14px 16px;
   text-align: left;
   color: white;
-  font-weight: 900;
-  font-size: 13px;
+  font-weight: 700;
+  font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.6px;
 }
 
 .th-material {
@@ -872,15 +1112,24 @@ textarea.form-control {
 }
 
 .detail-table td {
-  padding: 18px 20px;
+  padding: 12px 16px;
   vertical-align: middle;
 }
 
+.td-qty .form-control,
+.td-price .form-control {
+  padding: 9px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+  min-width: 0;
+}
+
 .td-subtotal {
-  font-weight: 900;
+  font-weight: 700;
   color: #059669;
-  font-size: 16px;
+  font-size: 14px;
   font-family: 'Courier New', monospace;
+  white-space: nowrap;
 }
 
 .td-action {
@@ -961,37 +1210,34 @@ textarea.form-control {
   font-size: 13px;
 }
 
-/* ===== CHOICES.JS STYLING ===== */
-.choices {
+/* ===== CHOICES.JS STYLING — pakai :deep() karena scoped ===== */
+:deep(.choices) {
   margin-bottom: 0;
   font-family: inherit;
 }
 
-.choices__inner {
-  min-height: 46px;
-  padding: 10px 14px;
+:deep(.choices__inner) {
+  min-height: 40px;
+  padding: 8px 12px;
   border: 2px solid #e2e8f0;
   border-radius: 10px;
   background: #fafbfc;
-  font-size: 14px;
+  font-size: 13px;
   transition: all 0.2s ease;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.choices__inner:hover {
+:deep(.choices__inner:hover) {
   border-color: #cbd5e1;
 }
 
-.choices.is-open .choices__inner,
-.choices.is-focused .choices__inner {
+:deep(.choices.is-open .choices__inner),
+:deep(.choices.is-focused .choices__inner) {
   border-color: #f97316;
   background: white;
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
 }
 
-.choices__list--dropdown {
+:deep(.choices__list--dropdown) {
   border: 2px solid #e2e8f0;
   border-radius: 10px;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.15);
@@ -999,34 +1245,46 @@ textarea.form-control {
   margin-top: 6px;
 }
 
-.choices__item--selectable {
-  padding: 14px 16px;
-  font-size: 14px;
+:deep(.choices__item--selectable) {
+  padding: 10px 14px;
+  font-size: 13px;
   transition: all 0.15s ease;
 }
 
-.choices__item--selectable.is-highlighted {
+:deep(.choices__item--selectable.is-highlighted) {
   background: #fed7aa;
   color: #9a3412;
 }
 
-.choices__input {
-  font-size: 14px;
-  padding: 8px;
+:deep(.choices__input) {
+  font-size: 13px;
+  padding: 6px 8px;
   background: white;
   margin-bottom: 0;
 }
 
-.choices__input::placeholder {
+:deep(.choices__input::placeholder) {
   color: #94a3b8;
 }
 
-.td-material .choices {
+.td-material :deep(.choices) {
+  flex: 1;
+  min-width: 0;
   width: 100%;
 }
 
-.td-material .choices__inner {
-  min-height: 42px;
+.td-material :deep(.choices__inner) {
+  min-height: 40px;
+  padding: 8px 10px;
+}
+
+.td-material :deep(.choices__list--single) {
+  padding: 0;
+}
+
+.td-material :deep(.choices__placeholder) {
+  font-size: 13px;
+  opacity: 0.6;
 }
 
 /* ===== BUTTONS ===== */
@@ -1424,5 +1682,158 @@ textarea.form-control {
   opacity: 1;
   background: #fbbf24;
   color: white;
+}
+.material-select-wrapper {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+.btn-quick-add {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  background: #ffedd5;
+  color: #ea580c;
+  border: 2px solid #fdba74;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.btn-quick-add:hover {
+  background: #fed7aa;
+  transform: scale(1.1);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+.modal-container-barang {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 620px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+.modal-header-barang {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 28px;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+}
+.modal-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.modal-icon {
+  font-size: 28px;
+}
+.modal-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+.modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+.modal-body-barang {
+  padding: 28px;
+}
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.form-group-modal {
+  display: flex;
+  flex-direction: column;
+}
+.form-label-modal {
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 6px;
+}
+.req {
+  color: #ef4444;
+}
+.form-input-modal {
+  padding: 10px 14px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.form-input-modal:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+.modal-footer-barang {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 28px;
+  background: #f9fafb;
+  border-top: 2px solid #e5e7eb;
+}
+.btn-cancel-modal {
+  padding: 10px 20px;
+  background: #e5e7eb;
+  color: #374151;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-cancel-modal:hover {
+  background: #d1d5db;
+}
+.btn-save-modal {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-save-modal:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.btn-save-modal:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

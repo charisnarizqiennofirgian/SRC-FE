@@ -102,17 +102,24 @@
                   <!-- DATA ROW -->
                   <tr class="data-row">
                     <td class="td-material">
-                      <select
-                        :id="'select-barang-' + index"
-                        v-model="item.item_id"
-                        class="form-control choices-select"
-                        required
-                      >
-                        <option disabled value="">Pilih Barang</option>
-                        <option v-for="barang in daftarBarang" :key="barang.id" :value="barang.id">
-                          {{ barang.code }} - {{ barang.name }}
-                        </option>
-                      </select>
+                      <div class="material-select-wrapper">
+                        <select
+                          :id="'select-barang-' + index"
+                          v-model="item.item_id"
+                          class="form-control choices-select"
+                          required
+                        >
+                          <option value="">Pilih Barang</option>
+                        </select>
+                        <button
+                          type="button"
+                          class="btn-quick-add"
+                          @click="openModalTambahBarang"
+                          title="Tambah Kayu RST baru"
+                        >
+                          ➕
+                        </button>
+                      </div>
                     </td>
                     <td class="td-qty">
                       <input
@@ -314,6 +321,149 @@
         </button>
       </div>
     </form>
+
+    <!-- MODAL TAMBAH KAYU RST BARU -->
+    <div v-if="showModalTambahBarang" class="modal-overlay" @click.self="closeModalTambahBarang">
+      <div class="modal-container-barang">
+        <div class="modal-header-barang">
+          <div class="modal-title-wrapper">
+            <span class="modal-icon">🪵</span>
+            <h3 class="modal-title">Tambah Kayu RST Baru</h3>
+          </div>
+          <button class="modal-close" @click="closeModalTambahBarang">✕</button>
+        </div>
+        <div class="modal-body-barang">
+          <div class="form-grid-2">
+            <div class="form-group-modal">
+              <label class="form-label-modal">Kode</label>
+              <input
+                v-model="formBarang.kode_barang"
+                type="text"
+                class="form-input-modal"
+                placeholder="K-JTI-001"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">Nama Dasar <span class="req">*</span></label>
+              <input
+                v-model="formBarang.nama_dasar"
+                type="text"
+                class="form-input-modal"
+                placeholder="KAYU JATI RST"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">Jenis</label>
+              <input
+                v-model="formBarang.jenis"
+                type="text"
+                class="form-input-modal"
+                placeholder="TEAK"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">Kualitas</label>
+              <input
+                v-model="formBarang.kualitas"
+                type="text"
+                class="form-input-modal"
+                placeholder="A"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">T (mm) <span class="req">*</span></label>
+              <input
+                v-model.number="formBarang.tebal_mm"
+                type="number"
+                min="0"
+                class="form-input-modal"
+                placeholder="50"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">L (mm)</label>
+              <input
+                v-model.number="formBarang.lebar_mm"
+                type="number"
+                min="0"
+                class="form-input-modal"
+                placeholder="80"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">P (mm)</label>
+              <input
+                v-model.number="formBarang.panjang_mm"
+                type="number"
+                min="0"
+                class="form-input-modal"
+                placeholder="1000"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">No Rak</label>
+              <input
+                v-model="formBarang.no_rak"
+                type="text"
+                class="form-input-modal"
+                placeholder="RAK-A1"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">C.T (mm)</label>
+              <input
+                v-model.number="formBarang.cutting_tebal_mm"
+                type="number"
+                min="0"
+                class="form-input-modal"
+                placeholder="48"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">C.L (mm)</label>
+              <input
+                v-model.number="formBarang.cutting_lebar_mm"
+                type="number"
+                min="0"
+                class="form-input-modal"
+                placeholder="78"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="form-label-modal">C.P (mm)</label>
+              <input
+                v-model.number="formBarang.cutting_panjang_mm"
+                type="number"
+                min="0"
+                class="form-input-modal"
+                placeholder="998"
+              />
+            </div>
+          </div>
+
+          <!-- Preview nama otomatis -->
+          <div v-if="formBarang.nama_dasar && formBarang.tebal_mm" class="preview-nama">
+            <span class="preview-label">Nama item:</span>
+            <span class="preview-value">
+              {{ formBarang.nama_dasar }} ({{ formBarang.tebal_mm }}x{{ formBarang.lebar_mm || 0 }}x{{
+                formBarang.panjang_mm || 0
+              }})
+            </span>
+          </div>
+        </div>
+        <div class="modal-footer-barang">
+          <button type="button" class="btn-cancel-modal" @click="closeModalTambahBarang">Batal</button>
+          <button
+            type="button"
+            class="btn-save-modal"
+            @click="simpanBarangBaru"
+            :disabled="isSavingBarang"
+          >
+            {{ isSavingBarang ? '⏳ Menyimpan...' : '💾 Simpan' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </DashboardLayout>
 </template>
 
@@ -338,6 +488,21 @@ const isSaving = ref(false)
 
 const daftarSupplier = ref([])
 const daftarBarang = ref([])
+const showModalTambahBarang = ref(false)
+const isSavingBarang = ref(false)
+const formBarang = ref({
+  kode_barang: '',
+  nama_dasar: '',
+  jenis: '',
+  kualitas: '',
+  tebal_mm: null,
+  lebar_mm: null,
+  panjang_mm: null,
+  no_rak: '',
+  cutting_tebal_mm: null,
+  cutting_lebar_mm: null,
+  cutting_panjang_mm: null,
+})
 const choicesMap = ref(new Map())
 const supplierChoice = ref(null)
 
@@ -400,6 +565,19 @@ const initChoicesForIndex = async (index, item) => {
   }
   const selectElement = document.getElementById(`select-barang-${index}`)
   if (!selectElement) return
+
+  // Populate options imperiatif (v-for sudah dihapus dari template)
+  const placeholder = document.createElement('option')
+  placeholder.value = ''
+  placeholder.textContent = 'Pilih Barang'
+  selectElement.replaceChildren(placeholder)
+  daftarBarang.value.forEach((barang) => {
+    const opt = document.createElement('option')
+    opt.value = String(barang.id)
+    opt.textContent = barang.code ? `${barang.code} - ${barang.name}` : barang.name
+    selectElement.appendChild(opt)
+  })
+
   const choices = new Choices(selectElement, {
     searchEnabled: true,
     searchPlaceholderValue: 'Ketik untuk mencari barang...',
@@ -482,6 +660,83 @@ const hapusBarang = (index) => {
     else if (key > index) newMap.set(key - 1, instance)
   })
   choicesMap.value = newMap
+}
+
+const openModalTambahBarang = () => {
+  formBarang.value = {
+    kode_barang: '',
+    nama_dasar: '',
+    jenis: '',
+    kualitas: '',
+    tebal_mm: null,
+    lebar_mm: null,
+    panjang_mm: null,
+    no_rak: '',
+    cutting_tebal_mm: null,
+    cutting_lebar_mm: null,
+    cutting_panjang_mm: null,
+  }
+  showModalTambahBarang.value = true
+}
+
+const closeModalTambahBarang = () => {
+  showModalTambahBarang.value = false
+}
+
+const simpanBarangBaru = async () => {
+  if (!formBarang.value.nama_dasar || !formBarang.value.tebal_mm) {
+    toast.error('Nama dasar dan tebal wajib diisi!')
+    return
+  }
+  isSavingBarang.value = true
+  try {
+    const res = await apiClient.post('/materials/quick-store-rst', {
+      nama_dasar: formBarang.value.nama_dasar,
+      kode_barang: formBarang.value.kode_barang || null,
+      tebal_mm: formBarang.value.tebal_mm,
+      lebar_mm: formBarang.value.lebar_mm || 0,
+      panjang_mm: formBarang.value.panjang_mm || 0,
+      jenis: formBarang.value.jenis || null,
+      kualitas: formBarang.value.kualitas || null,
+      no_rak: formBarang.value.no_rak || null,
+      cutting_tebal_mm: formBarang.value.cutting_tebal_mm || null,
+      cutting_lebar_mm: formBarang.value.cutting_lebar_mm || null,
+      cutting_panjang_mm: formBarang.value.cutting_panjang_mm || null,
+    })
+
+    // Tutup modal segera setelah 2xx berhasil
+    closeModalTambahBarang()
+
+    const barangBaru = res.data?.data ?? res.data
+    if (barangBaru?.id) {
+      daftarBarang.value.push({ id: barangBaru.id, code: barangBaru.code, name: barangBaru.name })
+
+      const label = barangBaru.code
+        ? `${barangBaru.code} - ${barangBaru.name}`
+        : barangBaru.name
+      choicesMap.value.forEach((instance) => {
+        try {
+          instance.setChoices([{ value: String(barangBaru.id), label }], 'value', 'label', false)
+        } catch {
+          // instance sudah destroyed, abaikan
+        }
+      })
+
+      toast.success(`Kayu RST "${barangBaru.name}" berhasil ditambahkan!`)
+    } else {
+      toast.success('Kayu RST berhasil ditambahkan!')
+    }
+  } catch (error) {
+    const errData = error.response?.data
+    const msg =
+      errData?.message ||
+      (errData?.errors ? Object.values(errData.errors).flat().join(', ') : null) ||
+      error.message ||
+      'Gagal menyimpan kayu RST'
+    toast.error(msg)
+  } finally {
+    isSavingBarang.value = false
+  }
 }
 
 const saveOrder = async () => {
@@ -1075,50 +1330,47 @@ textarea.form-control {
   cursor: not-allowed;
 }
 
-/* ===== CHOICES.JS STYLING ===== */
-.choices {
+/* ===== CHOICES.JS STYLING — pakai :deep() karena scoped ===== */
+:deep(.choices) {
   margin: 0;
   font-family: inherit;
-  width: 100% !important;
+  width: 100%;
 }
 
-.choices-select {
-  width: 100% !important;
-}
-.choices__inner {
-  min-height: 44px;
-  padding: 9px 14px;
+:deep(.choices__inner) {
+  min-height: 40px;
+  padding: 8px 12px;
   border: 1.5px solid #e5e7eb;
   border-radius: 8px;
   background: #fafafa;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   box-sizing: border-box;
 }
-.choices__inner:hover {
+:deep(.choices__inner:hover) {
   border-color: #d1d5db;
 }
-.choices.is-open .choices__inner,
-.choices.is-focused .choices__inner {
+:deep(.choices.is-open .choices__inner),
+:deep(.choices.is-focused .choices__inner) {
   border-color: #92400e;
   background: #fff;
   box-shadow: 0 0 0 3px rgba(146, 64, 14, 0.1);
 }
-.choices__list--single {
+:deep(.choices__list--single) {
   padding: 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #111827;
 }
-.choices__placeholder {
+:deep(.choices__placeholder) {
   color: #9ca3af;
   font-weight: 400;
   opacity: 1;
 }
-.choices__list--dropdown {
+:deep(.choices__list--dropdown) {
   border: 1.5px solid #fde68a;
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
@@ -1126,7 +1378,7 @@ textarea.form-control {
   margin-top: 4px;
   overflow: hidden;
 }
-.choices__input {
+:deep(.choices__input) {
   font-size: 13px;
   padding: 9px 12px;
   background: #fafafa;
@@ -1137,42 +1389,48 @@ textarea.form-control {
   box-sizing: border-box;
   font-family: inherit;
 }
-.choices__input:focus {
+:deep(.choices__input:focus) {
   background: #fff;
   border-color: #92400e !important;
   outline: none;
   box-shadow: 0 0 0 3px rgba(146, 64, 14, 0.1);
 }
-.choices__list--dropdown .choices__item {
+:deep(.choices__list--dropdown .choices__item) {
   padding: 10px 14px;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 500;
   color: #374151;
   transition: all 0.15s ease;
 }
-.choices__list--dropdown .choices__item--selectable.is-highlighted {
+:deep(.choices__list--dropdown .choices__item--selectable.is-highlighted) {
   background: #fef3c7;
   color: #92400e;
 }
-.choices__list--dropdown .choices__item.is-selected {
+:deep(.choices__list--dropdown .choices__item.is-selected) {
   background: #92400e;
   color: white;
   font-weight: 700;
 }
-.choices[data-type*='select-one']::after {
+:deep(.choices[data-type*='select-one']::after) {
   border-color: #9ca3af transparent transparent transparent;
   border-width: 5px;
   right: 14px;
   transition: all 0.2s ease;
 }
-.choices.is-open[data-type*='select-one']::after {
+:deep(.choices.is-open[data-type*='select-one']::after) {
   border-color: #92400e transparent transparent transparent;
   transform: rotate(180deg);
   margin-top: -5px;
 }
-.td-material .choices__inner {
-  min-height: 42px;
-  font-size: 13.5px;
+
+.td-material :deep(.choices) {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+.td-material :deep(.choices__inner) {
+  min-height: 40px;
+  font-size: 13px;
 }
 
 /* ===== SUMMARY ===== */
@@ -1415,5 +1673,192 @@ textarea.form-control {
     width: 100%;
     justify-content: center;
   }
+}
+.material-select-wrapper {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+.btn-quick-add {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1.5px solid #fde68a;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.btn-quick-add:hover {
+  background: #fde68a;
+  transform: scale(1.1);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+.modal-container-barang {
+  background: white;
+  border-radius: 14px;
+  width: 90%;
+  max-width: 640px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-header-barang {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 28px;
+  background: #92400e;
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.modal-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.modal-icon {
+  font-size: 28px;
+}
+.modal-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+.modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+.modal-body-barang {
+  padding: 28px;
+}
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.form-group-modal {
+  display: flex;
+  flex-direction: column;
+}
+.form-label-modal {
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 5px;
+}
+.req {
+  color: #ef4444;
+}
+.form-input-modal {
+  padding: 9px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 7px;
+  font-size: 13px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.form-input-modal:focus {
+  outline: none;
+  border-color: #92400e;
+  box-shadow: 0 0 0 3px rgba(146, 64, 14, 0.1);
+}
+
+.preview-nama {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fef3c7;
+  border: 1.5px solid #fde68a;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.preview-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #92400e;
+}
+.preview-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #78350f;
+}
+
+.modal-footer-barang {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 28px;
+  background: #f9fafb;
+  border-top: 1.5px solid #e5e7eb;
+  position: sticky;
+  bottom: 0;
+}
+.btn-cancel-modal {
+  padding: 10px 20px;
+  background: #e5e7eb;
+  color: #374151;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-cancel-modal:hover {
+  background: #d1d5db;
+}
+.btn-save-modal {
+  padding: 10px 24px;
+  background: #92400e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.btn-save-modal:hover:not(:disabled) {
+  background: #78350f;
+  transform: translateY(-1px);
+}
+.btn-save-modal:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>
