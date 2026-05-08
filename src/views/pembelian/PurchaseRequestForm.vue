@@ -118,7 +118,9 @@
           </table>
 
           <div class="table-footer">
-            <!-- Tombol Tambah Item dihapus sementara sesuai permintaan -->
+            <button type="button" class="btn-add-row" @click="addDetail">
+              ➕ Tambah Item
+            </button>
           </div>
         </div>
       </div>
@@ -232,7 +234,9 @@ const handleSubmitAndSend = () => savePR(true)
 const fetchSO = async () => {
   try {
     const res = await apiClient.get('/sales-orders', { params: { all: true }, timeout: 6000 })
-    daftarSO.value = res.data.data || []
+    const data = res.data.data || []
+    // Filter null/undefined
+    daftarSO.value = data.filter(so => so && so.id)
   } catch { /* opsional */ }
 }
 
