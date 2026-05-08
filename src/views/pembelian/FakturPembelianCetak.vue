@@ -145,62 +145,66 @@ body {
 .print-container {
   width: 210mm;
   min-height: 297mm;
-  margin: 20px auto;
+  margin: 0 auto;
   background: white;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .invoice-box {
-  padding: 15mm;
-  font-family: Arial, sans-serif;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #333;
+  padding: 15mm 18mm 10mm 18mm;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 10pt;
+  line-height: 1.4;
+  color: #000;
 }
 
 .po-title-section {
   text-align: center;
-  margin: 20px 0 25px 0;
-  padding-bottom: 15px;
+  margin: 5mm 0 4mm 0;
+  padding-bottom: 3mm;
+  border-bottom: 1pt solid #000;
 }
 
 .po-title {
-  font-size: 16px;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 13pt;
   font-weight: 900;
-  margin: 0 0 3px 0;
+  margin: 0 0 1mm 0;
   text-decoration: underline;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.5pt;
   color: #000;
 }
 
 .po-number-line {
-  font-size: 11px;
-  margin: 0;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 10pt;
+  margin: 0.5mm 0 0 0;
   font-weight: 600;
   font-style: italic;
   color: #000;
 }
 
 .invoice-info {
-  margin-top: 0;
-  margin-bottom: 20px;
+  margin: 4mm 0;
 }
 
 .date-line {
-  text-align: right;
-  margin-bottom: 20px;
-  font-size: 15px;
-  font-weight: 600;
+  text-align: left;
+  margin-bottom: 3mm;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 11pt;
+  font-weight: 400;
 }
 
 .info-supplier {
-  margin-bottom: 20px;
+  margin-bottom: 3mm;
 }
 
 .info-supplier p {
-  margin: 0 0 3px 0;
+  margin: 0 0 1mm 0;
   line-height: 1.4;
-  font-size: 15px;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 11pt;
 }
 
 .info-supplier .supplier-name {
@@ -209,45 +213,44 @@ body {
 }
 
 .intro-text {
-  font-weight: 600;
-  margin-bottom: 8px;
-  font-size: 15px;
+  font-weight: 400;
+  margin-bottom: 3mm;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 10pt;
 }
 
 .items-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 20px;
-  font-size: 11px;
+  margin-bottom: 5mm;
+  font-size: 10pt;
+  font-family: 'Times New Roman', Times, serif;
 }
 
 .items-table th,
 .items-table td {
-  border: 1px solid #000;
-  padding: 5px 7px;
+  border: 0.75pt solid #000;
+  padding: 3pt 5pt;
   vertical-align: top;
 }
 
 .items-table th {
-  background-color: #fff;
+  background-color: #f0f0f0;
   text-align: center;
-  font-weight: 700;
-  font-size: 10px;
+  font-weight: bold;
+  font-size: 9pt;
+  text-transform: uppercase;
+  letter-spacing: 0.3pt;
 }
 
-.items-table .center {
-  text-align: center;
-}
-
-.items-table .right {
-  text-align: right;
-}
+.items-table .center { text-align: center; }
+.items-table .right  { text-align: right; }
 
 .invoice-summary {
   display: flex;
   justify-content: flex-end;
-  margin-top: 10px;
-  margin-bottom: 20px;
+  margin-top: 5mm;
+  margin-bottom: 5mm;
   page-break-inside: avoid;
 }
 
@@ -261,57 +264,48 @@ body {
 }
 
 .totals td {
-  border: 1px solid #000;
-  padding: 4px 8px;
+  border: 0.75pt solid #000;
+  padding: 3pt 5pt;
   text-align: right;
-  font-size: 12px;
+  font-size: 10pt;
+  font-family: 'Times New Roman', Times, serif;
 }
 
 .totals td:first-child {
   text-align: left;
   font-weight: bold;
-  background-color: #f2f2f2;
+  background-color: #f0f0f0;
 }
 
 .totals .grand-total td {
   font-weight: bold;
-  font-size: 14px;
+  font-size: 11pt;
   background-color: #e8e8e8;
 }
 
+@page {
+  size: A4 portrait;
+  margin: 15mm 20mm;
+}
+
 @media print {
-  body,
+  html, body, #app {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
   .print-container {
-    margin: 0;
-    padding: 0;
-    background: white;
-    box-shadow: none;
+    width: 100% !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
   }
 
   .invoice-box {
-    padding: 10mm;
-  }
-
-  .po-title {
-    font-size: 15px;
-  }
-
-  .po-number-line {
-    font-size: 10px;
-  }
-
-  .date-line,
-  .info-supplier p,
-  .intro-text {
-    font-size: 10px;
-  }
-
-  .items-table {
-    font-size: 10px;
-  }
-
-  .items-table th {
-    font-size: 9px;
+    padding: 0 !important;
   }
 }
 </style>

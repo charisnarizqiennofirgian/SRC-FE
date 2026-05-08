@@ -133,7 +133,7 @@ const menuPermissionMap = {
   ],
   Pembelian: [
     'pembelian-operasional', 'pembelian-karton', 'pembelian-kayu',
-    'pembelian-faktur', 'pembelian-laporan-harga',
+    'pembelian-faktur', 'pembelian-laporan-harga', 'pembelian-purchase-request',
   ],
   Penjualan: [
     'penjualan-so', 'penjualan-uang-muka',
@@ -205,6 +205,7 @@ const allMenuItems = [
     name: 'Pembelian',
     icon: '🛒',
     children: [
+      { name: 'Purchase Request', route: { name: 'PurchaseRequestIndex' }, permission: 'pembelian-purchase-request' },
       { name: 'Pembelian Operasional', route: { name: 'PembelianOperasional' }, permission: 'pembelian-operasional' },
       { name: 'Pembelian Karton Box', route: { name: 'PembelianKarton' }, permission: 'pembelian-karton' },
       { name: 'Pembelian Kayu RST', route: { name: 'PembelianKayu' }, permission: 'pembelian-kayu' },

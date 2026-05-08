@@ -42,40 +42,43 @@
 <style scoped>
 .invoice-footer-kayu {
   width: 100%;
-  margin-top: 25px;
-  font-size: 12pt;
-  font-family: Calibri, 'Candara', 'Segoe UI', sans-serif;
+  margin-top: 5mm;
+  font-size: 10pt;
+  font-family: 'Times New Roman', Times, serif;
   page-break-inside: avoid;
 }
 .terms-section {
-  border-top: 1px solid #000;
-  padding-top: 10px;
+  border-top: 1.5pt solid #000;
+  padding-top: 3mm;
 }
 .term-item {
-  margin-bottom: 10px;
+  margin-bottom: 3mm;
 }
 .term-item p {
   margin: 0;
 }
 .term-item ol {
-  margin: 5px 0 0 20px;
+  margin: 2mm 0 0 5mm;
   padding-left: 0;
 }
 .term-item li {
-  margin-bottom: 3px;
+  margin-bottom: 1mm;
 }
 
 .closing-text {
-  margin-top: 20px;
-  margin-bottom: 20px;
+  margin-top: 4mm;
+  margin-bottom: 4mm;
 }
 .signature-col {
-  width: 30%;
+  width: 55mm;
 }
 .signature-space {
-  height: 60px;
+  height: 18mm;
 }
 .signature-name {
-  margin-top: 5px;
+  margin-top: 1mm;
+  border-top: 0.75pt solid #000;
+  padding-top: 1mm;
+  font-weight: 700;
 }
 </style>

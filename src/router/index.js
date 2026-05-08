@@ -315,6 +315,32 @@ const router = createRouter({
           meta: { title: 'Edit PO Kayu' },
         },
         {
+          path: '/admin/pembelian/purchase-request',
+          name: 'PurchaseRequestIndex',
+          component: () => import('../views/pembelian/PurchaseRequestIndex.vue'),
+          meta: { title: 'Daftar Purchase Request', requiresAuth: true },
+        },
+        {
+          path: '/admin/pembelian/purchase-request/buat',
+          name: 'PurchaseRequestCreate',
+          component: () => import('../views/pembelian/PurchaseRequestForm.vue'),
+          meta: { title: 'Buat Purchase Request', requiresAuth: true },
+        },
+        {
+          path: '/admin/pembelian/purchase-request/:id/edit',
+          name: 'PurchaseRequestEdit',
+          component: () => import('../views/pembelian/PurchaseRequestForm.vue'),
+          meta: { title: 'Edit Purchase Request', requiresAuth: true },
+          props: true,
+        },
+        {
+          path: '/admin/pembelian/purchase-request/:id',
+          name: 'PurchaseRequestDetail',
+          component: () => import('../views/pembelian/PurchaseRequestDetail.vue'),
+          meta: { title: 'Detail Purchase Request', requiresAuth: true },
+          props: true,
+        },
+        {
           path: '/admin/pembelian/laporan-harga',
           name: 'LaporanHarga',
           component: LaporanHarga,

@@ -278,31 +278,35 @@ onMounted(() => {
   min-height: 297mm;
   background: white;
   margin: 0 auto;
-  padding: 15mm;
+  padding: 15mm 18mm;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-family: 'Times New Roman', Times, serif;
+  color: #000;
 }
 
 /* ===== DOCUMENT TITLE ===== */
 .document-title-container {
   text-align: center;
-  margin: 20px 0;
-  border-bottom: 2px solid #000;
-  padding-bottom: 10px;
+  margin: 5mm 0 4mm 0;
+  border-bottom: 2pt solid #000;
+  padding-bottom: 3mm;
 }
 
 .document-title {
-  font-size: 16px;
+  font-size: 13pt;
   font-weight: bold;
   margin: 0;
   text-transform: uppercase;
+  letter-spacing: 0.5pt;
+  font-family: 'Times New Roman', Times, serif;
 }
 
 .document-meta {
   display: flex;
   justify-content: center;
-  gap: 40px;
-  margin-top: 8px;
-  font-size: 12px;
+  gap: 30mm;
+  margin-top: 2mm;
+  font-size: 10pt;
 }
 
 .meta-item {
@@ -311,24 +315,28 @@ onMounted(() => {
 
 /* ===== HEADER INFO ===== */
 .header-info-container {
-  margin: 20px 0;
+  margin: 4mm 0;
+  padding: 3mm 0;
+  border-bottom: 1pt solid #000;
 }
 
 .info-row-single {
   display: flex;
-  gap: 10px;
-  margin-bottom: 8px;
-  font-size: 12px;
+  gap: 4mm;
+  margin-bottom: 1.5mm;
+  font-size: 10pt;
+  align-items: baseline;
 }
 
 .info-label-bold {
   font-weight: bold;
-  font-size: 14px;
+  font-size: 11pt;
 }
 
 .info-label {
-  font-weight: 600;
-  min-width: 100px;
+  font-weight: 700;
+  min-width: 28mm;
+  flex-shrink: 0;
 }
 
 .info-value {
@@ -337,31 +345,34 @@ onMounted(() => {
 
 /* ===== TABLE PRINT ===== */
 .table-print-container {
-  margin: 20px 0;
+  margin: 4mm 0;
 }
 
 .table-print-bordered {
   width: 100%;
   border-collapse: collapse;
-  font-size: 11px;
+  font-size: 10pt;
+  font-family: 'Times New Roman', Times, serif;
 }
 
 .table-print-bordered th,
 .table-print-bordered td {
-  border: 1px solid #000;
-  padding: 8px 6px;
+  border: 0.75pt solid #000;
+  padding: 3pt 5pt;
   text-align: left;
 }
 
 .table-print-bordered th {
-  background: #f8f9fa;
+  background: #f0f0f0;
   font-weight: bold;
   text-align: center;
   text-transform: uppercase;
+  font-size: 9pt;
+  letter-spacing: 0.3pt;
 }
 
 .table-print-bordered td {
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 .text-center {
@@ -371,7 +382,7 @@ onMounted(() => {
 .text-center-empty {
   text-align: center;
   font-style: italic;
-  color: #999;
+  color: #666;
 }
 
 .text-right-bold {
@@ -385,62 +396,91 @@ onMounted(() => {
 }
 
 .total-row-border {
-  border-top: 2px solid #000;
+  border-top: 1.5pt solid #000;
   font-weight: bold;
+  background: #f8f8f8;
 }
 
 /* ===== SIGNATURE ===== */
 .signature-container-three {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-top: 40px;
+  gap: 10mm;
+  margin-top: 10mm;
   page-break-inside: avoid;
 }
 
 .signature-box-three {
   text-align: center;
-  font-size: 12px;
+  font-size: 10pt;
+  font-family: 'Times New Roman', Times, serif;
 }
 
 .signature-label {
   display: block;
-  font-weight: 600;
-  margin-bottom: 60px;
+  font-weight: 700;
+  margin-bottom: 18mm;
+  font-size: 10pt;
 }
 
 .signature-space {
-  height: 60px;
+  height: 18mm;
 }
 
 .signature-name {
   display: block;
-  margin-top: 8px;
-  font-weight: 600;
+  margin-top: 2mm;
+  font-weight: 700;
+  font-size: 10pt;
+  border-top: 1pt solid #000;
+  padding-top: 1mm;
 }
 
 /* ===== PRINT MEDIA QUERY ===== */
 @media print {
-  .print-page-container {
-    background: white;
-    padding: 0;
+  .print-controls {
+    display: none !important;
   }
 
-  .print-controls {
-    display: none;
+  .print-page-container {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    position: static !important;
   }
 
   .print-sheet-a4 {
-    width: 100%;
-    margin: 0;
-    padding: 10mm;
-    box-shadow: none;
-    page-break-after: always;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    position: static !important;
   }
 
   @page {
-    size: A4;
-    margin: 0;
+    size: A4 portrait;
+    margin: 15mm 20mm;
+  }
+}
+</style>
+
+<!-- Reset global: html/body/#app masih punya height:100% dari base.css -->
+<style>
+@media print {
+  html,
+  body,
+  #app {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    background: white !important;
   }
 }
 </style>

@@ -32,21 +32,21 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
 .invoice-header {
   display: flex;
   align-items: center;
-  border-bottom: 3px solid #000;
-  padding: 0;
-  margin-top: -10mm;
+  border-bottom: 2.5pt solid #000;
+  padding-bottom: 3mm;
+  margin-top: -10mm; /* kompensasi padding sheet di screen */
   width: 100%;
   box-sizing: border-box;
+  gap: 3mm;
 }
 
 .company-logo {
-  flex: 0 0 38mm;
-  padding-right: 2mm;
+  flex: 0 0 34mm;
 }
 
 .logo-img {
-  width: 38mm;
-  height: 38mm;
+  width: 34mm;
+  height: 34mm;
   object-fit: contain;
   display: block;
 }
@@ -58,90 +58,68 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
 }
 
 .company-name {
-  font-family: 'Constantia', serif;
-  font-size: 5.8mm;
+  font-family: 'Constantia', Georgia, serif;
+  font-size: 16pt;
   font-weight: 900;
-  margin: 0;
+  margin: 0 0 0.5mm 0;
   color: #000;
-  letter-spacing: 0.2px;
-  line-height: 1.1;
+  letter-spacing: 0.3px;
+  line-height: 1.15;
   white-space: nowrap;
 }
 
 .company-tagline {
-  font-family: Arial, sans-serif;
-  font-size: 3.5mm;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 10.5pt;
   font-weight: 700;
-  margin: 0 0 1.5mm 0;
+  margin: 0 0 1mm 0;
   color: #000;
-  letter-spacing: 0.3px;
-  line-height: 1.1;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
 }
 
 .highlight-S,
 .highlight-B,
 .highlight-C {
-  color: #ff0000;
+  color: #cc0000;
 }
 
-.company-address {
-  font-family: 'Times New Roman', serif;
-  font-size: 3.5mm;
-  margin: 0.5mm 0 0 0;
-  line-height: 1.3;
-  color: #000;
-  font-weight: 400;
-}
-
-.company-location {
-  font-family: 'Times New Roman', serif;
-  font-size: 3.5mm;
-  margin: 0.5mm 0 0 0;
-  line-height: 1.3;
-  color: #000;
-  font-weight: 400;
-}
-
-.company-contact {
-  font-family: 'Times New Roman', serif;
-  font-size: 3.5mm;
-  margin: 0.5mm 0 0 0;
-  line-height: 1.3;
-  color: #000;
-  font-weight: 400;
-}
-
+.company-address,
+.company-location,
+.company-contact,
 .company-phone {
-  font-family: 'Times New Roman', serif;
-  font-size: 3.5mm;
-  margin: 0.5mm 0 0 0;
-  line-height: 1.3;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 9.5pt;
+  margin: 0.3mm 0 0 0;
+  line-height: 1.35;
   color: #000;
   font-weight: 400;
 }
 
 .company-contact a {
-  color: #0066cc;
+  color: #0055aa;
   text-decoration: none;
 }
 
+/* SVLK: seukuran logo, rata kiri, tanpa garis */
 .svlk-wrapper {
-  flex: 0 0 auto;
+  flex: 0 0 36mm;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: flex-start;
-  padding-left: 1mm;
+  padding: 0;
 }
 
 .svlk-logo {
-  width: auto;
-  height: 38mm;
+  width: 36mm;
+  height: 36mm;
   object-fit: contain;
   display: block;
 }
 
 @media print {
   .invoice-header {
+    margin-top: 0;
     page-break-inside: avoid;
   }
 }

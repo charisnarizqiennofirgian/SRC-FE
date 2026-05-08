@@ -29,23 +29,23 @@ const extractUsername = (address) => {
 <style scoped>
 .intro-text {
   font-weight: 400;
-  margin-bottom: 8px;
-  font-size: 12pt;
-  font-family: Calibri, 'Candara', 'Segoe UI', sans-serif;
+  margin-bottom: 3mm;
+  font-size: 10pt;
+  font-family: 'Times New Roman', Times, serif;
 }
 .notes-section {
-  margin-top: 10px;
-  font-size: 12pt;
-  font-family: Calibri, 'Candara', 'Segoe UI', sans-serif;
+  margin-top: 3mm;
+  font-size: 10pt;
+  font-family: 'Times New Roman', Times, serif;
   display: flex;
-  gap: 8px;
+  gap: 3mm;
 }
 .notes-label {
-  font-weight: 400;
-  min-width: 60px;
+  font-weight: 700;
+  min-width: 18mm;
 }
 .notes-value {
-  color: #333;
+  color: #000;
   font-weight: 400;
 }
 </style>

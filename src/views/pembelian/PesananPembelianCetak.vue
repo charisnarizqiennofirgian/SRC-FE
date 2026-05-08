@@ -112,139 +112,124 @@ body {
 }
 
 .invoice-box {
-  padding: 0 8mm 8mm 8mm;
-  font-family: Calibri, 'Candara', 'Segoe UI', sans-serif;
-  font-size: 12pt;
+  padding: 15mm 18mm 10mm 18mm;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 10pt;
   line-height: 1.4;
   color: #000;
 }
 
 .po-title-section {
   text-align: center;
-  margin: 0 0 10px 0;
-  padding-bottom: 5px;
+  margin: 5mm 0 4mm 0;
+  padding-bottom: 3mm;
+  border-bottom: 1pt solid #000;
 }
 
 .po-title {
-  font-family: 'Times New Roman', serif;
-  font-size: 12pt;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 13pt;
   font-weight: 900;
-  margin: 0 0 2px 0;
+  margin: 0 0 1mm 0;
   text-decoration: underline;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.5pt;
   color: #000;
 }
 
 .po-number-line {
-  font-family: 'Times New Roman', serif;
-  font-size: 12pt;
-  margin: 0;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 10pt;
+  margin: 0.5mm 0 0 0;
   font-weight: 600;
   font-style: italic;
   color: #000;
 }
 
 .invoice-info {
-  margin-top: 0;
-  margin-bottom: 10px;
+  margin: 4mm 0;
 }
 
 .date-line {
-  text-align: left !important;
-  margin-bottom: 2px !important;
-  font-family: Calibri, 'Candara', 'Segoe UI', sans-serif;
-  font-size: 16pt;
+  text-align: left;
+  margin-bottom: 3mm;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 11pt;
   font-weight: 400;
 }
 
 .info-supplier {
-  margin-bottom: 12px;
+  margin-bottom: 3mm;
 }
 
 .info-supplier p {
-  margin: 0 0 3px 0;
+  margin: 0 0 1mm 0;
   line-height: 1.4;
-  font-family: Calibri, 'Candara', 'Segoe UI', sans-serif;
-  font-size: 16pt;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 11pt;
 }
 
 .info-supplier .supplier-name {
-  font-weight: 400;
+  font-weight: 700;
   text-decoration: underline;
 }
 
-/* ── Tanggal Kirim ── */
-.delivery-date-line {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 14px;
-  font-size: 10px;
-}
-
-.delivery-label {
-  font-weight: 700;
-  min-width: 90px;
-}
-
-.delivery-sep {
-  font-weight: 700;
-}
-
-.delivery-value {
-  font-weight: 600;
-}
-
 .intro-text {
-  font-weight: 600;
-  margin-bottom: 8px;
-  font-size: 10px;
+  font-weight: 400;
+  margin-bottom: 3mm;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 10pt;
 }
 
 .items-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 20px;
-  font-size: 10px;
+  margin-bottom: 5mm;
+  font-size: 10pt;
+  font-family: 'Times New Roman', Times, serif;
 }
 
 .items-table th,
 .items-table td {
-  border: 1px solid #000;
-  padding: 5px 7px;
+  border: 0.75pt solid #000;
+  padding: 3pt 5pt;
   vertical-align: top;
 }
 
 .items-table th {
-  background-color: #fff;
+  background-color: #f0f0f0;
   text-align: center;
-  font-weight: 700;
-  font-size: 9px;
+  font-weight: bold;
+  font-size: 9pt;
+  text-transform: uppercase;
+  letter-spacing: 0.3pt;
 }
 
-.items-table .center {
-  text-align: center;
-}
-.items-table .right {
-  text-align: right;
-}
+.items-table .center { text-align: center; }
+.items-table .right  { text-align: right; }
 
 @page {
-  margin: 0 !important;
+  size: A4 portrait;
+  margin: 15mm 20mm;
 }
 
 @media print {
-  html,
-  body,
+  html, body, #app {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
   .print-container {
+    width: 100% !important;
+    min-height: auto !important;
     margin: 0 !important;
-    padding: 0 !important;
-    background: white;
-    box-shadow: none;
+    box-shadow: none !important;
+    overflow: visible !important;
   }
 
   .invoice-box {
-    padding: 0 8mm 8mm 8mm !important;
+    padding: 0 !important;
   }
 }
 </style>

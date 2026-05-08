@@ -31,6 +31,9 @@
             <span class="status-badge badge-progress">🟡</span> In Progress
           </span>
           <span class="legend-item"> <span class="status-badge badge-done">✅</span> Done </span>
+          <span class="legend-item">
+            <span class="status-badge" style="background:#f3f4f6">⏭️</span> Skip
+          </span>
         </div>
 
         <!-- Loading -->
@@ -50,9 +53,9 @@
           <table class="monitoring-table">
             <thead>
               <tr>
-                <th class="col-so">No. SO & Buyer</th>
-                <th class="col-item">Item</th>
-                <th class="col-num">Target</th>
+                <th class="col-so" rowspan="2">No. SO & Buyer</th>
+                <th class="col-item" rowspan="2">Item</th>
+                <th class="col-num" rowspan="2">Target</th>
                 <!-- Zona Hulu -->
                 <th colspan="5" class="zone-header zone-hulu">
                   <span class="zone-icon">🌲</span> Persiapan Bahan
@@ -293,25 +296,21 @@ const formatNumber = (num) => {
 
 const getStatusIcon = (status) => {
   switch (status) {
-    case 'done':
-      return '✅'
-    case 'in_progress':
-      return '🟡'
+    case 'done':       return '✅'
+    case 'in_progress': return '🟡'
+    case 'skip':       return '⏭️'
     case 'waiting':
-    default:
-      return '🔴'
+    default:           return '🔴'
   }
 }
 
 const getStatusClass = (status) => {
   switch (status) {
-    case 'done':
-      return 'status-done'
-    case 'in_progress':
-      return 'status-progress'
+    case 'done':        return 'status-done'
+    case 'in_progress': return 'status-progress'
+    case 'skip':        return 'status-skip'
     case 'waiting':
-    default:
-      return 'status-waiting'
+    default:            return 'status-waiting'
   }
 }
 
@@ -596,6 +595,7 @@ onMounted(() => {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   white-space: nowrap;
+  vertical-align: middle;
 }
 
 .monitoring-table td {
@@ -798,6 +798,11 @@ onMounted(() => {
 .status-waiting {
   background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
   border: 2px solid #ef4444;
+}
+
+.status-skip {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border: 2px solid #9ca3af;
 }
 
 @keyframes pulse {

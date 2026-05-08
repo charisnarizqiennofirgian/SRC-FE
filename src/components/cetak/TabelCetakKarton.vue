@@ -75,23 +75,25 @@ const formatCurrency = (value) => {
 .items-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 20px;
-  font-size: 12pt;
-  font-family: Calibri, 'Candara', 'Segoe UI', sans-serif;
+  margin-bottom: 5mm;
+  font-size: 10pt;
+  font-family: 'Times New Roman', Times, serif;
 }
 
 .items-table th,
 .items-table td {
-  border: 1px solid #000;
-  padding: 8px 10px;
-  vertical-align: middle;
+  border: 0.75pt solid #000;
+  padding: 3pt 5pt;
+  vertical-align: top;
 }
 
 .items-table th {
-  background-color: #f2f2f2;
+  background-color: #f0f0f0;
   text-align: center;
-  font-weight: 400;
-  font-size: 12pt;
+  font-weight: bold;
+  font-size: 9pt;
+  text-transform: uppercase;
+  letter-spacing: 0.3pt;
 }
 
 .center {
@@ -104,9 +106,9 @@ const formatCurrency = (value) => {
   text-align: left;
 }
 .bold {
-  font-weight: 400;
+  font-weight: 700;
 }
 .total-row td {
-  background-color: #ffffff;
+  background-color: #f0f0f0;
 }
 </style>

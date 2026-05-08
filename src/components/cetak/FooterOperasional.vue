@@ -25,38 +25,41 @@
 <style scoped>
 .invoice-footer {
   width: 100%;
-  margin-top: 25px;
-  font-size: 14px;
-  font-family: Calibri, 'Candara', 'Segoe UI', sans-serif;
+  margin-top: 5mm;
+  font-size: 10pt;
+  font-family: 'Times New Roman', Times, serif;
   page-break-inside: avoid;
 }
 
 .closing-text {
-  margin-bottom: 20px;
+  margin-bottom: 4mm;
 }
 
 .signature-section {
-  margin-bottom: 25px;
+  margin-bottom: 5mm;
 }
 
 .signature-col {
-  width: 200px;
+  width: 55mm;
 }
 
 .signature-space {
-  height: 60px;
+  height: 18mm;
 }
 
 .signature-name {
-  margin-top: 5px;
+  margin-top: 1mm;
+  border-top: 0.75pt solid #000;
+  padding-top: 1mm;
+  font-weight: 700;
 }
 
 .company-details {
   width: 100%;
-  font-size: 12pt;
+  font-size: 10pt;
   line-height: 1.4;
-  border-top: 2px solid #000;
-  padding-top: 10px;
+  border-top: 1.5pt solid #000;
+  padding-top: 3mm;
 }
 
 .company-details p {
@@ -64,8 +67,8 @@
 }
 
 .company-details .company-name {
-  font-weight: 400;
-  font-size: 12pt;
-  margin-bottom: 5px;
+  font-weight: 700;
+  font-size: 10pt;
+  margin-bottom: 1mm;
 }
 </style>
