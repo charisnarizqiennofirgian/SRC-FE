@@ -58,12 +58,12 @@
                 <span class="required">*</span>
               </label>
               <select
+                id="supplier-select"
                 v-model="form.supplier_id"
-                @change="handleSupplierChange"
                 class="form-control"
                 required
               >
-                <option disabled value="">Pilih Supplier</option>
+                <option value="">Pilih Supplier</option>
                 <option v-for="supplier in daftarSupplier" :key="supplier.id" :value="supplier.id">
                   {{ supplier.name }}
                 </option>
@@ -433,6 +433,7 @@ const availableReceipts = ref([])
 const coaAccounts = ref([])
 const ppnPercentage = ref(12)
 const coaChoicesInstance = ref(null)
+const supplierChoicesInstance = ref(null)
 
 const today = new Date().toISOString().slice(0, 10)
 const thirtyDaysFromNow = new Date()
@@ -575,14 +576,15 @@ const saveBill = async () => {
 const fetchFormData = async () => {
   loading.value = true
   try {
-    const supplierRes = await apiClient.get('/suppliers?all=true')
-    daftarSupplier.value = supplierRes.data.data
+    const supplierRes = await apiClient.get('/suppliers?per_page=9999')
+    const rawSupplier = supplierRes.data.data
+    daftarSupplier.value = Array.isArray(rawSupplier) ? rawSupplier : (rawSupplier?.data ?? [])
 
     const formDataRes = await apiClient.get('/purchase-bills/form-data')
     coaAccounts.value = formDataRes.data.data.coa_accounts
-    
-    // Initialize Choices.js for COA dropdown after data is loaded
+
     await nextTick()
+    initializeSupplierDropdown()
     initializeCoaDropdown()
   } catch (error) {
     console.error('Gagal memuat data form:', error)
@@ -590,6 +592,32 @@ const fetchFormData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const initializeSupplierDropdown = () => {
+  setTimeout(() => {
+    const supplierSelect = document.getElementById('supplier-select')
+    if (supplierSelect && !supplierChoicesInstance.value) {
+      try {
+        supplierChoicesInstance.value = new Choices(supplierSelect, {
+          searchEnabled: true,
+          searchPlaceholderValue: 'Ketik untuk mencari supplier...',
+          noResultsText: 'Supplier tidak ditemukan',
+          noChoicesText: 'Tidak ada pilihan',
+          itemSelectText: 'Klik untuk pilih',
+          shouldSort: false,
+          position: 'bottom',
+          renderChoiceLimit: -1,
+          searchResultLimit: 200,
+        })
+        supplierSelect.addEventListener('change', () => {
+          handleSupplierChange()
+        })
+      } catch (error) {
+        console.error('Error initializing supplier Choices.js:', error)
+      }
+    }
+  }, 100)
 }
 
 const initializeCoaDropdown = () => {
@@ -1579,5 +1607,11 @@ onMounted(fetchFormData)
 .choices__list--dropdown .choices__item--selectable.is-highlighted {
   background-color: #10b981 !important;
   color: white;
+}
+
+/* Supplier dropdown search input */
+#supplier-select + .choices .choices__inner,
+.choices[data-type*="select-one"] .choices__inner {
+  min-height: 44px;
 }
 </style>

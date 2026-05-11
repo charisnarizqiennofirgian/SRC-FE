@@ -19,4 +19,19 @@ body {
     height: auto !important;
     overflow: visible !important;
   }
+
+  /* Sembunyikan icon/logo vue-select saat print */
+  .vs__open-indicator,
+  .vs__clear,
+  .vs__spinner,
+  .vs__actions {
+    display: none !important;
+  }
+
+  /* Sembunyikan elemen UI interaktif lainnya saat print */
+  button:not(.print-show),
+  .btn-add-item,
+  [class*="modal"] {
+    display: none !important;
+  }
 }
