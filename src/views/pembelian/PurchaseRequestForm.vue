@@ -193,9 +193,18 @@ const savePR = async (autoSubmit = false) => {
       so_id:    form.so_id || null,
       deadline: form.deadline,
       notes:    form.notes,
-      details:  form.details.map(({ item_id, qty_requested, notes }) => ({
-        item_id, qty_requested, notes,
-      })),
+      // Filter hanya baris yang sudah dipilih itemnya
+      details:  form.details
+        .filter(d => d.item_id && d.qty_requested > 0)
+        .map(({ item_id, qty_requested, notes }) => ({
+          item_id, qty_requested, notes,
+        })),
+    }
+
+    if (payload.details.length === 0) {
+      toast.error('Minimal 1 item harus dipilih!')
+      isSaving.value = false
+      return
     }
 
     let pr
