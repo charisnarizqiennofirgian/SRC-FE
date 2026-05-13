@@ -242,13 +242,14 @@
                 <th class="th-unit">Satuan</th>
                 <th class="th-stock">Stok</th>
                 <th v-if="activeTab === 'operational'" class="th-small">Harga Satuan</th>
+                <th v-if="activeTab === 'operational'" class="th-small">Aksi</th>
               </tr>
             </thead>
 
             <tbody>
               <tr v-if="filteredReport.length === 0" class="empty-row-modern">
                 <td
-                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 13 : activeTab === 'packaging' ? 12 : activeTab === 'component' ? 16 : activeTab === 'operational' ? 7 : 6"
+                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 13 : activeTab === 'packaging' ? 12 : activeTab === 'component' ? 16 : activeTab === 'operational' ? 8 : 6"
                   class="empty-cell-modern"
                 >
                   <div class="empty-state-content">
@@ -594,6 +595,16 @@
                 <td v-if="activeTab === 'operational'" class="td-small">
                   {{ item.price ? formatRupiah(item.price) : 'Rp 0' }}
                 </td>
+                <td v-if="activeTab === 'operational'" class="td-small">
+                  <button
+                    type="button"
+                    class="btn-edit-dim"
+                    @click="openEditOperasional(item)"
+                    title="Edit Barang"
+                  >
+                    ✏️ Edit
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -740,6 +751,44 @@
         </div>
         <div class="modal-footer">
           <button class="btn-modal-ok" @click="closeDetail">Tutup</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL EDIT BAHAN OPERASIONAL -->
+    <div v-if="isEditOpsOpen" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>✏️ Edit Barang — {{ editOpsItem?.name }}</h3>
+          <button class="modal-close-btn" @click="closeEditOperasional">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="dim-form-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="form-group-dim">
+              <label>Kode</label>
+              <input v-model="editOpsForm.code" type="text" class="dim-input" placeholder="Kode barang..." />
+            </div>
+            <div class="form-group-dim">
+              <label>Nama Barang</label>
+              <input v-model="editOpsForm.name" type="text" class="dim-input" placeholder="Nama barang..." />
+            </div>
+            <div class="form-group-dim">
+              <label>Satuan</label>
+              <select v-model="editOpsForm.unit_id" class="dim-input">
+                <option v-for="u in units" :key="u.id" :value="u.id">{{ u.name }}</option>
+              </select>
+            </div>
+            <div class="form-group-dim">
+              <label>Harga Satuan</label>
+              <input v-model.number="editOpsForm.price" type="number" min="0" class="dim-input" placeholder="0" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-modal-ok" @click="closeEditOperasional">Batal</button>
+          <button class="btn-modal-save" @click="saveEditOperasional" :disabled="isSavingOps">
+            {{ isSavingOps ? '⏳ Menyimpan...' : '💾 Simpan' }}
+          </button>
         </div>
       </div>
     </div>
@@ -1081,6 +1130,60 @@ const closeDetail = () => {
   detailStocks.value = []
 }
 
+// Edit Bahan Operasional
+const isEditOpsOpen = ref(false)
+const editOpsItem   = ref(null)
+const isSavingOps   = ref(false)
+const units         = ref([])
+const editOpsForm   = ref({ code: '', name: '', unit_id: null, price: 0 })
+
+const fetchUnits = async () => {
+  try {
+    const res = await apiClient.get('/units/all')
+    units.value = res.data.data || []
+  } catch { /* silent */ }
+}
+
+const openEditOperasional = (item) => {
+  editOpsItem.value = item
+  editOpsForm.value = {
+    code:    item.code    || '',
+    name:    item.name    || '',
+    unit_id: item.unit?.id || null,
+    price:   item.price   || 0,
+  }
+  isEditOpsOpen.value = true
+}
+
+const closeEditOperasional = () => {
+  isEditOpsOpen.value = false
+  editOpsItem.value   = null
+  isSavingOps.value   = false
+}
+
+const saveEditOperasional = async () => {
+  if (!editOpsItem.value) return
+  isSavingOps.value = true
+  try {
+    await apiClient.put(`/materials/${editOpsItem.value.id}`, editOpsForm.value)
+    toast.success('Barang berhasil diperbarui!')
+    // Update data lokal
+    const item = reportData.value.find(i => i.id === editOpsItem.value.id)
+    if (item) {
+      item.code  = editOpsForm.value.code
+      item.name  = editOpsForm.value.name
+      item.price = editOpsForm.value.price
+      const unit = units.value.find(u => u.id === editOpsForm.value.unit_id)
+      if (unit) item.unit = unit
+    }
+    closeEditOperasional()
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Gagal menyimpan perubahan')
+  } finally {
+    isSavingOps.value = false
+  }
+}
+
 // Edit Dimensi Karton Box
 const isEditDimOpen = ref(false)
 const editDimItem = ref(null)
@@ -1137,6 +1240,7 @@ const saveDimension = async () => {
 
 onMounted(() => {
   fetchWarehouses()
+  fetchUnits()
   fetchReport()
 })
 </script>

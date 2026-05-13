@@ -28,9 +28,9 @@
         <td class="right bold">{{ formatCurrency(subTotal) }}</td>
         <td></td>
       </tr>
-      <tr class="total-row">
+      <tr v-if="ppnRate > 0" class="total-row">
         <td></td>
-        <td colspan="4" class="left bold">PPN 11%</td>
+        <td colspan="4" class="left bold">PPN {{ ppnRate }}%</td>
         <td class="right bold">{{ formatCurrency(ppn) }}</td>
         <td></td>
       </tr>
@@ -52,8 +52,13 @@ const subTotal = computed(() => {
   return props.details.reduce((acc, item) => acc + parseFloat(item.subtotal || 0), 0)
 })
 
+const ppnRate = computed(() => {
+  const raw = parseFloat(props.po?.ppn_percentage ?? 0)
+  return raw === 11.12 ? 11 : raw
+})
+
 const ppn = computed(() => {
-  return subTotal.value * 0.11
+  return subTotal.value * (ppnRate.value / 100)
 })
 
 const grandTotal = computed(() => {
