@@ -490,6 +490,12 @@ const router = createRouter({
       meta: { title: 'Finishing', requiresAuth: true },
     },
     {
+      path: '/produksi/anyam',
+      name: 'ProduksiAnyam',
+      component: () => import('../views/produksi/AnyamView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/admin/produksi/qc-final',
       name: 'QcFinalView',
       component: () => import('../views/produksi/QcFinalView.vue'),

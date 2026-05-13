@@ -953,9 +953,20 @@ const filteredStocks = (stocks = []) => {
 }
 
 const filteredReport = computed(() => {
-  if (pagination.value) return reportData.value
+  let data = reportData.value
+
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase()
+    data = data.filter((item) => {
+      const code = (item.code || '').toLowerCase()
+      const name = (item.name || '').toLowerCase()
+      return code.startsWith(q) || name.startsWith(q)
+    })
+  }
+
+  if (pagination.value) return data
   const start = (currentPage.value - 1) * perPage.value
-  return reportData.value.slice(start, start + perPage.value)
+  return data.slice(start, start + perPage.value)
 })
 
 const clientPagination = computed(() => {
