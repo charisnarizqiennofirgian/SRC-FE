@@ -960,7 +960,19 @@ const filteredReport = computed(() => {
     data = data.filter((item) => {
       const code = (item.code || '').toLowerCase()
       const name = (item.name || '').toLowerCase()
-      return code.startsWith(q) || name.startsWith(q)
+      const buyer = (item.buyer_name || '').toLowerCase()
+      const prod = (item.nama_produk || '').toLowerCase()
+      const t = (item.specifications?.t || '').toString().toLowerCase()
+      const l = (item.specifications?.l || '').toString().toLowerCase()
+      const p = (item.specifications?.p || '').toString().toLowerCase()
+      
+      return code.includes(q) || 
+             name.includes(q) || 
+             buyer.includes(q) || 
+             prod.includes(q) || 
+             t.includes(q) || 
+             l.includes(q) || 
+             p.includes(q)
     })
   }
 
