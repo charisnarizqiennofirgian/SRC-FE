@@ -231,6 +231,7 @@
                 <th class="th-small">M³ Total</th>
                 <th class="th-small">M³ Natural</th>
                 <th class="th-small">M³ Warna</th>
+                <th class="th-small">Aksi</th>
               </tr>
 
               <!-- HEADER KATEGORI LAIN -->
@@ -249,7 +250,7 @@
             <tbody>
               <tr v-if="filteredReport.length === 0" class="empty-row-modern">
                 <td
-                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 13 : activeTab === 'packaging' ? 12 : activeTab === 'component' ? 16 : activeTab === 'operational' ? 8 : 6"
+                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 13 : activeTab === 'packaging' ? 12 : activeTab === 'component' ? 17 : activeTab === 'operational' ? 8 : 6"
                   class="empty-cell-modern"
                 >
                   <div class="empty-state-content">
@@ -532,6 +533,16 @@
                 <td class="td-small">
                   <span class="qty-warna">{{ formatKubikasi(item.m3_warna || 0) }}</span>
                 </td>
+                <td class="td-small">
+                  <button
+                    type="button"
+                    class="btn-edit-dim"
+                    @click="openEditKomp(item)"
+                    title="Edit Komponen"
+                  >
+                    ✏️ Edit
+                  </button>
+                </td>
               </tr>
 
               <!-- ROWS KATEGORI LAIN -->
@@ -788,6 +799,49 @@
           <button class="btn-modal-ok" @click="closeEditOperasional">Batal</button>
           <button class="btn-modal-save" @click="saveEditOperasional" :disabled="isSavingOps">
             {{ isSavingOps ? '⏳ Menyimpan...' : '💾 Simpan' }}
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- MODAL EDIT KOMPONEN -->
+    <div v-if="isEditKompOpen" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>✏️ Edit Komponen — {{ editKompItem?.name }}</h3>
+          <button class="modal-close-btn" @click="closeEditKomp">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="dim-form-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="form-group-dim">
+              <label>Kode</label>
+              <input v-model="editKompForm.code" type="text" class="dim-input" placeholder="Kode komponen..." />
+            </div>
+            <div class="form-group-dim">
+              <label>Nama Komponen</label>
+              <input v-model="editKompForm.name" type="text" class="dim-input" placeholder="Nama komponen..." />
+            </div>
+            <div class="form-group-dim">
+              <label>Buyer</label>
+              <input v-model="editKompForm.buyer_name" type="text" class="dim-input" placeholder="Nama buyer..." />
+            </div>
+            <div class="form-group-dim">
+              <label>Nama Produk</label>
+              <input v-model="editKompForm.nama_produk" type="text" class="dim-input" placeholder="Nama produk..." />
+            </div>
+            <div class="form-group-dim">
+              <label>Jenis Kayu</label>
+              <input v-model="editKompForm.jenis_kayu" type="text" class="dim-input" placeholder="Jenis kayu..." />
+            </div>
+            <div class="form-group-dim">
+              <label>Qty/Set</label>
+              <input v-model.number="editKompForm.qty_set" type="number" min="0" class="dim-input" placeholder="0" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-modal-ok" @click="closeEditKomp">Batal</button>
+          <button class="btn-modal-save" @click="saveEditKomp" :disabled="isSavingKomp">
+            {{ isSavingKomp ? '⏳ Menyimpan...' : '💾 Simpan' }}
           </button>
         </div>
       </div>
@@ -1181,6 +1235,54 @@ const saveEditOperasional = async () => {
     toast.error(error.response?.data?.message || 'Gagal menyimpan perubahan')
   } finally {
     isSavingOps.value = false
+  }
+}
+
+// Edit Komponen
+const isEditKompOpen = ref(false)
+const editKompItem = ref(null)
+const isSavingKomp = ref(false)
+const editKompForm = ref({ code: '', name: '', buyer_name: '', nama_produk: '', jenis_kayu: '', qty_set: 0 })
+
+const openEditKomp = (item) => {
+  editKompItem.value = item
+  editKompForm.value = {
+    code: item.code || '',
+    name: item.name || '',
+    buyer_name: item.buyer_name || '',
+    nama_produk: item.nama_produk || '',
+    jenis_kayu: item.jenis_kayu || '',
+    qty_set: item.qty_set || 0,
+  }
+  isEditKompOpen.value = true
+}
+
+const closeEditKomp = () => {
+  isEditKompOpen.value = false
+  editKompItem.value = null
+  isSavingKomp.value = false
+}
+
+const saveEditKomp = async () => {
+  if (!editKompItem.value) return
+  isSavingKomp.value = true
+  try {
+    await apiClient.put(`/materials/${editKompItem.value.id}`, editKompForm.value)
+    toast.success('Komponen berhasil diperbarui!')
+    const item = reportData.value.find((i) => i.id === editKompItem.value.id)
+    if (item) {
+      item.code = editKompForm.value.code
+      item.name = editKompForm.value.name
+      item.buyer_name = editKompForm.value.buyer_name
+      item.nama_produk = editKompForm.value.nama_produk
+      item.jenis_kayu = editKompForm.value.jenis_kayu
+      item.qty_set = editKompForm.value.qty_set
+    }
+    closeEditKomp()
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Gagal menyimpan perubahan')
+  } finally {
+    isSavingKomp.value = false
   }
 }
 
