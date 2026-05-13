@@ -143,6 +143,9 @@
                 <th class="th-nama">Nama Barang</th>
                 <th class="th-kategori">Kategori</th>
                 <th class="th-satuan">Satuan</th>
+                <th v-if="isKomponen" class="th-dimensi">P (cm)</th>
+                <th v-if="isKomponen" class="th-dimensi">L (cm)</th>
+                <th v-if="isKomponen" class="th-dimensi">T (cm)</th>
                 <th class="th-stok-saat-ini">Stok Saat Ini</th>
                 <th class="th-stok-baru">Jml Penyesuaian (+/-)</th>
                 <th class="th-aksi">Aksi</th>
@@ -150,7 +153,7 @@
             </thead>
             <tbody>
               <tr v-if="paginatedStok.length === 0">
-                <td colspan="6" class="no-data">
+                <td :colspan="isKomponen ? 9 : 6" class="no-data">
                   <span class="no-data-icon">🔍</span>
                   <p>Tidak ada barang yang sesuai dengan pencarian "{{ searchQuery }}"</p>
                 </td>
@@ -167,6 +170,15 @@
                 </td>
                 <td class="td-satuan">
                   <span class="badge-unit">{{ item.unit?.name }}</span>
+                </td>
+                <td v-if="isKomponen" class="td-dimensi">
+                  <span class="dimensi-value">{{ item.specifications?.p ?? '—' }}</span>
+                </td>
+                <td v-if="isKomponen" class="td-dimensi">
+                  <span class="dimensi-value">{{ item.specifications?.l ?? '—' }}</span>
+                </td>
+                <td v-if="isKomponen" class="td-dimensi">
+                  <span class="dimensi-value">{{ item.specifications?.t ?? '—' }}</span>
                 </td>
                 <td class="td-stok-saat-ini">
                   <span class="stock-value">{{ parseFloat(item.stock) }}</span>
@@ -881,6 +893,12 @@ const daftarKategori = ref([])
 const selectedCategory = ref(null)
 const daftarStok = ref([])
 
+const isKomponen = computed(() => {
+  if (!selectedCategory.value) return false
+  const cat = daftarKategori.value.find((k) => k.id === selectedCategory.value)
+  return cat?.name?.toLowerCase().includes('komponen') ?? false
+})
+
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
@@ -1000,7 +1018,7 @@ const fetchStokBarang = async () => {
     const response = await apiClient.get('/materials', {
       params: {
         category_id: selectedCategory.value,
-        include: 'unit,category',
+        include: 'unit,category,specifications',
         per_page: 9999,
       },
     })
@@ -2162,6 +2180,24 @@ const downloadTemplateBom = async () => {
 }
 .th-satuan {
   width: 10%;
+}
+.th-dimensi {
+  width: 7%;
+  text-align: center;
+}
+.td-dimensi {
+  text-align: center;
+  vertical-align: middle;
+}
+.dimensi-value {
+  display: inline-block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 2px 8px;
+  min-width: 36px;
 }
 .th-stok-saat-ini {
   width: 12%;
