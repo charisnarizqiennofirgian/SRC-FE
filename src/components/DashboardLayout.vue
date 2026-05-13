@@ -131,6 +131,11 @@ const menuPermissionMap = {
     'produksi-rustik', 'produksi-finishing', 'produksi-anyam', 'produksi-qc-final',
     'produksi-packing', 'produksi-master-bom',
   ],
+  'Produksi Sampel': [
+    'produksi-sampel-sawmill', 'produksi-sampel-kd', 'produksi-sampel-pembahanan',
+    'produksi-sampel-moulding', 'produksi-sampel-prototype', 'produksi-sampel-sanding',
+    'produksi-sampel-packing',
+  ],
   Pembelian: [
     'pembelian-operasional', 'pembelian-karton', 'pembelian-kayu',
     'pembelian-faktur', 'pembelian-laporan-harga', 'pembelian-purchase-request',
@@ -200,6 +205,19 @@ const allMenuItems = [
       { name: 'QC Final', route: { name: 'QcFinalView' }, permission: 'produksi-qc-final' },
       { name: 'Packing', route: { name: 'PackingView' }, permission: 'produksi-packing' },
       { name: 'Master BOM / Resep', route: { name: 'MasterBom' }, permission: 'produksi-master-bom' },
+    ],
+  },
+  {
+    name: 'Produksi Sampel',
+    icon: '🧪',
+    children: [
+      { name: 'Sawmill', route: { name: 'SampelSawmill' }, permission: 'produksi-sampel-sawmill' },
+      { name: 'KD', route: { name: 'SampelKD' }, permission: 'produksi-sampel-kd' },
+      { name: 'Pembahanan', route: { name: 'SampelPembahanan' }, permission: 'produksi-sampel-pembahanan' },
+      { name: 'Moulding', route: { name: 'SampelMoulding' }, permission: 'produksi-sampel-moulding' },
+      { name: 'Prototype', route: { name: 'SampelPrototype' }, permission: 'produksi-sampel-prototype' },
+      { name: 'Sanding', route: { name: 'SampelSanding' }, permission: 'produksi-sampel-sanding' },
+      { name: 'Packing', route: { name: 'SampelPacking' }, permission: 'produksi-sampel-packing' },
     ],
   },
   {

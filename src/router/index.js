@@ -495,6 +495,49 @@ const router = createRouter({
       component: () => import('../views/produksi/AnyamView.vue'),
       meta: { requiresAuth: true },
     },
+    // Produksi Sampel
+    {
+      path: '/produksi-sampel/sawmill',
+      name: 'SampelSawmill',
+      component: () => import('../views/produksi-sampel/SampelSawmillView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/produksi-sampel/kd',
+      name: 'SampelKD',
+      component: () => import('../views/produksi-sampel/SampelKDView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/produksi-sampel/pembahanan',
+      name: 'SampelPembahanan',
+      component: () => import('../views/produksi-sampel/SampelPembahananView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/produksi-sampel/moulding',
+      name: 'SampelMoulding',
+      component: () => import('../views/produksi-sampel/SampelMouldingView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/produksi-sampel/prototype',
+      name: 'SampelPrototype',
+      component: () => import('../views/produksi-sampel/SampelPrototypeView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/produksi-sampel/sanding',
+      name: 'SampelSanding',
+      component: () => import('../views/produksi-sampel/SampelSandingView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/produksi-sampel/packing',
+      name: 'SampelPacking',
+      component: () => import('../views/produksi-sampel/SampelPackingView.vue'),
+      meta: { requiresAuth: true },
+    },
     {
       path: '/admin/produksi/qc-final',
       name: 'QcFinalView',

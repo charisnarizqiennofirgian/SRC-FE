@@ -133,6 +133,13 @@
                       🏭
                     </button>
                     <button
+                      @click="generateSampleOrder(so.id, so.so_number)"
+                      class="btn-action btn-sample"
+                      title="Generate PO Sampel"
+                    >
+                      🧪
+                    </button>
+                    <button
                       @click="goToCetakPage(so.id)"
                       class="btn-action btn-print"
                       title="Cetak"
@@ -382,6 +389,25 @@ const generateProductionOrder = async (id, soNumber) => {
   } catch (error) {
     console.error('Gagal generate PO Produksi:', error)
     toast.error(error.response?.data?.message || 'Gagal membuat PO Produksi.')
+  }
+}
+
+const generateSampleOrder = async (id, soNumber) => {
+  const result = await Swal.fire({
+    title: 'Generate PO Sampel?',
+    text: `Buat PO Sampel dari SO "${soNumber}"?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Ya, Buat',
+    cancelButtonText: 'Batal',
+    confirmButtonColor: '#d97706',
+  })
+  if (!result.isConfirmed) return
+  try {
+    const { data } = await apiClient.post(`/sales-orders/${id}/sample-production-orders`, {})
+    toast.success(`PO Sampel ${data.data.po_number} berhasil dibuat untuk ${soNumber}.`)
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Gagal membuat PO Sampel.')
   }
 }
 
@@ -829,6 +855,13 @@ onMounted(() => {
 .btn-po {
   border-color: #0ea5e9;
   color: #0ea5e9;
+}
+.btn-sample {
+  border-color: #d97706;
+  color: #d97706;
+}
+.btn-sample:hover {
+  background: #d97706;
 }
 
 .btn-print {
