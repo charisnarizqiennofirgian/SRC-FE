@@ -260,7 +260,7 @@ const fetchItems = async () => {
     targetCategoryIds.value = categories
       .filter((c) => {
         const n = (c.name || '').toLowerCase().trim()
-        return n === 'bahan operasional' || n === 'bahan penolong' || n === 'karton box'
+        return n.includes('bahan') || n === 'karton box'
       })
       .map((c) => c.id)
   } finally {

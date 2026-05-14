@@ -184,7 +184,8 @@ const onSearch = debounce(async (search, loading) => {
     }
 
     const res = await apiClient.get('/materials', { params })
-    const results = res.data?.data || res.data || []
+    const raw = res.data?.data?.data ?? res.data?.data ?? res.data ?? []
+    const results = Array.isArray(raw) ? raw : []
     
     const formattedResults = results.map(formatItem)
     
@@ -203,7 +204,7 @@ const onSearch = debounce(async (search, loading) => {
     loading(false)
     isLoading.value = false
   }
-}, 400)
+}, 200)
 
 const onUpdate = (val) => {
   // Cari objek item dari options untuk disimpan sebagai selectedItemInternal
