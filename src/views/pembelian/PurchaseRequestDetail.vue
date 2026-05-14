@@ -238,8 +238,12 @@ const fetchPR = async () => {
 const fetchSupplier = async () => {
   try {
     const res = await apiClient.get('/suppliers?all=true')
+    console.log('[DEBUG supplier] res.data:', res.data)
+    console.log('[DEBUG supplier] res.data.data:', res.data.data)
     daftarSupplier.value = res.data.data
-  } catch { /* silent */ }
+  } catch (err) {
+    console.error('[DEBUG supplier] error:', err)
+  }
 }
 
 const submitPR = async () => {
