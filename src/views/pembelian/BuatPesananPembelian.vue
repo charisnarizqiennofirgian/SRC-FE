@@ -40,12 +40,14 @@
           <div class="info-grid-form">
             <div class="form-group">
               <label class="form-label">Supplier</label>
-              <select v-model="form.supplier_id" class="form-control" required>
-                <option disabled value="">Pilih Supplier</option>
-                <option v-for="supplier in daftarSupplier" :key="supplier.id" :value="supplier.id">
-                  {{ supplier.name }}
-                </option>
-              </select>
+              <vue-select
+                v-model="form.supplier_id"
+                :options="daftarSupplier"
+                :reduce="s => s.id"
+                label="name"
+                placeholder="Pilih Supplier"
+                class="vue-select-supplier"
+              />
             </div>
             <div class="form-group">
               <label class="form-label">Tanggal Pesan</label>
@@ -311,6 +313,8 @@ import DashboardLayout from '@/components/DashboardLayout.vue'
 import { useToast } from 'vue-toastification'
 import Choices from 'choices.js'
 import 'choices.js/public/assets/styles/choices.min.css'
+import VueSelect from 'vue-select'
+import 'vue-select/dist/vue-select.css'
 
 const router = useRouter()
 const route = useRoute()
@@ -1380,5 +1384,25 @@ textarea.form-control {
     width: 100%;
     justify-content: center;
   }
+}
+/* Vue Select Styling */
+.vue-select-supplier :deep(.vs__dropdown-toggle) {
+  padding: 6px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  min-height: 48px;
+  font-size: 15px;
+  background-color: white;
+}
+.vue-select-supplier.vs--open :deep(.vs__dropdown-toggle) {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+.vue-select-supplier :deep(.vs__selected) {
+  font-weight: 600;
+  color: #1e293b;
+}
+.vue-select-supplier :deep(.vs__search::placeholder) {
+  color: #94a3b8;
 }
 </style>

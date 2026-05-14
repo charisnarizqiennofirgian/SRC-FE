@@ -136,10 +136,14 @@
         <div class="modal-body">
           <div class="form-group">
             <label class="form-label">Supplier <span class="req">*</span></label>
-            <select v-model="convertForm.supplier_id" class="form-control">
-              <option value="">Pilih Supplier</option>
-              <option v-for="s in daftarSupplier" :key="s.id" :value="s.id">{{ s.name }}</option>
-            </select>
+            <vue-select
+              v-model="convertForm.supplier_id"
+              :options="daftarSupplier"
+              :reduce="s => s.id"
+              label="name"
+              placeholder="Pilih Supplier"
+              class="vue-select-supplier"
+            />
           </div>
           <div class="form-group">
             <label class="form-label">Tanggal Order <span class="req">*</span></label>
@@ -189,6 +193,8 @@ import { useRoute, useRouter } from 'vue-router'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
+import VueSelect from 'vue-select'
+import 'vue-select/dist/vue-select.css'
 
 const route  = useRoute()
 const router = useRouter()
@@ -373,4 +379,23 @@ onMounted(async () => {
 .btn-cancel { padding: 10px 20px; background: #e5e7eb; color: #374151; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
 .btn-convert-confirm { padding: 10px 24px; background: linear-gradient(135deg, #059669, #047857); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
 .btn-convert-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Vue Select Styling */
+.vue-select-supplier :deep(.vs__dropdown-toggle) {
+  padding: 4px 8px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  min-height: 42px;
+  font-size: 14px;
+}
+.vue-select-supplier.vs--open :deep(.vs__dropdown-toggle) {
+  border-color: #059669;
+}
+.vue-select-supplier :deep(.vs__selected) {
+  font-weight: 600;
+  color: #111827;
+}
+.vue-select-supplier :deep(.vs__search::placeholder) {
+  color: #9ca3af;
+}
 </style>
