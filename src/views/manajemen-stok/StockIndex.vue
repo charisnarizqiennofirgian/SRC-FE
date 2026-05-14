@@ -1189,7 +1189,7 @@ const isEditOpsOpen = ref(false)
 const editOpsItem   = ref(null)
 const isSavingOps   = ref(false)
 const units         = ref([])
-const editOpsForm   = ref({ code: '', name: '', unit_id: null, price: 0 })
+const editOpsForm   = ref({ code: '', name: '', unit_id: null, price: 0, category_id: null })
 
 const fetchUnits = async () => {
   try {
@@ -1201,10 +1201,11 @@ const fetchUnits = async () => {
 const openEditOperasional = (item) => {
   editOpsItem.value = item
   editOpsForm.value = {
-    code:    item.code    || '',
-    name:    item.name    || '',
-    unit_id: item.unit?.id || null,
-    price:   item.price   || 0,
+    code:        item.code          || '',
+    name:        item.name          || '',
+    unit_id:     item.unit?.id      || null,
+    price:       item.price         || 0,
+    category_id: item.category?.id  || null,
   }
   isEditOpsOpen.value = true
 }
