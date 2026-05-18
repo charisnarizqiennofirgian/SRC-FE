@@ -532,14 +532,15 @@ const fetchPOData = async () => {
         // silent fallback
       }
     }
-
-    await nextTick()
-    initializeChoices()
   } catch (error) {
     console.error('Gagal memuat data PO:', error)
     toast.error('Gagal memuat data PO.')
   } finally {
+    // WAJIB: loading=false dulu agar <form v-else> ter-render ke DOM,
+    // baru nextTick + initializeChoices bisa menemukan elemen select
     loading.value = false
+    await nextTick()
+    initializeChoices()
   }
 }
 
