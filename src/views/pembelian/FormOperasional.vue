@@ -399,8 +399,6 @@ const initializeChoices = async () => {
       selectElement.appendChild(option)
     })
 
-    if (item.item_id) selectElement.value = item.item_id
-
     const choices = new Choices(selectElement, {
       searchEnabled: true,
       searchPlaceholderValue: 'Ketik nama barang untuk mencari...',
@@ -412,6 +410,11 @@ const initializeChoices = async () => {
       position: 'bottom',
       searchFields: ['label'],
     })
+
+    // Set nilai terpilih via API Choices.js (bukan via selectElement.value)
+    if (item.item_id) {
+      choices.setChoiceByValue(String(item.item_id))
+    }
 
     // Simpan instance agar tidak reinit
     selectElement._choicesInstance = choices
@@ -511,6 +514,24 @@ const fetchPOData = async () => {
       delivery_date: d.delivery_date || '',
       specifications: d.specifications || {},
     }))
+
+    // Pastikan semua item di PO ada di daftarBarang (bisa saja beda kategori)
+    const existingIds = form.details.map((d) => d.item_id).filter(Boolean)
+    const missingIds = existingIds.filter((id) => !daftarBarang.value.find((b) => b.id === id))
+    if (missingIds.length > 0) {
+      try {
+        const res = await apiClient.get('/materials?all=true')
+        const allItems = res.data.data
+        missingIds.forEach((id) => {
+          const found = allItems.find((b) => b.id === id)
+          if (found && !daftarBarang.value.find((b) => b.id === found.id)) {
+            daftarBarang.value.push(found)
+          }
+        })
+      } catch {
+        // silent fallback
+      }
+    }
 
     await nextTick()
     initializeChoices()
