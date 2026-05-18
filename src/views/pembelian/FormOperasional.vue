@@ -392,10 +392,15 @@ const initializeChoices = async () => {
     placeholder.textContent = 'Pilih Barang'
     selectElement.replaceChildren(placeholder)
 
+    // Tandai option.selected = true SEBELUM Choices.js init
+    // Choices.js membaca state DOM saat konstruktor dipanggil
     daftarBarang.value.forEach((barang) => {
       const option = document.createElement('option')
-      option.value = barang.id
+      option.value = String(barang.id)
       option.textContent = `${barang.code} - ${barang.name} (Stok: ${formatStock(barang.stock)})`
+      if (item.item_id && String(barang.id) === String(item.item_id)) {
+        option.selected = true
+      }
       selectElement.appendChild(option)
     })
 
@@ -410,11 +415,6 @@ const initializeChoices = async () => {
       position: 'bottom',
       searchFields: ['label'],
     })
-
-    // Set nilai terpilih via API Choices.js (bukan via selectElement.value)
-    if (item.item_id) {
-      choices.setChoiceByValue(String(item.item_id))
-    }
 
     // Simpan instance agar tidak reinit
     selectElement._choicesInstance = choices

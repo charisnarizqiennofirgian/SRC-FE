@@ -571,10 +571,14 @@ const initChoicesForIndex = async (index, item) => {
   placeholder.value = ''
   placeholder.textContent = 'Pilih Barang'
   selectElement.replaceChildren(placeholder)
+
   daftarBarang.value.forEach((barang) => {
     const opt = document.createElement('option')
     opt.value = String(barang.id)
     opt.textContent = barang.code ? `${barang.code} - ${barang.name}` : barang.name
+    if (item.item_id && String(barang.id) === String(item.item_id)) {
+      opt.selected = true // tandai sebelum Choices.js init
+    }
     selectElement.appendChild(opt)
   })
 
@@ -587,7 +591,6 @@ const initChoicesForIndex = async (index, item) => {
     shouldSort: false,
     removeItemButton: false,
   })
-  if (item.item_id) choices.setChoiceByValue(String(item.item_id))
   selectElement.addEventListener('change', (event) => {
     item.item_id = parseInt(event.target.value) || ''
   })

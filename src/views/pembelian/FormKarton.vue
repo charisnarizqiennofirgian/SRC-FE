@@ -492,36 +492,45 @@ const initializeChoices = async () => {
   await nextTick()
 
   choicesInstances.value.forEach((choice) => {
-    if (choice && choice.destroy) {
-      choice.destroy()
-    }
+    if (choice && choice.destroy) choice.destroy()
   })
   choicesInstances.value = []
 
   form.details.forEach((item, index) => {
     const selectElement = document.getElementById(`select-barang-${index}`)
-    if (selectElement) {
-      const choices = new Choices(selectElement, {
-        searchEnabled: true,
-        searchPlaceholderValue: 'Ketik untuk mencari barang...',
-        noResultsText: 'Tidak ditemukan',
-        noChoicesText: 'Tidak ada pilihan',
-        itemSelectText: 'Klik untuk pilih',
-        shouldSort: false,
-        removeItemButton: false,
-      })
+    if (!selectElement) return
 
-      // Set nilai awal jika ada (penting untuk mode edit)
-      if (item.item_id) {
-        choices.setChoiceByValue(String(item.item_id))
+    // Isi options imperatif — Choices.js membaca DOM saat konstruktor dipanggil
+    const placeholder = document.createElement('option')
+    placeholder.value = ''
+    placeholder.textContent = 'Pilih Barang'
+    selectElement.replaceChildren(placeholder)
+
+    daftarBarang.value.forEach((barang) => {
+      const option = document.createElement('option')
+      option.value = String(barang.id)
+      option.textContent = barang.code ? `${barang.code} - ${barang.name}` : barang.name
+      if (item.item_id && String(barang.id) === String(item.item_id)) {
+        option.selected = true // tandai sebelum Choices.js init
       }
+      selectElement.appendChild(option)
+    })
 
-      selectElement.addEventListener('change', (event) => {
-        item.item_id = parseInt(event.target.value) || ''
-      })
+    const choices = new Choices(selectElement, {
+      searchEnabled: true,
+      searchPlaceholderValue: 'Ketik untuk mencari barang...',
+      noResultsText: 'Tidak ditemukan',
+      noChoicesText: 'Tidak ada pilihan',
+      itemSelectText: 'Klik untuk pilih',
+      shouldSort: false,
+      removeItemButton: false,
+    })
 
-      choicesInstances.value.push(choices)
-    }
+    selectElement.addEventListener('change', (event) => {
+      item.item_id = parseInt(event.target.value) || ''
+    })
+
+    choicesInstances.value.push(choices)
   })
 }
 
