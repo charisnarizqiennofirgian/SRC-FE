@@ -94,6 +94,7 @@
                   <th class="th-qty">Jumlah</th>
                   <th class="th-price">Harga Satuan</th>
                   <th class="th-subtotal">Subtotal</th>
+                  <th class="th-date">Tgl Kirim</th>
                   <th class="th-action">Aksi</th>
                 </tr>
               </thead>
@@ -143,6 +144,13 @@
                   </td>
                   <td class="td-subtotal">
                     {{ formatCurrency((item.quantity || 0) * (item.price || 0)) }}
+                  </td>
+                  <td class="td-date">
+                    <input
+                      type="date"
+                      v-model="item.delivery_date"
+                      class="form-control"
+                    />
                   </td>
                   <td class="td-action">
                     <button
@@ -428,6 +436,7 @@ const tambahBarang = async () => {
     item_id: '',
     quantity: 1,
     price: 0,
+    delivery_date: '',
     specifications: {},
   })
   await nextTick()
@@ -453,9 +462,10 @@ const saveOrder = async () => {
       ...form,
       type: 'operasional',
       details: form.details.map((d) => ({
-        item_id: d.item_id,
-        quantity: d.quantity,
-        price: d.price,
+        item_id:       d.item_id,
+        quantity:      d.quantity,
+        price:         d.price,
+        delivery_date: d.delivery_date || null,
         specifications: d.specifications,
       })),
     }
@@ -495,9 +505,10 @@ const fetchPOData = async () => {
     form.ppn_percentage = parseFloat(data.ppn_percentage ?? 12)
 
     form.details = data.details.map((d) => ({
-      item_id: d.item_id,
-      quantity: parseFloat(d.quantity_ordered),
-      price: parseFloat(d.price),
+      item_id:       d.item_id,
+      quantity:      parseFloat(d.quantity_ordered),
+      price:         parseFloat(d.price),
+      delivery_date: d.delivery_date || '',
       specifications: d.specifications || {},
     }))
 
@@ -1633,4 +1644,6 @@ textarea.form-control {
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);
 }
+.th-date { width: 150px; }
+.td-date input { padding: 8px 10px; font-size: 13px; border-radius: 8px; }
 </style>

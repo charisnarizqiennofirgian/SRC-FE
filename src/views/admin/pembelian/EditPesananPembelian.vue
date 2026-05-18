@@ -13,7 +13,7 @@
             </p>
           </div>
         </div>
-        <router-link to="/admin/pembelian/operasional" class="btn-back">
+        <router-link to="/admin/pembelian" class="btn-back">
           <span class="btn-icon">←</span>
           <span>Kembali ke Daftar</span>
         </router-link>
@@ -407,7 +407,7 @@
 
       <!-- Form Actions -->
       <div class="form-actions">
-        <router-link to="/admin/pembelian/operasional" class="btn-cancel-action">
+        <router-link to="/admin/pembelian" class="btn-cancel-action">
           <span class="action-icon">❌</span>
           <span>Batalkan</span>
         </router-link>
@@ -436,9 +436,11 @@ const toast = useToast()
 const poId = route.params.id
 const poNumber = ref('')
 const loading = ref(true)
-const poType = ref('operasional') // Untuk mengingat Tipe PO
+const poType = ref('operasional')
 const sedangMenyimpan = ref(false)
 const choicesInstances = ref([])
+const daftarSupplier = ref([])
+const daftarBarang = ref([])
 
 const form = reactive({
   supplier_id: '',
@@ -682,16 +684,8 @@ const updateOrder = async () => {
     }
 
     await apiClient.put(`/purchase-orders/${poId}`, payload)
-    // ✅ PERBAIKAN: 'all' dihapus
     toast.success('Pesanan Pembelian berhasil diupdate!')
-    // Arahkan kembali ke daftar yang benar
-    if (poType.value === 'karton') {
-      router.push('/admin/pembelian/karton')
-    } else if (poType.value === 'kayu') {
-      router.push('/admin/pembelian/kayu')
-    } else {
-      router.push('/admin/pembelian/operasional')
-    }
+    router.push('/admin/pembelian')
   } catch (error) {
     if (error.response && error.response.data && error.response.data.errors) {
       const errorMessages = Object.values(error.response.data.errors).flat().join('\n')
