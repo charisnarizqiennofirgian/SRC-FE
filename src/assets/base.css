@@ -3,11 +3,11 @@ body {
   height: 100%;
   margin: 0;
   padding: 0;
+  overflow: hidden; /* Cegah body scroll ikut aktif bersamaan dengan content-area */
 }
 
 body {
   min-height: 100vh;
-  /* Sisa kode lainnya bisa ada di sini */
   line-height: 1.5;
   font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
     Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;

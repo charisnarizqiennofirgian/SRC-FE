@@ -436,32 +436,6 @@ watch(
   transform: rotate(-45deg) translate(6px, -6px);
 }
 
-.sidebar-toggle:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
-}
-
-.sidebar-toggle span {
-  display: block;
-  width: 20px;
-  height: 2px;
-  background: #fff;
-  border-radius: 2px;
-  transition: all 0.3s ease;
-}
-
-.sidebar-toggle.active span:nth-child(1) {
-  transform: rotate(45deg) translate(6px, 6px);
-}
-
-.sidebar-toggle.active span:nth-child(2) {
-  opacity: 0;
-}
-
-.sidebar-toggle.active span:nth-child(3) {
-  transform: rotate(-45deg) translate(6px, -6px);
-}
-
 /* ===== SIDEBAR OVERLAY (untuk mobile) ===== */
 .sidebar-overlay {
   position: fixed;
@@ -716,7 +690,8 @@ watch(
   display: flex;
   flex-direction: column;
   margin-left: 0;
-  overflow: hidden;
+  min-width: 0; /* Cegah flex item meluber */
+  overflow: clip; /* clip tidak buat stacking context baru, lebih ringan dari hidden */
   transition: margin-left 0.3s ease;
 }
 
@@ -794,7 +769,8 @@ watch(
 .content-area {
   flex: 1;
   padding: 28px;
-  overflow-y: auto;
+  overflow-y: scroll; /* Selalu tampilkan scrollbar — cegah layout shift 17px di Windows */
+  scrollbar-gutter: stable; /* Modern browsers: reservasi ruang scrollbar agar konten tidak bergeser */
   background: #f0f2f5;
 }
 
