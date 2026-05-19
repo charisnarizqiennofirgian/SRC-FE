@@ -292,6 +292,7 @@
                       <div class="item-option">
                         <span class="item-option-code">{{ o.code }}</span>
                         <span class="item-option-name">{{ o.name }}</span>
+                        <span v-if="o.nama_produk" class="item-option-produk">📦 {{ o.nama_produk }}</span>
                       </div>
                     </template>
                   </vue-select>
@@ -363,7 +364,15 @@
                     label="label"
                     placeholder="🔍 Cari item..."
                     class="vue-select-item"
-                  />
+                  >
+                    <template #option="o">
+                      <div class="item-option">
+                        <span class="item-option-code">{{ o.code }}</span>
+                        <span class="item-option-name">{{ o.name }}</span>
+                        <span v-if="o.nama_produk" class="item-option-produk">📦 {{ o.nama_produk }}</span>
+                      </div>
+                    </template>
+                  </vue-select>
                 </div>
                 <div class="form-group-modern">
                   <label class="form-label-modern">Qty Reject <span class="required-star">*</span></label>
@@ -485,10 +494,13 @@ const s4sItemsForSelect = computed(() =>
 
 const allKomponenForSelect = computed(() =>
   allKomponen.value.map((i) => ({
-    id:    i.id,
-    code:  i.code,
-    name:  i.name,
-    label: `${i.code} - ${i.name}`,
+    id:          i.id,
+    code:        i.code,
+    name:        i.name,
+    nama_produk: i.nama_produk || '',
+    label:       i.nama_produk
+      ? `${i.code} - ${i.name} (${i.nama_produk})`
+      : `${i.code} - ${i.name}`,
   }))
 )
 
@@ -500,12 +512,14 @@ const fetchInitialData = async () => {
       apiClient.get('/operator-mesin/available-pos'),
       apiClient.get('/operator-mesin/machines'),
       apiClient.get('/operator-mesin/s4s-items'),
-      apiClient.get('/produksi/moulding/komponen-items'),
+      apiClient.get('/stock-report', { params: { categories: 'Komponen', per_page: 9999 } }),
     ])
-    productionOrders.value = poRes.data.data     || []
-    machines.value         = machineRes.data.data || []
-    s4sItems.value         = s4sRes.data.data     || []
-    allKomponen.value      = kompRes.data.data    || []
+    productionOrders.value = poRes.data.data      || []
+    machines.value         = machineRes.data.data  || []
+    s4sItems.value         = s4sRes.data.data      || []
+
+    const kompData = kompRes.data.data?.data ?? kompRes.data.data ?? []
+    allKomponen.value = Array.isArray(kompData) ? kompData : []
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil data awal')
@@ -761,6 +775,7 @@ onMounted(fetchInitialData)
 .item-option { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; }
 .item-option-code { font-size: 0.82rem; font-weight: 700; color: #0891b2; }
 .item-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
+.item-option-produk { font-size: 0.78rem; color: #2563eb; font-weight: 600; }
 .item-option-stock { font-size: 0.78rem; color: #6b7280; }
 
 @media (max-width: 768px) {

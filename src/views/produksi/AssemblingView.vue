@@ -201,6 +201,7 @@
                           <span class="item-option-badge">{{ o.warehouse_code }}</span>
                           <span class="item-option-code">{{ o.item_code }}</span>
                           <span class="item-option-name">{{ o.item_name }}</span>
+                          <span v-if="o.nama_produk" class="item-option-produk">📦 {{ o.nama_produk }}</span>
                           <span class="item-option-stock">Stok: {{ o.qty_available }} pcs</span>
                         </div>
                       </template>
@@ -285,9 +286,16 @@
                     :options="allItemsForSelect"
                     :reduce="(o) => o.id"
                     label="label"
-                    placeholder="🔍 Cari item output..."
+                    placeholder="🔍 Cari produk jadi..."
                     class="vue-select-item"
-                  />
+                  >
+                    <template #option="o">
+                      <div class="item-option">
+                        <span class="item-option-code">{{ o.code }}</span>
+                        <span class="item-option-name">{{ o.name }}</span>
+                      </div>
+                    </template>
+                  </vue-select>
                 </div>
 
                 <div class="form-group-modern">
@@ -454,11 +462,14 @@ const sourceItemsForSelect = computed(() =>
     item_id:        i.item_id,
     item_code:      i.item_code,
     item_name:      i.item_name,
+    nama_produk:    i.nama_produk || '',
     qty_available:  i.qty_available,
     warehouse_id:   i.warehouse_id,
     warehouse_code: i.warehouse_code,
     warehouse_name: i.warehouse_name,
-    label:          `[${i.warehouse_code}] ${i.item_code} - ${i.item_name}`,
+    label:          i.nama_produk
+      ? `[${i.warehouse_code}] ${i.item_code} - ${i.item_name} (${i.nama_produk})`
+      : `[${i.warehouse_code}] ${i.item_code} - ${i.item_name}`,
   }))
 )
 
@@ -478,11 +489,13 @@ const fetchInitialData = async () => {
     const [poRes, sourceRes, itemRes] = await Promise.all([
       apiClient.get('/assembling-produksi/available-pos'),
       apiClient.get('/assembling-produksi/source-items'),
-      apiClient.get('/produksi/moulding/komponen-items'),
+      apiClient.get('/stock-report', { params: { categories: 'Produk Jadi', per_page: 9999 } }),
     ])
-    productionOrders.value = poRes.data.data    || []
-    sourceItems.value      = sourceRes.data.data || []
-    allItems.value         = itemRes.data.data   || []
+    productionOrders.value = poRes.data.data     || []
+    sourceItems.value      = sourceRes.data.data  || []
+
+    const prodData = itemRes.data.data?.data ?? itemRes.data.data ?? []
+    allItems.value = Array.isArray(prodData) ? prodData : []
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil data awal')
@@ -708,6 +721,7 @@ onMounted(fetchInitialData)
 .item-option-badge { display: inline-block; padding: 1px 6px; background: #7c3aed; color: white; border-radius: 4px; font-size: 0.72rem; font-weight: 700; width: fit-content; }
 .item-option-code { font-size: 0.82rem; font-weight: 700; color: #374151; }
 .item-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
+.item-option-produk { font-size: 0.78rem; color: #2563eb; font-weight: 600; }
 .item-option-stock { font-size: 0.78rem; color: #6b7280; }
 
 .btn-add-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; margin-top: 0.5rem; border: 2px dashed; }

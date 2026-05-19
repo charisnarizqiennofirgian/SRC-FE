@@ -243,7 +243,8 @@
                       <div class="item-option">
                         <span class="item-option-code">{{ o.code }}</span>
                         <span class="item-option-name">{{ o.name }}</span>
-                        <span class="item-option-stock" style="color:#6b7280;">{{ o.category }}</span>
+                        <span v-if="o.nama_produk" class="item-option-produk">📦 {{ o.nama_produk }}</span>
+                        <span class="item-option-stock" style="color:#9ca3af;">{{ o.category }}</span>
                       </div>
                     </template>
                   </vue-select>
@@ -303,7 +304,15 @@
                     label="label"
                     placeholder="🔍 Cari item..."
                     class="vue-select-item"
-                  />
+                  >
+                    <template #option="o">
+                      <div class="item-option">
+                        <span class="item-option-code">{{ o.code }}</span>
+                        <span class="item-option-name">{{ o.name }}</span>
+                        <span v-if="o.nama_produk" class="item-option-produk">📦 {{ o.nama_produk }}</span>
+                      </div>
+                    </template>
+                  </vue-select>
                 </div>
                 <div class="form-group-modern">
                   <label class="form-label-modern">Qty Reject <span class="required-star">*</span></label>
@@ -472,11 +481,14 @@ const rstItemsForSelect = computed(() =>
 
 const komponenItemsForSelect = computed(() =>
   komponenItems.value.map((i) => ({
-    id:       i.id,
-    code:     i.code,
-    name:     i.name,
-    category: i.category,
-    label:    `${i.code} - ${i.name}`,
+    id:          i.id,
+    code:        i.code,
+    name:        i.name,
+    nama_produk: i.nama_produk || '',
+    category:    i.category,
+    label:       i.nama_produk
+      ? `${i.code} - ${i.name} (${i.nama_produk})`
+      : `${i.code} - ${i.name}`,
   }))
 )
 
@@ -486,11 +498,13 @@ const fetchInitialData = async () => {
     const [poRes, rstRes, kompRes] = await Promise.all([
       apiClient.get('/produksi/moulding/available-pos'),
       apiClient.get('/produksi/moulding/rst-items'),
-      apiClient.get('/produksi/moulding/komponen-items'),
+      apiClient.get('/stock-report', { params: { categories: 'Komponen', per_page: 9999 } }),
     ])
-    productionOrders.value = poRes.data.data  || []
-    rstItems.value         = rstRes.data.data  || []
-    komponenItems.value    = kompRes.data.data || []
+    productionOrders.value = poRes.data.data || []
+    rstItems.value         = rstRes.data.data || []
+
+    const kompData = kompRes.data.data?.data ?? kompRes.data.data ?? []
+    komponenItems.value = Array.isArray(kompData) ? kompData : []
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil data awal')
@@ -764,6 +778,7 @@ onMounted(fetchInitialData)
 .item-option { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; }
 .item-option-code { font-size: 0.82rem; font-weight: 700; color: #16a34a; }
 .item-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
+.item-option-produk { font-size: 0.78rem; color: #2563eb; font-weight: 600; }
 .item-option-stock { font-size: 0.78rem; }
 
 @media (max-width: 768px) {
