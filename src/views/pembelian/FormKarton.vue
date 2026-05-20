@@ -94,6 +94,7 @@
                   <th class="th-qty">Jumlah</th>
                   <th class="th-price">Harga Satuan</th>
                   <th class="th-subtotal">Subtotal</th>
+                  <th class="th-date">Tgl Kirim</th>
                   <th class="th-action">Aksi</th>
                 </tr>
               </thead>
@@ -145,6 +146,13 @@
                     </td>
                     <td class="td-subtotal">
                       {{ formatCurrency((item.quantity || 0) * (item.price || 0)) }}
+                    </td>
+                    <td class="td-date">
+                      <input
+                        type="date"
+                        v-model="item.delivery_date"
+                        class="form-control"
+                      />
                     </td>
                     <td class="td-action">
                       <button
@@ -546,6 +554,7 @@ const tambahBarang = async () => {
     item_id: '',
     quantity: 1,
     price: 0,
+    delivery_date: '',
     specifications: {
       panjang: null,
       lebar: null,
@@ -576,6 +585,7 @@ const saveOrder = async () => {
         item_id: d.item_id,
         quantity: d.quantity,
         price: d.price,
+        delivery_date: d.delivery_date || null,
         specifications: d.specifications,
       })),
     }
@@ -715,6 +725,7 @@ const fetchPOData = async () => {
       item_id: d.item_id,
       quantity: parseFloat(d.quantity_ordered),
       price: parseFloat(d.price),
+      delivery_date: d.delivery_date || '',
       specifications: d.specifications || {
         panjang: null,
         lebar: null,
@@ -1103,6 +1114,10 @@ textarea.form-control {
   width: 13%;
 }
 
+.th-date {
+  width: 150px;
+}
+
 .th-action {
   width: 10%;
   text-align: center;
@@ -1131,6 +1146,12 @@ textarea.form-control {
   font-size: 13px;
   border-radius: 8px;
   min-width: 0;
+}
+
+.td-date input {
+  padding: 8px 10px;
+  font-size: 13px;
+  border-radius: 8px;
 }
 
 .td-subtotal {
