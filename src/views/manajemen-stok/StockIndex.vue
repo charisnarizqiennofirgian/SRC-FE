@@ -1055,8 +1055,18 @@ const filteredStocks = (stocks = []) => {
   return stocks.filter((s) => Number(s.warehouse_id) === Number(selectedWarehouseId.value))
 }
 
-const filteredReport = computed(() => {
+// Data setelah semua filter client-side diterapkan (gudang + search)
+const baseFilteredData = computed(() => {
   let data = reportData.value
+
+  // Filter gudang client-side untuk tab yang memiliki item.stocks,
+  // hanya ketika server tidak mengembalikan paginated response
+  if (selectedWarehouseId.value && !pagination.value && activeTab.value !== 'operational') {
+    data = data.filter((item) => {
+      if (!Array.isArray(item.stocks)) return true
+      return filteredStocks(item.stocks).length > 0
+    })
+  }
 
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
@@ -1068,17 +1078,22 @@ const filteredReport = computed(() => {
       const t = (item.specifications?.t || '').toString().toLowerCase()
       const l = (item.specifications?.l || '').toString().toLowerCase()
       const p = (item.specifications?.p || '').toString().toLowerCase()
-      
-      return code.includes(q) || 
-             name.includes(q) || 
-             buyer.includes(q) || 
-             prod.includes(q) || 
-             t.includes(q) || 
-             l.includes(q) || 
+
+      return code.includes(q) ||
+             name.includes(q) ||
+             buyer.includes(q) ||
+             prod.includes(q) ||
+             t.includes(q) ||
+             l.includes(q) ||
              p.includes(q)
     })
   }
 
+  return data
+})
+
+const filteredReport = computed(() => {
+  const data = baseFilteredData.value
   if (pagination.value) return data
   const start = (currentPage.value - 1) * perPage.value
   return data.slice(start, start + perPage.value)
@@ -1086,7 +1101,7 @@ const filteredReport = computed(() => {
 
 const clientPagination = computed(() => {
   if (pagination.value) return null
-  const total = reportData.value.length
+  const total = baseFilteredData.value.length
   if (total === 0) return null
   const lastPage = Math.ceil(total / perPage.value)
   const from = (currentPage.value - 1) * perPage.value + 1
