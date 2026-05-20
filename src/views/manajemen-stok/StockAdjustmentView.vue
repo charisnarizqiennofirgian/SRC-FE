@@ -141,6 +141,7 @@
             <thead>
               <tr>
                 <th class="th-nama">Nama Barang</th>
+                <th v-if="isKomponen" class="th-nama">Nama Produk</th>
                 <th class="th-kategori">Kategori</th>
                 <th class="th-satuan">Satuan</th>
                 <th v-if="isKomponen" class="th-dimensi">P (cm)</th>
@@ -153,7 +154,7 @@
             </thead>
             <tbody>
               <tr v-if="paginatedStok.length === 0">
-                <td :colspan="isKomponen ? 9 : 6" class="no-data">
+                <td :colspan="isKomponen ? 10 : 6" class="no-data">
                   <span class="no-data-icon">🔍</span>
                   <p>Tidak ada barang yang sesuai dengan pencarian "{{ searchQuery }}"</p>
                 </td>
@@ -164,6 +165,9 @@
                     <span class="item-icon">📦</span>
                     <span class="item-name">{{ item.name }}</span>
                   </div>
+                </td>
+                <td v-if="isKomponen" class="td-nama">
+                  <span class="item-name">{{ item.nama_produk || '—' }}</span>
                 </td>
                 <td class="td-kategori">
                   <span class="badge-category">{{ item.category?.name }}</span>
