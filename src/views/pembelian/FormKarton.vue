@@ -227,15 +227,6 @@
                               class="form-control-spec"
                             />
                           </div>
-                          <div class="spec-field">
-                            <label class="spec-label">Keterangan</label>
-                            <input
-                              type="text"
-                              v-model="item.specifications.keterangan"
-                              placeholder="Keterangan tambahan"
-                              class="form-control-spec"
-                            />
-                          </div>
                         </div>
                       </div>
                     </td>
@@ -561,8 +552,7 @@ const tambahBarang = async () => {
       tinggi: null,
       kualitas: '',
       jenis: '',
-      model: '', // ✅ TAMBAH
-      keterangan: '', // ✅ TAMBAH
+      model: '',
     },
   })
   await nextTick()
@@ -733,7 +723,6 @@ const fetchPOData = async () => {
         kualitas: '',
         jenis: '',
         model: '',
-        keterangan: '',
       },
     }))
   } catch {
