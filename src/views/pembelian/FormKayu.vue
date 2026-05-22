@@ -114,7 +114,7 @@
                         <button
                           type="button"
                           class="btn-quick-add"
-                          @click="openModalTambahBarang"
+                          @click="openModalTambahBarang(index)"
                           title="Tambah Kayu RST baru"
                         >
                           ➕
@@ -490,6 +490,7 @@ const daftarSupplier = ref([])
 const daftarBarang = ref([])
 const showModalTambahBarang = ref(false)
 const isSavingBarang = ref(false)
+const clickedRowIndex = ref(null)
 const formBarang = ref({
   kode_barang: '',
   nama_dasar: '',
@@ -665,7 +666,8 @@ const hapusBarang = (index) => {
   choicesMap.value = newMap
 }
 
-const openModalTambahBarang = () => {
+const openModalTambahBarang = (index) => {
+  clickedRowIndex.value = index
   formBarang.value = {
     kode_barang: '',
     nama_dasar: '',
@@ -712,11 +714,22 @@ const simpanBarangBaru = async () => {
 
     const barangBaru = res.data?.data ?? res.data
     if (barangBaru?.id) {
-      daftarBarang.value.push({ id: barangBaru.id, code: barangBaru.code, name: barangBaru.name })
+      // Simpan data lengkap agar watch bisa auto-fill spec
+      daftarBarang.value.push({
+        id: barangBaru.id,
+        code: barangBaru.code,
+        name: barangBaru.name,
+        specifications: barangBaru.specifications,
+        cutting_t: barangBaru.cutting_t,
+        cutting_l: barangBaru.cutting_l,
+        cutting_p: barangBaru.cutting_p,
+      })
 
       const label = barangBaru.code
         ? `${barangBaru.code} - ${barangBaru.name}`
         : barangBaru.name
+
+      // Tambahkan pilihan ke semua dropdown
       choicesMap.value.forEach((instance) => {
         try {
           instance.setChoices([{ value: String(barangBaru.id), label }], 'value', 'label', false)
@@ -724,6 +737,20 @@ const simpanBarangBaru = async () => {
           // instance sudah destroyed, abaikan
         }
       })
+
+      // Auto-select di baris yang mengklik ➕
+      if (clickedRowIndex.value !== null) {
+        const idx = clickedRowIndex.value
+        const instance = choicesMap.value.get(idx)
+        if (instance) {
+          try {
+            instance.setChoiceByValue(String(barangBaru.id))
+          } catch {}
+        }
+        if (form.details[idx]) {
+          form.details[idx].item_id = barangBaru.id
+        }
+      }
 
       toast.success(`Kayu RST "${barangBaru.name}" berhasil ditambahkan!`)
     } else {
