@@ -236,7 +236,7 @@
                               placeholder="Harga per Kubik"
                               class="form-control-spec"
                             />
-                            <label class="spec-label">Kubikasi (m³)</label>
+                            <label class="spec-label">Total Kubikasi (m³)</label>
                             <input
                               type="text"
                               :value="item.specifications.kubikasi"
@@ -626,17 +626,22 @@ watch(
         }
       }
 
-      // Hitung kubikasi (tidak berubah)
+      // Hitung kubikasi total (per batang × qty) agar sesuai perhitungan klien
       const spec = item.specifications
+      const qty = item.quantity || 1
       if (spec.invoice_p > 0 && spec.invoice_l > 0 && spec.invoice_t > 0) {
-        const kubikasi = (spec.invoice_p / 1000) * (spec.invoice_l / 1000) * (spec.invoice_t / 1000)
-        spec.kubikasi = parseFloat(kubikasi.toFixed(6))
+        const kubikasiPerBatang =
+          (spec.invoice_p / 1000) * (spec.invoice_l / 1000) * (spec.invoice_t / 1000)
+        spec.kubikasi = parseFloat((kubikasiPerBatang * qty).toFixed(6))
       } else {
         spec.kubikasi = 0
       }
       if (!spec.is_manual_price) {
+        // harga per batang = kubikasi_total × harga_m3 / qty
         item.price =
-          spec.kubikasi > 0 && spec.harga_kubikasi > 0 ? spec.kubikasi * spec.harga_kubikasi : 0
+          spec.kubikasi > 0 && spec.harga_kubikasi > 0 && qty > 0
+            ? (spec.kubikasi * spec.harga_kubikasi) / qty
+            : 0
       }
     })
   },
