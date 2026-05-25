@@ -213,16 +213,39 @@
                   <span class="label-icon">💰</span>
                   Akun Hutang
                 </label>
-                <select
-                  id="payableAccount"
-                  v-model="supplierForm.payable_account_id"
-                  class="form-control"
-                >
-                  <option :value="null">-- Pilih Akun Hutang --</option>
-                  <option v-for="coa in coaOptions" :key="coa.id" :value="coa.id">
-                    {{ coa.code }} - {{ coa.name }}
-                  </option>
-                </select>
+                <div class="coa-search-wrapper" v-click-outside="closeCOADropdown">
+                  <input
+                    id="payableAccount"
+                    type="text"
+                    v-model="coaSearchQuery"
+                    @focus="coaDropdownOpen = true"
+                    @input="coaDropdownOpen = true"
+                    placeholder="Cari nama atau kode akun..."
+                    class="form-control"
+                    autocomplete="off"
+                  />
+                  <button
+                    v-if="supplierForm.payable_account_id"
+                    type="button"
+                    class="coa-clear-btn"
+                    @click="clearCOA"
+                    title="Hapus pilihan"
+                  >×</button>
+                  <div v-if="coaDropdownOpen && filteredCoa.length > 0" class="coa-dropdown">
+                    <div
+                      v-for="coa in filteredCoa"
+                      :key="coa.id"
+                      class="coa-option"
+                      @mousedown.prevent="selectCOA(coa)"
+                    >
+                      <span class="coa-option-code">{{ coa.code }}</span>
+                      <span class="coa-option-name">{{ coa.name }}</span>
+                    </div>
+                  </div>
+                  <div v-if="coaDropdownOpen && coaSearchQuery && filteredCoa.length === 0" class="coa-dropdown">
+                    <div class="coa-option coa-empty-option">Tidak ada akun yang cocok</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -262,7 +285,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import apiClient from '../api/axios'
 import DashboardLayout from '../components/DashboardLayout.vue'
 import PaginationComponent from '../components/BasePagination.vue'
@@ -363,6 +386,48 @@ const supplierForm = ref({
   payable_account_id: null,
 })
 
+const coaSearchQuery = ref('')
+const coaDropdownOpen = ref(false)
+
+const filteredCoa = computed(() => {
+  const q = coaSearchQuery.value.toLowerCase().trim()
+  if (!q) return coaOptions.value
+  return coaOptions.value.filter(
+    (c) => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
+  )
+})
+
+const selectCOA = (coa) => {
+  supplierForm.value.payable_account_id = coa.id
+  coaSearchQuery.value = `${coa.code} - ${coa.name}`
+  coaDropdownOpen.value = false
+}
+
+const clearCOA = () => {
+  supplierForm.value.payable_account_id = null
+  coaSearchQuery.value = ''
+  coaDropdownOpen.value = false
+}
+
+const closeCOADropdown = () => {
+  coaDropdownOpen.value = false
+  if (!supplierForm.value.payable_account_id) {
+    coaSearchQuery.value = ''
+  }
+}
+
+const vClickOutside = {
+  mounted(el, binding) {
+    el._clickOutsideHandler = (e) => {
+      if (!el.contains(e.target)) binding.value()
+    }
+    document.addEventListener('mousedown', el._clickOutsideHandler)
+  },
+  unmounted(el) {
+    document.removeEventListener('mousedown', el._clickOutsideHandler)
+  },
+}
+
 const currentPage = ref(1)
 const perPage = ref(10)
 const totalItems = ref(0)
@@ -436,6 +501,8 @@ const openAddModal = () => {
     phone: '',
     payable_account_id: null,
   }
+  coaSearchQuery.value = ''
+  coaDropdownOpen.value = false
   showModal.value = true
 }
 
@@ -449,6 +516,12 @@ const openEditModal = (supplier) => {
     phone: supplier.phone,
     payable_account_id: supplier.payable_account_id,
   }
+  if (supplier.payable_account) {
+    coaSearchQuery.value = `${supplier.payable_account.code} - ${supplier.payable_account.name}`
+  } else {
+    coaSearchQuery.value = ''
+  }
+  coaDropdownOpen.value = false
   showModal.value = true
 }
 
@@ -1062,6 +1135,105 @@ textarea.form-control {
   background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+/* ===== COA SEARCHABLE DROPDOWN ===== */
+.coa-search-wrapper {
+  position: relative;
+}
+
+.coa-clear-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #9e9e9e;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color 0.2s;
+}
+
+.coa-clear-btn:hover {
+  color: #c92a2a;
+}
+
+.coa-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #ff6b6b;
+  border-radius: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 9999;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.coa-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.coa-option:last-child {
+  border-bottom: none;
+}
+
+.coa-option:hover {
+  background: #fff5f5;
+}
+
+.coa-option-code {
+  font-weight: 700;
+  color: #c92a2a;
+  font-family: 'Courier New', monospace;
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+.coa-option-name {
+  color: #333;
+  flex: 1;
+}
+
+.coa-empty-option {
+  color: #9e9e9e;
+  cursor: default;
+  justify-content: center;
+  font-style: italic;
+}
+
+.coa-empty-option:hover {
+  background: white;
+}
+
+/* ===== COA BADGE (tabel) ===== */
+.coa-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #fff0f0;
+  color: #c92a2a;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.coa-empty {
+  color: #aaa;
+  font-style: italic;
+  font-size: 13px;
 }
 
 /* ===== RESPONSIVE ===== */
