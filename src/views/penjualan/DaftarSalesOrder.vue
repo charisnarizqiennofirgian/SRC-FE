@@ -404,7 +404,7 @@ const generateSampleOrder = async (id, soNumber) => {
   })
   if (!result.isConfirmed) return
   try {
-    const { data } = await apiClient.post(`/sales-orders/${id}/sample-production-orders`, {})
+    const { data } = await apiClient.post(`/sales-orders/${id}/generate-sample-po`, {})
     toast.success(`PO Sampel ${data.data.po_number} berhasil dibuat untuk ${soNumber}.`)
   } catch (error) {
     toast.error(error.response?.data?.message || 'Gagal membuat PO Sampel.')
