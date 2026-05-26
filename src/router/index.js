@@ -576,6 +576,12 @@ const router = createRouter({
       meta: { title: 'Jurnal Umum', requiresAuth: true },
     },
     {
+      path: '/keuangan/opening-balance',
+      name: 'OpeningBalance',
+      component: () => import('../views/keuangan/OpeningBalance.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/admin/keuangan/pembayaran-hutang',
       name: 'PembayaranHutang',
       component: () => import('../views/keuangan/PembayaranHutangView.vue'),
