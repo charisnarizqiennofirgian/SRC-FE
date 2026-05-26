@@ -168,6 +168,7 @@ const allMenuItems = [
     icon: '💵',
     children: [
       { name: 'Jurnal Umum', route: { name: 'JurnalUmum' }, permission: 'keuangan-jurnal-umum' },
+      { name: 'Opening Balance', route: { name: 'OpeningBalance' }, permission: 'keuangan-jurnal-umum' },
       { name: 'Buku Besar', route: { name: 'BukuBesar' }, permission: 'keuangan-buku-besar' },
       { name: 'Laporan Laba Rugi', route: { name: 'LabaRugi' }, permission: 'keuangan-laba-rugi' },
       { name: 'Pembayaran Hutang', route: { name: 'PembayaranHutang' }, permission: 'keuangan-pembayaran-hutang' },
