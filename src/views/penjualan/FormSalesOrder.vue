@@ -239,15 +239,34 @@
 
               <div class="summary-row-so summary-row-input">
                 <label class="summary-label-so">PPN</label>
-                <select v-model.number="ppnRate" class="form-input-so form-select-so form-input-sm">
-                  <option value="0">0%</option>
-                  <option value="0.11">11%</option>
-                  <option value="0.12">12%</option>
-                </select>
+                <div class="ppn-select-wrapper">
+                  <select v-model.number="ppnRate" class="form-input-so form-select-so form-input-sm">
+                    <option value="0">0%</option>
+                    <option v-if="form.currency !== 'IDR'" value="0.11">11%</option>
+                    <option value="0.12">12%</option>
+                  </select>
+                  <span v-if="form.currency === 'IDR' && ppnRate > 0" class="ppn-hint-idr">
+                    DPP = Subtotal × 11/12
+                  </span>
+                </div>
+              </div>
+
+              <div v-if="form.currency === 'IDR' && ppnRate > 0" class="summary-row-so summary-row-dpp">
+                <span class="summary-label-so summary-label-dpp">DPP (11/12)</span>
+                <span class="summary-value-so summary-value-dpp">{{
+                  formatCurrency(dppAmount, form.currency)
+                }}</span>
               </div>
 
               <div class="summary-row-so">
-                <span class="summary-label-so">PPN ({{ (ppnRate * 100).toFixed(0) }}%)</span>
+                <span class="summary-label-so">
+                  <template v-if="form.currency === 'IDR' && ppnRate > 0">
+                    PPN 12% (dari DPP)
+                  </template>
+                  <template v-else>
+                    PPN ({{ (ppnRate * 100).toFixed(0) }}%)
+                  </template>
+                </span>
                 <span class="summary-value-so">{{ formatCurrency(taxAmount, form.currency) }}</span>
               </div>
 
@@ -396,20 +415,17 @@ const fetchSalesOrder = async (id) => {
     form.currency = so.currency
     form.exchange_rate = 1
 
-    // ✅ LOAD TAX RATE DARI DATABASE
     if (so.tax_rate !== undefined && so.tax_rate !== null) {
       const rate = parseFloat(so.tax_rate)
-      form.tax_rate = rate
-      ppnRate.value = rate / 100 // Convert 11 → 0.11
+      const rateDecimal = rate / 100
+      // IDR tidak pakai 11% langsung — konversi ke 12% (DPP formula hasilnya sama)
+      ppnRate.value = (so.currency === 'IDR' && rateDecimal === 0.11) ? 0.12 : rateDecimal
+      form.tax_rate = ppnRate.value * 100
     } else if (so.tax_ppn > 0) {
-      // Fallback: hitung dari tax_ppn (backward compatibility)
       const calculatedRate = so.tax_ppn / so.subtotal
-      if (calculatedRate.toFixed(2) == '0.12') {
+      if (calculatedRate.toFixed(2) == '0.12' || calculatedRate.toFixed(2) == '0.11') {
         ppnRate.value = 0.12
         form.tax_rate = 12
-      } else if (calculatedRate.toFixed(2) == '0.11') {
-        ppnRate.value = 0.11
-        form.tax_rate = 11
       } else {
         ppnRate.value = 0
         form.tax_rate = 0
@@ -442,8 +458,11 @@ const fetchSalesOrder = async (id) => {
 
 watch(
   () => form.currency,
-  () => {
+  (newCurrency) => {
     form.exchange_rate = 1
+    if (newCurrency === 'IDR' && ppnRate.value === 0.11) {
+      ppnRate.value = 0.12
+    }
   },
 )
 
@@ -490,18 +509,29 @@ watch(
   { deep: true },
 )
 
-// ✅ Sync form values based on subtotal, ppnRate, and discount
 watch(
-  [() => form.subtotal, ppnRate, () => form.discount],
-  ([subtotal, rate, discount]) => {
-    form.tax_ppn = subtotal * rate
+  [() => form.subtotal, ppnRate, () => form.discount, () => form.currency],
+  ([subtotal, rate, discount, currency]) => {
+    const isIDR = currency === 'IDR' && rate > 0
+    const dpp = isIDR ? subtotal * (11 / 12) : subtotal
+    form.tax_ppn = isIDR ? dpp * 0.12 : subtotal * rate
     form.tax_rate = rate * 100
     form.grand_total = subtotal - (discount || 0) + form.tax_ppn
   },
   { immediate: true },
 )
 
+const dppAmount = computed(() => {
+  if (form.currency === 'IDR' && ppnRate.value > 0) {
+    return form.subtotal * (11 / 12)
+  }
+  return form.subtotal
+})
+
 const taxAmount = computed(() => {
+  if (form.currency === 'IDR' && ppnRate.value > 0) {
+    return dppAmount.value * 0.12
+  }
   return form.subtotal * ppnRate.value
 })
 
@@ -1072,6 +1102,38 @@ const formatStock = (value) => {
 .summary-input-discount {
   max-width: 140px;
   text-align: right;
+}
+
+.summary-row-dpp {
+  background: #eff6ff;
+  border: 1px dashed #bfdbfe;
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  margin: -0.25rem 0;
+}
+
+.summary-label-dpp {
+  color: #3b82f6;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.summary-value-dpp {
+  color: #3b82f6;
+  font-size: 0.875rem;
+}
+
+.ppn-select-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+}
+
+.ppn-hint-idr {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-style: italic;
 }
 
 .summary-divider-so {
