@@ -70,7 +70,7 @@
               <td class="text-center">{{ formatQuantity(item.quantity) }}</td>
               <td class="text-center">{{ item.item_unit }}</td>
               <td class="td-ket">{{ item.keterangan || '-' }}</td>
-              <td class="text-center td-tgl ppic-cell">DI SESUAIKAN DENGAN PPIC</td>
+              <td class="text-center td-tgl ppic-cell">DI SESUAIKAN<br />DENGAN PPIC</td>
             </tr>
             <tr class="total-row-border">
               <td colspan="3" class="text-right-bold">TOTAL</td>
@@ -331,16 +331,17 @@ onMounted(() => {
   table-layout: fixed;
   font-size: 9pt;
   font-family: 'Times New Roman', Times, serif;
+  box-sizing: border-box;
 }
 
 /* Lebar kolom: total = 170mm (A4 - margin 20mm kiri kanan) */
 .col-no   { width: 8mm; }
-.col-kode { width: 24mm; }
+.col-kode { width: 18mm; }
 .col-nama { width: 52mm; }
 .col-qty  { width: 13mm; }
 .col-sat  { width: 18mm; }
 .col-ket  { width: 28mm; }
-.col-tgl  { width: 27mm; }
+.col-tgl  { width: 33mm; }
 
 .table-print-bordered th {
   border: 0.75pt solid #000;
@@ -353,6 +354,7 @@ onMounted(() => {
   letter-spacing: 0.2pt;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+  box-sizing: border-box;
 }
 
 .table-print-bordered td {
@@ -362,6 +364,7 @@ onMounted(() => {
   vertical-align: middle;
   word-break: break-word;
   line-height: 1.3;
+  box-sizing: border-box;
 }
 
 .data-row td { font-size: 9pt; }
@@ -372,9 +375,11 @@ onMounted(() => {
 .td-tgl  { font-size: 8.5pt; }
 
 .ppic-cell {
-  font-size: 7.5pt;
+  font-size: 7pt;
   font-style: italic;
-  color: #444;
+  color: #333;
+  line-height: 1.4;
+  vertical-align: middle;
 }
 
 .text-center     { text-align: center !important; }

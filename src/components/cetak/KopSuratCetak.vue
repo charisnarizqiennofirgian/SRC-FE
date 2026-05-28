@@ -122,5 +122,24 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
     margin-top: 0;
     page-break-inside: avoid;
   }
+
+  .company-name {
+    font-size: 13pt;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .highlight-S,
+  .highlight-B,
+  .highlight-C {
+    color: #cc0000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .company-logo,
+  .svlk-wrapper {
+    flex-shrink: 0;
+  }
 }
 </style>
