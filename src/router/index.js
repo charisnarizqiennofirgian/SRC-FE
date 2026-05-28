@@ -30,6 +30,7 @@ import MasterBarangForm from '../views/master/MasterBarangForm.vue'
 import DaftarSalesOrder from '../views/penjualan/DaftarSalesOrder.vue'
 import FormSalesOrder from '../views/penjualan/FormSalesOrder.vue'
 import SalesOrderCetak from '../views/penjualan/SalesOrderCetak.vue'
+import SalesOrderCetakPPIC from '../views/penjualan/SalesOrderCetakPPIC.vue'
 import DaftarPengiriman from '../views/penjualan/DaftarPengiriman.vue'
 import FormPengiriman from '../views/penjualan/FormPengiriman.vue'
 import CetakPengiriman from '../views/penjualan/CetakPengiriman.vue'
@@ -179,6 +180,13 @@ const router = createRouter({
           name: 'CetakSalesOrder',
           component: SalesOrderCetak,
           meta: { title: 'Cetak Pesanan Penjualan' },
+          props: true,
+        },
+        {
+          path: '/admin/penjualan/sales-order/cetak-ppic/:id',
+          name: 'CetakSalesOrderPPIC',
+          component: SalesOrderCetakPPIC,
+          meta: { title: 'Cetak Pesanan Penjualan (PPIC)' },
           props: true,
         },
         {

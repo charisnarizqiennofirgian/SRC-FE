@@ -139,13 +139,27 @@
                     >
                       🧪
                     </button>
-                    <button
-                      @click="goToCetakPage(so.id)"
-                      class="btn-action btn-print"
-                      title="Cetak"
-                    >
-                      🖨️
-                    </button>
+                    <div class="dropdown-print-wrapper">
+                      <button
+                        @click.stop="togglePrintDropdown(so.id)"
+                        class="btn-action btn-print"
+                        title="Cetak"
+                      >
+                        🖨️
+                      </button>
+                      <div
+                        v-if="openPrintDropdownId === so.id"
+                        class="dropdown-print-menu"
+                        @click.stop
+                      >
+                        <button @click="cetakTglKirim(so.id)" class="dropdown-print-item">
+                          📄 TGL. Kirim
+                        </button>
+                        <button @click="cetakPPIC(so.id)" class="dropdown-print-item">
+                          📄 Di Sesuaikan Dengan PPIC
+                        </button>
+                      </div>
+                    </div>
                     <button
                       @click="goToProformaInvoice(so.id)"
                       class="btn-action btn-pi"
@@ -210,7 +224,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
@@ -351,6 +365,24 @@ const goToEditPage = (id) => {
   router.push({ name: 'EditSalesOrder', params: { id } })
 }
 
+const openPrintDropdownId = ref(null)
+
+const togglePrintDropdown = (id) => {
+  openPrintDropdownId.value = openPrintDropdownId.value === id ? null : id
+}
+
+const cetakTglKirim = (id) => {
+  const routeData = router.resolve({ name: 'CetakSalesOrder', params: { id } })
+  window.open(routeData.href, '_blank')
+  openPrintDropdownId.value = null
+}
+
+const cetakPPIC = (id) => {
+  const routeData = router.resolve({ name: 'CetakSalesOrderPPIC', params: { id } })
+  window.open(routeData.href, '_blank')
+  openPrintDropdownId.value = null
+}
+
 const goToCetakPage = (id) => {
   const routeData = router.resolve({ name: 'CetakSalesOrder', params: { id } })
   window.open(routeData.href, '_blank')
@@ -464,8 +496,17 @@ const getStatusClass = (status) => {
   }
 }
 
+const handleDocumentClick = () => {
+  openPrintDropdownId.value = null
+}
+
 onMounted(() => {
   fetchSalesOrders()
+  document.addEventListener('click', handleDocumentClick)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleDocumentClick)
 })
 </script>
 
@@ -879,6 +920,44 @@ onMounted(() => {
 .btn-print {
   border-color: #8b5cf6;
   color: #8b5cf6;
+}
+
+.dropdown-print-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.dropdown-print-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  min-width: 210px;
+  overflow: hidden;
+}
+
+.dropdown-print-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 14px;
+  border: none;
+  background: white;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #374151;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.dropdown-print-item:hover {
+  background: #f3f0ff;
+  color: #7c3aed;
 }
 
 .btn-edit {

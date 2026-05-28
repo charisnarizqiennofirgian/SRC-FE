@@ -167,10 +167,9 @@
                   </td>
                   <td>
                     <input
-                      v-model.number="item.quantity"
-                      type="number"
-                      min="0.01"
-                      step="0.01"
+                      v-model="item.quantity"
+                      type="text"
+                      inputmode="decimal"
                       class="form-input-so form-input-sm"
                       required
                     />
@@ -185,9 +184,9 @@
                   </td>
                   <td>
                     <input
-                      v-model.number="item.unit_price"
-                      type="number"
-                      min="0"
+                      v-model="item.unit_price"
+                      type="text"
+                      inputmode="decimal"
                       class="form-input-so form-input-sm"
                       required
                     />
@@ -517,12 +516,14 @@ const onItemSelect = (index) => {
   }
 }
 
+const parseNum = (val) => parseFloat(String(val).replace(',', '.')) || 0
+
 watch(
   () => form.details,
   (newDetails) => {
     let subtotal = 0
     newDetails.forEach((item) => {
-      item.line_total = (item.quantity || 0) * (item.unit_price || 0)
+      item.line_total = parseNum(item.quantity) * parseNum(item.unit_price)
       subtotal += item.line_total
     })
     form.subtotal = subtotal
@@ -576,12 +577,21 @@ const handleSubmit = async () => {
   console.log('PPN Rate:', ppnRate.value)
   console.log('======================')
 
+  const payload = {
+    ...form,
+    details: form.details.map((item) => ({
+      ...item,
+      quantity: parseNum(item.quantity),
+      unit_price: parseNum(item.unit_price),
+    })),
+  }
+
   try {
     if (isEditMode.value) {
-      await apiClient.put(`/sales-orders/${soId.value}`, form)
+      await apiClient.put(`/sales-orders/${soId.value}`, payload)
       toast.success('Pesanan Penjualan berhasil diperbarui!')
     } else {
-      await apiClient.post('/sales-orders', form)
+      await apiClient.post('/sales-orders', payload)
       toast.success('Pesanan Penjualan baru berhasil disimpan!')
     }
     router.push({ name: 'DaftarSalesOrder' })
