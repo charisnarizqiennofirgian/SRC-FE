@@ -85,7 +85,7 @@
               <td class="td-right">{{ formatQty(detail.quantity) }}</td>
               <td class="td-right td-money">$ {{ formatUsd(detail.unit_price) }}</td>
               <td class="td-right td-money">$ {{ formatUsd(detail.line_total) }}</td>
-              <td class="td-center td-ship">{{ formatDisplayDate(so.shipment_date) }}</td>
+              <td class="td-center td-ship">{{ formatDisplayDate(detail.delivery_date) }}</td>
             </tr>
           </tbody>
           <tfoot>
