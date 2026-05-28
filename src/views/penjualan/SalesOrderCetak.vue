@@ -201,20 +201,17 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-/* ===== SCREEN: CONTROLS ===== */
-.print-page-container {
-  width: 100%;
-  min-height: 100vh;
-  background: #f5f5f5;
-  padding: 20px;
-}
+<style>
+/* ── POLA SAMA DENGAN PesananPembelianCetak.vue ── */
 
+/* Tombol floating — tidak masuk flow dokumen */
 .print-controls {
+  position: fixed;
+  top: 16px;
+  right: 24px;
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 10px;
+  z-index: 100;
 }
 
 .btn-back,
@@ -222,58 +219,58 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 9px 20px;
   border: none;
   border-radius: 6px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: background 0.2s;
 }
 
-.btn-back { background: #6c757d; color: white; }
-.btn-back:hover { background: #5a6268; }
-.btn-print { background: #007bff; color: white; }
-.btn-print:hover { background: #0056b3; }
+.btn-back  { background: #6c757d; color: white; }
+.btn-back:hover  { background: #5a6268; }
+.btn-print { background: #1d6fd8; color: white; }
+.btn-print:hover { background: #155db5; }
 
+/* Loading */
 .loading-container-print {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 400px;
+  min-height: 100vh;
+  gap: 16px;
 }
 
 .spinner-form {
-  width: 50px;
-  height: 50px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #007bff;
+  width: 48px;
+  height: 48px;
+  border: 4px solid #ddd;
+  border-top-color: #1d6fd8;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: spin 0.9s linear infinite;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text-form { font-size: 14px; font-weight: 600; color: #555; margin: 0; }
 
-.loading-text-form {
-  margin-top: 16px;
-  color: #666;
-  font-weight: 600;
-}
-
-/* ===== SCREEN: A4 PREVIEW ===== */
-.print-sheet-a4 {
+/* Container — sama dengan .print-container di PO cetak */
+.print-page-container {
   width: 210mm;
   min-height: 297mm;
-  background: white;
   margin: 0 auto;
-  padding: 15mm 20mm;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Content box — sama dengan .invoice-box di PO cetak */
+.print-sheet-a4 {
+  padding: 15mm 18mm 12mm 18mm;
   font-family: 'Times New Roman', Times, serif;
+  font-size: 10pt;
+  line-height: 1.4;
   color: #000;
-  box-sizing: border-box;
 }
 
 /* ===== DOCUMENT TITLE ===== */
@@ -290,7 +287,6 @@ onMounted(() => {
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 1pt;
-  font-family: 'Times New Roman', Times, serif;
 }
 
 .document-meta {
@@ -318,23 +314,12 @@ onMounted(() => {
   align-items: baseline;
 }
 
-.info-label-bold {
-  font-weight: bold;
-  font-size: 10.5pt;
-}
-
-.info-label {
-  font-weight: 700;
-  min-width: 25mm;
-  flex-shrink: 0;
-}
-
+.info-label-bold { font-weight: bold; font-size: 10.5pt; }
+.info-label { font-weight: 700; min-width: 25mm; flex-shrink: 0; }
 .info-value { flex: 1; }
 
 /* ===== TABLE ===== */
-.table-print-container {
-  margin: 3mm 0 4mm 0;
-}
+.table-print-container { margin: 3mm 0 4mm 0; }
 
 .table-print-bordered {
   width: 100%;
@@ -344,7 +329,6 @@ onMounted(() => {
   font-family: 'Times New Roman', Times, serif;
 }
 
-/* Lebar kolom: total = 170mm (A4 - margin 20mm kiri kanan) */
 .col-no   { width: 8mm; }
 .col-kode { width: 24mm; }
 .col-nama { width: 52mm; }
@@ -356,7 +340,7 @@ onMounted(() => {
 .table-print-bordered th {
   border: 0.75pt solid #000;
   padding: 3.5pt 4pt;
-  background: #e8e8e8;
+  background-color: #f0f0f0;
   font-weight: bold;
   text-align: center;
   text-transform: uppercase;
@@ -373,30 +357,21 @@ onMounted(() => {
   vertical-align: middle;
   word-break: break-word;
   line-height: 1.3;
+  font-size: 9pt;
 }
-
-.data-row td { font-size: 9pt; }
 
 .td-kode { font-size: 8.5pt; }
-.td-nama { font-size: 9pt; }
-.td-ket  { font-size: 8.5pt; }
 .td-tgl  { font-size: 8.5pt; }
 
-.text-center     { text-align: center !important; }
-.text-right-bold { text-align: right; font-weight: bold; font-size: 8.5pt; padding-right: 4pt; }
+.text-center      { text-align: center !important; }
+.text-right-bold  { text-align: right; font-weight: bold; font-size: 8.5pt; padding-right: 4pt; }
 .text-center-bold { text-align: center; font-weight: bold; }
-
-.text-center-empty {
-  text-align: center;
-  font-style: italic;
-  color: #666;
-  padding: 6pt;
-}
+.text-center-empty { text-align: center; font-style: italic; color: #666; padding: 6pt; }
 
 .total-row-border {
   border-top: 1.5pt solid #000;
   font-weight: bold;
-  background: #f0f0f0;
+  background-color: #f0f0f0;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
@@ -417,15 +392,8 @@ onMounted(() => {
   font-family: 'Times New Roman', Times, serif;
 }
 
-.signature-label {
-  display: block;
-  font-weight: 700;
-  font-size: 9.5pt;
-  margin-bottom: 16mm;
-}
-
+.signature-label { display: block; font-weight: 700; font-size: 9.5pt; margin-bottom: 16mm; }
 .signature-space { height: 16mm; }
-
 .signature-name {
   display: block;
   margin-top: 1.5mm;
@@ -435,61 +403,13 @@ onMounted(() => {
   padding-top: 1mm;
 }
 
-/* ===== PRINT MEDIA ===== */
-@media print {
-  .print-controls { display: none !important; }
-
-  .print-page-container {
-    background: white !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    width: 100% !important;
-    min-height: auto !important;
-    overflow: visible !important;
-  }
-
-  .print-sheet-a4 {
-    width: 100% !important;
-    min-height: auto !important;
-    margin: 0 !important;
-    padding: 15mm 20mm !important;
-    box-shadow: none !important;
-    overflow: visible !important;
-  }
-
-  /* Header tabel repeat di setiap halaman */
-  thead {
-    display: table-header-group;
-  }
-
-  /* Baris tidak terpotong antar halaman */
-  tbody tr {
-    page-break-inside: avoid;
-    break-inside: avoid;
-  }
-
-  /* Signature tetap satu blok */
-  .signature-container-three {
-    page-break-inside: avoid;
-    break-inside: avoid;
-  }
-
-  /* Background header & total row muncul saat print */
-  .table-print-bordered th,
-  .total-row-border {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  @page {
-    size: A4 portrait;
-    margin: 0;
-  }
+/* ===== @page — sama persis dengan PO cetak ===== */
+@page {
+  size: A4 portrait;
+  margin: 15mm 20mm;
 }
-</style>
 
-<!-- Reset global html/body agar tidak overflow saat print -->
-<style>
+/* ===== @media print — sama persis dengan PO cetak ===== */
 @media print {
   html, body, #app {
     height: auto !important;
@@ -497,5 +417,21 @@ onMounted(() => {
     overflow: visible !important;
     background: white !important;
   }
+
+  .print-controls { display: none !important; }
+
+  .print-page-container {
+    width: 100% !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  .print-sheet-a4 { padding: 0 !important; }
+
+  thead { display: table-header-group; }
+  tbody tr { page-break-inside: avoid; break-inside: avoid; }
+  .signature-container-three { page-break-inside: avoid; break-inside: avoid; }
 }
 </style>
