@@ -39,6 +39,15 @@
 
       <div class="table-print-container">
         <table class="table-print-bordered">
+          <colgroup>
+            <col class="col-no" />
+            <col class="col-kode" />
+            <col class="col-nama" />
+            <col class="col-qty" />
+            <col class="col-sat" />
+            <col class="col-ket" />
+            <col class="col-tgl" />
+          </colgroup>
           <thead>
             <tr>
               <th>NO</th>
@@ -47,24 +56,24 @@
               <th>QTY</th>
               <th>SAT</th>
               <th>KETERANGAN</th>
-              <th>TGL.KIRIM</th>
+              <th>TGL. KIRIM</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="!salesOrder.details || salesOrder.details.length === 0">
               <td colspan="7" class="text-center-empty">Tidak ada barang.</td>
             </tr>
-            <tr v-for="(item, index) in salesOrder.details" :key="item.id">
+            <tr v-for="(item, index) in salesOrder.details" :key="item.id" class="data-row">
               <td class="text-center">{{ index + 1 }}</td>
-              <td>{{ item.item_code || '-' }}</td>
-              <td>{{ item.item_name }}</td>
+              <td class="td-kode">{{ item.item_code || '-' }}</td>
+              <td class="td-nama">{{ item.item_name }}</td>
               <td class="text-center">{{ formatQuantity(item.quantity) }}</td>
               <td class="text-center">{{ item.item_unit }}</td>
-              <td>{{ item.keterangan || '-' }}</td>
-              <td class="text-center ppic-cell">DI SESUAIKAN DENGAN PPIC</td>
+              <td class="td-ket">{{ item.keterangan || '-' }}</td>
+              <td class="text-center td-tgl ppic-cell">DI SESUAIKAN DENGAN PPIC</td>
             </tr>
             <tr class="total-row-border">
-              <td colspan="3" class="text-right-bold"></td>
+              <td colspan="3" class="text-right-bold">TOTAL</td>
               <td class="text-center-bold">{{ totalQuantity }}</td>
               <td class="text-center-bold">{{ mostCommonUnit }}</td>
               <td colspan="2"></td>
@@ -182,7 +191,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ===== PRINT PAGE STYLES ===== */
+/* ===== SCREEN: CONTROLS ===== */
 .print-page-container {
   width: 100%;
   min-height: 100vh;
@@ -210,23 +219,10 @@ onMounted(() => {
   transition: all 0.3s;
 }
 
-.btn-back {
-  background: #6c757d;
-  color: white;
-}
-
-.btn-back:hover {
-  background: #5a6268;
-}
-
-.btn-print {
-  background: #007bff;
-  color: white;
-}
-
-.btn-print:hover {
-  background: #0056b3;
-}
+.btn-back { background: #6c757d; color: white; }
+.btn-back:hover { background: #5a6268; }
+.btn-print { background: #007bff; color: white; }
+.btn-print:hover { background: #0056b3; }
 
 .loading-container-print {
   display: flex;
@@ -246,12 +242,8 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .loading-text-form {
@@ -260,202 +252,224 @@ onMounted(() => {
   font-weight: 600;
 }
 
-/* ===== A4 PRINT SHEET ===== */
+/* ===== SCREEN: A4 PREVIEW ===== */
 .print-sheet-a4 {
   width: 210mm;
   min-height: 297mm;
   background: white;
   margin: 0 auto;
-  padding: 15mm 18mm;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 15mm 20mm;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   font-family: 'Times New Roman', Times, serif;
   color: #000;
+  box-sizing: border-box;
 }
 
 /* ===== DOCUMENT TITLE ===== */
 .document-title-container {
   text-align: center;
-  margin: 5mm 0 4mm 0;
+  margin: 4mm 0 3mm 0;
   border-bottom: 2pt solid #000;
-  padding-bottom: 3mm;
+  padding-bottom: 2.5mm;
 }
 
 .document-title {
-  font-size: 13pt;
+  font-size: 12pt;
   font-weight: bold;
   margin: 0;
   text-transform: uppercase;
-  letter-spacing: 0.5pt;
+  letter-spacing: 1pt;
   font-family: 'Times New Roman', Times, serif;
 }
 
 .document-meta {
   display: flex;
   justify-content: center;
-  gap: 30mm;
+  gap: 20mm;
   margin-top: 2mm;
-  font-size: 10pt;
+  font-size: 9.5pt;
 }
 
-.meta-item {
-  font-weight: 600;
-}
+.meta-item { font-weight: 600; }
 
 /* ===== HEADER INFO ===== */
 .header-info-container {
-  margin: 4mm 0;
-  padding: 3mm 0;
+  margin: 3mm 0;
+  padding: 2.5mm 0;
   border-bottom: 1pt solid #000;
 }
 
 .info-row-single {
   display: flex;
-  gap: 4mm;
-  margin-bottom: 1.5mm;
-  font-size: 10pt;
+  gap: 3mm;
+  margin-bottom: 1mm;
+  font-size: 9.5pt;
   align-items: baseline;
 }
 
 .info-label-bold {
   font-weight: bold;
-  font-size: 11pt;
+  font-size: 10.5pt;
 }
 
 .info-label {
   font-weight: 700;
-  min-width: 28mm;
+  min-width: 25mm;
   flex-shrink: 0;
 }
 
-.info-value {
-  flex: 1;
-}
+.info-value { flex: 1; }
 
-/* ===== TABLE PRINT ===== */
+/* ===== TABLE ===== */
 .table-print-container {
-  margin: 4mm 0;
+  margin: 3mm 0 4mm 0;
 }
 
 .table-print-bordered {
   width: 100%;
   border-collapse: collapse;
-  font-size: 10pt;
+  table-layout: fixed;
+  font-size: 9pt;
   font-family: 'Times New Roman', Times, serif;
 }
 
-.table-print-bordered th,
-.table-print-bordered td {
-  border: 0.75pt solid #000;
-  padding: 3pt 5pt;
-  text-align: left;
-}
+/* Lebar kolom: total = 170mm (A4 - margin 20mm kiri kanan) */
+.col-no   { width: 8mm; }
+.col-kode { width: 24mm; }
+.col-nama { width: 52mm; }
+.col-qty  { width: 13mm; }
+.col-sat  { width: 12mm; }
+.col-ket  { width: 34mm; }
+.col-tgl  { width: 27mm; }
 
 .table-print-bordered th {
-  background: #f0f0f0;
+  border: 0.75pt solid #000;
+  padding: 3.5pt 4pt;
+  background: #e8e8e8;
   font-weight: bold;
   text-align: center;
   text-transform: uppercase;
-  font-size: 9pt;
-  letter-spacing: 0.3pt;
+  font-size: 8.5pt;
+  letter-spacing: 0.2pt;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .table-print-bordered td {
+  border: 0.75pt solid #000;
+  padding: 3pt 4pt;
+  text-align: left;
   vertical-align: middle;
+  word-break: break-word;
+  line-height: 1.3;
 }
 
-.text-center {
-  text-align: center;
+.data-row td { font-size: 9pt; }
+
+.td-kode { font-size: 8.5pt; }
+.td-nama { font-size: 9pt; }
+.td-ket  { font-size: 8.5pt; }
+.td-tgl  { font-size: 8.5pt; }
+
+.ppic-cell {
+  font-size: 7.5pt;
+  font-style: italic;
+  color: #444;
 }
+
+.text-center     { text-align: center !important; }
+.text-right-bold { text-align: right; font-weight: bold; font-size: 8.5pt; padding-right: 4pt; }
+.text-center-bold { text-align: center; font-weight: bold; }
 
 .text-center-empty {
   text-align: center;
   font-style: italic;
   color: #666;
-}
-
-.text-right-bold {
-  text-align: right;
-  font-weight: bold;
-}
-
-.text-center-bold {
-  text-align: center;
-  font-weight: bold;
+  padding: 6pt;
 }
 
 .total-row-border {
   border-top: 1.5pt solid #000;
   font-weight: bold;
-  background: #f8f8f8;
-}
-
-.ppic-cell {
-  font-style: italic;
-  font-size: 8pt;
-  color: #555;
+  background: #f0f0f0;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 /* ===== SIGNATURE ===== */
 .signature-container-three {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10mm;
-  margin-top: 10mm;
+  gap: 8mm;
+  margin-top: 8mm;
   page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .signature-box-three {
   text-align: center;
-  font-size: 10pt;
+  font-size: 9.5pt;
   font-family: 'Times New Roman', Times, serif;
 }
 
 .signature-label {
   display: block;
   font-weight: 700;
-  margin-bottom: 18mm;
-  font-size: 10pt;
+  font-size: 9.5pt;
+  margin-bottom: 16mm;
 }
 
-.signature-space {
-  height: 18mm;
-}
+.signature-space { height: 16mm; }
 
 .signature-name {
   display: block;
-  margin-top: 2mm;
+  margin-top: 1.5mm;
   font-weight: 700;
-  font-size: 10pt;
+  font-size: 9.5pt;
   border-top: 1pt solid #000;
   padding-top: 1mm;
 }
 
-/* ===== PRINT MEDIA QUERY ===== */
+/* ===== PRINT MEDIA ===== */
 @media print {
-  .print-controls {
-    display: none !important;
-  }
+  .print-controls { display: none !important; }
 
   .print-page-container {
     background: white !important;
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
-    height: auto !important;
     min-height: auto !important;
     overflow: visible !important;
-    position: static !important;
   }
 
   .print-sheet-a4 {
     width: 100% !important;
-    height: auto !important;
     min-height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
     overflow: visible !important;
-    position: static !important;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tbody tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .signature-container-three {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .table-print-bordered th,
+  .total-row-border {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   @page {
@@ -465,12 +479,10 @@ onMounted(() => {
 }
 </style>
 
-<!-- Reset global: html/body/#app masih punya height:100% dari base.css -->
+<!-- Reset global html/body agar tidak overflow saat print -->
 <style>
 @media print {
-  html,
-  body,
-  #app {
+  html, body, #app {
     height: auto !important;
     min-height: auto !important;
     overflow: visible !important;
