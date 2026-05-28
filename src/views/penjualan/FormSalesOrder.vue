@@ -99,7 +99,22 @@
               <p class="form-hint-text">💡 Kurs akan diinput saat membuat Invoice Penjualan</p>
             </div>
 
-            <div class="form-group-so"></div>
+            <div class="form-group-so">
+              <label class="form-label-so">Tanggal Pengiriman</label>
+              <input v-model="form.shipment_date" type="date" class="form-input-so" />
+            </div>
+          </div>
+
+          <div class="form-grid-1">
+            <div class="form-group-so">
+              <label class="form-label-so">Payment Term</label>
+              <textarea
+                v-model="form.payment_term"
+                class="form-textarea-so"
+                rows="2"
+                placeholder="Masukkan syarat pembayaran..."
+              ></textarea>
+            </div>
           </div>
         </div>
       </div>
@@ -325,9 +340,13 @@ const isSaving = ref(false)
 const isEditMode = ref(false)
 const soId = ref(null)
 
+const DEFAULT_PAYMENT_TERM = "Down Payment 30%, Balance when goods has been loaded into container 40'HC"
+
 const form = reactive({
   buyer_id: '',
   so_date: new Date().toISOString().split('T')[0],
+  shipment_date: '',
+  payment_term: DEFAULT_PAYMENT_TERM,
   customer_po_number: '',
   notes: '',
   status: 'Draft',
@@ -337,7 +356,7 @@ const form = reactive({
   subtotal: 0,
   discount: 0,
   tax_ppn: 0,
-  tax_rate: 11, // ← TAMBAH INI! Default 11%
+  tax_rate: 11,
   grand_total: 0,
 })
 
@@ -408,6 +427,8 @@ const fetchSalesOrder = async (id) => {
 
     form.buyer_id = so.buyer_id
     form.so_date = so.so_date ? so.so_date.substring(0, 10) : ''
+    form.shipment_date = so.shipment_date ? so.shipment_date.substring(0, 10) : ''
+    form.payment_term = so.payment_term || DEFAULT_PAYMENT_TERM
     form.customer_po_number = so.customer_po_number
     form.notes = so.notes
     form.status = so.status
@@ -624,6 +645,12 @@ const formatStock = (value) => {
 }
 
 /* Existing styles tetap sama */
+
+.form-grid-1 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
 </style>
 
 <style scoped>

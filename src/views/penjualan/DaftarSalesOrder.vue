@@ -146,6 +146,13 @@
                     >
                       🖨️
                     </button>
+                    <button
+                      @click="goToProformaInvoice(so.id)"
+                      class="btn-action btn-pi"
+                      title="Proforma Invoice"
+                    >
+                      📋
+                    </button>
                     <button @click="goToEditPage(so.id)" class="btn-action btn-edit" title="Edit">
                       ✏️
                     </button>
@@ -346,6 +353,11 @@ const goToEditPage = (id) => {
 
 const goToCetakPage = (id) => {
   const routeData = router.resolve({ name: 'CetakSalesOrder', params: { id } })
+  window.open(routeData.href, '_blank')
+}
+
+const goToProformaInvoice = (id) => {
+  const routeData = router.resolve({ name: 'ProformaInvoice', params: { id } })
   window.open(routeData.href, '_blank')
 }
 
@@ -879,6 +891,11 @@ onMounted(() => {
   color: #ef4444;
 }
 
+.btn-pi {
+  border-color: #16a34a;
+  color: #16a34a;
+}
+
 .btn-action:hover {
   color: white;
   transform: translateY(-2px);
@@ -889,6 +906,9 @@ onMounted(() => {
 }
 .btn-print:hover {
   background: #8b5cf6;
+}
+.btn-pi:hover {
+  background: #16a34a;
 }
 .btn-edit:hover {
   background: #3b82f6;

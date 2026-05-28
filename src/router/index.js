@@ -182,6 +182,13 @@ const router = createRouter({
           props: true,
         },
         {
+          path: '/admin/penjualan/sales-order/:id/proforma-invoice',
+          name: 'ProformaInvoice',
+          component: () => import('../views/penjualan/ProformaInvoiceCetak.vue'),
+          meta: { title: 'Proforma Invoice', requiresAuth: true },
+          props: true,
+        },
+        {
           path: '/admin/penjualan/pengiriman-barang',
           name: 'DaftarPengiriman',
           component: DaftarPengiriman,
