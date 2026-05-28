@@ -56,6 +56,7 @@
                 <th class="col-so" rowspan="2">No. SO & Buyer</th>
                 <th class="col-item" rowspan="2">Item</th>
                 <th class="col-num" rowspan="2">Target</th>
+                <th class="col-tgl-kirim" rowspan="2">Tgl. Kirim</th>
                 <!-- Zona Hulu -->
                 <th colspan="5" class="zone-header zone-hulu">
                   <span class="zone-icon">🌲</span> Persiapan Bahan
@@ -121,6 +122,11 @@
                   <!-- Target -->
                   <td class="col-num">
                     <span class="target-value">{{ formatNumber(item.target) }}</span>
+                  </td>
+
+                  <!-- Tgl Kirim -->
+                  <td class="col-tgl-kirim">
+                    <span class="tgl-kirim-value">{{ item.delivery_date || '-' }}</span>
                   </td>
 
                   <!-- Zona Hulu -->
@@ -221,7 +227,7 @@
 
                 <!-- Separator antar SO -->
                 <tr class="so-separator">
-                  <td colspan="20"></td>
+                  <td colspan="21"></td>
                 </tr>
               </template>
             </tbody>
@@ -706,6 +712,22 @@ onMounted(() => {
 
 .col-status {
   text-align: center !important;
+}
+
+.col-tgl-kirim {
+  text-align: center !important;
+  white-space: nowrap;
+  min-width: 90px;
+}
+
+.tgl-kirim-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0369a1;
+  background: #e0f2fe;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-block;
 }
 
 /* ============================================

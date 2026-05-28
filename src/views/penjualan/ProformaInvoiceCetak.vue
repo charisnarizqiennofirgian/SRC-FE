@@ -55,6 +55,9 @@
       <div class="pi-table-wrap">
         <table class="pi-table">
           <thead>
+            <tr class="thead-spacer">
+              <td colspan="8"></td>
+            </tr>
             <tr>
               <th class="col-no"     rowspan="2">NO</th>
               <th class="col-prod"   colspan="2">PRODUCT</th>
@@ -131,16 +134,22 @@
 
         <!-- KIRI BAWAH: TTD Buyer -->
         <div class="fc fc-bottom fc-left">
-          <p class="sign-label">CONFIRMED</p>
-          <div class="sign-line"></div>
-          <p class="sign-name">JACOPO</p>
+          <div class="sign-box">
+            <p class="sign-label">CONFIRMED</p>
+            <div class="sign-space"></div>
+            <div class="sign-line"></div>
+            <p class="sign-name">JACOPO</p>
+          </div>
         </div>
 
         <!-- KANAN BAWAH: TTD SBC -->
         <div class="fc fc-bottom fc-right">
-          <p class="sign-city-date">Semarang, {{ formatSignDate(so.so_date) }}</p>
-          <div class="sign-line"></div>
-          <p class="sign-name">Ellen Apriliana</p>
+          <div class="sign-box">
+            <p class="sign-label">Semarang, {{ formatSignDate(so.so_date) }}</p>
+            <div class="sign-space"></div>
+            <div class="sign-line"></div>
+            <p class="sign-name">Ellen Apriliana</p>
+          </div>
         </div>
 
       </div>
@@ -426,6 +435,9 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
 .td-ship   { font-size: 8.5pt; white-space: nowrap; }
 .td-empty  { text-align: center; font-style: italic; color: #888; padding: 6pt; }
 
+/* Sembunyikan spacer di layar, hanya muncul saat print */
+.thead-spacer { display: none; }
+
 /* ─── FOOTER 2×2 ────────────────────────────────────── */
 .pi-footer-grid {
   display: grid;
@@ -436,17 +448,13 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
 }
 
 /* setiap sel */
-.fc { padding: 0 4mm 0 0; }
-.fc.fc-right { padding: 0 0 0 4mm; }
+.fc { padding: 0 6mm 0 0; }
+.fc.fc-right { padding: 0 0 0 6mm; }
 
 /* baris atas */
 .fc-top {
   padding-bottom: 4mm;
-}
-
-/* baris bawah */
-.fc-bottom {
-  padding-top: 4mm;
+  border-bottom: 0.5pt solid #ccc;
 }
 
 /* judul sub-seksi */
@@ -486,28 +494,50 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
 }
 
 /* tanda tangan */
-.sign-label,
-.sign-city-date {
+.fc-bottom {
+  padding-top: 4mm;
+  display: flex;
+  justify-content: center;
+}
+
+.fc-left.fc-bottom {
+  justify-content: flex-start;
+}
+
+.fc-right.fc-bottom {
+  justify-content: flex-end;
+}
+
+.sign-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 52mm;
+}
+
+.sign-label {
   font-size: 9.5pt;
-  margin: 0 0 1mm 0;
+  margin: 0 0 0 0;
   font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.sign-space {
+  height: 18mm;
 }
 
 .sign-line {
-  width: 48mm;
-  height: 16mm;
+  width: 100%;
   border-bottom: 0.75pt solid #000;
-  margin: 0 0 2mm 0;
-}
-
-.fc-right .sign-line {
-  margin-left: auto;
+  margin-bottom: 1.5mm;
 }
 
 .sign-name {
   font-weight: 700;
   font-size: 10pt;
   margin: 0;
+  text-align: center;
 }
 
 /* ─── PRINT ─────────────────────────────────────────── */
@@ -528,13 +558,61 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
     width: 100% !important;
     min-height: auto !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 14mm 18mm !important;
     box-shadow: none !important;
     overflow: visible !important;
     position: static !important;
   }
 
-  @page { size: A4 portrait; margin: 14mm 18mm; }
+  /* Header tabel repeat di setiap halaman */
+  thead {
+    display: table-header-group;
+  }
+
+  /* Spacer: beri jarak antara tepi kertas dan tabel di halaman 2+ */
+  .thead-spacer {
+    display: table-row !important;
+    height: 20mm;
+  }
+
+  .thead-spacer td {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  /* Total hanya muncul sekali di halaman terakhir, tidak repeat */
+  tfoot {
+    display: table-row-group;
+  }
+
+  /* Baris tidak terpotong antar halaman */
+  tbody tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  tfoot tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Footer tetap satu blok utuh di halaman terakhir */
+  .pi-footer-grid {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: auto;
+  }
+
+  /* Background tabel tetap muncul */
+  .pi-table thead th,
+  .tr-total td,
+  .tr-stripe td {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  @page { size: A4 portrait; margin: 0; }
 }
 </style>
 

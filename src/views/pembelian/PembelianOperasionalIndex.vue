@@ -29,6 +29,14 @@
         </div>
 
         <div class="header-right">
+          <div class="filter-source">
+            <select v-model="sourceFilter" @change="handleFilterChange" class="source-select">
+              <option value="">Semua PO</option>
+              <option value="direct">PO Langsung (Operasional)</option>
+              <option value="pr">PO dari PR</option>
+            </select>
+          </div>
+
           <div class="search-box">
             <span class="search-icon">🔍</span>
             <input
@@ -168,6 +176,7 @@ import PaginationComponent from '../../components/BasePagination.vue'
 
 const daftarPesanan = ref([])
 const searchQuery = ref('')
+const sourceFilter = ref('')
 
 const halamanSekarang = ref(1)
 const perHalaman = ref(15)
@@ -181,6 +190,7 @@ const fetchDaftarPesanan = async () => {
       per_page: perHalaman.value,
       search: searchQuery.value || undefined,
       type: 'operasional',
+      source_type: sourceFilter.value || undefined,
     }
     const response = await apiClient.get('/purchase-orders', { params })
     const data = response.data.data
@@ -198,6 +208,11 @@ const gantiHalaman = (page) => {
 }
 
 const handlePerPageChange = () => {
+  halamanSekarang.value = 1
+  fetchDaftarPesanan()
+}
+
+const handleFilterChange = () => {
   halamanSekarang.value = 1
   fetchDaftarPesanan()
 }
@@ -434,6 +449,30 @@ const formatRupiah = (angka) => {
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
+}
+
+.filter-source {
+  display: flex;
+  align-items: center;
+}
+
+.source-select {
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+  min-width: 200px;
+}
+
+.source-select:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
 }
 
 .search-box {

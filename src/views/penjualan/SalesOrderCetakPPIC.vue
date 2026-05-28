@@ -338,8 +338,8 @@ onMounted(() => {
 .col-kode { width: 24mm; }
 .col-nama { width: 52mm; }
 .col-qty  { width: 13mm; }
-.col-sat  { width: 12mm; }
-.col-ket  { width: 34mm; }
+.col-sat  { width: 18mm; }
+.col-ket  { width: 28mm; }
 .col-tgl  { width: 27mm; }
 
 .table-print-bordered th {
@@ -447,7 +447,7 @@ onMounted(() => {
     width: 100% !important;
     min-height: auto !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 15mm 20mm !important;
     box-shadow: none !important;
     overflow: visible !important;
   }
@@ -474,7 +474,7 @@ onMounted(() => {
 
   @page {
     size: A4 portrait;
-    margin: 15mm 20mm;
+    margin: 0;
   }
 }
 </style>

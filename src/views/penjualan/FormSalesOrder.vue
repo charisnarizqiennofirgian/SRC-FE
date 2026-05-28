@@ -147,8 +147,9 @@
                       :options="masterData.items"
                       :reduce="(opt) => opt.id"
                       label="name"
-                      placeholder="Ketik cari produk..."
+                      placeholder="Ketik nama / kode produk..."
                       :clearable="false"
+                      :filter-by="filterByNameOrCode"
                       @update:model-value="onItemSelect(index)"
                       class="vue-select-table"
                     >
@@ -370,6 +371,14 @@ const ppnRate = ref(0.11)
 watch(ppnRate, (newRate) => {
   form.tax_rate = newRate * 100 // Convert 0.11 → 11
 })
+
+const filterByNameOrCode = (option, label, search) => {
+  const s = search.toLowerCase()
+  return (
+    (option.name && option.name.toLowerCase().includes(s)) ||
+    (option.code && option.code.toLowerCase().includes(s))
+  )
+}
 
 onMounted(async () => {
   loading.value = true
