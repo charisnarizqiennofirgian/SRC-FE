@@ -214,8 +214,8 @@ onMounted(() => {
   z-index: 100;
 }
 
-.btn-back,
-.btn-print {
+.print-controls .btn-back,
+.print-controls .btn-print {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -228,10 +228,10 @@ onMounted(() => {
   transition: background 0.2s;
 }
 
-.btn-back  { background: #6c757d; color: white; }
-.btn-back:hover  { background: #5a6268; }
-.btn-print { background: #1d6fd8; color: white; }
-.btn-print:hover { background: #155db5; }
+.print-controls .btn-back  { background: #6c757d; color: white; }
+.print-controls .btn-back:hover  { background: #5a6268; }
+.print-controls .btn-print { background: #1d6fd8; color: white; }
+.print-controls .btn-print:hover { background: #155db5; }
 
 /* Loading */
 .loading-container-print {
