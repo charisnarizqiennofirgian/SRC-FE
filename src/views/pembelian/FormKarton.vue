@@ -526,7 +526,20 @@ const initializeChoices = async () => {
     })
 
     selectElement.addEventListener('change', (event) => {
-      item.item_id = parseInt(event.target.value) || ''
+      const selectedId = parseInt(event.target.value) || ''
+      item.item_id = selectedId
+
+      if (selectedId) {
+        const barang = daftarBarang.value.find((b) => b.id === selectedId)
+        if (barang) {
+          item.specifications.panjang  = barang.specifications?.p ?? null
+          item.specifications.lebar    = barang.specifications?.l ?? null
+          item.specifications.tinggi   = barang.specifications?.t ?? null
+          item.specifications.kualitas = barang.kualitas || ''
+          item.specifications.jenis    = barang.jenis_karton || ''
+          item.specifications.model    = barang.model || ''
+        }
+      }
     })
 
     choicesInstances.value.push(choices)
@@ -663,7 +676,19 @@ const simpanBarangBaru = async () => {
 
     const barangBaru = res.data?.data ?? res.data
     if (barangBaru?.id) {
-      daftarBarang.value.push({ id: barangBaru.id, code: barangBaru.code, name: barangBaru.name })
+      daftarBarang.value.push({
+        id:             barangBaru.id,
+        code:           barangBaru.code,
+        name:           barangBaru.name,
+        kualitas:       barangBaru.kualitas       ?? formBarang.value.kualitas,
+        jenis_karton:   barangBaru.jenis_karton   ?? formBarang.value.jenis_karton,
+        model:          barangBaru.model          ?? formBarang.value.model,
+        specifications: barangBaru.specifications ?? {
+          p: formBarang.value.p,
+          l: formBarang.value.l,
+          t: formBarang.value.t,
+        },
+      })
 
       const label = barangBaru.code
         ? `${barangBaru.code} - ${barangBaru.name}`

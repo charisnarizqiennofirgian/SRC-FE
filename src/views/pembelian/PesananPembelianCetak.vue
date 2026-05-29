@@ -5,29 +5,27 @@
     </div>
 
     <div v-else-if="po" class="invoice-box">
-      <!-- HEADER KOP SURAT -->
-      <KopSuratCetak :poNumber="po.po_number" />
-
-      <div class="po-title-section">
-        <h2 class="po-title">PURCHASE ORDER</h2>
-        <p class="po-number-line">{{ po.po_number }}</p>
-      </div>
-
-      <!-- INFO SUPPLIER -->
-      <section class="invoice-info">
-        <p class="date-line">Demak, {{ formatTanggal(po.order_date) }}</p>
-        <div class="info-supplier">
-          <p>Kepada Yth.</p>
-          <p class="supplier-name">{{ po.supplier.name }}</p>
-          <p>{{ po.supplier.address_city || po.supplier.address }}</p>
+      <PrintKopWrapper>
+        <div class="po-title-section">
+          <h2 class="po-title">PURCHASE ORDER</h2>
+          <p class="po-number-line">{{ po.po_number }}</p>
         </div>
 
-      </section>
+        <!-- INFO SUPPLIER -->
+        <section class="invoice-info">
+          <p class="date-line">Demak, {{ formatTanggal(po.order_date) }}</p>
+          <div class="info-supplier">
+            <p>Kepada Yth.</p>
+            <p class="supplier-name">{{ po.supplier.name }}</p>
+            <p>{{ po.supplier.address_city || po.supplier.address }}</p>
+          </div>
+        </section>
 
-      <!-- LAYOUT DINAMIS -->
-      <LayoutKarton v-if="po.type === 'karton'" :details="po.details" :po="po" />
-      <LayoutKayu v-else-if="po.type === 'kayu'" :details="po.details" :po="po" />
-      <LayoutOperasional v-else :details="po.details" :po="po" />
+        <!-- LAYOUT DINAMIS -->
+        <LayoutKarton v-if="po.type === 'karton'" :details="po.details" :po="po" />
+        <LayoutKayu v-else-if="po.type === 'kayu'" :details="po.details" :po="po" />
+        <LayoutOperasional v-else :details="po.details" :po="po" />
+      </PrintKopWrapper>
     </div>
   </div>
 </template>
@@ -37,7 +35,7 @@ import { ref, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import apiClient from '../../api/axios'
 
-import KopSuratCetak from '@/components/cetak/KopSuratCetak.vue'
+import PrintKopWrapper from '@/components/cetak/PrintKopWrapper.vue'
 import LayoutOperasional from '@/components/cetak/LayoutOperasional.vue'
 import LayoutKarton from '@/components/cetak/LayoutKarton.vue'
 import LayoutKayu from '@/components/cetak/LayoutKayu.vue'

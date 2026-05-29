@@ -5,7 +5,7 @@
     </div>
 
     <div v-else-if="faktur" class="invoice-box">
-      <KopSuratCetak :poNumber="faktur.bill_number" />
+      <PrintKopWrapper>
 
       <div class="po-title-section">
         <h2 class="po-title">FAKTUR PEMBELIAN (INVOICE)</h2>
@@ -73,6 +73,7 @@
 
       <!-- FOOTER -->
       <FooterOperasional />
+      </PrintKopWrapper>
     </div>
   </div>
 </template>
@@ -81,7 +82,7 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import apiClient from '../../api/axios'
-import KopSuratCetak from '@/components/cetak/KopSuratCetak.vue'
+import PrintKopWrapper from '@/components/cetak/PrintKopWrapper.vue'
 import FooterOperasional from '@/components/cetak/FooterOperasional.vue'
 
 const route = useRoute()

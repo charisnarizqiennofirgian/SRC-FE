@@ -11,9 +11,7 @@
     </div>
 
     <div v-else class="print-sheet-a4">
-
-      <!-- KOP SURAT -->
-      <KopSuratCetak />
+      <PrintKopWrapper>
 
       <!-- JUDUL + NOMOR -->
       <div class="pi-title-section">
@@ -153,6 +151,7 @@
         </div>
 
       </div>
+      </PrintKopWrapper>
     </div>
   </div>
 </template>
@@ -162,7 +161,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
-import KopSuratCetak from '../../components/cetak/KopSuratCetak.vue'
+import PrintKopWrapper from '../../components/cetak/PrintKopWrapper.vue'
 
 const route  = useRoute()
 const router = useRouter()

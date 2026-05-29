@@ -17,7 +17,7 @@
     </div>
 
     <div v-else class="print-sheet-a4">
-      <KopSuratCetak />
+      <PrintKopWrapper>
 
       <div class="document-title-container">
         <h1 class="document-title">DAFTAR PENURUNAN ORDER</h1>
@@ -99,6 +99,7 @@
           <span class="signature-name">(___________________)</span>
         </div>
       </div>
+      </PrintKopWrapper>
     </div>
   </div>
 </template>
@@ -109,7 +110,7 @@ import { useRoute, useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
 
-import KopSuratCetak from '../../components/cetak/KopSuratCetak.vue'
+import PrintKopWrapper from '../../components/cetak/PrintKopWrapper.vue'
 
 const route = useRoute()
 const router = useRouter()

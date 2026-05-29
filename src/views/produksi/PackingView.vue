@@ -71,6 +71,22 @@
               </div>
 
               <div class="form-group-modern">
+                <label class="form-label-modern">
+                  Gudang Sumber <span class="required-star">*</span>
+                </label>
+                <div class="input-wrapper-icon">
+                  <span class="input-icon">🏭</span>
+                  <select v-model="form.source_warehouse_id" class="form-input-modern" required>
+                    <option value="" disabled>Pilih gudang asal barang...</option>
+                    <option v-for="wh in warehouses" :key="wh.id" :value="wh.id">
+                      {{ wh.name }} ({{ wh.code }})
+                    </option>
+                  </select>
+                </div>
+                <p class="form-hint-text">💡 Gudang asal produk sebelum dikemas (biasanya Finishing)</p>
+              </div>
+
+              <div class="form-group-modern">
                 <label class="form-label-modern">Catatan</label>
                 <div class="input-wrapper-icon">
                   <span class="input-icon">📝</span>
@@ -259,13 +275,15 @@ const isMarkingDone = ref(false)
 
 const productionOrders = ref([])
 const allProdukJadi    = ref([])
+const warehouses       = ref([])
 const poInfo = ref({ buyer_name: null, so_number: null })
 
 const form = reactive({
-  date:      new Date().toISOString().slice(0, 10),
-  ref_po_id: null,
-  notes:     '',
-  items:     [],
+  date:                new Date().toISOString().slice(0, 10),
+  ref_po_id:           null,
+  source_warehouse_id: null,
+  notes:               '',
+  items:               [],
 })
 
 const allProdukJadiForSelect = computed(() =>
@@ -279,13 +297,23 @@ const allProdukJadiForSelect = computed(() =>
 
 const fetchInitialData = async () => {
   try {
-    const [poRes, itemRes] = await Promise.all([
+    const [poRes, itemRes, whRes] = await Promise.all([
       apiClient.get('/packing/available-pos'),
       apiClient.get('/materials', { params: { category_name: 'Produk Jadi', per_page: 200 } }),
+      apiClient.get('/warehouses'),
     ])
     productionOrders.value = poRes.data.data || []
     const raw = itemRes.data.data?.data || itemRes.data.data || []
     allProdukJadi.value = raw
+
+    const whData = whRes.data.data ?? whRes.data
+    // Tampilkan hanya gudang produksi yang relevan sebagai sumber
+    const sourceCodes = ['FINISHING', 'SANDING', 'RUSTIK', 'ASSEMBLING', 'QC_FINAL', 'MESIN', 'RUSKOMP']
+    warehouses.value = whData.filter(w => sourceCodes.includes(w.code))
+
+    // Default: pilih FINISHING
+    const finishing = warehouses.value.find(w => w.code === 'FINISHING')
+    if (finishing) form.source_warehouse_id = finishing.id
   } catch {
     showError('Gagal', 'Gagal mengambil data awal')
   }
@@ -341,10 +369,13 @@ const handleSubmit = async () => {
 
   isSubmitting.value = true
   try {
+    if (!form.source_warehouse_id) { showError('Validasi', 'Gudang sumber wajib dipilih'); return }
+
     await apiClient.post('/packing/store', {
-      date:      form.date,
-      ref_po_id: Number(form.ref_po_id),
-      notes:     form.notes || null,
+      date:                form.date,
+      ref_po_id:           Number(form.ref_po_id),
+      source_warehouse_id: Number(form.source_warehouse_id),
+      notes:               form.notes || null,
       items: validItems.map((i) => ({
         item_id: Number(i.item_id),
         qty:     Number(i.qty),
