@@ -632,6 +632,18 @@ const router = createRouter({
       component: () => import('../views/keuangan/BalanceSheetView.vue'),
       meta: { title: 'Neraca', requiresAuth: true },
     },
+    {
+      path: '/admin/keuangan/ar-aging',
+      name: 'ArAging',
+      component: () => import('../views/keuangan/ArAgingView.vue'),
+      meta: { title: 'Aging Piutang (AR)', requiresAuth: true },
+    },
+    {
+      path: '/admin/keuangan/ap-aging',
+      name: 'ApAging',
+      component: () => import('../views/keuangan/ApAgingView.vue'),
+      meta: { title: 'Aging Hutang (AP)', requiresAuth: true },
+    },
 
     // ROUTE STOK YANG MASIH DIPAKAI
     {

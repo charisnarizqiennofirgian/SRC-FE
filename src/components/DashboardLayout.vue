@@ -119,6 +119,7 @@ const menuPermissionMap = {
   Keuangan: [
     'keuangan-jurnal-umum', 'keuangan-buku-besar', 'keuangan-laba-rugi',
     'keuangan-pembayaran-hutang', 'keuangan-riwayat-pembayaran', 'keuangan-neraca',
+    'keuangan-ar-aging', 'keuangan-ap-aging',
   ],
   'Manajemen Stok': [
     'stok-laporan-sawmill', 'stok-index', 'stok-adjustment',
@@ -174,6 +175,8 @@ const allMenuItems = [
       { name: 'Pembayaran Hutang', route: { name: 'PembayaranHutang' }, permission: 'keuangan-pembayaran-hutang' },
       { name: 'Riwayat Pembayaran', route: { name: 'RiwayatPembayaranHutang' }, permission: 'keuangan-riwayat-pembayaran' },
       { name: 'Neraca', route: { name: 'Neraca' }, permission: 'keuangan-neraca' },
+      { name: 'Aging Piutang (AR)', route: { name: 'ArAging' }, permission: 'keuangan-ar-aging' },
+      { name: 'Aging Hutang (AP)',  route: { name: 'ApAging' }, permission: 'keuangan-ap-aging' },
     ],
   },
   {
