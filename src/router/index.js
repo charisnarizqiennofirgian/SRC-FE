@@ -696,11 +696,10 @@ router.beforeEach((to, from, next) => {
     return
   }
 
-  // Semua route kecuali login dan halaman cetak → wajib login
+  // Semua route kecuali login → wajib login
   const publicRoutes = ['login']
-  const isPrintRoute = to.path.includes('/cetak')
 
-  if (!publicRoutes.includes(to.name) && !isPrintRoute && !isLoggedIn) {
+  if (!publicRoutes.includes(to.name) && !isLoggedIn) {
     next({ name: 'login' })
     return
   }

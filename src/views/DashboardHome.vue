@@ -106,6 +106,9 @@
                     <div class="so-wrapper">
                       <span class="so-number">{{ so.so_number }}</span>
                       <span class="so-buyer">{{ so.buyer_name }}</span>
+                      <span v-if="so.customer_po_number" class="so-po-buyer">
+                        PO: {{ so.customer_po_number }}
+                      </span>
                       <span class="so-date">{{ so.so_date }}</span>
                       <span v-if="so.is_done" class="so-done-badge">✓ DONE</span>
                     </div>
@@ -1036,6 +1039,18 @@ onMounted(() => {
   font-weight: 600;
   color: #6b7280;
   margin-top: 4px;
+}
+
+.so-po-buyer {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  padding: 2px 7px;
+  border-radius: 4px;
 }
 
 .so-done-badge {
