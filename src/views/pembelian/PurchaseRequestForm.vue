@@ -84,7 +84,7 @@
               <tr v-for="(detail, index) in form.details" :key="detail._uid" class="data-row">
                 <td class="td-no">{{ index + 1 }}</td>
                 <td class="td-item">
-                  <ItemSelectChoices v-model="detail.item_id" :category-ids="targetCategoryIds" :initial-item="detail.item" />
+                  <ItemSelectChoices v-model="detail.item_id" :category-ids="targetCategoryIds" :initial-item="detail.item" :addable-categories="targetCategories" />
                 </td>
                 <td class="td-qty">
                   <input
@@ -249,7 +249,8 @@ const fetchSO = async () => {
   } catch { /* opsional */ }
 }
 
-const targetCategoryIds = ref([])
+const targetCategoryIds  = ref([])
+const targetCategories   = ref([])
 
 const fetchItems = async () => {
   loadingItem.value = true
@@ -257,12 +258,13 @@ const fetchItems = async () => {
     const res = await apiClient.get('/categories', { params: { all: true }, timeout: 6000 })
     const categories = res.data?.data || []
 
-    targetCategoryIds.value = categories
-      .filter((c) => {
-        const n = (c.name || '').toLowerCase().trim()
-        return n.includes('bahan') || n === 'karton box'
-      })
-      .map((c) => c.id)
+    const filtered = categories.filter((c) => {
+      const n = (c.name || '').toLowerCase().trim()
+      return n.includes('bahan') || n === 'karton box'
+    })
+
+    targetCategoryIds.value = filtered.map((c) => c.id)
+    targetCategories.value  = filtered.map((c) => ({ id: c.id, name: c.name }))
   } finally {
     loadingItem.value = false
   }
