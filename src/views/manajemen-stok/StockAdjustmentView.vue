@@ -77,10 +77,22 @@
           <div class="filter-input-group">
             <div class="select-wrapper">
               <span class="select-icon">📂</span>
-              <select id="kategori-filter" v-model="selectedCategory" class="form-control">
+              <select id="kategori-filter" v-model="selectedCategory" class="form-control" @change="onKategoriChange">
                 <option :value="null" disabled>Pilih kategori...</option>
                 <option v-for="kategori in daftarKategori" :key="kategori.id" :value="kategori.id">
                   {{ kategori.name }}
+                </option>
+              </select>
+              <span class="select-arrow">▼</span>
+            </div>
+
+            <!-- Filter gudang — hanya tampil saat kategori Komponen -->
+            <div v-if="isKomponen" class="select-wrapper">
+              <span class="select-icon">🏭</span>
+              <select v-model="selectedWarehouse" class="form-control">
+                <option :value="null">Semua Gudang</option>
+                <option v-for="wh in daftarWarehouse" :key="wh.id" :value="wh.id">
+                  {{ wh.name }}
                 </option>
               </select>
               <span class="select-arrow">▼</span>
@@ -144,17 +156,21 @@
                 <th v-if="isKomponen" class="th-nama">Nama Produk</th>
                 <th class="th-kategori">Kategori</th>
                 <th class="th-satuan">Satuan</th>
-                <th v-if="isKomponen" class="th-dimensi">P (cm)</th>
-                <th v-if="isKomponen" class="th-dimensi">L (cm)</th>
-                <th v-if="isKomponen" class="th-dimensi">T (cm)</th>
-                <th class="th-stok-saat-ini">Stok Saat Ini</th>
-                <th class="th-stok-baru">Jml Penyesuaian (+/-)</th>
+                <th v-if="isKomponen" class="th-dimensi">P (mm)</th>
+                <th v-if="isKomponen" class="th-dimensi">L (mm)</th>
+                <th v-if="isKomponen" class="th-dimensi">T (mm)</th>
+                <th v-if="!isKomponen" class="th-stok-saat-ini">Stok Saat Ini</th>
+                <th v-if="isKomponen" class="th-stok-saat-ini">Qty Natural</th>
+                <th v-if="isKomponen" class="th-stok-saat-ini">Qty Warna</th>
+                <th v-if="!isKomponen" class="th-stok-baru">Jml Penyesuaian (+/-)</th>
+                <th v-if="isKomponen" class="th-stok-baru">Adj Natural (+/-)</th>
+                <th v-if="isKomponen" class="th-stok-baru">Adj Warna (+/-)</th>
                 <th class="th-aksi">Aksi</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="paginatedStok.length === 0">
-                <td :colspan="isKomponen ? 10 : 6" class="no-data">
+                <td :colspan="isKomponen ? 12 : 6" class="no-data">
                   <span class="no-data-icon">🔍</span>
                   <p>Tidak ada barang yang sesuai dengan pencarian "{{ searchQuery }}"</p>
                 </td>
@@ -184,10 +200,20 @@
                 <td v-if="isKomponen" class="td-dimensi">
                   <span class="dimensi-value">{{ item.specifications?.t ?? '—' }}</span>
                 </td>
-                <td class="td-stok-saat-ini">
+                <!-- Stok saat ini: non-komponen -->
+                <td v-if="!isKomponen" class="td-stok-saat-ini">
                   <span class="stock-value">{{ parseFloat(item.stock) }}</span>
                 </td>
-                <td class="td-stok-baru">
+                <!-- Stok saat ini: komponen — natural + warna terpisah -->
+                <td v-if="isKomponen" class="td-stok-saat-ini">
+                  <span class="stock-value qty-natural-val">{{ parseFloat(item.qty_natural || 0) }}</span>
+                </td>
+                <td v-if="isKomponen" class="td-stok-saat-ini">
+                  <span class="stock-value qty-warna-val">{{ parseFloat(item.qty_warna || 0) }}</span>
+                </td>
+
+                <!-- Input adjustment: non-komponen -->
+                <td v-if="!isKomponen" class="td-stok-baru">
                   <div class="input-wrapper">
                     <input
                       type="number"
@@ -197,11 +223,33 @@
                     />
                   </div>
                 </td>
+                <!-- Input adjustment: komponen -->
+                <td v-if="isKomponen" class="td-stok-baru">
+                  <div class="input-wrapper">
+                    <input
+                      type="number"
+                      v-model.number="item.adj_natural"
+                      class="form-control-table input-natural"
+                      placeholder="+/- Natural"
+                    />
+                  </div>
+                </td>
+                <td v-if="isKomponen" class="td-stok-baru">
+                  <div class="input-wrapper">
+                    <input
+                      type="number"
+                      v-model.number="item.adj_warna"
+                      class="form-control-table input-warna"
+                      placeholder="+/- Warna"
+                    />
+                  </div>
+                </td>
+
                 <td class="td-aksi">
                   <button
                     @click="handleAdjusment(item)"
                     class="btn-action-save"
-                    :disabled="!item.new_stock"
+                    :disabled="isKomponen ? (!item.adj_natural && !item.adj_warna) : !item.new_stock"
                   >
                     <span class="save-icon">💾</span>
                     <span class="save-text">Simpan</span>
@@ -893,9 +941,11 @@ const loading = ref({
   stok: false,
 })
 
-const daftarKategori = ref([])
+const daftarKategori  = ref([])
 const selectedCategory = ref(null)
-const daftarStok = ref([])
+const daftarStok      = ref([])
+const daftarWarehouse = ref([])
+const selectedWarehouse = ref(null)
 
 const isKomponen = computed(() => {
   if (!selectedCategory.value) return false
@@ -1007,6 +1057,21 @@ const fetchDaftarKategori = async () => {
   }
 }
 
+const fetchDaftarWarehouse = async () => {
+  try {
+    const res = await apiClient.get('/warehouses')
+    const all = res.data.data || res.data || []
+    // Tampilkan semua gudang yang relevan untuk komponen
+    daftarWarehouse.value = all
+  } catch { /* silent */ }
+}
+
+const onKategoriChange = () => {
+  // Reset filter gudang saat ganti kategori
+  selectedWarehouse.value = null
+  daftarStok.value = []
+}
+
 const fetchStokBarang = async () => {
   if (!selectedCategory.value) {
     toast.error('Silakan pilih kategori terlebih dahulu.')
@@ -1019,13 +1084,15 @@ const fetchStokBarang = async () => {
   currentPage.value = 1
 
   try {
-    const response = await apiClient.get('/materials', {
-      params: {
-        category_id: selectedCategory.value,
-        include: 'unit,category,specifications',
-        per_page: 9999,
-      },
-    })
+    const params = {
+      category_id: selectedCategory.value,
+      include:     'unit,category,specifications',
+      per_page:    9999,
+    }
+    if (isKomponen.value && selectedWarehouse.value) {
+      params.warehouse_id = selectedWarehouse.value
+    }
+    const response = await apiClient.get('/materials', { params })
 
     let items = []
     if (response.data?.data?.data && Array.isArray(response.data.data.data)) {
@@ -1038,7 +1105,9 @@ const fetchStokBarang = async () => {
 
     daftarStok.value = items.map((item) => ({
       ...item,
-      new_stock: null,
+      new_stock:   null,
+      adj_natural: null,
+      adj_warna:   null,
     }))
   } catch (error) {
     console.error('Error:', error)
@@ -1049,33 +1118,66 @@ const fetchStokBarang = async () => {
 }
 
 const handleAdjusment = async (item) => {
-  const adjustmentAmount = item.new_stock
-
-  if (adjustmentAmount == null || adjustmentAmount === 0) {
-    toast.error('Jumlah penyesuaian tidak boleh nol.')
-    return
-  }
-
   try {
+    // ── KOMPONEN: kirim adj_natural + adj_warna ─────────────────────────────
+    if (isKomponen.value) {
+      const adjNatural = item.adj_natural || 0
+      const adjWarna   = item.adj_warna   || 0
+
+      if (adjNatural === 0 && adjWarna === 0) {
+        toast.error('Minimal satu penyesuaian (Natural atau Warna) harus diisi.')
+        return
+      }
+      if ((item.qty_natural || 0) + adjNatural < 0 || (item.qty_warna || 0) + adjWarna < 0) {
+        toast.error('Stok tidak boleh negatif.')
+        return
+      }
+
+      const response = await apiClient.post('/stock-adjustments', {
+        item_id:      item.id,
+        adj_natural:  adjNatural,
+        adj_warna:    adjWarna,
+        warehouse_id: selectedWarehouse.value || null,
+        notes: `Penyesuaian komponen: Natural ${adjNatural >= 0 ? '+' : ''}${adjNatural}, Warna ${adjWarna >= 0 ? '+' : ''}${adjWarna}`,
+      })
+
+      item.qty_natural = response.data.qty_natural
+      item.qty_warna   = response.data.qty_warna
+      item.stock       = response.data.new_stock
+      item.adj_natural = null
+      item.adj_warna   = null
+
+      toast.success(`${item.name} berhasil disesuaikan.`)
+      return
+    }
+
+    // ── NON-KOMPONEN: behaviour lama ────────────────────────────────────────
+    const adjustmentAmount = item.new_stock
+
+    if (adjustmentAmount == null || adjustmentAmount === 0) {
+      toast.error('Jumlah penyesuaian tidak boleh nol.')
+      return
+    }
+
     const currentStock = parseFloat(item.stock) || 0
-    const newStock = currentStock + adjustmentAmount
+    const newStock     = currentStock + adjustmentAmount
 
     if (newStock < 0) {
       toast.error('Stok tidak boleh negatif.')
       return
     }
 
-    const type = adjustmentAmount > 0 ? 'Stok Masuk' : 'Stok Keluar'
+    const type     = adjustmentAmount > 0 ? 'Stok Masuk' : 'Stok Keluar'
     const quantity = Math.abs(adjustmentAmount)
 
     const response = await apiClient.post('/stock-adjustments', {
-      item_id: item.id,
-      type: type,
+      item_id:  item.id,
+      type:     type,
       quantity: quantity,
-      notes: `Penyesuaian manual: ${adjustmentAmount > 0 ? '+' : ''}${adjustmentAmount}. Dari ${currentStock} menjadi ${newStock}.`,
+      notes:    `Penyesuaian manual: ${adjustmentAmount > 0 ? '+' : ''}${adjustmentAmount}. Dari ${currentStock} menjadi ${newStock}.`,
     })
 
-    item.stock = response.data.new_stock
+    item.stock     = response.data.new_stock
     item.new_stock = null
 
     toast.success(`${item.name} berhasil disesuaikan.`)
@@ -1085,7 +1187,10 @@ const handleAdjusment = async (item) => {
   }
 }
 
-onMounted(fetchDaftarKategori)
+onMounted(() => {
+  fetchDaftarKategori()
+  fetchDaftarWarehouse()
+})
 
 // UPLOAD UMUM
 const handleFileChangeUmum = (event) => {
@@ -2230,6 +2335,11 @@ const downloadTemplateBom = async () => {
   padding: 16px 20px;
   vertical-align: middle;
 }
+
+.qty-natural-val { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #065f46; font-weight: 800; display:inline-block; padding:4px 10px; border-radius:8px; }
+.qty-warna-val   { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1e40af; font-weight: 800; display:inline-block; padding:4px 10px; border-radius:8px; }
+.input-natural:focus { border-color: #10b981 !important; box-shadow: 0 0 0 3px rgba(16,185,129,0.12); }
+.input-warna:focus   { border-color: #3b82f6 !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
 
 .no-data {
   text-align: center;
