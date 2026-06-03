@@ -17,6 +17,7 @@
           <div class="vs-item-option">
             <div class="vs-item-code">{{ o.code }}</div>
             <div class="vs-item-name">{{ o.name }}</div>
+            <div v-if="hasDimension(o)" class="vs-item-dim">{{ formatDim(o) }}</div>
             <div class="vs-item-cat">{{ o.category_name }}</div>
           </div>
         </template>
@@ -24,6 +25,7 @@
           <div class="vs-selected-wrapper">
             <span v-if="o.code" class="vs-selected-code">{{ o.code }} — </span>
             <span>{{ o.name }}</span>
+            <span v-if="hasDimension(o)" class="vs-selected-dim"> · {{ formatDim(o) }}</span>
           </div>
         </template>
         <template #no-options="{ search }">
@@ -42,8 +44,18 @@
           <button type="button" class="modal-close" @click="showModal = false">✕</button>
         </div>
         <div class="modal-body">
-          <p class="modal-hint">Barang akan masuk ke kategori <strong>Bahan Operasional</strong>, gudang <strong>UMUM</strong>.</p>
+          <p v-if="!addableCategories.length" class="modal-hint">Barang akan masuk ke kategori <strong>Bahan Operasional</strong>, gudang <strong>UMUM</strong>.</p>
           <div class="form-grid">
+            <!-- Pilih jenis barang jika ada beberapa kategori -->
+            <div v-if="addableCategories.length" class="form-group form-full">
+              <label class="form-label">Jenis Barang <span class="req">*</span></label>
+              <select v-model="newItem.category_id" class="form-input">
+                <option value="">— Pilih Jenis —</option>
+                <option v-for="c in addableCategories" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
+            </div>
+
+            <!-- Field umum: Kode & Nama selalu tampil -->
             <div class="form-group">
               <label class="form-label">Kode <span class="hint">(opsional)</span></label>
               <input v-model="newItem.code" type="text" class="form-input" placeholder="Auto generate jika kosong" />
@@ -52,17 +64,59 @@
               <label class="form-label">Nama Barang <span class="req">*</span></label>
               <input v-model="newItem.name" type="text" class="form-input" placeholder="Nama barang..." />
             </div>
-            <div class="form-group">
-              <label class="form-label">Satuan <span class="req">*</span></label>
-              <select v-model="newItem.unit_id" class="form-input">
-                <option value="">Pilih Satuan</option>
-                <option v-for="u in daftarSatuan" :key="u.id" :value="u.id">{{ u.name }}</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Harga Satuan <span class="hint">(opsional)</span></label>
-              <input v-model.number="newItem.price" type="number" min="0" class="form-input" placeholder="0" />
-            </div>
+
+            <!-- Bahan Operasional: Satuan & Harga -->
+            <template v-if="!newItemIsKartonBox">
+              <div class="form-group">
+                <label class="form-label">Satuan <span class="req">*</span></label>
+                <select v-model="newItem.unit_id" class="form-input">
+                  <option value="">Pilih Satuan</option>
+                  <option v-for="u in daftarSatuan" :key="u.id" :value="u.id">{{ u.name }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Harga Satuan <span class="hint">(opsional)</span></label>
+                <input v-model.number="newItem.price" type="number" min="0" class="form-input" placeholder="0" />
+              </div>
+            </template>
+
+            <!-- Karton Box: Buyer, Model, Jenis Karton, Kualitas, P/L/T -->
+            <template v-if="newItemIsKartonBox">
+              <div class="form-group form-full">
+                <p class="dim-hint">Satuan otomatis <strong>PCS</strong>, gudang otomatis <strong>PACKING</strong></p>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Buyer <span class="hint">(opsional)</span></label>
+                <input v-model="newItem.buyer_name" type="text" class="form-input" placeholder="cth: ETHIMO" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Model <span class="hint">(opsional)</span></label>
+                <input v-model="newItem.model" type="text" class="form-input" placeholder="cth: AGAVE" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Jenis Karton <span class="hint">(opsional)</span></label>
+                <input v-model="newItem.jenis_karton" type="text" class="form-input" placeholder="cth: RST / Single Wall" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Kualitas <span class="hint">(opsional)</span></label>
+                <input v-model="newItem.kualitas" type="text" class="form-input" placeholder="cth: A / B/F / C/F" />
+              </div>
+              <div class="form-group form-full">
+                <p class="dim-hint">Dimensi dalam <strong>mm</strong></p>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Panjang (P) mm <span class="req">*</span></label>
+                <input v-model.number="newItem.spec_p" type="number" min="0" class="form-input" placeholder="cth: 960" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Lebar (L) mm <span class="req">*</span></label>
+                <input v-model.number="newItem.spec_l" type="number" min="0" class="form-input" placeholder="cth: 940" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tinggi (T) mm <span class="req">*</span></label>
+                <input v-model.number="newItem.spec_t" type="number" min="0" class="form-input" placeholder="cth: 940" />
+              </div>
+            </template>
           </div>
         </div>
         <div class="modal-footer">
@@ -77,7 +131,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import VueSelect from 'vue-select'
 import 'vue-select/dist/vue-select.css'
 import apiClient from '../api/axios'
@@ -87,6 +141,7 @@ const props = defineProps({
   modelValue: { default: '' },
   categoryIds: { type: Array, default: () => [] },
   initialItem: { type: Object, default: null },
+  addableCategories: { type: Array, default: () => [] },
 })
 const emit = defineEmits(['update:modelValue'])
 
@@ -97,7 +152,13 @@ const selectedItemInternal = ref(null)
 const showModal   = ref(false)
 const isSaving    = ref(false)
 const daftarSatuan = ref([])
-const newItem     = ref({ code: '', name: '', unit_id: '', price: 0 })
+const newItem     = ref({ code: '', name: '', unit_id: '', price: 0, category_id: '', spec_p: null, spec_l: null, spec_t: null, buyer_name: '', model: '', jenis_karton: '', kualitas: '' })
+
+const newItemIsKartonBox = computed(() => {
+  if (!newItem.value.category_id || !props.addableCategories.length) return false
+  const cat = props.addableCategories.find(c => c.id == newItem.value.category_id)
+  return cat?.name?.toLowerCase().trim() === 'karton box'
+})
 
 const fetchSatuan = async () => {
   try {
@@ -108,46 +169,86 @@ const fetchSatuan = async () => {
 
 const simpanItemBaru = async () => {
   if (!newItem.value.name) { alert('Nama barang wajib diisi!'); return }
-  if (!newItem.value.unit_id) { alert('Satuan wajib dipilih!'); return }
+  if (props.addableCategories.length && !newItem.value.category_id) { alert('Jenis barang wajib dipilih!'); return }
+  if (!newItemIsKartonBox.value && !newItem.value.unit_id) { alert('Satuan wajib dipilih!'); return }
+  if (newItemIsKartonBox.value && (!newItem.value.spec_p || !newItem.value.spec_l || !newItem.value.spec_t)) {
+    alert('Dimensi P, L, T wajib diisi untuk Karton Box!'); return
+  }
 
   isSaving.value = true
   try {
-    // Cari category_id Bahan Operasional
-    const catRes = await apiClient.get('/categories/all')
-    const categories = catRes.data.data || []
-    const cat = categories.find(c => c.name.toLowerCase().includes('operasional') || c.name.toLowerCase().includes('bahan'))
+    let categoryId    = newItem.value.category_id || null
+    let unitId        = newItem.value.unit_id
+    let warehouseCode = newItemIsKartonBox.value ? 'PACKING' : 'UMUM'
 
-    if (!cat) { alert('Kategori Bahan Operasional tidak ditemukan!'); return }
+    if (!categoryId) {
+      // fallback: cari Bahan Operasional (perilaku lama)
+      const catRes = await apiClient.get('/categories/all')
+      const categories = catRes.data.data || []
+      const cat = categories.find(c => c.name.toLowerCase().includes('operasional') || c.name.toLowerCase().includes('bahan'))
+      if (!cat) { alert('Kategori Bahan Operasional tidak ditemukan!'); return }
+      categoryId = cat.id
+    }
 
-    // Cari warehouse UMUM
-    const whRes = await apiClient.get('/warehouses')
+    if (newItemIsKartonBox.value) {
+      // Karton box selalu PCS, sama persis dengan FormKarton
+      const pcUnit = daftarSatuan.value.find(u => u.name === 'PCS' || u.short_name === 'PCS')
+      if (!pcUnit) { alert('Satuan PCS tidak ditemukan!'); return }
+      unitId = pcUnit.id
+    }
+
+    const whRes    = await apiClient.get('/warehouses')
     const warehouses = whRes.data.data || whRes.data || []
-    const wh = warehouses.find(w => w.code === 'UMUM')
+    const wh       = warehouses.find(w => w.code === warehouseCode)
 
-    const res = await apiClient.post('/materials', {
-      code:                newItem.value.code || null,
-      name:                newItem.value.name,
-      category_id:         cat.id,
-      unit_id:             newItem.value.unit_id,
-      price:               newItem.value.price || 0,
-      stock:               0,
+    const payload = {
+      code:                 newItem.value.code || null,
+      name:                 newItem.value.name,
+      category_id:          categoryId,
+      unit_id:              unitId,
+      price:                newItem.value.price || 0,
+      stock:                0,
       initial_warehouse_id: wh?.id ?? null,
-    })
+    }
 
+    if (newItemIsKartonBox.value) {
+      const p = newItem.value.spec_p || 0
+      const l = newItem.value.spec_l || 0
+      const t = newItem.value.spec_t || 0
+      payload.specifications = { p, l, t, m3_per_pcs: (p * l * t) / 1000000000 }
+      payload.buyer_name    = newItem.value.buyer_name   || null
+      payload.model         = newItem.value.model        || null
+      payload.jenis_karton  = newItem.value.jenis_karton || null
+      payload.kualitas      = newItem.value.kualitas     || null
+    }
+
+    const res = await apiClient.post('/materials', payload)
     const item = res.data.data
     const formatted = formatItem(item)
 
-    // Tambah ke options dan pilih otomatis
     options.value = [formatted, ...options.value]
     onUpdate(item.id)
 
     showModal.value = false
-    newItem.value = { code: '', name: '', unit_id: '', price: 0 }
+    newItem.value = { code: '', name: '', unit_id: '', price: 0, category_id: '', spec_p: null, spec_l: null, spec_t: null, buyer_name: '', model: '', jenis_karton: '', kualitas: '' }
   } catch (error) {
     alert(error.response?.data?.message || 'Gagal menyimpan barang')
   } finally {
     isSaving.value = false
   }
+}
+
+const hasDimension = (item) => {
+  if (!item) return false
+  const s = item.specifications
+  if (s?.p && s?.l && s?.t) return true
+  if (item.cutting_p && item.cutting_l && item.cutting_t) return true
+  return false
+}
+const formatDim = (item) => {
+  const s = item.specifications
+  if (s?.p && s?.l && s?.t) return `${s.p} × ${s.l} × ${s.t} mm`
+  return `${item.cutting_p} × ${item.cutting_l} × ${item.cutting_t} mm`
 }
 
 // Formatting item for vue-select display
@@ -285,6 +386,13 @@ watch(() => props.initialItem, initOptions, { deep: true })
   color: #1f2937;
 }
 
+.vs-item-dim {
+  font-size: 11px;
+  color: #0369a1;
+  font-weight: 600;
+  margin-top: 1px;
+}
+
 .vs-item-cat {
   font-size: 10px;
   color: #9ca3af;
@@ -295,6 +403,12 @@ watch(() => props.initialItem, initOptions, { deep: true })
 .vs-selected-code {
   font-weight: 700;
   color: #0369a1;
+}
+
+.vs-selected-dim {
+  color: #0369a1;
+  font-weight: 600;
+  font-size: 12px;
 }
 
 .vs-selected-wrapper {
@@ -373,6 +487,8 @@ watch(() => props.initialItem, initOptions, { deep: true })
 .modal-close:hover { background: rgba(255,255,255,0.3); }
 .modal-body { padding: 24px; }
 .modal-hint { font-size: 13px; color: #6b7280; margin: 0 0 16px; }
+.dim-hint   { font-size: 12px; color: #6b7280; margin: 0; padding: 6px 10px; background: #f0f9ff; border-radius: 6px; border-left: 3px solid #0369a1; }
+.form-full  { grid-column: 1 / -1; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-label { font-size: 12px; font-weight: 700; color: #374151; }

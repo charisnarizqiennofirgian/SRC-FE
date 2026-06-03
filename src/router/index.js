@@ -645,6 +645,13 @@ const router = createRouter({
       meta: { title: 'Aging Hutang (AP)', requiresAuth: true },
     },
 
+    {
+      path: '/dokumen',
+      name: 'Dokumen',
+      component: () => import('../components/dokumen/DokumenView.vue'),
+      meta: { requiresAuth: true },
+    },
+
     // ROUTE STOK YANG MASIH DIPAKAI
     {
       path: '/stock-index',

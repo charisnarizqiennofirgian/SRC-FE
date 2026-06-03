@@ -180,6 +180,12 @@ const allMenuItems = [
     ],
   },
   {
+    name: 'Dokumen',
+    icon: '📁',
+    route: { name: 'Dokumen' },
+    permission: 'dokumen-lihat',
+  },
+  {
     name: 'Manajemen Stok',
     icon: '📦',
     children: [

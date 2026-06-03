@@ -4,7 +4,7 @@
       <div class="term-item">
         <strong>Target pengiriman:</strong>
         <p>
-          Pengiriman ke-1 diusahakan 2 minggu setelah penurunan PO. Paling lambat 1 bulan dari
+          Pengiriman ke-1 diusahakan 1 minggu setelah penurunan PO. Paling lambat 1 bulan dari
           tanggal PO. Exp. TANGGAL PO + SATU BULAN
         </p>
       </div>
@@ -34,7 +34,7 @@
     <div class="signature-col">
       <p>Hormat kami,</p>
       <div class="signature-space"></div>
-      <p class="signature-name">Louis Sebastian Agussoegito</p>
+      <p class="signature-name">Olivia</p>
     </div>
   </footer>
 </template>
