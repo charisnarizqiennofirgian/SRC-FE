@@ -648,7 +648,7 @@ const router = createRouter({
     {
       path: '/dokumen',
       name: 'Dokumen',
-      component: () => import('../components/dokumen/DokumenView.vue'),
+      component: () => import('../views/dokumen/DokumenView.vue'),
       meta: { requiresAuth: true },
     },
 
