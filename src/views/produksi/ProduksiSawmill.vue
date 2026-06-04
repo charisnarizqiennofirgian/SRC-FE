@@ -329,9 +329,101 @@
                 </div>
               </div>
 
+              <!-- Hint destinasi -->
               <div class="rst-dimension-hint">
                 📦 → Gudang Sawmill
                 <span v-if="jeblosan.is_sisa" class="sisa-dest-hint">♻️ Sisa</span>
+              </div>
+
+              <!-- RST sub-tabel di dalam jeblosan ini -->
+              <div class="rst-sub-section">
+                <div class="rst-sub-header">
+                  <div class="rst-sub-title">
+                    <span class="rst-sub-icon">🪵</span>
+                    <span>RST Basah dari jeblosan ini</span>
+                    <span v-if="jeblosan.rsts.length" class="rst-sub-count">{{ jeblosan.rsts.length }} item</span>
+                  </div>
+                  <button type="button" class="btn-quick-add" @click="openModalTambahRst(index)">
+                    ➕ Item Baru
+                  </button>
+                </div>
+
+                <div v-if="jeblosan.rsts.length === 0" class="rst-empty-state">
+                  Belum ada RST. Klik "+ Tambah RST" di bawah atau buat item baru di atas.
+                </div>
+
+                <div
+                  v-for="(rst, rstIdx) in jeblosan.rsts"
+                  :key="rst.local_id"
+                  class="rst-sub-row"
+                >
+                  <div class="form-grid-3col">
+                    <div class="form-group-modern">
+                      <label class="form-label-modern">Item RST <span class="required-star">*</span></label>
+                      <vue-select
+                        v-model="rst.item_rst_id"
+                        :options="rstItemsForSelect"
+                        :reduce="(o) => o.id"
+                        label="label"
+                        placeholder="🔍 Cari item RST..."
+                        class="vue-select-rst"
+                        @option:selected="() => updateRstVolumeInJeblosan(index, rstIdx)"
+                      >
+                        <template #option="o">
+                          <div class="rst-option-item">
+                            <span class="rst-option-code">{{ o.code }}</span>
+                            <span class="rst-option-name">{{ o.name }}</span>
+                          </div>
+                        </template>
+                      </vue-select>
+                    </div>
+
+                    <div class="form-group-modern">
+                      <label class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
+                      <div class="input-wrapper-icon">
+                        <span class="input-icon">🔢</span>
+                        <input
+                          v-model.number="rst.qty_rst_pcs"
+                          type="number" min="1"
+                          class="form-input-modern"
+                          placeholder="0"
+                          @input="updateRstVolumeInJeblosan(index, rstIdx)"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="form-group-modern">
+                      <label class="form-label-modern">Volume (m³)</label>
+                      <div class="input-wrapper-icon">
+                        <span class="input-icon">📐</span>
+                        <input
+                          v-model.number="rst.volume_rst_m3"
+                          type="number" step="0.0001" min="0"
+                          class="form-input-modern"
+                          placeholder="0.0000"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="rst-sub-row-footer">
+                    <span v-if="rst.item_rst_id" class="rst-dimension-hint">
+                      📐 {{ getRstDimensionText(rst.item_rst_id) }} → Gudang RSTB
+                    </span>
+                    <button
+                      type="button"
+                      class="btn-remove-rst-sub"
+                      @click="removeRstFromJeblosan(index, rstIdx)"
+                    >✕ Hapus RST</button>
+                  </div>
+                </div>
+
+                <div class="add-rst-sub-section">
+                  <button type="button" class="btn-add-rst-sub" @click="addRstToJeblosan(index)">
+                    <span class="add-icon">➕</span>
+                    <span class="add-text">Tambah RST</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -339,103 +431,6 @@
               <button type="button" class="btn-add-rst btn-add-jeblosan" @click="addJeblosanRow">
                 <span class="add-icon">➕</span>
                 <span class="add-text">Tambah Jeblosan Lainnya</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- SECTION 4: HASIL RST BASAH (OUTPUT 2) -->
-          <div class="form-section-modern">
-            <div class="section-header">
-              <div class="section-icon-badge section-icon-badge--rst">
-                <span class="section-icon">📦</span>
-              </div>
-              <div class="section-title-group">
-                <h3 class="section-title">Hasil RST Basah</h3>
-                <p class="section-subtitle">Hasil belahan yang masuk ke Gudang Sanwil (RST Basah)</p>
-              </div>
-            </div>
-
-            <div
-              v-for="(rst, index) in form.rsts"
-              :key="rst.local_id"
-              class="item-row-card"
-            >
-              <div class="item-row-header">
-                <span class="item-row-number">RST #{{ index + 1 }}</span>
-                <button
-                  v-if="form.rsts.length > 1"
-                  type="button"
-                  class="btn-remove-row"
-                  @click="removeRstRow(index)"
-                >✕</button>
-              </div>
-
-              <div class="form-grid-3col">
-                <div class="form-group-modern">
-                  <label class="form-label-modern">
-                    Item RST <span class="required-star">*</span>
-                    <button type="button" class="btn-quick-add" @click="openModalTambahRst">
-                      ➕ Item Baru
-                    </button>
-                  </label>
-                  <vue-select
-                    v-model="rst.item_rst_id"
-                    :options="rstItemsForSelect"
-                    :reduce="(o) => o.id"
-                    label="label"
-                    placeholder="🔍 Cari item RST..."
-                    class="vue-select-rst"
-                    @option:selected="(opt) => { rst.item_rst_id = opt.id; updateRstVolume(index) }"
-                  >
-                    <template #option="o">
-                      <div class="rst-option-item">
-                        <span class="rst-option-code">{{ o.code }}</span>
-                        <span class="rst-option-name">{{ o.name }}</span>
-                      </div>
-                    </template>
-                  </vue-select>
-                </div>
-
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
-                  <div class="input-wrapper-icon">
-                    <span class="input-icon">🔢</span>
-                    <input
-                      v-model.number="rst.qty_rst_pcs"
-                      type="number"
-                      min="1"
-                      class="form-input-modern"
-                      placeholder="0"
-                      @input="updateRstVolume(index)"
-                    />
-                  </div>
-                </div>
-
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Volume (m³)</label>
-                  <div class="input-wrapper-icon">
-                    <span class="input-icon">📐</span>
-                    <input
-                      v-model.number="rst.volume_rst_m3"
-                      type="number"
-                      step="0.0001"
-                      min="0"
-                      class="form-input-modern"
-                      placeholder="0.0000"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div v-if="rst.item_rst_id" class="rst-dimension-hint">
-                📐 {{ getRstDimensionText(rst.item_rst_id) }}
-              </div>
-            </div>
-
-            <div class="add-rst-section">
-              <button type="button" class="btn-add-rst" @click="addRstRow">
-                <span class="add-icon">➕</span>
-                <span class="add-text">Tambah Item RST Lainnya</span>
               </button>
             </div>
           </div>
@@ -609,8 +604,7 @@ const form = reactive({
   estimated_finish_date: '',
   notes: '',
   logs:      [{ local_id: Date.now(), item_log_id: null, qty_log_pcs: null }],
-  jeblosans: [{ local_id: Date.now() + 1, item_id: null, qty_pcs: null, volume_m3: 0, is_sisa: false }],
-  rsts:      [{ local_id: Date.now() + 2, item_rst_id: null, qty_rst_pcs: null, volume_rst_m3: 0 }],
+  jeblosans: [{ local_id: Date.now() + 1, item_id: null, qty_pcs: null, volume_m3: 0, is_sisa: false, rsts: [] }],
 })
 
 const logItems         = ref([])
@@ -767,16 +761,40 @@ const addJeblosanRow = () => form.jeblosans.push({
   qty_pcs:   null,
   volume_m3: 0,
   is_sisa:   false,
+  rsts:      [],
 })
 const removeJeblosanRow = (i) => form.jeblosans.splice(i, 1)
 
-const openModalTambahRst = () => {
-  formRstBaru.nama_dasar = ''
+// RST nested di dalam jeblosan
+const addRstToJeblosan = (jIdx) => {
+  form.jeblosans[jIdx].rsts.push({
+    local_id:      Date.now() + Math.random(),
+    item_rst_id:   null,
+    qty_rst_pcs:   null,
+    volume_rst_m3: 0,
+  })
+}
+const removeRstFromJeblosan = (jIdx, rIdx) => form.jeblosans[jIdx].rsts.splice(rIdx, 1)
+const updateRstVolumeInJeblosan = (jIdx, rIdx) => {
+  const rst  = form.jeblosans[jIdx]?.rsts[rIdx]
+  if (!rst) return
+  const item = getRstItem(rst.item_rst_id)
+  rst.volume_rst_m3 = (item?.volume_m3 && rst.qty_rst_pcs)
+    ? Number((rst.qty_rst_pcs * Number(item.volume_m3)).toFixed(4))
+    : 0
+}
+
+// Track jeblosan mana yang trigger modal tambah RST
+const activeJeblosanIndexForRst = ref(null)
+
+const openModalTambahRst = (jIdx = null) => {
+  activeJeblosanIndexForRst.value = jIdx
+  formRstBaru.nama_dasar  = ''
   formRstBaru.kode_barang = ''
-  formRstBaru.tebal_mm = null
-  formRstBaru.lebar_mm = null
-  formRstBaru.panjang_mm = null
-  formRstBaru.jenis = ''
+  formRstBaru.tebal_mm    = null
+  formRstBaru.lebar_mm    = null
+  formRstBaru.panjang_mm  = null
+  formRstBaru.jenis       = ''
   showModalTambahRst.value = true
 }
 
@@ -877,18 +895,21 @@ const simpanRstBaru = async () => {
       specifications: itemBaru.specifications || {},
     })
 
-    // Otomatis pilih item baru di baris RST terakhir
-    const lastRst = form.rsts[form.rsts.length - 1]
-    if (lastRst && !lastRst.item_rst_id) {
-      lastRst.item_rst_id = itemBaru.id
-    } else {
-      // Kalau semua baris sudah terisi, tambah baris baru
-      form.rsts.push({
-        local_id:      Date.now() + Math.random(),
-        item_rst_id:   itemBaru.id,
-        qty_rst_pcs:   null,
-        volume_rst_m3: 0,
-      })
+    // Tambah RST baru ke jeblosan yang aktif (atau jeblosan pertama jika tidak ada)
+    const jIdx = activeJeblosanIndexForRst.value ?? 0
+    if (form.jeblosans[jIdx]) {
+      const rsts = form.jeblosans[jIdx].rsts
+      const lastRst = rsts[rsts.length - 1]
+      if (lastRst && !lastRst.item_rst_id) {
+        lastRst.item_rst_id = itemBaru.id
+      } else {
+        rsts.push({
+          local_id:      Date.now() + Math.random(),
+          item_rst_id:   itemBaru.id,
+          qty_rst_pcs:   null,
+          volume_rst_m3: 0,
+        })
+      }
     }
 
     showSuccess('Berhasil', `Item '${itemBaru.name}' berhasil ditambahkan`)
@@ -907,27 +928,16 @@ const removeRstRow = (i) => form.rsts.splice(i, 1)
 
 
 const handleSubmit = async () => {
-  // Validasi baris log
+  // Logs opsional
   const validLogs = form.logs.filter((l) => l.item_log_id && l.qty_log_pcs > 0)
-  if (validLogs.length === 0) {
-    showError('Validasi', 'Minimal satu baris kayu log wajib diisi')
-    return
-  }
 
+  // Jeblosans wajib min 1
   const validJeblosans = form.jeblosans.filter((j) => j.item_id && j.qty_pcs > 0)
   if (validJeblosans.length === 0) {
     showError('Validasi', 'Minimal satu baris jeblosan wajib diisi')
     return
   }
 
-  // Validasi baris RST
-  const validRsts = form.rsts.filter((r) => r.item_rst_id && r.qty_rst_pcs > 0)
-  if (validRsts.length === 0) {
-    showError('Validasi', 'Minimal satu baris hasil RST wajib diisi')
-    return
-  }
-
-  // Ambil warehouse dari kode (lebih aman daripada nama)
   const warehouseFromId = getWarehouseIdByCode('LOG')
   const warehouseToId   = getWarehouseIdByCode('RSTB')
 
@@ -956,11 +966,13 @@ const handleSubmit = async () => {
         qty_pcs:   j.qty_pcs,
         volume_m3: j.volume_m3,
         is_sisa:   j.is_sisa,
-      })),
-      rsts: validRsts.map((r) => ({
-        item_rst_id:   r.item_rst_id,
-        qty_rst_pcs:   r.qty_rst_pcs,
-        volume_rst_m3: r.volume_rst_m3,
+        rsts: (j.rsts || [])
+          .filter((r) => r.item_rst_id && r.qty_rst_pcs > 0)
+          .map((r) => ({
+            item_rst_id:   r.item_rst_id,
+            qty_rst_pcs:   r.qty_rst_pcs,
+            volume_rst_m3: r.volume_rst_m3,
+          })),
       })),
     }
 
@@ -1080,8 +1092,88 @@ onMounted(fetchItems)
   display: inline-block;
 }
 
-.section-icon-badge--log { background: linear-gradient(135deg, #d97706, #b45309); }
-.section-icon-badge--rst { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+.section-icon-badge--log      { background: linear-gradient(135deg, #d97706, #b45309); }
+.section-icon-badge--rst      { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+.section-icon-badge--jeblosan { background: linear-gradient(135deg, #f59e0b, #d97706); }
+
+/* RST sub-tabel di dalam jeblosan */
+.rst-sub-section {
+  margin-top: 1rem;
+  border-top: 1.5px dashed #d1d5db;
+  padding-top: 0.9rem;
+}
+.rst-sub-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+.rst-sub-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #374151;
+}
+.rst-sub-icon { font-size: 1rem; }
+.rst-sub-count {
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.rst-empty-state {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  border: 1px dashed #e5e7eb;
+}
+.rst-sub-row {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.6rem;
+}
+.rst-sub-row-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+.btn-remove-rst-sub {
+  background: #fee2e2;
+  color: #ef4444;
+  border: none;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+.btn-remove-rst-sub:hover { background: #fecaca; }
+.add-rst-sub-section { margin-top: 0.5rem; }
+.btn-add-rst-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1.5px solid #93c5fd;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-add-rst-sub:hover { background: #bfdbfe; }
 
 /* Reuse styles dari file asli (tidak duplikasi, hanya override) */
 .page-header-sawmill {
