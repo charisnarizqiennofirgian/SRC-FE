@@ -1,348 +1,62 @@
 <template>
   <DashboardLayout>
-    <div class="page-header-candy">
-      <div class="header-content-wrapper">
-        <div class="header-left-section">
-          <div class="icon-badge-candy">
-            <span class="candy-icon">🔥</span>
-          </div>
-          <div class="header-text-content">
-            <h1 class="page-title-candy">Sampel — Oven / KD</h1>
-            <p class="page-subtitle-candy">
-              Pindahkan stok RST basah dari Gudang Sanwil ke Gudang KD (kering) dengan tracking yang
-              rapi.
-            </p>
-          </div>
-        </div>
-
-        <div class="header-right-section">
-          <div class="process-flow-badge">
-            <span class="flow-icon">💧</span>
-            <span class="flow-arrow">→</span>
-            <span class="flow-icon">🔥</span>
-            <span class="flow-arrow">→</span>
-            <span class="flow-icon">📦</span>
-          </div>
-          <div class="flow-label">Basah → Oven → Kering</div>
+    <div class="page-header">
+      <div style="display:flex;align-items:center;gap:1.5rem;">
+        <div class="icon-badge"><span>🌡️</span></div>
+        <div>
+          <h1 class="page-title">KD (Kiln Dry) — Produksi Sampel</h1>
+          <p class="page-sub">RST Basah masuk oven → RST Kering ke Gudang RSTK</p>
         </div>
       </div>
     </div>
 
-    <div class="content-card-candy">
-      <div class="card-body-candy">
-        <form @submit.prevent="handleSubmit">
-          <div class="form-section-modern">
-            <div class="section-header">
-              <div class="section-icon-badge">
-                <span class="section-icon">📅</span>
-              </div>
-              <div class="section-title-group">
-                <h3 class="section-title">Informasi Umum</h3>
-                <p class="section-subtitle">Tanggal, Production Order, dan catatan proses oven</p>
+    <div class="content-card">
+      <div class="card-body">
+        <form @submit.prevent="handleSubmit" @keydown.enter.prevent>
+
+          <div class="form-section">
+            <div class="section-hd"><div class="s-badge"><span>📅</span></div><h3 class="s-title">Informasi Umum</h3></div>
+            <div class="g3">
+              <div class="fg"><label class="fl">Tanggal *</label><input v-model="form.date" type="date" class="fi" required /></div>
+              <div class="fg"><label class="fl">Est. Selesai</label><input v-model="form.estimated_finish_date" type="date" class="fi" /></div>
+              <div class="fg"><label class="fl">Production Order *</label>
+                <vue-select v-model="form.ref_po_id" :options="posOpts" :reduce="p=>p.id" label="label" placeholder="Pilih PO sampel..." :clearable="true" class="vs" @option:selected="handlePoChange" @option:deselected="resetPo" />
               </div>
             </div>
-
-            <div class="form-grid-3col">
-              <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Tanggal Proses <span class="required-star">*</span>
-                </label>
-                <div class="input-wrapper-icon">
-                  <span class="input-icon">📅</span>
-                  <input v-model="form.date" type="date" class="form-input-modern" required />
-                </div>
-              </div>
-
-              <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Estimasi Selesai
-                </label>
-                <div class="input-wrapper-icon">
-                  <span class="input-icon">🏁</span>
-                  <input v-model="form.estimated_finish_date" type="date" class="form-input-modern" />
-                </div>
-              </div>
-
-              <div class="form-group-modern">
-                <label class="form-label-modern">Catatan</label>
-                <div class="input-wrapper-icon">
-                  <span class="input-icon">📝</span>
-                  <input
-                    v-model="form.notes"
-                    type="text"
-                    class="form-input-modern"
-                    placeholder="Catatan proses oven..."
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div class="form-grid-2col" style="margin-top:1.25rem;">
-              <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Production Order <span class="required-star">*</span>
-                </label>
-                <div class="select-wrapper-modern">
-                  <span class="select-icon">📋</span>
-                  <select
-                    v-model="form.ref_po_id"
-                    @change="onPoChange"
-                    class="form-select-modern"
-                    required
-                  >
-                    <option value="">-- Pilih Production Order --</option>
-                    <option v-for="po in productionOrders" :key="po.id" :value="po.id">
-                      {{ po.label }}
-                    </option>
-                  </select>
-                  <span class="select-arrow">▼</span>
-                </div>
-              </div>
-
-              <div class="form-group-modern">
-                <label class="form-label-modern">&nbsp;</label>
-                <div v-if="form.ref_po_id && poInfo.buyer_name" class="po-selected-info">
-                  <span class="po-info-icon">👤</span>
-                  <div>
-                    <div class="po-info-buyer">{{ poInfo.buyer_name }}</div>
-                    <div class="po-info-so">{{ poInfo.so_number }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div v-if="poTargets.length" class="po-hint-box" style="margin-top:1rem;">
-              <div class="po-hint-header">
-                <div class="po-hint-title-wrap">
-                  <span class="po-hint-icon">📌</span>
-                  <div>
-                    <div class="po-hint-title">Ringkasan Kebutuhan PO</div>
-                    <div class="po-hint-sub">{{ poInfo.buyer_name }} • {{ poInfo.so_number }}</div>
-                  </div>
-                </div>
-                <div class="po-hint-badge">{{ poTargets.length }} item</div>
-              </div>
-              <table class="po-hint-table">
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Qty Target</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="t in poTargets" :key="t.item_id">
-                    <td>
-                      <div style="font-weight:600;">{{ t.name }}</div>
-                      <div style="font-size:0.78rem;color:#9ca3af;">{{ t.code }}</div>
-                    </td>
-                    <td>{{ Number(t.qty_planned).toLocaleString('id-ID') }} pcs</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <div class="fg"><label class="fl">Catatan</label><input v-model="form.notes" type="text" class="fi" placeholder="Catatan..." /></div>
+            <div v-if="poInfo.buyer_name" class="po-info">👤 <strong>{{ poInfo.buyer_name }}</strong> · {{ poInfo.so_number }}</div>
           </div>
 
-          <div class="form-section-modern">
-            <div class="section-header">
-              <div class="section-icon-badge log-badge">
-                <span class="section-icon">📦</span>
-              </div>
-              <div class="section-title-group">
-                <h3 class="section-title">Sumber Stok (Gudang Sanwil)</h3>
-                <p class="section-subtitle">
-                  Pilih stok RST basah berdasarkan item dan qty total tersedia.
-                </p>
-              </div>
+          <div class="form-section">
+            <div class="section-hd"><div class="s-badge blue"><span>🔄</span></div><h3 class="s-title">Item RST — Basah → Kering *</h3><p class="s-sub">Tiap baris: RST basah (sumber) → RST kering (hasil)</p></div>
 
-              <button type="button" @click="addItem" class="btn-add-item">
-                <span class="add-icon">➕</span> Tambah Item
-              </button>
+            <div v-if="rstItems.length === 0" class="empty-hint">⏳ Memuat data RST...</div>
+
+            <div v-for="(r,i) in form.items" :key="r.lid" class="row-card">
+              <div class="row-hd"><span class="rn">Item #{{ i+1 }}</span><button v-if="form.items.length>1" type="button" class="btn-rm" @click="form.items.splice(i,1)">✕</button></div>
+              <div class="g2" style="margin-bottom:.75rem;">
+                <div class="fg"><label class="fl">RST Basah (sumber) *</label>
+                  <vue-select v-model="r.item_id" :options="rstBasahOpts" :reduce="o=>o.id" label="label" placeholder="Pilih RST basah..." class="vs"
+                    @option:selected="(o)=>{ r.warehouse_id=o.warehouse_id; r.max_qty=o.qty_available; r.item_code=o.code }" />
+                  <div v-if="r.max_qty>0" class="stock-hint">Tersedia: {{ r.max_qty }} pcs</div>
+                </div>
+                <div class="fg"><label class="fl">Qty (pcs) *</label>
+                  <input v-model.number="r.qty" type="number" min="1" :max="r.max_qty||undefined" class="fi" placeholder="0" />
+                  <p v-if="r.qty>r.max_qty&&r.max_qty>0" class="qty-warn">⚠️ Melebihi stok</p>
+                </div>
+              </div>
+              <div class="fg"><label class="fl">RST Kering (hasil) *</label>
+                <vue-select v-model="r.target_item_id" :options="rstKeringOpts" :reduce="o=>o.id" label="label" placeholder="Pilih RST kering..." class="vs" />
+                <p class="hint-txt">📦 Hasil masuk Gudang RSTK</p>
+              </div>
             </div>
 
-            <div v-for="(item, index) in form.items" :key="index" class="item-row-wrapper">
-              <div class="item-row-header">
-                <h4 class="item-number">📦 Item #{{ index + 1 }}</h4>
-                <button
-                  v-if="form.items.length > 1"
-                  type="button"
-                  @click="removeItem(index)"
-                  class="btn-remove-item"
-                >
-                  🗑️ Hapus
-                </button>
-              </div>
-
-              <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Cari Produk <span class="required-star">*</span>
-                </label>
-                <div class="search-wrapper-product">
-                  <span class="search-icon-product">🔍</span>
-                  <input
-                    v-model="item.searchQuery"
-                    @input="onProductSearch(index)"
-                    @focus="onProductSearch(index)"
-                    type="text"
-                    class="search-input-product"
-                    placeholder="Ketik nama atau kode produk..."
-                  />
-                  <div class="search-actions-product">
-                    <button
-                      v-if="item.item_id"
-                      @click="clearProductSelection(index)"
-                      class="btn-clear-product"
-                      type="button"
-                      title="Hapus pilihan"
-                    >
-                      ✕
-                    </button>
-                    <button
-                      @click="toggleDropdown(index)"
-                      class="btn-toggle-dropdown"
-                      type="button"
-                      :class="{ active: item.showDropdown }"
-                    >
-                      <span class="chevron-icon">▼</span>
-                    </button>
-                  </div>
-
-                  <div
-                    v-if="item.showDropdown && item.searchResults.length > 0"
-                    class="product-dropdown"
-                  >
-                    <div
-                      v-for="inv in item.searchResults"
-                      :key="`wh${inv.warehouse_id}_item${inv.item_id}`"
-                      class="product-option"
-                      @click="selectProduct(index, inv)"
-                    >
-                      <div class="product-option-main">
-                        <span class="product-code">[{{ inv.item?.code || 'N/A' }}]</span>
-                        <span class="product-name">{{ inv.item?.name || 'N/A' }}</span>
-                      </div>
-                      <div class="product-option-sub">
-                        Stok: <strong>{{ inv.qty_pcs }} pcs</strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    v-if="
-                      item.showDropdown &&
-                      item.searchQuery &&
-                      item.searchResults.length === 0 &&
-                      !isSearching
-                    "
-                    class="product-dropdown-empty"
-                  >
-                    <span class="empty-icon">🔍</span>
-                    <span>Produk tidak ditemukan</span>
-                  </div>
-                </div>
-
-                <p v-if="getSelectedInventory(index)" class="helper-inline">
-                  Gudang: {{ getSelectedInventory(index).warehouse?.name || 'Gudang Sanwil' }} •
-                  Produk: {{ getSelectedInventory(index).item?.name }} • Total Stok:
-                  <strong>{{ getSelectedInventory(index).qty_pcs }} pcs</strong>
-                </p>
-              </div>
-
-              <div v-if="getSelectedInventory(index)" class="form-grid-2col">
-                <div class="form-group-modern">
-                  <label class="form-label-modern">
-                    Qty yang Dioven (pcs) <span class="required-star">*</span>
-                  </label>
-                  <div class="input-wrapper-icon">
-                    <span class="input-icon">🔢</span>
-                    <input
-                      v-model.number="item.qty"
-                      type="number"
-                      min="1"
-                      :max="getSelectedInventory(index).qty_pcs"
-                      step="1"
-                      class="form-input-modern"
-                      placeholder="Jumlah pcs"
-                      required
-                    />
-                    <span class="input-suffix">pcs</span>
-                  </div>
-                  <p class="help-text">
-                    Stok tersedia: <strong>{{ getSelectedInventory(index).qty_pcs }}</strong> pcs
-                  </p>
-                </div>
-
-                <div class="form-group-modern">
-                  <label class="form-label-modern">
-                    Jadikan Barang Kering <span class="required-star">*</span>
-                  </label>
-                  <div class="search-wrapper-product">
-                    <span class="search-icon-product">🎯</span>
-                    <input
-                      v-model="item.searchTargetQuery"
-                      @input="onTargetSearch(index)"
-                      @focus="onTargetSearch(index)"
-                      type="text"
-                      class="search-input-product"
-                      placeholder="Cari item RST Kering..."
-                    />
-                    <div class="search-actions-product">
-                      <button
-                        v-if="item.target_item_id"
-                        @click="clearTargetSelection(index)"
-                        class="btn-clear-product"
-                        type="button"
-                        title="Hapus pilihan"
-                      >
-                        ✕
-                      </button>
-                      <button
-                        @click="toggleTargetDropdown(index)"
-                        class="btn-toggle-dropdown"
-                        type="button"
-                        :class="{ active: item.showTargetDropdown }"
-                      >
-                        <span class="chevron-icon">▼</span>
-                      </button>
-                    </div>
-
-                    <div
-                      v-if="item.showTargetDropdown && item.targetSearchResults.length > 0"
-                      class="product-dropdown"
-                    >
-                      <div
-                        v-for="dryItem in item.targetSearchResults"
-                        :key="dryItem.id"
-                        class="product-option"
-                        @click="selectTargetItem(index, dryItem)"
-                      >
-                        <div class="product-option-main">
-                          <span class="product-code">[{{ dryItem.code }}]</span>
-                          <span class="product-name">{{ dryItem.name }}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <p v-if="item.target_item_id" class="help-text">
-                    Item tujuan akan menerima stok kering di Gudang KD.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <button type="button" class="btn-add a-blue" @click="form.items.push({lid:Date.now(),item_id:null,warehouse_id:null,target_item_id:null,qty:null,max_qty:0})">➕ Tambah Item</button>
           </div>
 
-          <div class="form-actions-modern">
-            <button
-              type="button"
-              class="btn-action btn-cancel-modern"
-              @click="router.push({ name: 'admin-dashboard' })"
-            >
-              <span class="btn-icon">↩️</span>
-              <span class="btn-text">Batal</span>
-            </button>
-            <button type="submit" class="btn-action btn-submit-modern" :disabled="isSubmitting">
-              <span class="btn-icon">💾</span>
-              <span class="btn-text">{{ isSubmitting ? 'Menyimpan...' : 'Simpan Proses KD' }}</span>
-            </button>
+          <div class="actions">
+            <button type="button" class="btn-cancel" @click="router.back()">↩️ Batal</button>
+            <button type="submit" class="btn-submit" :disabled="isSubmitting">💾 {{ isSubmitting?'Menyimpan...':'Simpan KD Sampel' }}</button>
           </div>
         </form>
       </div>
@@ -351,587 +65,127 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import { useNotification } from '../../composables/useNotification.js'
+import VueSelect from 'vue-select'; import 'vue-select/dist/vue-select.css'
 
 const router = useRouter()
 const { showSuccess, showError } = useNotification()
+const isSubmitting = ref(false)
+const productionOrders = ref([]); const rstItems = ref([])
+const rstInventories = ref([]) // stok RST basah dengan warehouse info
+const poInfo = reactive({ buyer_name: null, so_number: null })
 
 const form = reactive({
-  date: new Date().toISOString().slice(0, 10),
-  estimated_finish_date: '',
-  notes: '',
-  ref_po_id: '',
-  items: [
-    {
-      item_id: '',
-      warehouse_id: '',
-      target_item_id: '',
-      qty: null,
-      searchQuery: '',
-      showDropdown: false,
-      searchResults: [],
-      searchTargetQuery: '',
-      showTargetDropdown: false,
-      targetSearchResults: [],
-    },
-  ],
+  date: new Date().toISOString().slice(0,10), estimated_finish_date: '', notes: '', ref_po_id: null,
+  items: [{ lid: 1, item_id: null, warehouse_id: null, target_item_id: null, qty: null, max_qty: 0 }],
 })
 
-const warehouses = ref([])
-const sanwilInventories = ref([])
-const dryItems = ref([])
-const productionOrders = ref([])
-const isSubmitting = ref(false)
-const isSearching = ref(false)
+const posOpts = computed(() => productionOrders.value.map(p => ({ id: p.id, label: p.po_number })))
 
-const poTargets = ref([])
-const poInfo = ref({ buyer_name: null, so_number: null })
+// RST basah dari RSTB warehouse (stok tersedia)
+const rstBasahOpts = computed(() =>
+  rstInventories.value.map(inv => ({
+    id: inv.item_id, label: `${inv.item_code} - ${inv.item_name}`,
+    warehouse_id: inv.warehouse_id, qty_available: inv.qty_available, code: inv.item_code,
+  }))
+)
 
-let searchTimeout = null
+// RST kering — semua item RST untuk dipilih sebagai target
+const rstKeringOpts = computed(() =>
+  rstItems.value.map(i => ({ id: i.id, label: `${i.code} - ${i.name}` }))
+)
 
-const selectedPO = computed(() => {
-  if (!form.ref_po_id) return null
-  return productionOrders.value.find((po) => po.id === form.ref_po_id) || null
-})
-
-const filteredInventoriesByPO = computed(() => {
-  if (!form.ref_po_id || !selectedPO.value) {
-    return sanwilInventories.value
-  }
-  const poProductId = selectedPO.value.product_id
-  if (!poProductId) return sanwilInventories.value
-  return sanwilInventories.value.filter((inv) => inv.item?.product_id === poProductId)
-})
-
-const getSelectedInventory = (index) => {
-  const item = form.items[index]
-  return (
-    sanwilInventories.value.find(
-      (inv) => inv.item_id === item.item_id && inv.warehouse_id === item.warehouse_id,
-    ) || null
-  )
-}
-
-const getWarehouseIdByName = (name) => {
-  const wh = warehouses.value.find((w) => w.name.includes(name))
-  return wh ? wh.id : null
-}
-
-const onProductSearch = (index) => {
-  clearTimeout(searchTimeout)
-  const item = form.items[index]
-  item.showDropdown = true
-
-  if (!item.searchQuery || item.searchQuery.length < 1) {
-    item.searchResults = filteredInventoriesByPO.value.slice(0, 15)
-    return
-  }
-
-  isSearching.value = true
-
-  searchTimeout = setTimeout(() => {
-    const query = item.searchQuery.toLowerCase()
-    item.searchResults = filteredInventoriesByPO.value.filter((inv) => {
-      const name = inv.item?.name?.toLowerCase() || ''
-      const code = inv.item?.code?.toLowerCase() || ''
-      return name.includes(query) || code.includes(query)
-    })
-    isSearching.value = false
-  }, 300)
-}
-
-const toggleDropdown = (index) => {
-  const item = form.items[index]
-  if (item.showDropdown) {
-    item.showDropdown = false
-  } else {
-    onProductSearch(index)
-  }
-}
-
-const selectProduct = (index, inv) => {
-  const item = form.items[index]
-  item.item_id = inv.item_id
-  item.warehouse_id = inv.warehouse_id
-  item.searchQuery = `[${inv.item?.code}] ${inv.item?.name}`
-  item.showDropdown = false
-  item.searchResults = []
-
-  const sourceCode = inv.item?.code || ''
-  const matchedDryItem = dryItems.value.find((di) => di.code === sourceCode)
-
-  if (matchedDryItem) {
-    item.target_item_id = matchedDryItem.id
-    item.searchTargetQuery = `[${matchedDryItem.code}] ${matchedDryItem.name}`
-  } else {
-    const sourceName = inv.item?.name?.toLowerCase() || ''
-    const loosematch = dryItems.value.find((di) => di.name?.toLowerCase() === sourceName)
-    if (loosematch) {
-      item.target_item_id = loosematch.id
-      item.searchTargetQuery = `[${loosematch.code}] ${loosematch.name}`
-    }
-  }
-}
-
-const clearProductSelection = (index) => {
-  const item = form.items[index]
-  item.item_id = ''
-  item.warehouse_id = ''
-  item.searchQuery = ''
-  item.searchResults = []
-  item.showDropdown = false
-}
-
-const onPoChange = async () => {
-  form.items.forEach((item) => {
-    clearProductSelection(form.items.indexOf(item))
-  })
-
-  poTargets.value = []
-  poInfo.value = { buyer_name: null, so_number: null }
-
-  if (form.ref_po_id) {
-    try {
-      const res = await apiClient.get(`/production-orders/${form.ref_po_id}`)
-      const data = res.data.data || {}
-      poInfo.value = {
-        buyer_name: data.sales_order?.buyer_name || null,
-        so_number: data.sales_order?.so_number || null,
-      }
-      poTargets.value = data.targets || []
-    } catch (e) {
-      console.error('Gagal ambil detail PO:', e)
-    }
-  }
-
-  showSuccess('Berhasil', 'PO dipilih. Silakan pilih produk yang sesuai dengan PO ini.')
-}
-
-const onTargetSearch = (index) => {
-  const item = form.items[index]
-  item.showTargetDropdown = true
-
-  const query = item.searchTargetQuery.toLowerCase()
-
-  if (!query) {
-    item.targetSearchResults = dryItems.value.slice(0, 15)
-    return
-  }
-
-  item.targetSearchResults = dryItems.value.filter((di) => {
-    const name = di.name?.toLowerCase() || ''
-    const code = di.code?.toLowerCase() || ''
-    return name.includes(query) || code.includes(query)
-  })
-}
-
-const toggleTargetDropdown = (index) => {
-  const item = form.items[index]
-  if (item.showTargetDropdown) {
-    item.showTargetDropdown = false
-  } else {
-    onTargetSearch(index)
-  }
-}
-
-const selectTargetItem = (index, dryItem) => {
-  const item = form.items[index]
-  item.target_item_id = dryItem.id
-  item.searchTargetQuery = `[${dryItem.code}] ${dryItem.name}`
-  item.showTargetDropdown = false
-}
-
-const clearTargetSelection = (index) => {
-  const item = form.items[index]
-  item.target_item_id = ''
-  item.searchTargetQuery = ''
-  item.targetSearchResults = []
-  item.showTargetDropdown = false
-}
-
-const addItem = () => {
-  const sanwilId = getWarehouseIdByName('Gudang Sanwil')
-  form.items.push({
-    item_id: '',
-    warehouse_id: sanwilId || '',
-    target_item_id: '',
-    qty: null,
-    searchQuery: '',
-    showDropdown: false,
-    searchResults: [],
-    searchTargetQuery: '',
-    showTargetDropdown: false,
-    targetSearchResults: [],
-  })
-  showSuccess('Berhasil', 'Item baru ditambahkan')
-}
-
-const removeItem = (index) => {
-  if (form.items.length > 1) {
-    form.items.splice(index, 1)
-    showSuccess('Berhasil', `Item #${index + 1} dihapus`)
-  } else {
-    showError('Validasi', 'Minimal harus ada 1 item')
-  }
-}
-
-const fetchData = async () => {
+const fetchBase = async () => {
   try {
-    const whRes = await apiClient.get('/warehouses')
-    warehouses.value = whRes.data.data || whRes.data || []
+    const [poRes, rstRes, rstbStockRes] = await Promise.all([
+      apiClient.get('/produksi/prototype/available-pos'),
+      apiClient.get('/materials', { params: { category_name: 'Kayu RST', per_page: 500 } }),
+      apiClient.get('/stock-report', { params: { categories: 'Kayu RST', per_page: 9999 } }),
+    ])
+    productionOrders.value = poRes.data.data || []
+    const d = rstRes.data.data; rstItems.value = Array.isArray(d) ? d : (d?.data||[])
 
-    const poRes = await apiClient.get('/production-orders', { params: { status_not: 'completed', type: 'sample' } })
-    productionOrders.value = (poRes.data.data?.map(po => ({ ...po, label: po.po_number })) || [])
-
-    const sanwilId = getWarehouseIdByName('Gudang Sanwil')
-    if (!sanwilId) {
-      showError('Konfigurasi', 'Gudang Sanwil tidak ditemukan di master')
-      return
-    }
-
-    const invRes = await apiClient.get('/inventories', {
-      params: { warehouse_id: sanwilId, per_page: 9999 },
-    })
-
-    const raw = invRes.data.data?.data || invRes.data.data || []
-
-    const groupedMap = {}
-    raw.forEach((inv) => {
-      const key = `${inv.warehouse_id}_${inv.item_id}`
-      if (!groupedMap[key]) {
-        groupedMap[key] = {
-          warehouse_id: inv.warehouse_id,
-          item_id: inv.item_id,
-          qty_pcs: 0,
-          item: inv.item,
-          warehouse: inv.warehouse,
-          inventory_ids: [],
-        }
-      }
-      groupedMap[key].qty_pcs += Number(inv.qty || 0)
-      groupedMap[key].inventory_ids.push(inv.id)
-    })
-
-    sanwilInventories.value = Object.values(groupedMap)
-
-    if (form.items.length > 0 && !form.items[0].warehouse_id) {
-      form.items[0].warehouse_id = sanwilId
-    }
-
-    const dryRes = await apiClient.get('/materials', {
-      params: { category_name: 'Kayu RST', per_page: 200 },
-    })
-    dryItems.value = dryRes.data.data?.data || dryRes.data.data || []
-  } catch (error) {
-    console.error('ERROR fetchData:', error)
-    showError('Gagal', 'Gagal mengambil data gudang / inventory')
-  }
+    // Ambil stok RST dari RSTB warehouse
+    const stockData = rstbStockRes.data.data?.data ?? rstbStockRes.data.data ?? []
+    rstInventories.value = (Array.isArray(stockData) ? stockData : []).map(i => ({
+      item_id: i.id || i.item_id, item_code: i.code || i.item_code, item_name: i.name || i.item_name,
+      warehouse_id: i.warehouse_id, qty_available: parseFloat(i.qty_pcs || i.qty || 0),
+    })).filter(i => i.qty_available > 0)
+  } catch (e) { showError('Gagal', 'Gagal mengambil data') }
 }
+
+const handlePoChange = async (opt) => {
+  poInfo.buyer_name = null; poInfo.so_number = null
+  if (!opt) return
+  try { const r = await apiClient.get(`/production-orders/${opt.id}`); const d = r.data.data || {}
+    poInfo.buyer_name = d.sales_order?.buyer_name || null; poInfo.so_number = d.sales_order?.so_number || null
+  } catch (e) { console.error(e) }
+}
+const resetPo = () => { poInfo.buyer_name = null; poInfo.so_number = null }
 
 const handleSubmit = async () => {
-  try {
-    if (!form.ref_po_id) {
-      showError('Validasi', 'Production Order wajib dipilih')
-      return
-    }
-
-    for (let i = 0; i < form.items.length; i++) {
-      const item = form.items[i]
-      const selectedInv = getSelectedInventory(i)
-
-      if (!item.item_id) {
-        showError('Validasi', `Item #${i + 1}: Stok sumber wajib dipilih`)
-        return
-      }
-      if (!item.target_item_id) {
-        showError('Validasi', `Item #${i + 1}: Barang kering tujuan wajib dipilih`)
-        return
-      }
-      if (!item.qty || item.qty <= 0) {
-        showError('Validasi', `Item #${i + 1}: Qty wajib lebih dari 0`)
-        return
-      }
-      if (selectedInv && item.qty > selectedInv.qty_pcs) {
-        showError(
-          'Validasi',
-          `Item #${i + 1}: Qty (${item.qty} pcs) melebihi stok tersedia (${selectedInv.qty_pcs} pcs)`,
-        )
-        return
-      }
-    }
-
-    isSubmitting.value = true
-
-    const payload = {
-      date: form.date,
-      estimated_finish_date: form.estimated_finish_date || null,
-      notes: form.notes || null,
-      ref_po_id: form.ref_po_id,
-      items: form.items.map((item) => ({
-        warehouse_id: item.warehouse_id,
-        item_id: item.item_id,
-        target_item_id: item.target_item_id,
-        qty: item.qty,
-      })),
-    }
-
-    await apiClient.post('/candy-productions', payload)
-
-    showSuccess('Sukses', `Proses KD berhasil dicatat untuk ${form.items.length} item.`)
-    router.push({ name: 'SampelPembahanan' })
-  } catch (error) {
-    console.error('ERROR SUBMIT:', error)
-    const msg =
-      error.response?.data?.message ||
-      (error.response?.data?.errors && JSON.stringify(error.response.data.errors)) ||
-      'Gagal mencatat proses KD'
-    showError('Gagal', msg)
-  } finally {
-    isSubmitting.value = false
+  if (!form.ref_po_id) { showError('Validasi', 'Production Order wajib dipilih'); return }
+  const valid = form.items.filter(i => i.item_id && i.warehouse_id && i.target_item_id && i.qty > 0)
+  if (!valid.length) { showError('Validasi', 'Minimal satu item wajib diisi lengkap'); return }
+  for (let i=0; i<valid.length; i++) {
+    if (valid[i].qty > valid[i].max_qty && valid[i].max_qty > 0) { showError('Validasi', `Item #${i+1}: qty melebihi stok`); return }
   }
+  isSubmitting.value = true
+  try {
+    await apiClient.post('/candy-productions', {
+      date: form.date, estimated_finish_date: form.estimated_finish_date || null,
+      notes: form.notes || null, ref_po_id: Number(form.ref_po_id),
+      items: valid.map(i => ({ warehouse_id: Number(i.warehouse_id), item_id: Number(i.item_id), target_item_id: Number(i.target_item_id), qty: Number(i.qty) })),
+    })
+    showSuccess('Sukses', 'KD Sampel berhasil dicatat')
+    form.items = [{ lid: Date.now(), item_id: null, warehouse_id: null, target_item_id: null, qty: null, max_qty: 0 }]
+    form.ref_po_id = null; resetPo(); await fetchBase()
+  } catch (e) { showError('Gagal', e.response?.data?.message || 'Gagal menyimpan') }
+  finally { isSubmitting.value = false }
 }
 
-const handleClickOutside = (event) => {
-  form.items.forEach((item) => {
-    if (!event.target.closest(`.search-wrapper-product`)) {
-      item.showDropdown = false
-      item.showTargetDropdown = false
-    }
-  })
-}
-
-onMounted(() => {
-  fetchData()
-  document.addEventListener('click', handleClickOutside)
-})
+onMounted(fetchBase)
 </script>
 
 <style scoped>
-.page-header-candy {
-  background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
-  padding: 2rem 2.5rem;
-  border-radius: 20px;
-  margin-bottom: 2rem;
-  box-shadow: 0 10px 40px rgba(8, 145, 178, 0.3);
-}
-
-.header-content-wrapper { display: flex; justify-content: space-between; align-items: center; gap: 2rem; }
-.header-left-section { display: flex; align-items: center; gap: 1.5rem; flex: 1; }
-
-.icon-badge-candy {
-  width: 72px; height: 72px; border-radius: 18px;
-  background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(10px);
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-.candy-icon { font-size: 2.5rem; }
-.page-title-candy { font-size: 2rem; font-weight: 800; color: white; margin: 0 0 0.5rem 0; letter-spacing: -0.5px; }
-.page-subtitle-candy { color: rgba(255, 255, 255, 0.95); font-size: 1rem; margin: 0; font-weight: 500; line-height: 1.5; }
-
-.header-right-section { display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; }
-
-.process-flow-badge {
-  display: flex; align-items: center; gap: 0.75rem;
-  padding: 0.75rem 1.5rem; background: rgba(255, 255, 255, 0.96);
-  border-radius: 999px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-.flow-icon { font-size: 1.25rem; }
-.flow-arrow { font-size: 1rem; color: #0e7490; font-weight: 700; }
-.flow-label { color: #cffafe; font-size: 0.875rem; font-weight: 600; }
-
-.content-card-candy { background: white; border-radius: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border: 1px solid #f0f2f5; overflow: hidden; }
-.card-body-candy { padding: 2.5rem; }
-
-.form-section-modern { margin-bottom: 2.5rem; padding-bottom: 2.5rem; border-bottom: 3px solid #e5e7eb; }
-.form-section-modern:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
-
-.section-header {
-  display: flex; align-items: center; gap: 1.25rem;
-  margin-bottom: 1.75rem; padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-  border-radius: 14px; border-left: 5px solid #0891b2;
-}
-
-.section-icon-badge {
-  width: 56px; height: 56px; border-radius: 14px;
-  background: linear-gradient(135deg, #0891b2, #0e7490);
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
-}
-
-.section-icon-badge.log-badge {
-  background: linear-gradient(135deg, #e0f2fe, #bfdbfe);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
-}
-
-.section-icon { font-size: 1.75rem; }
-.section-title-group { flex: 1; }
-.section-title { font-size: 1.375rem; font-weight: 800; color: #111827; margin: 0 0 0.25rem 0; }
-.section-subtitle { font-size: 0.875rem; color: #6b7280; margin: 0; font-weight: 500; }
-
-.form-grid-2col { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.75rem; }
-.form-grid-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
-
-@media (max-width: 768px) {
-  .form-grid-2col, .form-grid-3col { grid-template-columns: 1fr; }
-}
-
-.form-group-modern { margin-bottom: 0; }
-.form-label-modern { display: block; font-size: 0.9375rem; font-weight: 700; color: #111827; margin-bottom: 0.75rem; }
-.required-star { color: #ef4444; margin-left: 0.25rem; }
-
-.input-wrapper-icon { position: relative; display: flex; align-items: center; }
-.input-icon { position: absolute; left: 1.125rem; font-size: 1.125rem; pointer-events: none; z-index: 1; }
-
-.form-input-modern {
-  width: 100%; padding: 1rem 1.25rem 1rem 3.25rem;
-  border: 2.5px solid #e5e7eb; border-radius: 12px;
-  font-size: 1rem; font-weight: 500; transition: all 0.3s ease; background: white; color: #111827;
-}
-.form-input-modern:focus { outline: none; border-color: #0891b2; box-shadow: 0 0 0 4px rgba(8,145,178,0.15); }
-
-.input-suffix { position: absolute; right: 1.125rem; font-size: 0.875rem; font-weight: 700; color: #6b7280; pointer-events: none; }
-
-.select-wrapper-modern { position: relative; display: flex; align-items: center; }
-.select-icon { position: absolute; left: 1.125rem; font-size: 1.125rem; pointer-events: none; z-index: 1; }
-
-.form-select-modern {
-  width: 100%; padding: 1rem 3.25rem 1rem 3.25rem;
-  border: 2.5px solid #e5e7eb; border-radius: 12px;
-  font-size: 1rem; font-weight: 600; background: white; color: #111827;
-  appearance: none; cursor: pointer; transition: all 0.3s ease;
-}
-.form-select-modern:focus { outline: none; border-color: #0891b2; box-shadow: 0 0 0 4px rgba(8,145,178,0.15); }
-.select-arrow { position: absolute; right: 1.125rem; font-size: 0.75rem; color: #6b7280; pointer-events: none; }
-
-.help-text { margin-top: 0.5rem; font-size: 0.8125rem; color: #6b7280; }
-.helper-inline { margin-top: 0.5rem; font-size: 0.8125rem; color: #4b5563; font-weight: 600; }
-
-.form-actions-modern { display: flex; justify-content: flex-end; gap: 1.25rem; margin-top: 2.5rem; padding-top: 2rem; border-top: 3px solid #e5e7eb; }
-
-.btn-action {
-  display: flex; align-items: center; justify-content: center; gap: 0.75rem;
-  padding: 1.125rem 2.25rem; border: none; border-radius: 14px;
-  font-size: 1.0625rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease;
-  min-width: 180px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.btn-icon { font-size: 1.25rem; }
-.btn-cancel-modern { background: linear-gradient(135deg, #f3f4f6, #e5e7eb); color: #374151; border: 2.5px solid #d1d5db; }
-.btn-cancel-modern:hover { background: linear-gradient(135deg, #e5e7eb, #d1d5db); transform: translateY(-2px); }
-.btn-submit-modern { background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; }
-.btn-submit-modern:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(8,145,178,0.4); }
-
-.btn-add-item {
-  display: flex; align-items: center; gap: 0.5rem;
-  background: linear-gradient(135deg, #0891b2, #0e7490);
-  color: white; border: none; padding: 0.875rem 1.5rem; border-radius: 10px;
-  cursor: pointer; font-weight: 700; font-size: 0.9375rem; transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(8,145,178,0.3); margin-left: auto;
-}
-.btn-add-item:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(8,145,178,0.5); }
-.add-icon { font-size: 1.125rem; }
-
-.item-row-wrapper {
-  margin-bottom: 2rem; padding: 1.75rem; border: 2.5px solid #e5e7eb;
-  border-radius: 16px; background: linear-gradient(135deg, #ffffff, #fafafa);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: all 0.3s ease;
-}
-.item-row-wrapper:hover { border-color: #0891b2; box-shadow: 0 4px 16px rgba(8,145,178,0.15); }
-.item-row-wrapper:last-child { margin-bottom: 0; }
-
-.item-row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px dashed #e5e7eb; }
-.item-number { margin: 0; color: #111827; font-weight: 700; font-size: 1.125rem; }
-
-.btn-remove-item {
-  background: linear-gradient(135deg, #ff4444, #cc0000); color: white;
-  border: none; padding: 0.625rem 1.125rem; border-radius: 8px; cursor: pointer;
-  font-size: 0.875rem; font-weight: 700; transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(255,68,68,0.3);
-}
-.btn-remove-item:hover { transform: translateY(-2px); }
-
-.search-wrapper-product { position: relative; display: flex; align-items: center; }
-.search-icon-product { position: absolute; left: 1.125rem; font-size: 1.125rem; pointer-events: none; z-index: 1; }
-
-.search-input-product {
-  width: 100%; padding: 1rem 5rem 1rem 3.25rem; border: 2.5px solid #e5e7eb;
-  border-radius: 12px; font-size: 1rem; font-weight: 600; background: white; color: #111827;
-  transition: all 0.3s ease;
-}
-.search-input-product:focus { outline: none; border-color: #0891b2; box-shadow: 0 0 0 4px rgba(8,145,178,0.15); }
-
-.search-actions-product { position: absolute; right: 0.75rem; display: flex; align-items: center; gap: 0.5rem; z-index: 2; }
-
-.btn-clear-product {
-  position: absolute; right: 1.125rem; padding: 0.35rem 0.6rem;
-  background: #fee2e2; color: #dc2626; border: none; border-radius: 6px;
-  font-weight: 800; cursor: pointer; font-size: 0.9rem; z-index: 2;
-}
-.btn-clear-product:hover { background: #fecaca; }
-
-.btn-toggle-dropdown {
-  background: #f1f5f9; color: #64748b; border: none; width: 32px; height: 32px;
-  border-radius: 8px; display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all 0.3s ease;
-}
-.btn-toggle-dropdown:hover { background: #e2e8f0; color: #0891b2; }
-.btn-toggle-dropdown.active { background: #e0f2fe; color: #0891b2; transform: rotate(180deg); }
-.chevron-icon { font-size: 0.75rem; }
-
-.product-dropdown {
-  position: absolute; top: 100%; left: 0; right: 0; margin-top: 0.5rem;
-  background: white; border: 1.5px solid #e5e7eb; border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(15,23,42,0.15); max-height: 300px; overflow-y: auto; z-index: 10;
-}
-
-.product-option { padding: 0.85rem 1.25rem; cursor: pointer; border-bottom: 1px solid #f3f4f6; transition: all 0.15s ease; }
-.product-option:last-child { border-bottom: none; }
-.product-option:hover { background: #e0f2fe; }
-
-.product-option-main { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem; }
-.product-code { font-weight: 800; color: #0891b2; font-size: 0.9rem; font-family: monospace; }
-.product-name { font-weight: 700; color: #111827; font-size: 0.95rem; flex: 1; }
-.product-option-sub { font-size: 0.8rem; color: #6b7280; font-weight: 600; }
-
-.product-dropdown-empty { padding: 2rem; text-align: center; color: #9ca3af; font-weight: 600; }
-.empty-icon { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
-
-.po-selected-info {
-  display: flex; align-items: center; gap: 10px; padding: 12px 16px;
-  background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; margin-top: 4px;
-}
-.po-info-icon { font-size: 1.25rem; }
-.po-info-buyer { font-weight: 700; font-size: 0.95rem; color: #111827; }
-.po-info-so { font-size: 0.82rem; color: #6b7280; }
-
-.po-hint-box { border-radius: 16px; border: 1px solid #bae6fd; background: linear-gradient(135deg, #f0f9ff, #e0f2fe); padding: 1.25rem 1.5rem; }
-.po-hint-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-.po-hint-title-wrap { display: flex; align-items: center; gap: 0.75rem; }
-.po-hint-icon { font-size: 1.25rem; }
-.po-hint-title { font-weight: 700; font-size: 0.95rem; color: #0e7490; }
-.po-hint-sub { font-size: 0.82rem; color: #0891b2; }
-.po-hint-badge { background: #0891b2; color: white; border-radius: 999px; padding: 2px 12px; font-size: 0.8rem; font-weight: 700; }
-.po-hint-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-.po-hint-table th { padding: 6px 10px; text-align: left; color: #0e7490; font-size: 0.78rem; text-transform: uppercase; border-bottom: 1px solid #bae6fd; }
-.po-hint-table td { padding: 6px 10px; color: #374151; border-bottom: 1px solid #e0f2fe; }
-
-@media (max-width: 768px) {
-  .page-header-candy { padding: 1.5rem; }
-  .header-content-wrapper { flex-direction: column; align-items: flex-start; }
-  .card-body-candy { padding: 1.5rem; }
-  .form-actions-modern { flex-direction: column; }
-  .btn-action { width: 100%; }
-  .header-right-section { align-items: flex-start; }
-  .btn-add-item { width: 100%; justify-content: center; margin-left: 0; margin-top: 1rem; }
-  .item-row-wrapper { padding: 1.25rem; }
-  .item-row-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
-  .btn-remove-item { width: 100%; }
-}
+.page-header { background:linear-gradient(135deg,#0369a1,#075985);padding:1.75rem 2rem;border-radius:16px;margin-bottom:1.75rem; }
+.icon-badge { width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:1.75rem; }
+.page-title { font-size:1.6rem;font-weight:800;color:white;margin:0 0 .25rem; }
+.page-sub { color:rgba(255,255,255,.9);margin:0;font-size:.9rem; }
+.content-card { background:white;border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,.08); }
+.card-body { padding:2rem; }
+.form-section { margin-bottom:1.75rem;padding-bottom:1.75rem;border-bottom:2px solid #e5e7eb; }
+.form-section:last-of-type { border-bottom:none; }
+.section-hd { display:flex;align-items:center;gap:.875rem;margin-bottom:1.25rem;padding:.875rem 1.125rem;background:#f9fafb;border-radius:10px;border-left:4px solid #0369a1; }
+.s-badge { width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#0369a1,#075985);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0; }
+.s-badge.blue { background:linear-gradient(135deg,#2563eb,#1d4ed8) !important; }
+.s-title { font-size:.95rem;font-weight:700;color:#111827;margin:0; }
+.s-sub { font-size:.8rem;color:#6b7280;margin:0 0 0 .5rem; }
+.g2 { display:grid;grid-template-columns:1fr 1fr;gap:1rem; }
+.g3 { display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:.875rem; }
+.fg { display:flex;flex-direction:column; }
+.fl { font-size:.82rem;font-weight:600;color:#374151;margin-bottom:.35rem; }
+.fi { padding:.7rem .875rem;border:2px solid #e5e7eb;border-radius:8px;font-size:.9rem; }
+.fi:focus { outline:none;border-color:#0369a1; }
+.vs :deep(.vs__dropdown-toggle) { padding:.6rem .875rem;border:2px solid #e5e7eb;border-radius:8px;min-height:44px; }
+.po-info { padding:.6rem 1rem;background:#e0f2fe;border:1px solid #bae6fd;border-radius:8px;margin-top:.75rem;font-size:.875rem; }
+.row-card { background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:.875rem;margin-bottom:.625rem; }
+.row-hd { display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem; }
+.rn { font-size:.75rem;font-weight:700;color:#6b7280;text-transform:uppercase; }
+.btn-rm { background:#fee2e2;color:#ef4444;border:none;border-radius:5px;padding:2px 7px;cursor:pointer;font-weight:700; }
+.stock-hint { font-size:.78rem;color:#0369a1;font-weight:600;margin-top:3px; }
+.qty-warn { font-size:.78rem;color:#ef4444;margin-top:3px; }
+.hint-txt { font-size:.78rem;color:#6b7280;margin-top:3px; }
+.btn-add { display:flex;align-items:center;gap:.4rem;padding:.55rem .875rem;border-radius:7px;font-weight:600;font-size:.82rem;cursor:pointer;border:2px dashed;background:none;margin-top:.25rem; }
+.a-blue { border-color:#2563eb;color:#1d4ed8; }
+.empty-hint { padding:1.25rem;text-align:center;color:#9ca3af;background:#f9fafb;border-radius:8px;border:1px dashed #d1d5db; }
+.actions { display:flex;justify-content:flex-end;gap:.875rem;padding-top:1.25rem;border-top:2px solid #e5e7eb; }
+.btn-cancel { padding:.7rem 1.375rem;border-radius:8px;background:#f3f4f6;color:#374151;border:none;font-weight:600;cursor:pointer; }
+.btn-submit { padding:.7rem 1.625rem;border-radius:8px;background:linear-gradient(135deg,#0369a1,#075985);color:white;border:none;font-weight:700;cursor:pointer; }
+.btn-submit:disabled { opacity:.6;cursor:not-allowed; }
+@media(max-width:768px) { .g2,.g3 { grid-template-columns:1fr; } }
 </style>

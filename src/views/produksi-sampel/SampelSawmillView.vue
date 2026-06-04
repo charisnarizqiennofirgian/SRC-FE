@@ -1,1221 +1,247 @@
 <template>
   <DashboardLayout>
-    <div class="page-header-sawmill">
-      <div class="header-content-wrapper">
-        <div class="header-left-section">
-          <div class="icon-badge-sawmill">
-            <span class="sawmill-icon">🪚</span>
-          </div>
-          <div class="header-text-content">
-            <h1 class="page-title-sawmill">Sampel — Sawmill</h1>
-            <p class="page-subtitle-sawmill">
-              Catat proses pemotongan kayu log menjadi kayu RST basah untuk tracking produksi
-            </p>
-          </div>
-        </div>
-        <div class="header-badge-section">
-          <div class="process-badge">
-            <span class="process-icon">🪵</span>
-            <span class="process-arrow">→</span>
-            <span class="process-icon">🪚</span>
-            <span class="process-arrow">→</span>
-            <span class="process-icon">📦</span>
-          </div>
+    <div class="page-header">
+      <div style="display:flex;align-items:center;gap:1.5rem;">
+        <div class="icon-badge"><span>🪚</span></div>
+        <div>
+          <h1 class="page-title">Sawmill — Produksi Sampel</h1>
+          <p class="page-sub">{{ form.process_type === 'log_jeblosan' ? 'Log → Jeblosan (Gudang SAWMILL)' : 'Jeblosan → RST Basah (Gudang RSTB)' }}</p>
         </div>
       </div>
     </div>
 
-    <div class="content-card-sawmill">
-      <div class="card-body-sawmill">
+    <div class="content-card">
+      <div class="card-body">
         <form @submit.prevent="handleSubmit" @keydown.enter.prevent>
 
-          <!-- SECTION 1: INFO UMUM -->
-          <div class="form-section-modern">
-            <div class="section-header">
-              <div class="section-icon-badge">
-                <span class="section-icon">📅</span>
-              </div>
-              <div class="section-title-group">
-                <h3 class="section-title">Informasi Umum</h3>
-                <p class="section-subtitle">Tanggal, PO (opsional), dan catatan produksi</p>
-              </div>
-            </div>
+          <div class="form-section">
+            <div class="section-hd"><div class="s-badge"><span>📅</span></div><h3 class="s-title">Informasi Umum</h3></div>
 
-            <div class="form-grid-3col">
-              <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Tanggal Produksi <span class="required-star">*</span>
-                </label>
-                <div class="input-wrapper-icon">
-                  <span class="input-icon">📅</span>
-                  <input v-model="form.date" type="date" class="form-input-modern" required />
-                </div>
-              </div>
-
-              <div class="form-group-modern">
-                <label class="form-label-modern">Estimasi Selesai</label>
-                <div class="input-wrapper-icon">
-                  <span class="input-icon">🏁</span>
-                  <input
-                    v-model="form.estimated_finish_date"
-                    type="date"
-                    class="form-input-modern"
-                  />
-                </div>
-              </div>
-
-              <div class="form-group-modern">
-                <label class="form-label-modern">Catatan Produksi</label>
-                <div class="input-wrapper-icon">
-                  <span class="input-icon">📝</span>
-                  <input
-                    v-model="form.notes"
-                    type="text"
-                    class="form-input-modern"
-                    placeholder="Contoh: Sawmill shift pagi, operator A"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- PO SEARCHABLE SELECT — OPSIONAL -->
-            <div class="form-grid-2col">
-              <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Production Order
-                  <span class="optional-tag">Opsional</span>
-                </label>
-
-                <vue-select
-                  v-model="selectedProductionOrderId"
-                  :options="productionOrdersForSelect"
-                  :reduce="(option) => option.id"
-                  label="label"
-                  placeholder="🔍 Kosongkan jika tidak ada PO..."
-                  :filterable="true"
-                  :clearable="true"
-                  class="vue-select-po"
-                  @option:selected="handlePoChange"
-                  @option:deselected="handlePoDeselect"
-                >
-                  <template #no-options="{ search }">
-                    <span v-if="search">Tidak ditemukan "{{ search }}"</span>
-                    <span v-else>Ketik untuk mencari PO...</span>
-                  </template>
-                  <template #option="option">{{ option.display_name }}</template>
-                  <template #selected-option="option">{{ option.display_name }}</template>
-                </vue-select>
-
-                <p v-if="!selectedProductionOrderId" class="field-hint">
-                  ℹ️ Sawmill bisa jalan tanpa PO — hasil RST masuk sebagai stok umum.
-                </p>
-              </div>
-
-              <div class="form-group-modern">
-                <label class="form-label-modern">&nbsp;</label>
-                <div v-if="selectedProductionOrderId && poInfo.buyer_name" class="po-selected-info">
-                  <span class="po-info-icon">👤</span>
-                  <div>
-                    <div class="po-info-buyer">{{ poInfo.buyer_name }}</div>
-                    <div class="po-info-so">{{ poInfo.so_number }}</div>
-                  </div>
-                </div>
-                <div v-else-if="!selectedProductionOrderId" class="po-empty-info">
-                  <span>📦 Stok Umum — Tanpa PO</span>
-                </div>
-              </div>
-            </div>
-
-            <div v-if="poTargets.length" class="po-hint-box">
-              <div class="po-hint-header">
-                <div class="po-hint-title-wrap">
-                  <span class="po-hint-icon">📌</span>
-                  <div>
-                    <div class="po-hint-title">Ringkasan Kebutuhan PO</div>
-                    <div class="po-hint-sub">
-                      {{ poInfo.buyer_name }} • {{ poInfo.so_number }}
-                    </div>
-                  </div>
-                </div>
-                <div class="po-hint-badge">{{ poTargets.length }} item</div>
-              </div>
-              <div class="po-hint-list-wrapper">
-                <table class="po-hint-table">
-                  <thead>
-                    <tr>
-                      <th>Item</th>
-                      <th>Qty Target</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="t in poTargets" :key="t.item_id">
-                      <td>
-                        <div style="font-weight:600;">{{ t.name }}</div>
-                        <div style="font-size:0.78rem;color:#9ca3af;">{{ t.code }}</div>
-                      </td>
-                      <td>{{ Number(t.qty_planned).toLocaleString('id-ID') }} pcs</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- SECTION 2: KAYU LOG (INPUT) -->
-          <div class="form-section-modern">
-            <div class="section-header">
-              <div class="section-icon-badge section-icon-badge--log">
-                <span class="section-icon">🪵</span>
-              </div>
-              <div class="section-title-group">
-                <h3 class="section-title">Kayu Log yang Dibelah</h3>
-                <p class="section-subtitle">Stok dari Gudang Log yang digunakan</p>
-              </div>
-            </div>
-
-            <div
-              v-for="(log, index) in form.logs"
-              :key="log.local_id"
-              class="item-row-card"
-            >
-              <div class="item-row-header">
-                <span class="item-row-number">Log #{{ index + 1 }}</span>
-                <button
-                  v-if="form.logs.length > 1"
-                  type="button"
-                  class="btn-remove-row"
-                  @click="removeLogRow(index)"
-                >✕</button>
-              </div>
-
-              <div class="form-grid-2col">
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Item Kayu Log <span class="required-star">*</span></label>
-                  <vue-select
-                    v-model="log.item_log_id"
-                    :options="logItemsForSelect"
-                    :reduce="(o) => o.id"
-                    label="label"
-                    placeholder="🔍 Cari kayu log..."
-                    class="vue-select-rst"
-                  >
-                    <template #option="o">
-                      <div class="rst-option-item">
-                        <span class="rst-option-code">{{ o.code }}</span>
-                        <span class="rst-option-name">{{ o.name }}</span>
-                        <span class="rst-option-spec">SKSHHK: {{ o.no_skshhk }} | TPK: {{ o.tpk }}</span>
-                      </div>
-                    </template>
-                  </vue-select>
-                </div>
-
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
-                  <div class="input-wrapper-icon">
-                    <span class="input-icon">🔢</span>
-                    <input
-                      v-model.number="log.qty_log_pcs"
-                      type="number"
-                      min="1"
-                      class="form-input-modern"
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="add-rst-section">
-              <button type="button" class="btn-add-rst" @click="addLogRow">
-                <span class="add-icon">➕</span>
-                <span class="add-text">Tambah Item Log Lainnya</span>
+            <div class="process-toggle">
+              <button type="button" :class="['toggle-btn', form.process_type==='log_jeblosan'?'active':'']" @click="setProcess('log_jeblosan')">
+                <span style="font-size:1.5rem;">🪵</span><div><div class="tl">Log → Jeblosan</div><div class="td">Log dibelah jadi jeblosan</div></div>
+              </button>
+              <button type="button" :class="['toggle-btn', form.process_type==='jeblosan_rst'?'active':'']" @click="setProcess('jeblosan_rst')">
+                <span style="font-size:1.5rem;">🪚</span><div><div class="tl">Jeblosan → RST</div><div class="td">Jeblosan digergaji jadi RST</div></div>
               </button>
             </div>
-          </div>
 
-          <!-- SECTION 3: JEBLOSAN (OUTPUT 1) -->
-          <div class="form-section-modern">
-            <div class="section-header">
-              <div class="section-icon-badge section-icon-badge--jeblosan">
-                <span class="section-icon">🪓</span>
-              </div>
-              <div class="section-title-group">
-                <h3 class="section-title">Jeblosan</h3>
-                <p class="section-subtitle">
-                  Hasil belahan kayu log → masuk Gudang Sawmill
-                </p>
+            <div class="g3" style="margin-top:1rem;">
+              <div class="fg"><label class="fl">Tanggal *</label><input v-model="form.date" type="date" class="fi" required /></div>
+              <div class="fg"><label class="fl">Est. Selesai</label><input v-model="form.estimated_finish_date" type="date" class="fi" /></div>
+              <div class="fg"><label class="fl">Production Order</label>
+                <vue-select v-model="form.ref_po_id" :options="posOpts" :reduce="p=>p.id" label="label" placeholder="PO Sampel (opsional)..." :clearable="true" class="vs" @option:selected="handlePoChange" @option:deselected="resetPo" />
               </div>
             </div>
+            <div class="fg"><label class="fl">Catatan</label><input v-model="form.notes" type="text" class="fi" placeholder="Catatan..." /></div>
 
-            <div
-              v-for="(jeblosan, index) in form.jeblosans"
-              :key="jeblosan.local_id"
-              class="item-row-card"
-              :class="jeblosan.is_sisa ? 'item-row-sisa' : ''"
-            >
-              <div class="item-row-header">
-                <div style="display:flex;align-items:center;gap:10px;">
-                  <span class="item-row-number">Jeblosan #{{ index + 1 }}</span>
-                  <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:#6b7280;cursor:pointer;">
-                    <input type="checkbox" v-model="jeblosan.is_sisa" />
-                    Sisa
-                  </label>
-                </div>
-                <button
-                  v-if="form.jeblosans.length > 1"
-                  type="button"
-                  class="btn-remove-row"
-                  @click="removeJeblosanRow(index)"
-                >✕</button>
-              </div>
-
-              <div class="form-grid-3col">
-                <div class="form-group-modern">
-                  <label class="form-label-modern">
-                    Item Jeblosan <span class="required-star">*</span>
-                    <button type="button" class="btn-quick-add" @click="openModalTambahJeblosan">
-                      ➕ Item Baru
-                    </button>
-                  </label>
-                  <vue-select
-                    v-model="jeblosan.item_id"
-                    :options="jeblosanItemsForSelect"
-                    :reduce="(o) => o.id"
-                    label="label"
-                    placeholder="🔍 Cari item jeblosan..."
-                    class="vue-select-rst"
-                    @option:selected="(opt) => updateJeblosanVolume(index)"
-                  >
-                    <template #option="o">
-                      <div class="rst-option-item">
-                        <span class="rst-option-code">{{ o.code }}</span>
-                        <span class="rst-option-name">{{ o.name }}</span>
-                      </div>
-                    </template>
-                  </vue-select>
-                </div>
-
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
-                  <div class="input-wrapper-icon">
-                    <span class="input-icon">🔢</span>
-                    <input
-                      v-model.number="jeblosan.qty_pcs"
-                      type="number"
-                      min="1"
-                      class="form-input-modern"
-                      placeholder="0"
-                      @input="updateJeblosanVolume(index)"
-                    />
-                  </div>
-                </div>
-
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Volume (m³)</label>
-                  <div class="input-wrapper-icon">
-                    <span class="input-icon">📐</span>
-                    <input
-                      v-model.number="jeblosan.volume_m3"
-                      type="number"
-                      step="0.0001"
-                      min="0"
-                      class="form-input-modern"
-                      placeholder="0.0000"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div class="rst-dimension-hint">
-                📦 → Gudang Sawmill
-                <span v-if="jeblosan.is_sisa" class="sisa-dest-hint">♻️ Sisa</span>
-              </div>
-            </div>
-
-            <div class="add-rst-section">
-              <button type="button" class="btn-add-rst btn-add-jeblosan" @click="addJeblosanRow">
-                <span class="add-icon">➕</span>
-                <span class="add-text">Tambah Jeblosan Lainnya</span>
-              </button>
+            <div v-if="poInfo.buyer_name" class="po-info">👤 <strong>{{ poInfo.buyer_name }}</strong> · {{ poInfo.so_number }}</div>
+            <div v-if="poTargets.length" class="po-hint">
+              <div style="font-weight:700;color:#92400e;margin-bottom:0.5rem;">📌 Target — {{ poTargets.length }} item</div>
+              <table class="hint-tbl"><thead><tr><th>Item</th><th>Target</th></tr></thead>
+                <tbody><tr v-for="t in poTargets" :key="t.item_id"><td><b>{{ t.name }}</b><br/><small>{{ t.code }}</small></td><td>{{ Number(t.qty_planned).toLocaleString('id-ID') }} pcs</td></tr></tbody>
+              </table>
             </div>
           </div>
 
-          <!-- SECTION 4: HASIL RST BASAH (OUTPUT 2) -->
-          <div class="form-section-modern">
-            <div class="section-header">
-              <div class="section-icon-badge section-icon-badge--rst">
-                <span class="section-icon">📦</span>
+          <template v-if="form.process_type==='log_jeblosan'">
+            <div class="form-section">
+              <div class="section-hd"><div class="s-badge amber"><span>📥</span></div><h3 class="s-title">Input — Kayu Log <span class="opt">(opsional)</span></h3></div>
+              <div v-for="(r,i) in form.logs" :key="r.lid" class="row-card">
+                <div class="row-hd"><span class="rn">Log #{{ i+1 }}</span><button v-if="form.logs.length>1" type="button" class="btn-rm" @click="form.logs.splice(i,1)">✕</button></div>
+                <div class="g2">
+                  <div class="fg"><label class="fl">Item Kayu Log</label><vue-select v-model="r.item_log_id" :options="logOpts" :reduce="o=>o.id" label="label" placeholder="Pilih log..." class="vs" /></div>
+                  <div class="fg"><label class="fl">Qty (pcs)</label><input v-model.number="r.qty_log_pcs" type="number" min="1" class="fi" placeholder="0" /></div>
+                </div>
               </div>
-              <div class="section-title-group">
-                <h3 class="section-title">Hasil RST Basah</h3>
-                <p class="section-subtitle">Hasil belahan yang masuk ke Gudang Sanwil (RST Basah)</p>
-              </div>
+              <button type="button" class="btn-add a-amber" @click="form.logs.push({lid:Date.now(),item_log_id:null,qty_log_pcs:null})">➕ Tambah Log</button>
             </div>
 
-            <div
-              v-for="(rst, index) in form.rsts"
-              :key="rst.local_id"
-              class="item-row-card"
-            >
-              <div class="item-row-header">
-                <span class="item-row-number">RST #{{ index + 1 }}</span>
-                <button
-                  v-if="form.rsts.length > 1"
-                  type="button"
-                  class="btn-remove-row"
-                  @click="removeRstRow(index)"
-                >✕</button>
-              </div>
-
-              <div class="form-grid-3col">
-                <div class="form-group-modern">
-                  <label class="form-label-modern">
-                    Item RST <span class="required-star">*</span>
-                    <button type="button" class="btn-quick-add" @click="openModalTambahRst">
-                      ➕ Item Baru
-                    </button>
-                  </label>
-                  <vue-select
-                    v-model="rst.item_rst_id"
-                    :options="rstItemsForSelect"
-                    :reduce="(o) => o.id"
-                    label="label"
-                    placeholder="🔍 Cari item RST..."
-                    class="vue-select-rst"
-                    @option:selected="(opt) => { rst.item_rst_id = opt.id; updateRstVolume(index) }"
-                  >
-                    <template #option="o">
-                      <div class="rst-option-item">
-                        <span class="rst-option-code">{{ o.code }}</span>
-                        <span class="rst-option-name">{{ o.name }}</span>
-                      </div>
-                    </template>
-                  </vue-select>
-                </div>
-
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
-                  <div class="input-wrapper-icon">
-                    <span class="input-icon">🔢</span>
-                    <input
-                      v-model.number="rst.qty_rst_pcs"
-                      type="number"
-                      min="1"
-                      class="form-input-modern"
-                      placeholder="0"
-                      @input="updateRstVolume(index)"
-                    />
+            <div class="form-section">
+              <div class="section-hd"><div class="s-badge green"><span>📤</span></div><h3 class="s-title">Output — Jeblosan *</h3></div>
+              <div v-for="(r,i) in form.jeblosans" :key="r.lid" class="row-card green">
+                <div class="row-hd"><span class="rn">Jeblosan #{{ i+1 }}</span><button v-if="form.jeblosans.length>1" type="button" class="btn-rm" @click="form.jeblosans.splice(i,1)">✕</button></div>
+                <div class="g2">
+                  <div class="fg"><label class="fl">Item Jeblosan *</label>
+                    <vue-select v-model="r.item_id" :options="jebOpts" :reduce="o=>o.id" label="label" placeholder="Pilih jeblosan..." class="vs"
+                      @option:selected="(o)=>{ r.vpp=o.volume_m3||0; r.volume_m3=(r.vpp*(r.qty_pcs||0)) }" />
                   </div>
+                  <div class="fg"><label class="fl">Qty (pcs) *</label><input v-model.number="r.qty_pcs" type="number" min="1" class="fi" placeholder="0" @input="r.volume_m3=(r.vpp||0)*r.qty_pcs" /></div>
                 </div>
+                <div v-if="r.volume_m3>0" class="vol-hint">Volume: {{ r.volume_m3.toFixed(4) }} m³</div>
+              </div>
+              <button type="button" class="btn-add a-green" @click="form.jeblosans.push({lid:Date.now(),item_id:null,qty_pcs:null,volume_m3:0,vpp:0})">➕ Tambah Jeblosan</button>
+            </div>
+          </template>
 
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Volume (m³)</label>
-                  <div class="input-wrapper-icon">
-                    <span class="input-icon">📐</span>
-                    <input
-                      v-model.number="rst.volume_rst_m3"
-                      type="number"
-                      step="0.0001"
-                      min="0"
-                      class="form-input-modern"
-                      placeholder="0.0000"
-                    />
+          <template v-else>
+            <div class="form-section">
+              <div class="section-hd"><div class="s-badge amber"><span>📥</span></div><h3 class="s-title">Input Jeblosan — Otomatis dari Gudang SAWMILL</h3></div>
+              <div v-if="!loadingStock && !sawmillStock.length" class="empty-hint">📭 Tidak ada stok jeblosan di Gudang SAWMILL</div>
+              <div v-else-if="sawmillStock.length" class="stock-info">✅ {{ sawmillStock.length }} item jeblosan tersedia — akan diambil semua otomatis</div>
+              <div v-else class="stock-info">⏳ Memuat stok...</div>
+            </div>
+
+            <div class="form-section">
+              <div class="section-hd"><div class="s-badge blue"><span>📤</span></div><h3 class="s-title">Output — RST Basah *</h3></div>
+              <div v-for="(r,i) in form.rsts" :key="r.lid" class="row-card blue">
+                <div class="row-hd"><span class="rn">RST #{{ i+1 }}</span><button v-if="form.rsts.length>1" type="button" class="btn-rm" @click="form.rsts.splice(i,1)">✕</button></div>
+                <div class="g3">
+                  <div class="fg"><label class="fl">Item RST *</label>
+                    <vue-select v-model="r.item_rst_id" :options="rstOpts" :reduce="o=>o.id" label="label" placeholder="Pilih RST..." class="vs"
+                      @option:selected="(o)=>{ r.vpp=o.volume_m3||0; r.volume_rst_m3=(r.vpp*(r.qty_rst_pcs||0)) }" />
                   </div>
+                  <div class="fg"><label class="fl">Qty (pcs) *</label><input v-model.number="r.qty_rst_pcs" type="number" min="1" class="fi" placeholder="0" @input="r.volume_rst_m3=(r.vpp||0)*r.qty_rst_pcs" /></div>
+                  <div class="fg"><label class="fl">Volume (m³)</label><input v-model.number="r.volume_rst_m3" type="number" min="0" step="0.0001" class="fi" placeholder="0.0000" /></div>
                 </div>
               </div>
-
-              <div v-if="rst.item_rst_id" class="rst-dimension-hint">
-                📐 {{ getRstDimensionText(rst.item_rst_id) }}
-              </div>
+              <button type="button" class="btn-add a-blue" @click="form.rsts.push({lid:Date.now(),item_rst_id:null,qty_rst_pcs:null,volume_rst_m3:0,vpp:0})">➕ Tambah RST</button>
             </div>
+          </template>
 
-            <div class="add-rst-section">
-              <button type="button" class="btn-add-rst" @click="addRstRow">
-                <span class="add-icon">➕</span>
-                <span class="add-text">Tambah Item RST Lainnya</span>
-              </button>
-            </div>
+          <div class="actions">
+            <button type="button" class="btn-cancel" @click="router.back()">↩️ Batal</button>
+            <button type="submit" class="btn-submit" :disabled="isSubmitting">💾 {{ isSubmitting?'Menyimpan...':(form.process_type==='log_jeblosan'?'Simpan Log→Jeblosan':'Simpan Jeblosan→RST') }}</button>
           </div>
-
-          <!-- FORM ACTIONS -->
-          <div class="form-actions-modern">
-            <button
-              type="button"
-              class="btn-action btn-cancel-modern"
-              @click="router.push({ name: 'admin-dashboard' })"
-            >
-              <span class="btn-icon">↩️</span>
-              <span class="btn-text">Batal</span>
-            </button>
-            <button type="submit" class="btn-action btn-submit-modern" :disabled="isSubmitting">
-              <span class="btn-icon">💾</span>
-              <span class="btn-text">{{ isSubmitting ? 'Menyimpan...' : 'Simpan Produksi Sawmill' }}</span>
-            </button>
-          </div>
-
         </form>
       </div>
     </div>
   </DashboardLayout>
-
-  <!-- MODAL TAMBAH ITEM JEBLOSAN BARU -->
-  <div v-if="showModalTambahJeblosan" class="modal-overlay" @click.self="closeModalTambahJeblosan">
-    <div class="modal-card">
-      <div class="modal-header" style="background: linear-gradient(135deg, #fef3c7, #fde68a);">
-        <h3>🪓 Tambah Item Jeblosan Baru</h3>
-        <button type="button" @click="closeModalTambahJeblosan" class="modal-close">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group-modern">
-          <label class="form-label-modern">Nama Dasar <span class="required-star">*</span></label>
-          <input v-model="formJeblosanBaru.nama_dasar" type="text" class="form-input-modern input-plain"
-            placeholder="Contoh: Jeblosan Jati" />
-        </div>
-        <div class="form-grid-3col">
-          <div class="form-group-modern">
-            <label class="form-label-modern">Tebal (mm) <span class="required-star">*</span></label>
-            <input v-model.number="formJeblosanBaru.tebal_mm" type="number" min="0"
-              class="form-input-modern input-plain" placeholder="0" />
-          </div>
-          <div class="form-group-modern">
-            <label class="form-label-modern">Lebar (mm)</label>
-            <input v-model.number="formJeblosanBaru.lebar_mm" type="number" min="0"
-              class="form-input-modern input-plain" placeholder="0" />
-          </div>
-          <div class="form-group-modern">
-            <label class="form-label-modern">Panjang (mm)</label>
-            <input v-model.number="formJeblosanBaru.panjang_mm" type="number" min="0"
-              class="form-input-modern input-plain" placeholder="0" />
-          </div>
-        </div>
-        <div class="form-group-modern">
-          <label class="form-label-modern">Kode Barang</label>
-          <input v-model="formJeblosanBaru.kode_barang" type="text" class="form-input-modern input-plain"
-            placeholder="Kosongkan = auto generate" />
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn-action btn-cancel-modern" @click="closeModalTambahJeblosan">Batal</button>
-        <button type="button" class="btn-action btn-submit-modern" :disabled="isSavingRst" @click="simpanJeblosanBaru">
-          {{ isSavingRst ? '⏳ Menyimpan...' : '💾 Simpan & Pilih' }}
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL TAMBAH ITEM RST BARU -->
-  <div v-if="showModalTambahRst" class="modal-overlay" @click.self="closeModalTambahRst">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>➕ Tambah Item RST Baru</h3>
-        <button type="button" @click="closeModalTambahRst" class="modal-close">✕</button>
-      </div>
-
-      <div class="modal-body">
-        <p class="modal-hint">Item baru akan otomatis masuk ke Master Data & Stok.</p>
-
-        <div class="form-group-modern">
-          <label class="form-label-modern">Nama Dasar <span class="required-star">*</span></label>
-          <input v-model="formRstBaru.nama_dasar" type="text" class="form-input-modern input-plain"
-            placeholder="Contoh: Kayu Jati RST" />
-        </div>
-
-        <div class="form-grid-3col">
-          <div class="form-group-modern">
-            <label class="form-label-modern">Tebal (mm) <span class="required-star">*</span></label>
-            <input v-model.number="formRstBaru.tebal_mm" type="number" min="0" class="form-input-modern input-plain"
-              placeholder="0" />
-          </div>
-          <div class="form-group-modern">
-            <label class="form-label-modern">Lebar (mm)</label>
-            <input v-model.number="formRstBaru.lebar_mm" type="number" min="0" class="form-input-modern input-plain"
-              placeholder="0" />
-          </div>
-          <div class="form-group-modern">
-            <label class="form-label-modern">Panjang (mm)</label>
-            <input v-model.number="formRstBaru.panjang_mm" type="number" min="0" class="form-input-modern input-plain"
-              placeholder="0" />
-          </div>
-        </div>
-
-        <div class="form-grid-2col">
-          <div class="form-group-modern">
-            <label class="form-label-modern">Kode Barang</label>
-            <input v-model="formRstBaru.kode_barang" type="text" class="form-input-modern input-plain"
-              placeholder="Kosongkan = auto generate" />
-          </div>
-          <div class="form-group-modern">
-            <label class="form-label-modern">Jenis</label>
-            <input v-model="formRstBaru.jenis" type="text" class="form-input-modern input-plain"
-              placeholder="Contoh: Jati, Mahoni" />
-          </div>
-        </div>
-
-        <div v-if="formRstBaru.nama_dasar && formRstBaru.tebal_mm" class="preview-nama">
-          📦 Preview nama: <strong>{{ previewNamaRst }}</strong>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn-action btn-cancel-modern" @click="closeModalTambahRst">
-          Batal
-        </button>
-        <button type="button" class="btn-action btn-submit-modern" :disabled="isSavingRst" @click="simpanRstBaru">
-          {{ isSavingRst ? '⏳ Menyimpan...' : '💾 Simpan & Pilih' }}
-        </button>
-      </div>
-    </div>
-  </div>
 </template>
 
 <script setup>
-import { ref, onMounted, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import { useNotification } from '../../composables/useNotification.js'
-import VueSelect from 'vue-select'
-import 'vue-select/dist/vue-select.css'
+import VueSelect from 'vue-select'; import 'vue-select/dist/vue-select.css'
 
 const router = useRouter()
 const { showSuccess, showError } = useNotification()
-const isSubmitting = ref(false)
-
-const showModalTambahRst = ref(false)
-const isSavingRst = ref(false)
-const formRstBaru = reactive({
-  nama_dasar: '',
-  kode_barang: '',
-  tebal_mm: null,
-  lebar_mm: null,
-  panjang_mm: null,
-  jenis: '',
-})
-
-const previewNamaRst = computed(() => {
-  const t = formRstBaru.tebal_mm || 0
-  const l = formRstBaru.lebar_mm || 0
-  const p = formRstBaru.panjang_mm || 0
-  return `${formRstBaru.nama_dasar} ${t}x${l}x${p}`
-})
+const isSubmitting = ref(false); const loadingStock = ref(false)
+const productionOrders = ref([]); const logItems = ref([]); const jeblosanItems = ref([]); const rstItems = ref([]); const sawmillStock = ref([])
+const poInfo = reactive({ buyer_name: null, so_number: null }); const poTargets = ref([])
 
 const form = reactive({
-  date: new Date().toISOString().slice(0, 10),
-  estimated_finish_date: '',
-  notes: '',
-  logs:      [{ local_id: Date.now(), item_log_id: null, qty_log_pcs: null }],
-  jeblosans: [{ local_id: Date.now() + 1, item_id: null, qty_pcs: null, volume_m3: 0, is_sisa: false }],
-  rsts:      [{ local_id: Date.now() + 2, item_rst_id: null, qty_rst_pcs: null, volume_rst_m3: 0 }],
+  process_type: 'log_jeblosan', date: new Date().toISOString().slice(0,10),
+  estimated_finish_date: '', notes: '', ref_po_id: null,
+  logs:      [{ lid: 1, item_log_id: null, qty_log_pcs: null }],
+  jeblosans: [{ lid: 2, item_id: null, qty_pcs: null, volume_m3: 0, vpp: 0 }],
+  rsts:      [{ lid: 3, item_rst_id: null, qty_rst_pcs: null, volume_rst_m3: 0, vpp: 0 }],
 })
 
-const logItems         = ref([])
-const rstItems         = ref([])
-const jeblosanItems    = ref([])
-const warehouses       = ref([])
-const productionOrders = ref([])
+const parse = (res) => { const d = res.data.data; return Array.isArray(d) ? d : (d?.data && Array.isArray(d.data) ? d.data : []) }
+const posOpts = computed(() => productionOrders.value.map(p => ({ id: p.id, label: p.po_number })))
+const logOpts = computed(() => logItems.value.map(i => ({ id: i.id, label: `${i.code} - ${i.name}` })))
+const jebOpts = computed(() => jeblosanItems.value.map(i => ({ id: i.id, label: `${i.code} - ${i.name}`, volume_m3: i.volume_m3||0 })))
+const rstOpts = computed(() => rstItems.value.map(i => ({ id: i.id, label: `${i.code} - ${i.name}`, volume_m3: i.volume_m3||0 })))
 
-const selectedProductionOrderId = ref(null)
-const poTargets = ref([])
-const poInfo    = ref({ buyer_name: null, so_number: null })
-
-const productionOrdersForSelect = computed(() =>
-  productionOrders.value.map((po) => ({
-    id: po.id,
-    po_number: po.po_number,
-    display_name: po.label || po.po_number,
-    label: po.label || po.po_number,
-  }))
-)
-
-const logItemsForSelect = computed(() =>
-  logItems.value.map((item) => ({
-    id: item.id,
-    code: item.code,
-    name: item.name,
-    no_skshhk: item.no_skshhk || '-',
-    tpk: item.tpk || '-',
-    label: `${item.code} - ${item.name}`,
-  }))
-)
-
-const rstItemsForSelect = computed(() =>
-  rstItems.value.map((item) => ({
-    id: item.id,
-    code: item.code,
-    name: item.name,
-    volume_m3: item.volume_m3 || 0,
-    specifications: item.specifications || {},
-    label: `${item.code} - ${item.name}`,
-  }))
-)
-
-const jeblosanItemsForSelect = computed(() =>
-  jeblosanItems.value.map((item) => ({
-    id:    item.id,
-    code:  item.code,
-    name:  item.name,
-    volume_m3: item.volume_m3 || 0,
-    specifications: item.specifications || {},
-    label: `${item.code} - ${item.name}`,
-  }))
-)
-
-const fetchItems = async () => {
+const fetchBase = async () => {
   try {
-    const [logsRes, rstRes, jeblosanRes, whRes, poRes] = await Promise.all([
+    const [poRes, logRes, jebRes, rstRes] = await Promise.all([
+      apiClient.get('/produksi/prototype/available-pos'),
       apiClient.get('/materials', { params: { category_name: 'Kayu Log', per_page: 500 } }),
-      apiClient.get('/materials', { params: { category_name: 'Kayu RST', per_page: 500 } }),
       apiClient.get('/materials', { params: { category_name: 'Jeblosan', per_page: 500 } }),
-      apiClient.get('/warehouses'),
-      apiClient.get('/production-orders', { params: { status_not: 'completed', type: 'sample' } }),
+      apiClient.get('/materials', { params: { category_name: 'Kayu RST', per_page: 500 } }),
     ])
-
-    const parseItems = (res) => {
-      const d = res.data.data
-      if (Array.isArray(d)) return d
-      if (d?.data && Array.isArray(d.data)) return d.data
-      return []
-    }
-
-    logItems.value         = parseItems(logsRes)
-    rstItems.value         = parseItems(rstRes)
-    jeblosanItems.value    = parseItems(jeblosanRes)
-    warehouses.value       = whRes.data.data || whRes.data || []
-    productionOrders.value = parseItems(poRes).map(po => ({ ...po, label: po.po_number }))
-  } catch (error) {
-    console.error(error)
-    showError('Gagal', 'Gagal mengambil data awal')
-  }
+    productionOrders.value = poRes.data.data || []
+    logItems.value = parse(logRes); jeblosanItems.value = parse(jebRes); rstItems.value = parse(rstRes)
+  } catch (e) { showError('Gagal', 'Gagal mengambil data') }
 }
 
-const handlePoChange = async () => {
-  poTargets.value = []
-  poInfo.value    = { buyer_name: null, so_number: null }
-  if (!selectedProductionOrderId.value) return
-
-  try {
-    const res  = await apiClient.get(`/production-orders/${selectedProductionOrderId.value}`)
-    const data = res.data.data || {}
-    poInfo.value    = { buyer_name: data.sales_order?.buyer_name || null, so_number: data.sales_order?.so_number || null }
-    poTargets.value = data.targets || []
-  } catch (error) {
-    console.error(error)
-    showError('Gagal', 'Gagal mengambil detail Production Order')
-  }
+const fetchSawmillStock = async () => {
+  loadingStock.value = true
+  try { sawmillStock.value = (await apiClient.get('/sawmill-productions/sawmill-stock')).data.data || [] }
+  catch (e) { console.error(e) } finally { loadingStock.value = false }
 }
 
-const handlePoDeselect = () => {
-  poTargets.value = []
-  poInfo.value    = { buyer_name: null, so_number: null }
+const setProcess = (t) => { form.process_type = t; if (t === 'jeblosan_rst' && !sawmillStock.value.length) fetchSawmillStock() }
+
+const handlePoChange = async (opt) => {
+  poInfo.buyer_name = null; poInfo.so_number = null; poTargets.value = []
+  if (!opt) return
+  try { const r = await apiClient.get(`/production-orders/${opt.id}`); const d = r.data.data || {}
+    poInfo.buyer_name = d.sales_order?.buyer_name || null; poInfo.so_number = d.sales_order?.so_number || null; poTargets.value = d.targets || []
+  } catch (e) { console.error(e) }
 }
-
-const getWarehouseIdByCode = (code) => {
-  const wh = warehouses.value.find((w) => w.code === code)
-  return wh ? wh.id : null
-}
-
-const getRstItem = (itemId) => rstItems.value.find((i) => i.id === itemId) || null
-
-const getRstDimensionText = (itemId) => {
-  const item = getRstItem(itemId)
-  if (!item) return '-'
-  const specs = item.specifications || {}
-  const { t, l, p } = specs
-  return t && l && p ? `${t} x ${l} x ${p} mm` : item.name
-}
-
-const updateRstVolume = (index) => {
-  const row  = form.rsts[index]
-  if (!row) return
-  const item = getRstItem(row.item_rst_id)
-  row.volume_rst_m3 = (item?.volume_m3 && row.qty_rst_pcs)
-    ? Number((row.qty_rst_pcs * Number(item.volume_m3)).toFixed(4))
-    : 0
-}
-
-const addLogRow = () => form.logs.push({ local_id: Date.now() + Math.random(), item_log_id: null, qty_log_pcs: null })
-const removeLogRow = (i) => form.logs.splice(i, 1)
-
-const getJeblosanItem = (itemId) => jeblosanItems.value.find((i) => i.id === itemId) || null
-
-const updateJeblosanVolume = (index) => {
-  const row  = form.jeblosans[index]
-  if (!row) return
-  const item = getJeblosanItem(row.item_id)
-  row.volume_m3 = (item?.volume_m3 && row.qty_pcs)
-    ? Number((row.qty_pcs * Number(item.volume_m3)).toFixed(4))
-    : 0
-}
-
-const addJeblosanRow = () => form.jeblosans.push({
-  local_id:  Date.now() + Math.random(),
-  item_id:   null,
-  qty_pcs:   null,
-  volume_m3: 0,
-  is_sisa:   false,
-})
-const removeJeblosanRow = (i) => form.jeblosans.splice(i, 1)
-
-const openModalTambahRst = () => {
-  formRstBaru.nama_dasar = ''
-  formRstBaru.kode_barang = ''
-  formRstBaru.tebal_mm = null
-  formRstBaru.lebar_mm = null
-  formRstBaru.panjang_mm = null
-  formRstBaru.jenis = ''
-  showModalTambahRst.value = true
-}
-
-const closeModalTambahRst = () => {
-  showModalTambahRst.value = false
-}
-
-const showModalTambahJeblosan = ref(false)
-const formJeblosanBaru = reactive({
-  nama_dasar: '',
-  kode_barang: '',
-  tebal_mm: null,
-  lebar_mm: null,
-  panjang_mm: null,
-})
-
-const openModalTambahJeblosan = () => {
-  formJeblosanBaru.nama_dasar  = ''
-  formJeblosanBaru.kode_barang = ''
-  formJeblosanBaru.tebal_mm    = null
-  formJeblosanBaru.lebar_mm    = null
-  formJeblosanBaru.panjang_mm  = null
-  showModalTambahJeblosan.value = true
-}
-
-const closeModalTambahJeblosan = () => {
-  showModalTambahJeblosan.value = false
-}
-
-const simpanJeblosanBaru = async () => {
-  if (!formJeblosanBaru.nama_dasar || !formJeblosanBaru.tebal_mm) {
-    showError('Validasi', 'Nama dasar dan tebal wajib diisi')
-    return
-  }
-  isSavingRst.value = true
-  try {
-    const res = await apiClient.post('/materials/quick-store-jeblosan', {
-      nama_dasar:  formJeblosanBaru.nama_dasar,
-      kode_barang: formJeblosanBaru.kode_barang || null,
-      tebal_mm:    formJeblosanBaru.tebal_mm,
-      lebar_mm:    formJeblosanBaru.lebar_mm || 0,
-      panjang_mm:  formJeblosanBaru.panjang_mm || 0,
-    })
-    const itemBaru = res.data.data
-    jeblosanItems.value.push({
-      id:    itemBaru.id,
-      code:  itemBaru.code,
-      name:  itemBaru.name,
-      volume_m3: itemBaru.volume_m3,
-      specifications: itemBaru.specifications || {},
-    })
-    const lastRow = form.jeblosans[form.jeblosans.length - 1]
-    if (lastRow && !lastRow.item_id) {
-      lastRow.item_id = itemBaru.id
-    } else {
-      form.jeblosans.push({
-        local_id:  Date.now() + Math.random(),
-        item_id:   itemBaru.id,
-        qty_pcs:   null,
-        volume_m3: 0,
-        is_sisa:   false,
-      })
-    }
-    showSuccess('Berhasil', `Item '${itemBaru.name}' berhasil ditambahkan`)
-    closeModalTambahJeblosan()
-  } catch (error) {
-    showError('Gagal', error.response?.data?.message || 'Gagal menyimpan')
-  } finally {
-    isSavingRst.value = false
-  }
-}
-
-const simpanRstBaru = async () => {
-  if (!formRstBaru.nama_dasar || !formRstBaru.tebal_mm) {
-    showError('Validasi', 'Nama dasar dan tebal wajib diisi')
-    return
-  }
-
-  isSavingRst.value = true
-  try {
-    const res = await apiClient.post('/materials/quick-store-rst', {
-      nama_dasar:  formRstBaru.nama_dasar,
-      kode_barang: formRstBaru.kode_barang || null,
-      tebal_mm:    formRstBaru.tebal_mm,
-      lebar_mm:    formRstBaru.lebar_mm || 0,
-      panjang_mm:  formRstBaru.panjang_mm || 0,
-      jenis:       formRstBaru.jenis || null,
-    })
-
-    const itemBaru = res.data.data
-
-    rstItems.value.push({
-      id:             itemBaru.id,
-      code:           itemBaru.code,
-      name:           itemBaru.name,
-      volume_m3:      itemBaru.volume_m3,
-      specifications: itemBaru.specifications || {},
-    })
-
-    const lastRst = form.rsts[form.rsts.length - 1]
-    if (lastRst && !lastRst.item_rst_id) {
-      lastRst.item_rst_id = itemBaru.id
-    } else {
-      form.rsts.push({
-        local_id:      Date.now() + Math.random(),
-        item_rst_id:   itemBaru.id,
-        qty_rst_pcs:   null,
-        volume_rst_m3: 0,
-      })
-    }
-
-    showSuccess('Berhasil', `Item '${itemBaru.name}' berhasil ditambahkan`)
-    closeModalTambahRst()
-  } catch (error) {
-    const message = error.response?.data?.message || 'Gagal menyimpan item RST baru'
-    showError('Gagal', message)
-  } finally {
-    isSavingRst.value = false
-  }
-}
-
-const addRstRow = () => form.rsts.push({ local_id: Date.now() + Math.random(), item_rst_id: null, qty_rst_pcs: null, volume_rst_m3: 0 })
-const removeRstRow = (i) => form.rsts.splice(i, 1)
+const resetPo = () => { poInfo.buyer_name = null; poInfo.so_number = null; poTargets.value = [] }
 
 const handleSubmit = async () => {
-  const validLogs = form.logs.filter((l) => l.item_log_id && l.qty_log_pcs > 0)
-  if (validLogs.length === 0) {
-    showError('Validasi', 'Minimal satu baris kayu log wajib diisi')
-    return
+  if (form.process_type === 'log_jeblosan') {
+    if (!form.jeblosans.filter(j => j.item_id && j.qty_pcs > 0).length) { showError('Validasi', 'Minimal satu jeblosan wajib diisi'); return }
+  } else {
+    if (!sawmillStock.value.length) { showError('Validasi', 'Tidak ada stok jeblosan di Gudang SAWMILL'); return }
+    if (!form.rsts.filter(r => r.item_rst_id && r.qty_rst_pcs > 0).length) { showError('Validasi', 'Minimal satu RST wajib diisi'); return }
   }
-
-  const validJeblosans = form.jeblosans.filter((j) => j.item_id && j.qty_pcs > 0)
-  if (validJeblosans.length === 0) {
-    showError('Validasi', 'Minimal satu baris jeblosan wajib diisi')
-    return
-  }
-
-  const validRsts = form.rsts.filter((r) => r.item_rst_id && r.qty_rst_pcs > 0)
-  if (validRsts.length === 0) {
-    showError('Validasi', 'Minimal satu baris hasil RST wajib diisi')
-    return
-  }
-
-  const warehouseFromId = getWarehouseIdByCode('LOG')
-  const warehouseToId   = getWarehouseIdByCode('RSTB')
-
-  if (!warehouseFromId || !warehouseToId) {
-    showError('Konfigurasi', 'Gudang LOG atau RSTB tidak ditemukan di master data')
-    return
-  }
-
   isSubmitting.value = true
-
   try {
-    const payload = {
-      date:                  form.date,
-      estimated_finish_date: form.estimated_finish_date || null,
-      warehouse_from_id:     warehouseFromId,
-      warehouse_to_id:       warehouseToId,
-      notes:                 form.notes || null,
-      ref_po_id:             selectedProductionOrderId.value ? Number(selectedProductionOrderId.value) : null,
-      ref_product_id:        null,
-      logs: validLogs.map((l) => ({
-        item_log_id: l.item_log_id,
-        qty_log_pcs: l.qty_log_pcs,
-      })),
-      jeblosans: validJeblosans.map((j) => ({
-        item_id:   j.item_id,
-        qty_pcs:   j.qty_pcs,
-        volume_m3: j.volume_m3,
-        is_sisa:   j.is_sisa,
-      })),
-      rsts: validRsts.map((r) => ({
-        item_rst_id:   r.item_rst_id,
-        qty_rst_pcs:   r.qty_rst_pcs,
-        volume_rst_m3: r.volume_rst_m3,
-      })),
+    const payload = { process_type: form.process_type, date: form.date, estimated_finish_date: form.estimated_finish_date || null, notes: form.notes || null, ref_po_id: form.ref_po_id ? Number(form.ref_po_id) : null }
+    if (form.process_type === 'log_jeblosan') {
+      payload.logs      = form.logs.filter(l => l.item_log_id && l.qty_log_pcs > 0).map(l => ({ item_log_id: Number(l.item_log_id), qty_log_pcs: Number(l.qty_log_pcs) }))
+      payload.jeblosans = form.jeblosans.filter(j => j.item_id && j.qty_pcs > 0).map(j => ({ item_id: Number(j.item_id), qty_pcs: Number(j.qty_pcs), volume_m3: Number(j.volume_m3||0) }))
+    } else {
+      payload.rsts = form.rsts.filter(r => r.item_rst_id && r.qty_rst_pcs > 0).map(r => ({ item_rst_id: Number(r.item_rst_id), qty_rst_pcs: Number(r.qty_rst_pcs), volume_rst_m3: Number(r.volume_rst_m3||0) }))
     }
-
     await apiClient.post('/sawmill-productions', payload)
-    showSuccess('Sukses', 'Produksi Sawmill berhasil dicatat')
-    router.push({ name: 'SampelKD' })
-  } catch (error) {
-    const message =
-      error.response?.data?.message ||
-      (error.response?.data?.errors && JSON.stringify(error.response.data.errors)) ||
-      'Gagal mencatat produksi Sawmill'
-    showError('Gagal', message)
-  } finally {
-    isSubmitting.value = false
-  }
+    showSuccess('Sukses', 'Sawmill sampel berhasil dicatat')
+    form.logs = [{lid:Date.now(),item_log_id:null,qty_log_pcs:null}]; form.jeblosans = [{lid:Date.now()+1,item_id:null,qty_pcs:null,volume_m3:0,vpp:0}]; form.rsts = [{lid:Date.now()+2,item_rst_id:null,qty_rst_pcs:null,volume_rst_m3:0,vpp:0}]
+    form.ref_po_id = null; resetPo()
+    if (form.process_type === 'jeblosan_rst') fetchSawmillStock()
+  } catch (e) { showError('Gagal', e.response?.data?.message || 'Gagal menyimpan') }
+  finally { isSubmitting.value = false }
 }
 
-onMounted(fetchItems)
+onMounted(fetchBase)
 </script>
 
 <style scoped>
-.optional-tag {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: #e0f2fe;
-  color: #0369a1;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  vertical-align: middle;
-}
-
-.field-hint {
-  margin-top: 6px;
-  font-size: 0.82rem;
-  color: #6b7280;
-}
-
-.po-selected-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 10px;
-  margin-top: 4px;
-}
-
-.po-info-icon { font-size: 1.25rem; }
-.po-info-buyer { font-weight: 700; font-size: 0.95rem; color: #111827; }
-.po-info-so { font-size: 0.82rem; color: #6b7280; }
-
-.po-empty-info {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  background: #f9fafb;
-  border: 1px dashed #d1d5db;
-  border-radius: 10px;
-  font-size: 0.88rem;
-  color: #9ca3af;
-  margin-top: 4px;
-}
-
-.form-grid-3col {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 1.25rem;
-}
-
-.item-row-card {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 1.25rem;
-  margin-bottom: 1rem;
-}
-
-.item-row-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.item-row-number {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.btn-remove-row {
-  background: #fee2e2;
-  color: #ef4444;
-  border: none;
-  border-radius: 6px;
-  padding: 3px 10px;
-  font-size: 0.82rem;
-  cursor: pointer;
-  font-weight: 700;
-  transition: background 0.2s;
-}
-.btn-remove-row:hover { background: #fecaca; }
-
-.rst-dimension-hint {
-  margin-top: 8px;
-  font-size: 0.82rem;
-  color: #6b7280;
-  padding: 4px 8px;
-  background: #f3f4f6;
-  border-radius: 6px;
-  display: inline-block;
-}
-
-.section-icon-badge--log { background: linear-gradient(135deg, #d97706, #b45309); }
-.section-icon-badge--rst { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
-
-.page-header-sawmill {
-  background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
-  padding: 2rem 2.5rem;
-  border-radius: 20px;
-  margin-bottom: 2rem;
-  box-shadow: 0 10px 40px rgba(8, 145, 178, 0.3);
-}
-.header-content-wrapper { display: flex; justify-content: space-between; align-items: center; gap: 2rem; }
-.header-left-section { display: flex; align-items: center; gap: 1.5rem; flex: 1; }
-.icon-badge-sawmill { width: 72px; height: 72px; border-radius: 18px; background: rgba(255,255,255,0.25); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; }
-.sawmill-icon { font-size: 2.5rem; }
-.page-title-sawmill { font-size: 2rem; font-weight: 800; color: white; margin: 0 0 0.5rem; }
-.page-subtitle-sawmill { color: rgba(255,255,255,0.95); font-size: 1rem; margin: 0; font-weight: 500; }
-.process-badge { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.5rem; background: rgba(255,255,255,0.95); border-radius: 16px; }
-.process-icon { font-size: 1.5rem; }
-.process-arrow { font-size: 1.25rem; color: #0e7490; font-weight: 700; }
-
-.content-card-sawmill { background: white; border-radius: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border: 1px solid #f0f2f5; overflow: hidden; }
-.card-body-sawmill { padding: 2.5rem; }
-
-.form-section-modern { margin-bottom: 2.5rem; padding-bottom: 2.5rem; border-bottom: 3px solid #e5e7eb; }
-.form-section-modern:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
-
-.section-header { display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.75rem; padding: 1.25rem 1.5rem; background: linear-gradient(135deg, #f9fafb, #f3f4f6); border-radius: 14px; border-left: 5px solid #0891b2; }
-.section-icon-badge { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #0891b2, #0e7490); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.section-icon { font-size: 1.25rem; }
-.section-title { font-size: 1.1rem; font-weight: 700; color: #111827; margin: 0 0 0.2rem; }
-.section-subtitle { font-size: 0.875rem; color: #6b7280; margin: 0; }
-
-.form-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
-.form-group-modern { display: flex; flex-direction: column; }
-.form-label-modern { font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem; }
-.required-star { color: #ef4444; }
-.input-wrapper-icon { position: relative; display: flex; align-items: center; }
-.input-icon { position: absolute; left: 1.125rem; font-size: 1rem; z-index: 1; pointer-events: none; }
-.form-input-modern { width: 100%; padding: 0.9rem 1.25rem 0.9rem 3.25rem; border: 2.5px solid #e5e7eb; border-radius: 12px; font-size: 1rem; font-weight: 500; transition: all 0.3s ease; background: white; }
-.form-input-modern:focus { outline: none; border-color: #0891b2; box-shadow: 0 0 0 4px rgba(8,145,178,0.15); }
-
-.add-rst-section { margin-top: 0.75rem; }
-.btn-add-rst { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; background: #e0f2fe; border: 2px dashed #0891b2; border-radius: 10px; color: #0e7490; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
-.btn-add-rst:hover { background: #bae6fd; }
-
-.po-hint-box { margin-top: 1.25rem; border-radius: 16px; border: 1px solid #bae6fd; background: linear-gradient(135deg, #f0f9ff, #e0f2fe); padding: 1.25rem 1.5rem; }
-.po-hint-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-.po-hint-title-wrap { display: flex; align-items: center; gap: 0.75rem; }
-.po-hint-icon { font-size: 1.25rem; }
-.po-hint-title { font-weight: 700; font-size: 0.95rem; color: #0e7490; }
-.po-hint-sub { font-size: 0.82rem; color: #0891b2; }
-.po-hint-badge { background: #0891b2; color: white; border-radius: 999px; padding: 2px 12px; font-size: 0.8rem; font-weight: 700; }
-.po-hint-list-wrapper { margin-top: 0.5rem; }
-.po-hint-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-.po-hint-table th { padding: 6px 10px; text-align: left; color: #0e7490; font-size: 0.78rem; text-transform: uppercase; border-bottom: 1px solid #bae6fd; }
-.po-hint-table td { padding: 6px 10px; color: #374151; border-bottom: 1px solid #e0f2fe; }
-
-.form-actions-modern { display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1.5rem; border-top: 2px solid #e5e7eb; }
-.btn-action { display: flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1.75rem; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; }
-.btn-cancel-modern { background: #f3f4f6; color: #374151; }
-.btn-cancel-modern:hover { background: #e5e7eb; }
-.btn-submit-modern { background: linear-gradient(135deg, #0891b2, #0e7490); color: white; box-shadow: 0 4px 12px rgba(8,145,178,0.35); }
-.btn-submit-modern:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(8,145,178,0.45); }
-.btn-submit-modern:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.vue-select-rst { --vs-border-color: #e5e7eb; --vs-border-width: 2.5px; --vs-border-radius: 12px; }
-.vue-select-rst :deep(.vs__dropdown-toggle) { padding: 0.875rem 1.25rem; border: var(--vs-border-width) solid var(--vs-border-color); border-radius: var(--vs-border-radius); min-height: 54px; }
-.vue-select-rst.vs--open :deep(.vs__dropdown-toggle) { border-color: #0891b2; box-shadow: 0 0 0 4px rgba(8,145,178,0.15); }
-.vue-select-po :deep(.vs__dropdown-toggle) { padding: 0.875rem 1.25rem; border: 2.5px solid #e5e7eb; border-radius: 12px; min-height: 54px; }
-.vue-select-po.vs--open :deep(.vs__dropdown-toggle) { border-color: #0891b2; box-shadow: 0 0 0 4px rgba(8,145,178,0.15); }
-.rst-option-item { padding: 0.75rem 1rem; display: flex; flex-direction: column; gap: 0.2rem; }
-.rst-option-code { font-size: 0.82rem; font-weight: 700; color: #0891b2; }
-.rst-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
-.rst-option-spec { font-size: 0.78rem; color: #9ca3af; }
-
-@media (max-width: 768px) {
-  .form-grid-2col, .form-grid-3col { grid-template-columns: 1fr; }
-  .card-body-sawmill { padding: 1.25rem; }
-}
-
-.btn-quick-add {
-  margin-left: 8px;
-  padding: 2px 10px;
-  background: #dcfce7;
-  color: #16a34a;
-  border: 1px solid #bbf7d0;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  vertical-align: middle;
-  transition: all 0.2s;
-}
-.btn-quick-add:hover { background: #bbf7d0; }
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.modal-card {
-  background: white;
-  border-radius: 20px;
-  width: 100%;
-  max-width: 560px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-  overflow: hidden;
-}
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 2px solid #e5e7eb;
-  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-}
-.modal-header h3 { font-size: 1.1rem; font-weight: 700; color: #111827; margin: 0; }
-.modal-close {
-  background: #fee2e2; color: #ef4444; border: none;
-  border-radius: 8px; padding: 4px 10px; cursor: pointer; font-weight: 700;
-}
-.modal-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
-.modal-hint { font-size: 0.85rem; color: #6b7280; margin: 0; }
-.modal-footer {
-  display: flex; justify-content: flex-end; gap: 1rem;
-  padding: 1.25rem 1.5rem; border-top: 2px solid #e5e7eb;
-}
-.input-plain { padding-left: 1.25rem !important; }
-.preview-nama {
-  padding: 10px 14px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 10px;
-  font-size: 0.88rem;
-  color: #374151;
-}
-.item-row-sisa {
-  border-left: 4px solid #16a34a;
-}
-.btn-add-jeblosan {
-  background: #e0f2fe !important;
-  border-color: #0891b2 !important;
-  color: #0e7490 !important;
-}
-.btn-add-jeblosan:hover {
-  background: #bae6fd !important;
-}
-.sisa-dest-hint {
-  margin-left: 12px;
-  font-size: 0.78rem;
-  color: #16a34a;
-  font-weight: 600;
-}
-.section-icon-badge--jeblosan {
-  background: linear-gradient(135deg, #d97706, #92400e);
-}
+.page-header { background: linear-gradient(135deg,#92400e,#78350f); padding:1.75rem 2rem; border-radius:16px; margin-bottom:1.75rem; }
+.icon-badge { width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:1.75rem; }
+.page-title { font-size:1.6rem;font-weight:800;color:white;margin:0 0 .25rem; }
+.page-sub { color:rgba(255,255,255,.9);margin:0;font-size:.9rem; }
+.content-card { background:white;border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,.08); }
+.card-body { padding:2rem; }
+.form-section { margin-bottom:1.75rem;padding-bottom:1.75rem;border-bottom:2px solid #e5e7eb; }
+.form-section:last-of-type { border-bottom:none; }
+.section-hd { display:flex;align-items:center;gap:.875rem;margin-bottom:1.25rem;padding:.875rem 1.125rem;background:#f9fafb;border-radius:10px;border-left:4px solid #92400e; }
+.s-badge { width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#92400e,#78350f);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0; }
+.s-badge.amber { background:linear-gradient(135deg,#d97706,#b45309) !important; }
+.s-badge.green  { background:linear-gradient(135deg,#16a34a,#15803d) !important; }
+.s-badge.blue   { background:linear-gradient(135deg,#2563eb,#1d4ed8) !important; }
+.s-title { font-size:.95rem;font-weight:700;color:#111827;margin:0; }
+.opt { font-size:.75rem;font-weight:400;color:#6b7280;margin-left:4px; }
+.process-toggle { display:flex;gap:.875rem; }
+.toggle-btn { flex:1;display:flex;align-items:center;gap:.75rem;padding:.875rem 1.125rem;border:2px solid #e5e7eb;border-radius:10px;background:white;cursor:pointer;transition:all .2s;text-align:left; }
+.toggle-btn.active { border-color:#92400e;background:#fffbeb; }
+.tl { font-weight:700;font-size:.9rem;color:#111827; }
+.td { font-size:.75rem;color:#6b7280; }
+.g2 { display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:.875rem; }
+.g3 { display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:.875rem; }
+.fg { display:flex;flex-direction:column; }
+.fl { font-size:.82rem;font-weight:600;color:#374151;margin-bottom:.35rem; }
+.fi { padding:.7rem .875rem;border:2px solid #e5e7eb;border-radius:8px;font-size:.9rem;transition:all .2s; }
+.fi:focus { outline:none;border-color:#92400e; }
+.vs :deep(.vs__dropdown-toggle) { padding:.6rem .875rem;border:2px solid #e5e7eb;border-radius:8px;min-height:44px; }
+.po-info { padding:.6rem 1rem;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;margin-top:.75rem;font-size:.875rem;color:#374151; }
+.po-hint { background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:.875rem 1rem;margin-top:.75rem; }
+.hint-tbl { width:100%;border-collapse:collapse;font-size:.82rem; }
+.hint-tbl th { padding:4px 8px;text-align:left;color:#92400e;border-bottom:1px solid #fde68a; }
+.hint-tbl td { padding:4px 8px;color:#374151; }
+.row-card { background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:.875rem;margin-bottom:.625rem; }
+.row-card.green { border-color:#bbf7d0;background:#f0fdf4; }
+.row-card.blue  { border-color:#bfdbfe;background:#eff6ff; }
+.row-hd { display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem; }
+.rn { font-size:.75rem;font-weight:700;color:#6b7280;text-transform:uppercase; }
+.btn-rm { background:#fee2e2;color:#ef4444;border:none;border-radius:5px;padding:2px 7px;cursor:pointer;font-weight:700; }
+.vol-hint { font-size:.78rem;color:#6b7280;margin-top:3px; }
+.btn-add { display:flex;align-items:center;gap:.4rem;padding:.55rem .875rem;border-radius:7px;font-weight:600;font-size:.82rem;cursor:pointer;border:2px dashed;background:none;margin-top:.25rem; }
+.a-amber { border-color:#d97706;color:#92400e; } .a-green { border-color:#16a34a;color:#15803d; } .a-blue { border-color:#2563eb;color:#1d4ed8; }
+.stock-info { padding:.7rem 1rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:.875rem;color:#15803d;font-weight:500; }
+.empty-hint { padding:1.25rem;text-align:center;color:#9ca3af;background:#f9fafb;border-radius:8px;border:1px dashed #d1d5db; }
+.actions { display:flex;justify-content:flex-end;gap:.875rem;padding-top:1.25rem;border-top:2px solid #e5e7eb;margin-top:.25rem; }
+.btn-cancel { padding:.7rem 1.375rem;border-radius:8px;background:#f3f4f6;color:#374151;border:none;font-weight:600;cursor:pointer; }
+.btn-submit { padding:.7rem 1.625rem;border-radius:8px;background:linear-gradient(135deg,#92400e,#78350f);color:white;border:none;font-weight:700;cursor:pointer; }
+.btn-submit:disabled { opacity:.6;cursor:not-allowed; }
+@media(max-width:768px) { .g2,.g3 { grid-template-columns:1fr; } .process-toggle { flex-direction:column; } }
 </style>
