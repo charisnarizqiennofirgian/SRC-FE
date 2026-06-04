@@ -160,16 +160,16 @@
             </div>
           </div>
 
-          <!-- SECTION 2: INPUT KOMPONEN S4S -->
+          <!-- SECTION 2: LINES (Komponen S4S → Komponen Mesin + Reject per baris) -->
           <div class="form-section-modern">
             <div class="section-header section-header-mesin">
               <div class="section-icon-badge section-badge-input">
-                <span class="section-icon">📦</span>
+                <span class="section-icon">🔗</span>
               </div>
               <div class="section-title-group">
-                <h3 class="section-title">Komponen Masuk Mesin</h3>
+                <h3 class="section-title">Baris Produksi</h3>
                 <p class="section-subtitle">
-                  Pilih dari stok Gudang S4S
+                  Tiap baris: 1 Komponen S4S → 1 Output Mesin + reject opsional
                   <span v-if="loadingS4s" class="loading-inline">⏳ memuat...</span>
                 </p>
               </div>
@@ -179,34 +179,31 @@
               📭 Tidak ada stok di Gudang S4S
             </div>
 
-            <template v-else>
-              <div
-                v-for="(row, index) in form.inputs"
-                :key="row.local_id"
-                class="item-row-card"
-              >
-                <div class="item-row-header">
-                  <span class="item-row-number">Input #{{ index + 1 }}</span>
-                  <button
-                    v-if="form.inputs.length > 1"
-                    type="button"
-                    class="btn-remove-row"
-                    @click="removeInput(index)"
-                  >✕</button>
-                </div>
+            <div
+              v-for="(line, idx) in form.lines"
+              :key="line.local_id"
+              class="item-row-card"
+            >
+              <!-- Header baris -->
+              <div class="item-row-header">
+                <span class="item-row-number">Baris #{{ idx + 1 }}</span>
+                <button v-if="form.lines.length > 1" type="button" class="btn-remove-row" @click="removeLine(idx)">✕</button>
+              </div>
+
+              <!-- INPUT dari S4S -->
+              <div class="line-block line-block--input">
+                <span class="line-label">📥 INPUT KOMPONEN (dari S4S)</span>
                 <div class="form-grid-2col">
                   <div class="form-group-modern">
-                    <label class="form-label-modern">
-                      Item Komponen <span class="required-star">*</span>
-                    </label>
+                    <label class="form-label-modern">Item Komponen <span class="required-star">*</span></label>
                     <vue-select
-                      v-model="row.item_id"
+                      v-model="line.input_item_id"
                       :options="s4sItemsForSelect"
                       :reduce="(o) => o.item_id"
                       label="label"
                       placeholder="🔍 Pilih komponen dari S4S..."
                       class="vue-select-item"
-                      @option:selected="(opt) => onS4sItemSelected(index, opt)"
+                      @option:selected="(opt) => onS4sItemSelected(idx, opt)"
                     >
                       <template #option="o">
                         <div class="item-option">
@@ -220,196 +217,71 @@
                   <div class="form-group-modern">
                     <label class="form-label-modern">
                       Qty (pcs) <span class="required-star">*</span>
-                      <span v-if="row.max_qty > 0" class="stock-hint">
-                        Tersedia: {{ row.max_qty }} pcs
-                      </span>
+                      <span v-if="line.max_qty > 0" class="stock-hint">Tersedia: {{ line.max_qty }} pcs</span>
                     </label>
                     <div class="input-wrapper-icon">
                       <span class="input-icon">🔢</span>
-                      <input
-                        v-model.number="row.qty"
-                        type="number"
-                        min="0.01"
-                        step="0.01"
-                        :max="row.max_qty"
-                        class="form-input-modern"
-                        placeholder="0"
-                      />
+                      <input v-model.number="line.input_qty" type="number" min="0.01" step="0.01" :max="line.max_qty" class="form-input-modern" placeholder="0" />
                     </div>
-                    <p v-if="row.qty > row.max_qty && row.max_qty > 0" class="qty-warning">
-                      ⚠️ Melebihi stok tersedia
-                    </p>
+                    <p v-if="line.input_qty > line.max_qty && line.max_qty > 0" class="qty-warning">⚠️ Melebihi stok tersedia</p>
                   </div>
                 </div>
               </div>
 
-              <button type="button" class="btn-add-row btn-add-input" @click="addInput">
-                ➕ Tambah Input Lainnya
-              </button>
-            </template>
-          </div>
-
-          <!-- SECTION 3: OUTPUT KOMPONEN -->
-          <div class="form-section-modern">
-            <div class="section-header section-header-mesin">
-              <div class="section-icon-badge section-badge-output">
-                <span class="section-icon">🔩</span>
-              </div>
-              <div class="section-title-group">
-                <h3 class="section-title">Hasil Komponen</h3>
-                <p class="section-subtitle">Komponen hasil mesin → masuk Gudang Mesin (MESIN)</p>
-              </div>
-            </div>
-
-            <div
-              v-for="(row, index) in form.outputs"
-              :key="row.local_id"
-              class="item-row-card item-row-card--output"
-            >
-              <div class="item-row-header">
-                <span class="item-row-number">Output #{{ index + 1 }}</span>
-                <button
-                  v-if="form.outputs.length > 1"
-                  type="button"
-                  class="btn-remove-row"
-                  @click="removeOutput(index)"
-                >✕</button>
-              </div>
-              <div class="form-grid-2col">
-                <div class="form-group-modern">
-                  <label class="form-label-modern">
-                    Item Komponen <span class="required-star">*</span>
-                  </label>
-                  <vue-select
-                    v-model="row.item_id"
-                    :options="allKomponenForSelect"
-                    :reduce="(o) => o.id"
-                    label="label"
-                    placeholder="🔍 Cari komponen..."
-                    class="vue-select-item"
-                  >
-                    <template #option="o">
-                      <div class="item-option">
-                        <span class="item-option-code">{{ o.code }}</span>
-                        <span class="item-option-name">{{ o.name }}</span>
-                        <span v-if="o.nama_produk" class="item-option-produk">📦 {{ o.nama_produk }}</span>
-                      </div>
-                    </template>
-                  </vue-select>
+              <!-- OUTPUT ke MESIN -->
+              <div class="line-block line-block--output">
+                <span class="line-label">📤 OUTPUT KOMPONEN → Gudang MESIN</span>
+                <div class="form-grid-2col">
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">Item Komponen Hasil</label>
+                    <div class="output-item-display">
+                      <span v-if="getS4sItemName(line.input_item_id)" class="output-item-name">
+                        {{ getS4sItemName(line.input_item_id) }}
+                      </span>
+                      <span v-else class="output-item-placeholder">— pilih input terlebih dahulu —</span>
+                    </div>
+                  </div>
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">Qty Output (pcs) <span class="required-star">*</span></label>
+                    <div class="input-wrapper-icon">
+                      <span class="input-icon">🔢</span>
+                      <input v-model.number="line.output_qty" type="number" min="1" class="form-input-modern" placeholder="0" />
+                    </div>
+                  </div>
                 </div>
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
-                  <div class="input-wrapper-icon">
-                    <span class="input-icon">🔢</span>
-                    <input
-                      v-model.number="row.qty"
-                      type="number"
-                      min="1"
-                      class="form-input-modern"
-                      placeholder="0"
-                    />
+              </div>
+
+              <!-- REJECT (toggle) -->
+              <div class="line-reject-toggle">
+                <button type="button" class="btn-toggle-reject" @click="line.show_reject = !line.show_reject">
+                  {{ line.show_reject ? '▲ Sembunyikan Reject' : '⚠️ + Tambah Reject' }}
+                </button>
+              </div>
+
+              <div v-if="line.show_reject" class="line-block line-block--reject">
+                <span class="line-label">♻️ REJECT KOMPONEN → Gudang REJECT</span>
+                <p class="line-hint">Item reject = komponen input yang rusak di mesin</p>
+                <div class="form-grid-2col">
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">Qty Reject</label>
+                    <div class="input-wrapper-icon">
+                      <span class="input-icon">🔢</span>
+                      <input v-model.number="line.reject_qty" type="number" min="0.01" step="0.01" class="form-input-modern" placeholder="0" />
+                    </div>
+                  </div>
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">Keterangan</label>
+                    <div class="input-wrapper-icon">
+                      <span class="input-icon">📝</span>
+                      <input v-model="line.reject_notes" type="text" class="form-input-modern" placeholder="Contoh: patah ujung, salah ukuran" />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <button type="button" class="btn-add-row btn-add-output" @click="addOutput">
-              ➕ Tambah Output Lainnya
-            </button>
-          </div>
-
-          <!-- SECTION 4: REJECT -->
-          <div class="form-section-modern">
-            <div class="section-header section-header-mesin">
-              <div class="section-icon-badge section-badge-reject">
-                <span class="section-icon">⚠️</span>
-              </div>
-              <div class="section-title-group">
-                <h3 class="section-title">
-                  Reject
-                  <span class="optional-tag">Opsional</span>
-                </h3>
-                <p class="section-subtitle">
-                  Catat komponen reject di mesin
-                  <strong v-if="form.machine_id">
-                    {{ machines.find(m => m.id === form.machine_id)?.name }}
-                  </strong>
-                </p>
-              </div>
-            </div>
-
-            <div v-if="form.rejects.length === 0" class="empty-reject">
-              Belum ada reject —
-              <button type="button" class="btn-link" @click="addReject">tambah reject</button>
-            </div>
-
-            <div
-              v-for="(row, index) in form.rejects"
-              :key="row.local_id"
-              class="item-row-card item-row-card--reject"
-            >
-              <div class="item-row-header">
-                <span class="item-row-number">Reject #{{ index + 1 }}</span>
-                <button type="button" class="btn-remove-row" @click="removeReject(index)">✕</button>
-              </div>
-              <div class="form-grid-3col">
-                <div class="form-group-modern">
-                  <label class="form-label-modern">
-                    Item Reject <span class="required-star">*</span>
-                  </label>
-                  <vue-select
-                    v-model="row.item_id"
-                    :options="allKomponenForSelect"
-                    :reduce="(o) => o.id"
-                    label="label"
-                    placeholder="🔍 Cari item..."
-                    class="vue-select-item"
-                  >
-                    <template #option="o">
-                      <div class="item-option">
-                        <span class="item-option-code">{{ o.code }}</span>
-                        <span class="item-option-name">{{ o.name }}</span>
-                        <span v-if="o.nama_produk" class="item-option-produk">📦 {{ o.nama_produk }}</span>
-                      </div>
-                    </template>
-                  </vue-select>
-                </div>
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Qty Reject <span class="required-star">*</span></label>
-                  <div class="input-wrapper-icon">
-                    <span class="input-icon">🔢</span>
-                    <input
-                      v-model.number="row.qty"
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      class="form-input-modern"
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Keterangan Reject</label>
-                  <div class="input-wrapper-icon">
-                    <span class="input-icon">📝</span>
-                    <input
-                      v-model="row.keterangan"
-                      type="text"
-                      class="form-input-modern"
-                      placeholder="Contoh: salah ukuran, patah, dll"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button
-              v-if="form.rejects.length > 0"
-              type="button"
-              class="btn-add-row btn-add-reject"
-              @click="addReject"
-            >
-              ➕ Tambah Reject Lainnya
+            <button type="button" class="btn-add-row btn-add-input" @click="addLine">
+              ➕ Tambah Baris
             </button>
           </div>
 
@@ -466,9 +338,20 @@ const loadingS4s     = ref(false)
 const productionOrders = ref([])
 const machines         = ref([])
 const s4sItems         = ref([])
-const allKomponen      = ref([])
 const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
+
+const newLine = () => ({
+  local_id:        Date.now() + Math.random(),
+  input_item_id:   null,
+  input_qty:       null,
+  max_qty:         0,
+  output_item_id:  null,
+  output_qty:      null,
+  reject_qty:      null,
+  reject_notes:    '',
+  show_reject:     false,
+})
 
 const form = reactive({
   date:                  new Date().toISOString().slice(0, 10),
@@ -476,9 +359,7 @@ const form = reactive({
   ref_po_id:             null,
   machine_id:            null,
   notes:                 '',
-  inputs:  [{ local_id: Date.now(),     item_id: null, qty: null, max_qty: 0 }],
-  outputs: [{ local_id: Date.now() + 1, item_id: null, qty: null }],
-  rejects: [],
+  lines: [newLine()],
 })
 
 // === COMPUTED ===
@@ -492,34 +373,24 @@ const s4sItemsForSelect = computed(() =>
   }))
 )
 
-const allKomponenForSelect = computed(() =>
-  allKomponen.value.map((i) => ({
-    id:          i.id,
-    code:        i.code,
-    name:        i.name,
-    nama_produk: i.nama_produk || '',
-    label:       i.nama_produk
-      ? `${i.code} - ${i.name} (${i.nama_produk})`
-      : `${i.code} - ${i.name}`,
-  }))
-)
+const getS4sItemName = (itemId) => {
+  if (!itemId) return null
+  const found = s4sItems.value.find((i) => i.item_id === itemId)
+  return found ? `${found.item_code} - ${found.item_name}` : null
+}
 
 // === FETCH DATA ===
 const fetchInitialData = async () => {
   loadingS4s.value = true
   try {
-    const [poRes, machineRes, s4sRes, kompRes] = await Promise.all([
+    const [poRes, machineRes, s4sRes] = await Promise.all([
       apiClient.get('/operator-mesin/available-pos'),
       apiClient.get('/operator-mesin/machines'),
       apiClient.get('/operator-mesin/s4s-items'),
-      apiClient.get('/stock-report', { params: { categories: 'Komponen', per_page: 9999 } }),
     ])
-    productionOrders.value = poRes.data.data      || []
-    machines.value         = machineRes.data.data  || []
-    s4sItems.value         = s4sRes.data.data      || []
-
-    const kompData = kompRes.data.data?.data ?? kompRes.data.data ?? []
-    allKomponen.value = Array.isArray(kompData) ? kompData : []
+    productionOrders.value = poRes.data.data     || []
+    machines.value         = machineRes.data.data || []
+    s4sItems.value         = s4sRes.data.data     || []
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil data awal')
@@ -548,32 +419,24 @@ const handlePoDeselect = () => {
   poTargets.value = []
 }
 
-const onS4sItemSelected = (index, opt) => {
-  form.inputs[index].max_qty = opt?.qty_available ?? 0
-
-  // ✅ Auto-fill output dengan item yang sama
-  if (form.outputs[index]) {
-    form.outputs[index].item_id = opt?.item_id ?? null
-  } else {
-    form.outputs.push({
-      local_id: Date.now() + Math.random(),
-      item_id:  opt?.item_id ?? null,
-      qty:      null,
-    })
-  }
+const onS4sItemSelected = (lineIdx, opt) => {
+  form.lines[lineIdx].max_qty        = opt?.qty_available ?? 0
+  form.lines[lineIdx].output_item_id = opt?.item_id ?? null
 }
 
-// === INPUT ===
-const addInput    = () => form.inputs.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, max_qty: 0 })
-const removeInput = (i) => form.inputs.splice(i, 1)
+// Sync output_qty mengikuti input_qty per baris
+watch(
+  () => form.lines.map((l) => l.input_qty),
+  (newVals) => {
+    newVals.forEach((qty, idx) => {
+      if (qty > 0) form.lines[idx].output_qty = qty
+    })
+  }
+)
 
-// === OUTPUT ===
-const addOutput    = () => form.outputs.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null })
-const removeOutput = (i) => form.outputs.splice(i, 1)
-
-// === REJECT ===
-const addReject    = () => form.rejects.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, keterangan: '' })
-const removeReject = (i) => form.rejects.splice(i, 1)
+// === LINES ===
+const addLine    = () => form.lines.push(newLine())
+const removeLine = (i) => form.lines.splice(i, 1)
 
 // === TANDAI SELESAI ===
 const tandaiSelesai = async () => {
@@ -597,51 +460,42 @@ const handleSubmit = async () => {
   if (!form.ref_po_id)  { showError('Validasi', 'Production Order wajib dipilih'); return }
   if (!form.machine_id) { showError('Validasi', 'Mesin wajib dipilih'); return }
 
-  const validInputs = form.inputs.filter((i) => i.item_id && i.qty > 0)
-  if (validInputs.length === 0) { showError('Validasi', 'Minimal satu input komponen wajib diisi'); return }
+  const validLines = form.lines.filter((l) => l.input_item_id && l.input_qty > 0 && l.output_item_id && l.output_qty > 0)
+  if (validLines.length === 0) { showError('Validasi', 'Minimal satu baris Komponen → Output wajib diisi'); return }
 
-  for (let i = 0; i < validInputs.length; i++) {
-    if (validInputs[i].qty > validInputs[i].max_qty && validInputs[i].max_qty > 0) {
-      showError('Validasi', `Input #${i + 1}: Qty melebihi stok tersedia (${validInputs[i].max_qty} pcs)`)
+  for (let i = 0; i < validLines.length; i++) {
+    if (validLines[i].input_qty > validLines[i].max_qty && validLines[i].max_qty > 0) {
+      showError('Validasi', `Baris #${i + 1}: Qty melebihi stok S4S tersedia (${validLines[i].max_qty} pcs)`)
       return
     }
   }
 
-  const validOutputs = form.outputs.filter((o) => o.item_id && o.qty > 0)
-  if (validOutputs.length === 0) { showError('Validasi', 'Minimal satu output komponen wajib diisi'); return }
-
-  const validRejects = form.rejects.filter((r) => r.item_id && r.qty > 0)
-
   isSubmitting.value = true
   try {
     const payload = {
-      date:                  form.date,
-      estimated_finish_date: form.estimated_finish_date || null,
-      ref_po_id:             Number(form.ref_po_id),
-      machine_id:            Number(form.machine_id),
+      date:       form.date,
+      ref_po_id:  Number(form.ref_po_id),
+      machine_id: Number(form.machine_id),
       notes:      form.notes || null,
-      inputs:  validInputs.map((i)  => ({ item_id: Number(i.item_id),  qty: Number(i.qty) })),
-      outputs: validOutputs.map((o) => ({ item_id: Number(o.item_id), qty: Number(o.qty) })),
-      rejects: validRejects.map((r) => ({
-        item_id:    Number(r.item_id),
-        qty:        Number(r.qty),
-        keterangan: r.keterangan || null,
+      lines: validLines.map((l) => ({
+        input_item_id:  Number(l.input_item_id),
+        input_qty:      Number(l.input_qty),
+        output_item_id: Number(l.output_item_id),
+        output_qty:     Number(l.output_qty),
+        reject_qty:     l.reject_qty > 0 ? Number(l.reject_qty) : null,
+        reject_notes:   l.reject_notes || null,
       })),
     }
 
     await apiClient.post('/operator-mesin/store', payload)
     showSuccess('Sukses', 'Proses Mesin berhasil dicatat')
 
-    // Reset form
     form.ref_po_id  = null
     form.machine_id = null
     form.notes      = ''
-    form.inputs     = [{ local_id: Date.now(), item_id: null, qty: null, max_qty: 0 }]
-    form.outputs    = [{ local_id: Date.now() + 1, item_id: null, qty: null }]
-    form.rejects    = []
+    form.lines      = [newLine()]
     poInfo.value    = { buyer_name: null, so_number: null }
     poTargets.value = []
-
   } catch (error) {
     const message =
       error.response?.data?.message ||
@@ -652,19 +506,6 @@ const handleSubmit = async () => {
     isSubmitting.value = false
   }
 }
-
-// ✅ Watcher: Kalau qty input berubah, qty output ikut otomatis
-watch(
-  () => form.inputs,
-  (newInputs) => {
-    newInputs.forEach((input, index) => {
-      if (form.outputs[index] && input.qty !== null) {
-        form.outputs[index].qty = input.qty
-      }
-    })
-  },
-  { deep: true }
-)
 
 onMounted(fetchInitialData)
 </script>
@@ -743,6 +584,17 @@ onMounted(fetchInitialData)
 .qty-warning { margin-top: 4px; font-size: 0.82rem; color: #ef4444; }
 .loading-inline { font-size: 0.82rem; color: #6b7280; margin-left: 8px; }
 
+/* Line blocks */
+.line-block { padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 0.75rem; }
+.line-block--input  { background: #ecfdf5; border: 1px solid #a7f3d0; }
+.line-block--output { background: #eff6ff; border: 1px solid #bfdbfe; }
+.line-block--reject { background: #fff7ed; border: 1px solid #fed7aa; }
+.line-label { display: inline-block; font-size: 0.75rem; font-weight: 800; color: #374151; margin-bottom: 0.5rem; letter-spacing: 0.05em; }
+.line-hint  { font-size: 0.78rem; color: #92400e; margin: 0 0 0.6rem; }
+.line-reject-toggle { margin-bottom: 0.5rem; }
+.btn-toggle-reject { background: none; border: 1px dashed #d1d5db; color: #6b7280; border-radius: 8px; padding: 5px 14px; font-size: 0.8rem; cursor: pointer; transition: all 0.15s; }
+.btn-toggle-reject:hover { border-color: #0891b2; color: #0891b2; }
+
 .btn-add-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; margin-top: 0.5rem; border: 2px dashed; }
 .btn-add-input  { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
 .btn-add-input:hover { background: #fde68a; }
@@ -777,6 +629,10 @@ onMounted(fetchInitialData)
 .item-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
 .item-option-produk { font-size: 0.78rem; color: #2563eb; font-weight: 600; }
 .item-option-stock { font-size: 0.78rem; color: #6b7280; }
+
+.output-item-display { display: flex; align-items: center; min-height: 54px; padding: 0.9rem 1.25rem; border: 2.5px solid #bfdbfe; border-radius: 12px; background: #eff6ff; }
+.output-item-name { font-size: 0.95rem; font-weight: 600; color: #1e40af; }
+.output-item-placeholder { font-size: 0.875rem; color: #9ca3af; font-style: italic; }
 
 @media (max-width: 768px) {
   .form-grid-2col, .form-grid-3col { grid-template-columns: 1fr; }

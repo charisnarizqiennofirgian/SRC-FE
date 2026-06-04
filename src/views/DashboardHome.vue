@@ -70,7 +70,7 @@
               </tr>
               <tr>
                 <!-- Hulu -->
-                <th class="col-status stage-sanwil">Sanwil</th>
+                <th class="col-status stage-sanwil">Sawmill</th>
                 <th class="col-status stage-kd">KD</th>
                 <th class="col-status stage-pembahanan">Pembahanan</th>
                 <th class="col-status stage-moulding">Moulding</th>
@@ -78,8 +78,8 @@
                 <!-- Hilir -->
                 <th class="col-num stage-ruskomp">Rustik Komp</th>
                 <th class="col-num stage-assembling">Assembling</th>
-                <th class="col-num stage-rustik">Rustik</th>
                 <th class="col-num stage-sanding">Sanding</th>
+                <th class="col-num stage-rustik">Rustik</th>
                 <th class="col-num stage-finishing">Finishing</th>
                 <th class="col-num stage-qcfinal">QC Final</th>
                 <th class="col-num stage-packing">Packing</th>
@@ -170,14 +170,14 @@
                       {{ formatNumber(item.qty_assembling) }}
                     </span>
                   </td>
-                  <td class="col-num stage-rustik">
-                    <span :class="['qty-value', item.qty_rustik > 0 ? 'has-value' : 'no-value']">
-                      {{ formatNumber(item.qty_rustik) }}
-                    </span>
-                  </td>
                   <td class="col-num stage-sanding">
                     <span :class="['qty-value', item.qty_sanding > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_sanding) }}
+                    </span>
+                  </td>
+                  <td class="col-num stage-rustik">
+                    <span :class="['qty-value', item.qty_rustik > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_rustik) }}
                     </span>
                   </td>
                   <td class="col-num stage-finishing">
@@ -230,7 +230,7 @@
 
                 <!-- Separator antar SO -->
                 <tr class="so-separator">
-                  <td colspan="21"></td>
+                  <td colspan="18"></td>
                 </tr>
               </template>
             </tbody>

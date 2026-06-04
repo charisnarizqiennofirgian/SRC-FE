@@ -158,14 +158,14 @@
               <div class="section-title-group">
                 <h3 class="section-title">Komponen yang Dipakai</h3>
                 <p class="section-subtitle">
-                  Pilih dari Gudang Mesin, Rustik Komponen, atau Assembling
+                  Komponen dari Gudang Mesin
                   <span v-if="loadingItems" class="loading-inline">⏳ memuat...</span>
                 </p>
               </div>
             </div>
 
             <div v-if="sourceItems.length === 0 && !loadingItems" class="empty-hint">
-              📭 Tidak ada stok di Gudang Mesin, Rustik Komponen, maupun Assembling
+              📭 Tidak ada stok komponen di Gudang Mesin
             </div>
 
             <template v-else>
@@ -251,78 +251,58 @@
               </div>
               <div class="section-title-group">
                 <h3 class="section-title">Hasil {{ form.process_type === 'sub_assembling' ? 'Sub Assembling' : 'Rakit' }}</h3>
-                <p class="section-subtitle">Hasil → masuk Gudang Assembling</p>
+                <p class="section-subtitle">Produk dari PO → masuk Gudang Assembling (setengah jadi)</p>
               </div>
             </div>
 
-            <div
-              v-for="(row, index) in form.outputs"
-              :key="row.local_id"
-              class="item-row-card item-row-card--output"
-            >
-              <div class="item-row-header">
-                <span class="item-row-number">Output #{{ index + 1 }}</span>
-                <button
-                  v-if="!form.ref_po_id && form.outputs.length > 1"
-                  type="button"
-                  class="btn-remove-row"
-                  @click="removeOutput(index)"
-                >✕</button>
-              </div>
-
-              <div class="form-grid-2col">
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Item Output</label>
-                  <!-- Kalau dari PO: tampilkan nama item read-only -->
-                  <div v-if="row.item_name" class="item-readonly-box">
-                    <span class="item-readonly-code">{{ row.item_code }}</span>
-                    <span class="item-readonly-name">{{ row.item_name }}</span>
-                    <span class="item-readonly-badge">🎯 Dari PO</span>
-                  </div>
-                  <!-- Kalau manual: vue-select -->
-                  <vue-select
-                    v-else
-                    v-model="row.item_id"
-                    :options="allItemsForSelect"
-                    :reduce="(o) => o.id"
-                    label="label"
-                    placeholder="🔍 Cari produk jadi..."
-                    class="vue-select-item"
-                  >
-                    <template #option="o">
-                      <div class="item-option">
-                        <span class="item-option-code">{{ o.code }}</span>
-                        <span class="item-option-name">{{ o.name }}</span>
-                      </div>
-                    </template>
-                  </vue-select>
-                </div>
-
-                <div class="form-group-modern">
-                  <label class="form-label-modern">
-                    Qty (pcs) <span class="required-star">*</span>
-                  </label>
-                  <div class="input-wrapper-icon">
-                    <span class="input-icon">🔢</span>
-                    <input
-                      v-model.number="row.qty"
-                      type="number"
-                      min="1"
-                      class="form-input-modern"
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div class="output-dest-hint">
-                📦 → Gudang Assembling
-              </div>
+            <!-- Belum pilih PO -->
+            <div v-if="!form.ref_po_id" class="empty-hint">
+              🔍 Pilih Production Order terlebih dahulu — output akan otomatis muncul dari PO
             </div>
 
-            <button type="button" class="btn-add-row btn-add-output" @click="addOutput">
-              ➕ Tambah Output Lainnya
-            </button>
+            <!-- Output dari PO targets -->
+            <template v-else>
+              <div
+                v-for="(row, index) in form.outputs"
+                :key="row.local_id"
+                class="item-row-card item-row-card--output"
+              >
+                <div class="item-row-header">
+                  <span class="item-row-number">Output #{{ index + 1 }}</span>
+                  <span class="item-readonly-badge">🎯 Dari PO</span>
+                </div>
+
+                <div class="form-grid-2col">
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">Produk</label>
+                    <div class="item-readonly-box">
+                      <span class="item-readonly-code">{{ row.item_code }}</span>
+                      <span class="item-readonly-name">{{ row.item_name }}</span>
+                    </div>
+                  </div>
+
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">
+                      Qty Dihasilkan (pcs) <span class="required-star">*</span>
+                    </label>
+                    <div class="input-wrapper-icon">
+                      <span class="input-icon">🔢</span>
+                      <input
+                        v-model.number="row.qty"
+                        type="number"
+                        min="1"
+                        class="form-input-modern"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="output-dest-hint">
+                  📦 → Gudang Assembling (setengah jadi)
+                </div>
+              </div>
+            </template>
           </div>
 
           <!-- SECTION 4: REJECT -->
@@ -359,10 +339,10 @@
                   <label class="form-label-modern">Item Reject <span class="required-star">*</span></label>
                   <vue-select
                     v-model="row.item_id"
-                    :options="allItemsForSelect"
-                    :reduce="(o) => o.id"
+                    :options="sourceItemsForSelect"
+                    :reduce="(o) => o.item_id"
                     label="label"
-                    placeholder="🔍 Cari item..."
+                    placeholder="🔍 Pilih komponen yang reject..."
                     class="vue-select-item"
                   />
                 </div>
@@ -441,7 +421,6 @@ const loadingItems = ref(false)
 
 const productionOrders = ref([])
 const sourceItems      = ref([])
-const allItems         = ref([])
 const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
 
@@ -462,23 +441,11 @@ const sourceItemsForSelect = computed(() =>
     item_id:        i.item_id,
     item_code:      i.item_code,
     item_name:      i.item_name,
-    nama_produk:    i.nama_produk || '',
     qty_available:  i.qty_available,
     warehouse_id:   i.warehouse_id,
     warehouse_code: i.warehouse_code,
     warehouse_name: i.warehouse_name,
-    label:          i.nama_produk
-      ? `[${i.warehouse_code}] ${i.item_code} - ${i.item_name} (${i.nama_produk})`
-      : `[${i.warehouse_code}] ${i.item_code} - ${i.item_name}`,
-  }))
-)
-
-const allItemsForSelect = computed(() =>
-  allItems.value.map((i) => ({
-    id:    i.id,
-    code:  i.code,
-    name:  i.name,
-    label: `${i.code} - ${i.name}`,
+    label:          `${i.item_code} - ${i.item_name}`,
   }))
 )
 
@@ -486,16 +453,12 @@ const allItemsForSelect = computed(() =>
 const fetchInitialData = async () => {
   loadingItems.value = true
   try {
-    const [poRes, sourceRes, itemRes] = await Promise.all([
+    const [poRes, sourceRes] = await Promise.all([
       apiClient.get('/assembling-produksi/available-pos'),
       apiClient.get('/assembling-produksi/source-items'),
-      apiClient.get('/stock-report', { params: { categories: 'Produk Jadi', per_page: 9999 } }),
     ])
-    productionOrders.value = poRes.data.data     || []
-    sourceItems.value      = sourceRes.data.data  || []
-
-    const prodData = itemRes.data.data?.data ?? itemRes.data.data ?? []
-    allItems.value = Array.isArray(prodData) ? prodData : []
+    productionOrders.value = poRes.data.data    || []
+    sourceItems.value      = sourceRes.data.data || []
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil data awal')
@@ -538,15 +501,10 @@ const handlePoDeselect = () => {
 }
 
 const onItemSelected = (index, opt) => {
-  form.inputs[index].item_id       = opt?.item_id       ?? null
-  form.inputs[index].warehouse_id  = opt?.warehouse_id  ?? null
+  form.inputs[index].item_id        = opt?.item_id       ?? null
+  form.inputs[index].warehouse_id   = opt?.warehouse_id  ?? null
   form.inputs[index].warehouse_name = opt?.warehouse_name ?? ''
-  form.inputs[index].max_qty       = opt?.qty_available ?? 0
-
-  // Auto sync output item
-  if (form.outputs[index] && !form.outputs[index].item_id) {
-    form.outputs[index].item_id = opt?.item_id ?? null
-  }
+  form.inputs[index].max_qty        = opt?.qty_available ?? 0
 }
 
 // === INPUT ===
@@ -556,10 +514,6 @@ const addInput = () => form.inputs.push({
   qty: null, max_qty: 0, warehouse_name: ''
 })
 const removeInput = (i) => form.inputs.splice(i, 1)
-
-// === OUTPUT ===
-const addOutput    = () => form.outputs.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null })
-const removeOutput = (i) => form.outputs.splice(i, 1)
 
 // === REJECT ===
 const addReject    = () => form.rejects.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, keterangan: '' })
@@ -616,7 +570,7 @@ const handleSubmit = async () => {
     form.notes         = ''
     form.process_type  = currentType
     form.inputs        = [{ local_id: Date.now(), key: null, item_id: null, warehouse_id: null, qty: null, max_qty: 0, warehouse_name: '' }]
-    form.outputs       = [{ local_id: Date.now() + 1, item_id: null, qty: null }]
+    form.outputs       = []
     form.rejects       = []
     poInfo.value       = { buyer_name: null, so_number: null }
     poTargets.value    = []

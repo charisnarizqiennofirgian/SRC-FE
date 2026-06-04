@@ -135,236 +135,149 @@
             </div>
           </div>
 
-          <!-- SECTION 2: INPUT RST -->
+          <!-- SECTION 2: LINES (RST → Komponen + Reject per baris) -->
           <div class="form-section-modern">
             <div class="section-header section-header-moulding">
               <div class="section-icon-badge section-badge-rst">
-                <span class="section-icon">🪵</span>
+                <span class="section-icon">🔗</span>
               </div>
               <div class="section-title-group">
-                <h3 class="section-title">Bahan RST yang Dipakai</h3>
-                <p class="section-subtitle">Pilih dari master Kayu RST — catat berapa yang digunakan</p>
-              </div>
-            </div>
-
-            <div
-              v-for="(row, index) in form.inputs"
-              :key="row.local_id"
-              class="item-row-card"
-            >
-              <div class="item-row-header">
-                <span class="item-row-number">RST #{{ index + 1 }}</span>
-                <button
-                  v-if="form.inputs.length > 1"
-                  type="button"
-                  class="btn-remove-row"
-                  @click="removeInput(index)"
-                >✕</button>
-              </div>
-              <div class="form-grid-2col">
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Item RST <span class="required-star">*</span></label>
-                  <vue-select
-                    v-model="row.item_id"
-                    :options="rstItemsForSelect"
-                    :reduce="(o) => o.id"
-                    label="label"
-                    placeholder="🔍 Cari kayu RST..."
-                    class="vue-select-item"
-                  >
-                    <template #option="o">
-                      <div class="item-option">
-                        <span class="item-option-code">{{ o.code }}</span>
-                        <span class="item-option-name">{{ o.name }}</span>
-                      </div>
-                    </template>
-                  </vue-select>
-                </div>
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
-                  <div class="input-wrapper-icon">
-                    <span class="input-icon">🔢</span>
-                    <input v-model.number="row.qty" type="number" min="0.01" step="0.01" class="form-input-modern" placeholder="0" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button type="button" class="btn-add-row btn-add-rst" @click="addInput">
-              ➕ Tambah RST Lainnya
-            </button>
-          </div>
-
-          <!-- SECTION 3: OUTPUT KOMPONEN -->
-          <div class="form-section-modern">
-            <div class="section-header section-header-moulding">
-              <div class="section-icon-badge section-badge-output">
-                <span class="section-icon">🔩</span>
-              </div>
-              <div class="section-title-group">
-                <h3 class="section-title">Hasil Komponen</h3>
+                <h3 class="section-title">Baris Produksi</h3>
                 <p class="section-subtitle">
-                  Komponen yang dihasilkan → masuk Gudang Mesin
+                  Tiap baris: 1 RST → 1 Komponen + reject opsional
                   <span class="btn-quick-add-wrap">
-                    <button type="button" class="btn-quick-add" @click="openModalKomponen">
-                      ➕ Komponen Baru
-                    </button>
+                    <button type="button" class="btn-quick-add" @click="openModalKomponen">➕ Komponen Baru</button>
                   </span>
                 </p>
               </div>
             </div>
 
             <div
-              v-for="(row, index) in form.outputs"
-              :key="row.local_id"
-              class="item-row-card item-row-card--output"
+              v-for="(line, idx) in form.lines"
+              :key="line.local_id"
+              class="item-row-card"
             >
+              <!-- Header baris -->
               <div class="item-row-header">
-                <span class="item-row-number">Komponen #{{ index + 1 }}</span>
-                <button
-                  v-if="form.outputs.length > 1"
-                  type="button"
-                  class="btn-remove-row"
-                  @click="removeOutput(index)"
-                >✕</button>
-              </div>
-              <div class="form-grid-2col">
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Item Komponen <span class="required-star">*</span></label>
-                  <vue-select
-                    v-model="row.item_id"
-                    :options="komponenItemsForSelect"
-                    :reduce="(o) => o.id"
-                    label="label"
-                    placeholder="🔍 Cari komponen..."
-                    class="vue-select-item"
-                  >
-                    <template #option="o">
-                      <div class="item-option">
-                        <span class="item-option-code">{{ o.code }}</span>
-                        <span class="item-option-name">{{ o.name }}</span>
-                        <span v-if="o.nama_produk" class="item-option-produk">📦 {{ o.nama_produk }}</span>
-                        <span class="item-option-stock" style="color:#9ca3af;">{{ o.category }}</span>
-                      </div>
-                    </template>
-                  </vue-select>
-                </div>
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
-                  <div class="input-wrapper-icon">
-                    <span class="input-icon">🔢</span>
-                    <input v-model.number="row.qty" type="number" min="1" class="form-input-modern" placeholder="0" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button type="button" class="btn-add-row btn-add-output" @click="addOutput">
-              ➕ Tambah Komponen Lainnya
-            </button>
-          </div>
-
-          <!-- SECTION 4: REJECT -->
-          <div class="form-section-modern">
-            <div class="section-header section-header-moulding">
-              <div class="section-icon-badge section-badge-reject">
-                <span class="section-icon">⚠️</span>
-              </div>
-              <div class="section-title-group">
-                <h3 class="section-title">
-                  Bahan Reject
-                  <span class="optional-tag">Opsional</span>
-                </h3>
-                <p class="section-subtitle">Catat komponen/bahan yang reject beserta penyebabnya</p>
-              </div>
-            </div>
-
-            <div v-if="form.rejects.length === 0" class="empty-reject">
-              Belum ada reject —
-              <button type="button" class="btn-link" @click="addReject">tambah reject</button>
-            </div>
-
-            <div
-              v-for="(row, index) in form.rejects"
-              :key="row.local_id"
-              class="item-row-card item-row-card--reject"
-            >
-              <div class="item-row-header">
-                <span class="item-row-number">Reject #{{ index + 1 }}</span>
-                <button type="button" class="btn-remove-row" @click="removeReject(index)">✕</button>
+                <span class="item-row-number">Baris #{{ idx + 1 }}</span>
+                <button v-if="form.lines.length > 1" type="button" class="btn-remove-row" @click="removeLine(idx)">✕</button>
               </div>
 
-              <div class="form-grid-2col" style="margin-bottom:0.75rem;">
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Item yang Reject <span class="required-star">*</span></label>
-                  <vue-select
-                    v-model="row.item_id"
-                    :options="komponenItemsForSelect"
-                    :reduce="(o) => o.id"
-                    label="label"
-                    placeholder="🔍 Cari item..."
-                    class="vue-select-item"
-                  >
-                    <template #option="o">
-                      <div class="item-option">
-                        <span class="item-option-code">{{ o.code }}</span>
-                        <span class="item-option-name">{{ o.name }}</span>
-                        <span v-if="o.nama_produk" class="item-option-produk">📦 {{ o.nama_produk }}</span>
-                      </div>
-                    </template>
-                  </vue-select>
-                </div>
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Qty Reject <span class="required-star">*</span></label>
-                  <div class="input-wrapper-icon">
-                    <span class="input-icon">🔢</span>
-                    <input v-model.number="row.qty" type="number" min="0.01" step="0.01" class="form-input-modern" placeholder="0" />
-                  </div>
-                </div>
-              </div>
-
-              <div class="form-grid-2col">
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Penyebab Reject <span class="required-star">*</span></label>
-                  <div class="reject-type-toggle">
-                    <button
-                      type="button"
-                      :class="['toggle-btn', row.reject_type === 'moulding' ? 'active-reject' : '']"
-                      @click="row.reject_type = 'moulding'"
+              <!-- INPUT RST -->
+              <div class="line-block line-block--input">
+                <span class="line-label">📥 INPUT RST</span>
+                <div class="form-grid-2col">
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">Item RST <span class="required-star">*</span></label>
+                    <vue-select
+                      v-model="line.input_item_id"
+                      :options="rstItemsForSelect"
+                      :reduce="(o) => o.id"
+                      label="label"
+                      placeholder="🔍 Cari kayu RST..."
+                      class="vue-select-item"
                     >
-                      ⚙️ Kesalahan Moulding
-                    </button>
-                    <button
-                      type="button"
-                      :class="['toggle-btn', row.reject_type === 'pembahanan' ? 'active-reject' : '']"
-                      @click="row.reject_type = 'pembahanan'"
-                    >
-                      🪚 Dari Pembahanan
-                    </button>
+                      <template #option="o">
+                        <div class="item-option">
+                          <span class="item-option-code">{{ o.code }}</span>
+                          <span class="item-option-name">{{ o.name }}</span>
+                        </div>
+                      </template>
+                    </vue-select>
+                  </div>
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
+                    <div class="input-wrapper-icon">
+                      <span class="input-icon">🔢</span>
+                      <input v-model.number="line.input_qty" type="number" min="0.01" step="0.01" class="form-input-modern" placeholder="0" />
+                    </div>
                   </div>
                 </div>
-                <div class="form-group-modern">
-                  <label class="form-label-modern">Keterangan</label>
-                  <div class="input-wrapper-icon">
-                    <span class="input-icon">📝</span>
-                    <input
-                      v-model="row.keterangan"
-                      type="text"
-                      class="form-input-modern"
-                      placeholder="Contoh: Kena bor, kayu susut, dll"
+              </div>
+
+              <!-- OUTPUT KOMPONEN -->
+              <div class="line-block line-block--output">
+                <span class="line-label">📤 OUTPUT KOMPONEN → S4S</span>
+                <div class="form-grid-2col">
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">Item Komponen <span class="required-star">*</span></label>
+                    <vue-select
+                      v-model="line.output_item_id"
+                      :options="komponenItemsForSelect"
+                      :reduce="(o) => o.id"
+                      label="label"
+                      placeholder="🔍 Cari komponen..."
+                      class="vue-select-item"
+                    >
+                      <template #option="o">
+                        <div class="item-option">
+                          <span class="item-option-code">{{ o.code }}</span>
+                          <span class="item-option-name">{{ o.name }}</span>
+                          <span v-if="o.nama_produk" class="item-option-produk">📦 {{ o.nama_produk }}</span>
+                        </div>
+                      </template>
+                    </vue-select>
+                  </div>
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
+                    <div class="input-wrapper-icon">
+                      <span class="input-icon">🔢</span>
+                      <input v-model.number="line.output_qty" type="number" min="1" class="form-input-modern" placeholder="0" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- REJECT (toggle) -->
+              <div class="line-reject-toggle">
+                <button type="button" class="btn-toggle-reject" @click="line.show_reject = !line.show_reject">
+                  {{ line.show_reject ? '▲ Sembunyikan Reject' : '⚠️ + Tambah Reject' }}
+                </button>
+              </div>
+
+              <div v-if="line.show_reject" class="line-block line-block--reject">
+                <span class="line-label">♻️ REJECT → Gudang REJECT</span>
+                <div class="form-grid-2col" style="margin-bottom:0.75rem;">
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">Item Reject (RST atau Komponen)</label>
+                    <vue-select
+                      v-model="line.reject_item_id"
+                      :options="[...rstItemsForSelect, ...komponenItemsForSelect]"
+                      :reduce="(o) => o.id"
+                      label="label"
+                      placeholder="🔍 Pilih item reject..."
+                      class="vue-select-item"
                     />
                   </div>
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">Qty Reject</label>
+                    <div class="input-wrapper-icon">
+                      <span class="input-icon">🔢</span>
+                      <input v-model.number="line.reject_qty" type="number" min="0.01" step="0.01" class="form-input-modern" placeholder="0" />
+                    </div>
+                  </div>
+                </div>
+                <div class="form-grid-2col">
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">Penyebab</label>
+                    <div class="reject-type-toggle">
+                      <button type="button" :class="['toggle-btn', line.reject_type === 'moulding' ? 'active-reject' : '']" @click="line.reject_type = 'moulding'">⚙️ Moulding</button>
+                      <button type="button" :class="['toggle-btn', line.reject_type === 'pembahanan' ? 'active-reject' : '']" @click="line.reject_type = 'pembahanan'">🪚 Pembahanan</button>
+                    </div>
+                  </div>
+                  <div class="form-group-modern">
+                    <label class="form-label-modern">Keterangan</label>
+                    <div class="input-wrapper-icon">
+                      <span class="input-icon">📝</span>
+                      <input v-model="line.reject_notes" type="text" class="form-input-modern" placeholder="Contoh: urat bengkok" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <button
-              v-if="form.rejects.length > 0"
-              type="button"
-              class="btn-add-row btn-add-reject"
-              @click="addReject"
-            >
-              ➕ Tambah Reject Lainnya
+            <button type="button" class="btn-add-row btn-add-rst" @click="addLine">
+              ➕ Tambah Baris
             </button>
           </div>
 
@@ -454,14 +367,25 @@ const komponenItems    = ref([])
 const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
 
+const newLine = () => ({
+  local_id:        Date.now() + Math.random(),
+  input_item_id:   null,
+  input_qty:       null,
+  output_item_id:  null,
+  output_qty:      null,
+  reject_item_id:  null,
+  reject_qty:      null,
+  reject_type:     'moulding',
+  reject_notes:    '',
+  show_reject:     false,
+})
+
 const form = reactive({
   date:                  new Date().toISOString().slice(0, 10),
   estimated_finish_date: '',
   ref_po_id:             null,
   notes:                 '',
-  inputs:  [{ local_id: Date.now(),       item_id: null, qty: null }],
-  outputs: [{ local_id: Date.now() + 1,   item_id: null, qty: null }],
-  rejects: [],
+  lines: [newLine()],
 })
 
 // === MODAL KOMPONEN BARU ===
@@ -531,17 +455,9 @@ const handlePoDeselect = () => {
   poTargets.value = []
 }
 
-// === INPUT RST ===
-const addInput    = () => form.inputs.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null })
-const removeInput = (i) => form.inputs.splice(i, 1)
-
-// === OUTPUT KOMPONEN ===
-const addOutput    = () => form.outputs.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null })
-const removeOutput = (i) => form.outputs.splice(i, 1)
-
-// === REJECT ===
-const addReject    = () => form.rejects.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, reject_type: 'moulding', keterangan: '' })
-const removeReject = (i) => form.rejects.splice(i, 1)
+// === LINES ===
+const addLine    = () => form.lines.push(newLine())
+const removeLine = (i) => form.lines.splice(i, 1)
 
 // === MODAL KOMPONEN BARU ===
 const openModalKomponen  = () => {
@@ -565,28 +481,14 @@ const simpanKomponenBaru = async () => {
       category: formKomponenBaru.category,
     })
     const itemBaru = res.data.data
-
-    // Tambah ke list komponen
-    komponenItems.value.push({
-      id:       itemBaru.id,
-      code:     itemBaru.code,
-      name:     itemBaru.name,
-      category: itemBaru.category,
-    })
-
-    // Otomatis pilih di baris output terakhir yang kosong
-    const lastOutput = form.outputs[form.outputs.length - 1]
-    if (lastOutput && !lastOutput.item_id) {
-      lastOutput.item_id = itemBaru.id
-    } else {
-      form.outputs.push({ local_id: Date.now() + Math.random(), item_id: itemBaru.id, qty: null })
-    }
-
+    komponenItems.value.push({ id: itemBaru.id, code: itemBaru.code, name: itemBaru.name, category: itemBaru.category })
+    // Pilih di baris terakhir yang belum ada output
+    const lastLine = form.lines[form.lines.length - 1]
+    if (lastLine && !lastLine.output_item_id) lastLine.output_item_id = itemBaru.id
     showSuccess('Berhasil', `Komponen '${itemBaru.name}' berhasil ditambahkan`)
     closeModalKomponen()
   } catch (error) {
-    const message = error.response?.data?.message || 'Gagal menyimpan komponen baru'
-    showError('Gagal', message)
+    showError('Gagal', error.response?.data?.message || 'Gagal menyimpan komponen baru')
   } finally {
     isSavingKomponen.value = false
   }
@@ -596,28 +498,24 @@ const simpanKomponenBaru = async () => {
 const handleSubmit = async () => {
   if (!form.ref_po_id) { showError('Validasi', 'Production Order wajib dipilih'); return }
 
-  const validInputs = form.inputs.filter((i) => i.item_id && i.qty > 0)
-  if (validInputs.length === 0) { showError('Validasi', 'Minimal satu bahan RST wajib diisi'); return }
-
-  const validOutputs = form.outputs.filter((o) => o.item_id && o.qty > 0)
-  if (validOutputs.length === 0) { showError('Validasi', 'Minimal satu komponen output wajib diisi'); return }
-
-  const validRejects = form.rejects.filter((r) => r.item_id && r.qty > 0)
+  const validLines = form.lines.filter((l) => l.input_item_id && l.input_qty > 0 && l.output_item_id && l.output_qty > 0)
+  if (validLines.length === 0) { showError('Validasi', 'Minimal satu baris RST → Komponen wajib diisi'); return }
 
   isSubmitting.value = true
   try {
     const payload = {
-      date:                  form.date,
-      estimated_finish_date: form.estimated_finish_date || null,
-      ref_po_id:             Number(form.ref_po_id),
+      date:      form.date,
+      ref_po_id: Number(form.ref_po_id),
       notes:     form.notes || null,
-      inputs:    validInputs.map((i)  => ({ item_id: Number(i.item_id),  qty: Number(i.qty) })),
-      outputs:   validOutputs.map((o) => ({ item_id: Number(o.item_id), qty: Number(o.qty) })),
-      rejects:   validRejects.map((r) => ({
-        item_id:     Number(r.item_id),
-        qty:         Number(r.qty),
-        reject_type: r.reject_type,
-        keterangan:  r.keterangan || null,
+      lines: validLines.map((l) => ({
+        input_item_id:  Number(l.input_item_id),
+        input_qty:      Number(l.input_qty),
+        output_item_id: Number(l.output_item_id),
+        output_qty:     Number(l.output_qty),
+        reject_item_id: l.reject_item_id && l.reject_qty > 0 ? Number(l.reject_item_id) : null,
+        reject_qty:     l.reject_qty > 0 ? Number(l.reject_qty) : null,
+        reject_type:    l.reject_type   || null,
+        reject_notes:   l.reject_notes  || null,
       })),
     }
 
@@ -761,6 +659,17 @@ onMounted(fetchInitialData)
   box-shadow: 0 6px 16px rgba(8, 145, 178, 0.45);
 }
 .btn-selesai-modern:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Line blocks */
+.line-block { padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 0.75rem; }
+.line-block--input  { background: #f0fdf4; border: 1px solid #bbf7d0; }
+.line-block--output { background: #eff6ff; border: 1px solid #bfdbfe; }
+.line-block--reject { background: #fff7ed; border: 1px solid #fed7aa; }
+.line-label { display: inline-block; font-size: 0.75rem; font-weight: 800; color: #374151; margin-bottom: 0.5rem; letter-spacing: 0.05em; }
+.line-reject-toggle { margin-bottom: 0.5rem; }
+.btn-toggle-reject { background: none; border: 1px dashed #d1d5db; color: #6b7280; border-radius: 8px; padding: 5px 14px; font-size: 0.8rem; cursor: pointer; transition: all 0.15s; }
+.btn-toggle-reject:hover { border-color: #f97316; color: #f97316; }
+.btn-quick-add-wrap { margin-left: 8px; }
 
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
 .modal-card { background: white; border-radius: 20px; width: 100%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); overflow: hidden; }

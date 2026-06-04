@@ -150,7 +150,7 @@
               </tr>
               <tr class="header-row-sub">
                 <!-- Hulu -->
-                <th class="th-stage stage-hulu">Sanwil</th>
+                <th class="th-stage stage-hulu">Sawmill</th>
                 <th class="th-stage stage-hulu">KD</th>
                 <th class="th-stage stage-hulu">Pembahanan</th>
                 <th class="th-stage stage-hulu">Moulding</th>
@@ -168,7 +168,7 @@
             <tbody class="table-body">
               <!-- Empty State -->
               <tr v-if="data.length === 0" class="empty-row">
-                <td colspan="17" class="empty-cell">
+                <td colspan="18" class="empty-cell">
                   <div class="empty-state">
                     <span class="empty-icon">📭</span>
                     <p class="empty-text">Tidak ada data Sales Order aktif.</p>
@@ -549,14 +549,26 @@ const fetchData = async () => {
 
   try {
     const params = {}
-    if (search.value) {
-      params.search = search.value
-    }
+    if (search.value) params.search = search.value
 
     const response = await axios.get('/production-monitoring', { params })
 
     if (response.data.success) {
-      data.value = response.data.data
+      // Backend mengembalikan nested per-SO, flatten ke flat rows
+      const flat = []
+      for (const so of response.data.data) {
+        for (const item of so.items) {
+          flat.push({
+            so_id:              so.so_id,
+            so_number:          so.so_number,
+            so_date:            so.so_date,
+            buyer_name:         so.buyer_name,
+            customer_po_number: so.customer_po_number,
+            ...item,
+          })
+        }
+      }
+      data.value = flat
     }
   } catch (error) {
     console.error('Error fetching data:', error)
@@ -581,25 +593,21 @@ const formatNumber = (num) => {
 
 const getStatusIcon = (status) => {
   switch (status) {
-    case 'done':
-      return '✅'
-    case 'in_progress':
-      return '🟡'
+    case 'done':        return '✅'
+    case 'in_progress': return '🟡'
+    case 'skip':        return '⏭️'
     case 'waiting':
-    default:
-      return '🔴'
+    default:            return '🔴'
   }
 }
 
 const getStatusClass = (status) => {
   switch (status) {
-    case 'done':
-      return 'status-done'
-    case 'in_progress':
-      return 'status-progress'
+    case 'done':        return 'status-done'
+    case 'in_progress': return 'status-progress'
+    case 'skip':        return 'status-skip'
     case 'waiting':
-    default:
-      return 'status-waiting'
+    default:            return 'status-waiting'
   }
 }
 
@@ -721,6 +729,7 @@ const exportExcel = async () => {
 const getStageIcon = (type) => {
   const icons = {
     'SAWMILL':         '🪚',
+    'KD':              '🌡️',
     'PEMBAHANAN':      '🪵',
     'MOULDING':        '🔨',
     'MESIN':           '⚙️',
@@ -1492,6 +1501,11 @@ const getStageClass = (type) => {
 .status-waiting {
   background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
   border: 2px solid #ef4444;
+}
+
+.status-skip {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border: 2px solid #9ca3af;
 }
 
 @keyframes pulse {
