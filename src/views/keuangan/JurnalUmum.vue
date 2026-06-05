@@ -57,6 +57,37 @@
           </select>
         </div>
 
+        <div class="filter-group">
+          <label class="filter-label">
+            <span class="label-icon">🏦</span>
+            Filter Akun (COA)
+          </label>
+          <div class="coa-search-wrapper" ref="coaWrapperRef">
+            <input
+              type="text"
+              v-model="coaSearch"
+              @focus="coaDropdownOpen = true"
+              @input="coaDropdownOpen = true"
+              placeholder="Ketik kode atau nama akun..."
+              class="filter-input coa-search-input"
+              autocomplete="off"
+            />
+            <button v-if="filters.account_id" class="coa-clear-btn" @click="clearCoaFilter" type="button">×</button>
+            <div v-if="coaDropdownOpen" class="coa-dropdown">
+              <div v-if="filteredCoas.length === 0" class="coa-empty">Tidak ada akun ditemukan</div>
+              <div
+                v-for="coa in filteredCoas"
+                :key="coa.id"
+                class="coa-option"
+                @mousedown.prevent="selectCoa(coa)"
+              >
+                <span class="coa-option-code">{{ coa.code }}</span>
+                <span class="coa-option-name">{{ coa.name }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="filter-actions">
           <button class="btn btn-filter" @click="fetchJournals">
             <span class="btn-icon">🔍</span>
@@ -79,6 +110,7 @@
               <th>Tanggal</th>
               <th>Referensi</th>
               <th>Keterangan</th>
+              <th>Akun</th>
               <th>Total Debit</th>
               <th>Total Kredit</th>
               <th>Status</th>
@@ -87,12 +119,12 @@
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="8" class="text-center">
+              <td colspan="9" class="text-center">
                 <div class="loading-spinner">⏳ Memuat data...</div>
               </td>
             </tr>
             <tr v-else-if="journals.length === 0">
-              <td colspan="8" class="text-center">
+              <td colspan="9" class="text-center">
                 <div class="empty-state">
                   <span class="empty-icon">📭</span>
                   <p>Belum ada data jurnal</p>
@@ -106,6 +138,23 @@
                 <span class="badge badge-ref">{{ journal.reference_type || '-' }}</span>
               </td>
               <td class="text-truncate">{{ journal.description }}</td>
+              <td class="td-accounts">
+                <div class="account-chips">
+                  <template v-for="(acc, i) in getJournalAccounts(journal).debits" :key="'d'+i">
+                    <span class="chip chip-debit" :title="acc">
+                      <span class="chip-label">D</span>{{ acc }}
+                    </span>
+                  </template>
+                  <template v-for="(acc, i) in getJournalAccounts(journal).credits" :key="'k'+i">
+                    <span class="chip chip-credit" :title="acc">
+                      <span class="chip-label">K</span>{{ acc }}
+                    </span>
+                  </template>
+                  <span v-if="getJournalAccounts(journal).extraCount > 0" class="chip chip-more">
+                    +{{ getJournalAccounts(journal).extraCount }} lagi
+                  </span>
+                </div>
+              </td>
               <td class="text-right text-success">{{ formatRupiah(journal.total_debit) }}</td>
               <td class="text-right text-danger">{{ formatRupiah(journal.total_credit) }}</td>
               <td>
@@ -181,7 +230,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import { useNotification } from '../../composables/useNotification.js'
@@ -189,17 +238,58 @@ import { useNotification } from '../../composables/useNotification.js'
 const { showSuccess, showError } = useNotification()
 
 const journals = ref([])
+const coas = ref([])
 const loading = ref(false)
 const currentPage = ref(1)
 const totalPages = ref(1)
 const showModal = ref(false)
 const selectedJournal = ref(null)
 
+// COA search
+const coaSearch = ref('')
+const coaDropdownOpen = ref(false)
+const coaWrapperRef = ref(null)
+
+const filteredCoas = computed(() => {
+  const q = coaSearch.value.toLowerCase().trim()
+  const list = q
+    ? coas.value.filter(c => c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q))
+    : coas.value
+  return list.slice(0, 30)
+})
+
+const selectCoa = (coa) => {
+  filters.value.account_id = coa.id
+  coaSearch.value = `${coa.code} - ${coa.name}`
+  coaDropdownOpen.value = false
+}
+
+const clearCoaFilter = () => {
+  filters.value.account_id = ''
+  coaSearch.value = ''
+}
+
+const handleClickOutside = (e) => {
+  if (coaWrapperRef.value && !coaWrapperRef.value.contains(e.target)) {
+    coaDropdownOpen.value = false
+  }
+}
+
 const filters = ref({
   start_date: '',
   end_date: '',
   status: '',
+  account_id: '',
 })
+
+const fetchCoas = async () => {
+  try {
+    const response = await apiClient.get('/coa', { params: { is_active: 1 } })
+    coas.value = response.data.data || []
+  } catch (error) {
+    console.error('Error fetching COA:', error)
+  }
+}
 
 const fetchJournals = async () => {
   loading.value = true
@@ -240,7 +330,9 @@ const resetFilters = () => {
     start_date: '',
     end_date: '',
     status: '',
+    account_id: '',
   }
+  coaSearch.value = ''
   fetchJournals()
 }
 
@@ -280,6 +372,23 @@ const formatRupiah = (amount) => {
   }).format(amount)
 }
 
+const getJournalAccounts = (journal) => {
+  const lines = journal.lines || []
+  const debitNames = [...new Set(
+    lines.filter(l => l.debit > 0).map(l => l.account?.name).filter(Boolean)
+  )]
+  const creditNames = [...new Set(
+    lines.filter(l => l.credit > 0).map(l => l.account?.name).filter(Boolean)
+  )]
+
+  const maxPerSide = 1
+  const shownDebits = debitNames.slice(0, maxPerSide)
+  const shownCredits = creditNames.slice(0, maxPerSide)
+  const extraCount = (debitNames.length - shownDebits.length) + (creditNames.length - shownCredits.length)
+
+  return { debits: shownDebits, credits: shownCredits, extraCount }
+}
+
 const getBadgeClass = (status) => {
   const classes = {
     POSTED: 'badge-success',
@@ -290,13 +399,18 @@ const getBadgeClass = (status) => {
 }
 
 onMounted(() => {
-  // Set default date range (bulan ini)
   const now = new Date()
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
   filters.value.start_date = firstDay.toISOString().split('T')[0]
   filters.value.end_date = now.toISOString().split('T')[0]
 
+  fetchCoas()
   fetchJournals()
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -455,6 +569,89 @@ onMounted(() => {
 .filter-actions {
   display: flex;
   gap: 12px;
+}
+
+/* COA Searchable Dropdown */
+.coa-search-wrapper {
+  position: relative;
+}
+
+.coa-search-input {
+  width: 100%;
+  padding-right: 32px;
+}
+
+.coa-clear-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #9ca3af;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.coa-clear-btn:hover {
+  color: #ef4444;
+}
+
+.coa-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.coa-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.coa-option:last-child {
+  border-bottom: none;
+}
+
+.coa-option:hover {
+  background: #eff6ff;
+}
+
+.coa-option-code {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #3b82f6;
+  background: #dbeafe;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.coa-option-name {
+  font-size: 13px;
+  color: #374151;
+}
+
+.coa-empty {
+  padding: 16px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
 }
 
 .btn-filter {
@@ -725,5 +922,68 @@ onMounted(() => {
 .total-row td {
   padding: 16px 12px;
   border-top: 2px solid #3b82f6;
+}
+
+/* Account chips */
+.td-accounts {
+  min-width: 180px;
+  max-width: 260px;
+}
+
+.account-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chip-label {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.chip-debit {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.chip-debit .chip-label {
+  background: #16a34a;
+  color: white;
+}
+
+.chip-credit {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.chip-credit .chip-label {
+  background: #dc2626;
+  color: white;
+}
+
+.chip-more {
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 600;
 }
 </style>

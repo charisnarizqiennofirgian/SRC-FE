@@ -90,18 +90,31 @@
                 </thead>
                 <tbody>
                   <tr v-for="(entry, index) in debitEntries" :key="'debit-' + index" class="table-row">
-                    <td>
-                      <select
-                        v-model="entry.account_id"
-                        class="form-select"
-                        :class="{ 'is-invalid': errors[`debit.${index}.account_id`] }"
-                        required
-                      >
-                        <option value="">Pilih Rekening...</option>
-                        <option v-for="account in accounts" :key="account.id" :value="account.id">
-                          {{ account.code }} - {{ account.name }}
-                        </option>
-                      </select>
+                    <td class="td-coa">
+                      <div class="coa-search-wrapper" :class="{ 'is-invalid': errors[`debit.${index}.account_id`] }">
+                        <input
+                          type="text"
+                          v-model="entry.search"
+                          @focus="activeDropdown = { type: 'debit', index }"
+                          @input="activeDropdown = { type: 'debit', index }"
+                          placeholder="Ketik kode atau nama akun..."
+                          class="form-control coa-search-input"
+                          autocomplete="off"
+                        />
+                        <button v-if="entry.account_id" class="coa-clear-btn" @click="clearAccount('debit', index)" type="button">×</button>
+                        <div v-if="activeDropdown?.type === 'debit' && activeDropdown?.index === index" class="coa-dropdown">
+                          <div v-if="getFilteredAccounts(entry.search).length === 0" class="coa-empty">Tidak ada akun ditemukan</div>
+                          <div
+                            v-for="account in getFilteredAccounts(entry.search)"
+                            :key="account.id"
+                            class="coa-option"
+                            @mousedown.prevent="selectAccount('debit', index, account)"
+                          >
+                            <span class="coa-option-code">{{ account.code }}</span>
+                            <span class="coa-option-name">{{ account.name }}</span>
+                          </div>
+                        </div>
+                      </div>
                     </td>
                     <td>
                       <div class="input-group">
@@ -170,18 +183,31 @@
                 </thead>
                 <tbody>
                   <tr v-for="(entry, index) in kreditEntries" :key="'kredit-' + index" class="table-row">
-                    <td>
-                      <select
-                        v-model="entry.account_id"
-                        class="form-select"
-                        :class="{ 'is-invalid': errors[`kredit.${index}.account_id`] }"
-                        required
-                      >
-                        <option value="">Pilih Rekening...</option>
-                        <option v-for="account in accounts" :key="account.id" :value="account.id">
-                          {{ account.code }} - {{ account.name }}
-                        </option>
-                      </select>
+                    <td class="td-coa">
+                      <div class="coa-search-wrapper" :class="{ 'is-invalid': errors[`kredit.${index}.account_id`] }">
+                        <input
+                          type="text"
+                          v-model="entry.search"
+                          @focus="activeDropdown = { type: 'kredit', index }"
+                          @input="activeDropdown = { type: 'kredit', index }"
+                          placeholder="Ketik kode atau nama akun..."
+                          class="form-control coa-search-input"
+                          autocomplete="off"
+                        />
+                        <button v-if="entry.account_id" class="coa-clear-btn" @click="clearAccount('kredit', index)" type="button">×</button>
+                        <div v-if="activeDropdown?.type === 'kredit' && activeDropdown?.index === index" class="coa-dropdown">
+                          <div v-if="getFilteredAccounts(entry.search).length === 0" class="coa-empty">Tidak ada akun ditemukan</div>
+                          <div
+                            v-for="account in getFilteredAccounts(entry.search)"
+                            :key="account.id"
+                            class="coa-option"
+                            @mousedown.prevent="selectAccount('kredit', index, account)"
+                          >
+                            <span class="coa-option-code">{{ account.code }}</span>
+                            <span class="coa-option-name">{{ account.name }}</span>
+                          </div>
+                        </div>
+                      </div>
                     </td>
                     <td>
                       <div class="input-group">
@@ -270,7 +296,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '@/api/axios'
 import DashboardLayout from '@/components/DashboardLayout.vue'
@@ -288,8 +314,38 @@ const form = ref({
   description: '',
 })
 
-const debitEntries = ref([{ account_id: '', amount: 0, displayAmount: '0', description: '' }])
-const kreditEntries = ref([{ account_id: '', amount: 0, displayAmount: '0', description: '' }])
+const debitEntries = ref([{ account_id: '', amount: 0, displayAmount: '0', description: '', search: '' }])
+const kreditEntries = ref([{ account_id: '', amount: 0, displayAmount: '0', description: '', search: '' }])
+
+// COA searchable dropdown
+const activeDropdown = ref(null) // { type: 'debit'|'kredit', index: number }
+
+const getFilteredAccounts = (searchText) => {
+  const q = (searchText || '').toLowerCase().trim()
+  const list = q
+    ? accounts.value.filter(a => a.code.toLowerCase().includes(q) || a.name.toLowerCase().includes(q))
+    : accounts.value
+  return list.slice(0, 30)
+}
+
+const selectAccount = (type, index, account) => {
+  const entries = type === 'debit' ? debitEntries : kreditEntries
+  entries.value[index].account_id = account.id
+  entries.value[index].search = `${account.code} - ${account.name}`
+  activeDropdown.value = null
+}
+
+const clearAccount = (type, index) => {
+  const entries = type === 'debit' ? debitEntries : kreditEntries
+  entries.value[index].account_id = ''
+  entries.value[index].search = ''
+}
+
+const handleClickOutside = (e) => {
+  if (!e.target.closest('.coa-search-wrapper')) {
+    activeDropdown.value = null
+  }
+}
 
 const totalDebit = computed(() => debitEntries.value.reduce((sum, entry) => sum + (parseFloat(entry.amount) || 0), 0))
 const totalKredit = computed(() => kreditEntries.value.reduce((sum, entry) => sum + (parseFloat(entry.amount) || 0), 0))
@@ -298,7 +354,7 @@ const isBalanced = computed(() => Math.abs(totalDebit.value - totalKredit.value)
 const formatAmountDisplay = (value) => !value || value === 0 ? '0' : new Intl.NumberFormat('id-ID').format(value)
 const formatCurrency = (amount) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount)
 
-const addDebitEntry = () => debitEntries.value.push({ account_id: '', amount: 0, displayAmount: '0', description: '' })
+const addDebitEntry = () => debitEntries.value.push({ account_id: '', amount: 0, displayAmount: '0', description: '', search: '' })
 const removeDebitEntry = (index) => debitEntries.value.length > 1 && debitEntries.value.splice(index, 1)
 const handleDebitAmountInput = (index, event) => {
   let value = event.target.value.replace(/[^\d]/g, '')
@@ -307,7 +363,7 @@ const handleDebitAmountInput = (index, event) => {
 }
 const formatDebitAmount = (index) => debitEntries.value[index].displayAmount = formatAmountDisplay(debitEntries.value[index].amount)
 
-const addKreditEntry = () => kreditEntries.value.push({ account_id: '', amount: 0, displayAmount: '0', description: '' })
+const addKreditEntry = () => kreditEntries.value.push({ account_id: '', amount: 0, displayAmount: '0', description: '', search: '' })
 const removeKreditEntry = (index) => kreditEntries.value.length > 1 && kreditEntries.value.splice(index, 1)
 const handleKreditAmountInput = (index, event) => {
   let value = event.target.value.replace(/[^\d]/g, '')
@@ -348,7 +404,14 @@ const handleSubmit = async () => {
   }
 }
 
-onMounted(() => fetchAccounts())
+onMounted(() => {
+  fetchAccounts()
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <style scoped>
@@ -489,9 +552,101 @@ onMounted(() => fetchAccounts())
 }
 
 .entries-table {
-  overflow-x: auto;
   border-radius: 8px;
   border: 1px solid #e5e7eb;
+}
+
+/* COA Searchable Dropdown */
+.td-coa {
+  position: relative;
+  min-width: 240px;
+}
+
+.coa-search-wrapper {
+  position: relative;
+}
+
+.coa-search-wrapper.is-invalid .coa-search-input {
+  border-color: #dc3545;
+}
+
+.coa-search-input {
+  padding-right: 32px;
+}
+
+.coa-clear-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #9ca3af;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+  z-index: 1;
+}
+
+.coa-clear-btn:hover {
+  color: #ef4444;
+}
+
+.coa-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #3b82f6;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.coa-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.15s;
+}
+
+.coa-option:last-child {
+  border-bottom: none;
+}
+
+.coa-option:hover {
+  background: #eff6ff;
+}
+
+.coa-option-code {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #3b82f6;
+  background: #dbeafe;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.coa-option-name {
+  font-size: 13px;
+  color: #374151;
+}
+
+.coa-empty {
+  padding: 14px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
 }
 
 .table-journal {

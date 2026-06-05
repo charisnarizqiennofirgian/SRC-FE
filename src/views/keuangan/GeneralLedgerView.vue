@@ -383,7 +383,99 @@ export default {
     },
     resetFilters() { this.filters.account_id = ''; this.setDefaultDates(); this.ledgerData = null },
     viewJournal(id) { this.$router.push(`/admin/keuangan/jurnal-umum/${id}`) },
-    exportExcel() { alert('Export Excel ready!') },
+    exportExcel() {
+      import('xlsx').then(({ utils, writeFile }) => {
+        const account  = this.ledgerData.account
+        const fmtDate  = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'
+        const num      = (v) => Number(v || 0)
+
+        /* ── bangun array of arrays ── */
+        const aoa = []
+
+        // baris judul
+        aoa.push(['BUKU BESAR'])
+        aoa.push([`Akun : ${account.code} – ${account.name}`])
+        aoa.push([`Periode : ${fmtDate(this.filters.start_date)}  s/d  ${fmtDate(this.filters.end_date)}`])
+        aoa.push([])
+
+        // header kolom
+        aoa.push(['No', 'Tanggal', 'No. Jurnal', 'Keterangan', 'Debit', 'Kredit', 'Saldo Berjalan'])
+
+        // saldo awal
+        aoa.push(['', '—', 'SALDO AWAL', 'Saldo awal periode', '', '', num(this.ledgerData.saldo_awal)])
+
+        // transaksi
+        this.transactions.forEach((trx, i) => {
+          aoa.push([
+            i + 1,
+            fmtDate(trx.transaction_date),
+            trx.journal_number,
+            trx.description,
+            trx.debit  > 0 ? num(trx.debit)  : '',
+            trx.credit > 0 ? num(trx.credit) : '',
+            num(trx.running_balance),
+          ])
+        })
+
+        aoa.push([])
+        aoa.push(['', '', '', 'TOTAL MUTASI', num(this.summary.total_debit), num(this.summary.total_credit), ''])
+        aoa.push(['', '', '', '', '', 'SALDO AKHIR', num(this.summary.saldo_akhir)])
+
+        /* ── buat worksheet ── */
+        const ws = utils.aoa_to_sheet(aoa)
+
+        /* ── lebar kolom ── */
+        ws['!cols'] = [
+          { wch: 4  },   // No
+          { wch: 13 },   // Tanggal
+          { wch: 20 },   // No. Jurnal
+          { wch: 40 },   // Keterangan
+          { wch: 18 },   // Debit
+          { wch: 18 },   // Kredit
+          { wch: 20 },   // Saldo Berjalan
+        ]
+
+        /* ── merge judul (A1:G1, A2:G2, A3:G3) ── */
+        ws['!merges'] = [
+          { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } },
+          { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } },
+          { s: { r: 2, c: 0 }, e: { r: 2, c: 6 } },
+        ]
+
+        /* ── format angka untuk kolom Debit/Kredit/Saldo (E,F,G) ── */
+        const numFmt = '#,##0'
+        const headerRow = 4  // baris header kolom (0-based = index 4)
+        const dataStart = 5  // saldo awal + transaksi mulai index 5
+        const dataEnd   = aoa.length - 1
+
+        for (let r = dataStart; r <= dataEnd; r++) {
+          ;['E', 'F', 'G'].forEach(col => {
+            const cell = ws[`${col}${r + 1}`]
+            if (cell && typeof cell.v === 'number') {
+              cell.z = numFmt
+              cell.t = 'n'
+            }
+          })
+        }
+
+        /* ── styling via cell properties (xlsx-style / sheetjs pro)
+              SheetJS CE tidak support style langsung; kita pakai
+              workaround: set cell.s untuk kolom header supaya bold ── */
+        const boldStyle = { font: { bold: true } }
+        const headerCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+        headerCols.forEach(col => {
+          const cell = ws[`${col}${headerRow + 1}`]
+          if (cell) cell.s = boldStyle
+        })
+
+        /* ── buat workbook & download ── */
+        const wb = utils.book_new()
+        utils.book_append_sheet(wb, ws, 'Buku Besar')
+
+        const fileName = `buku-besar-${account.code}-${this.filters.start_date}-${this.filters.end_date}.xlsx`
+        writeFile(wb, fileName)
+      })
+    },
     toggleCardView() { this.cardView = !this.cardView },
     formatDateRange(start, end) {
       return `${this.formatDate(start)} — ${this.formatDate(end)}`
@@ -688,7 +780,8 @@ export default {
 .row-even { background: #fff; }
 .row-odd { background: #fafbfc; }
 .data-row:hover { background: #f0fdfa; }
-.ledger-table td { padding: 12px 16px; font-size: 13.5px; color: #374151; vertical-align: middle; }
+.ledger-table td { padding: 12px 16px; font-size: 13.5px; vertical-align: middle; }
+.ledger-table tbody td { color: #374151; }
 
 .td-no { text-align: center; font-size: 11px; font-weight: 700; color: #9ca3af; }
 .date-cell { display: flex; flex-direction: column; gap: 1px; }
