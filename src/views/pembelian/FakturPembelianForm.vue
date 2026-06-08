@@ -102,6 +102,47 @@
               </label>
               <input type="date" v-model="form.due_date" class="form-control" required />
             </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                <span class="label-icon">💱</span>
+                <span class="label-text">Mata Uang</span>
+              </label>
+              <div class="currency-toggle">
+                <label class="currency-option" :class="{ active: form.currency === 'IDR' }">
+                  <input type="radio" v-model="form.currency" value="IDR" />
+                  <span>IDR (Rupiah)</span>
+                </label>
+                <label class="currency-option" :class="{ active: form.currency === 'USD' }">
+                  <input type="radio" v-model="form.currency" value="USD" />
+                  <span>USD (Dollar)</span>
+                </label>
+              </div>
+            </div>
+
+            <div v-if="form.currency === 'USD'" class="form-group">
+              <label class="form-label">
+                <span class="label-icon">📈</span>
+                <span class="label-text">Kurs USD → IDR</span>
+                <span class="required">*</span>
+              </label>
+              <div class="input-kurs-wrapper">
+                <span class="kurs-prefix">Rp</span>
+                <input
+                  type="number"
+                  v-model.number="form.exchange_rate"
+                  class="form-control"
+                  placeholder="Contoh: 16000"
+                  min="1"
+                  step="any"
+                  required
+                />
+              </div>
+              <small class="form-hint info">
+                <span class="hint-icon">💡</span>
+                1 USD = Rp {{ new Intl.NumberFormat('id-ID').format(form.exchange_rate) }}
+              </small>
+            </div>
           </div>
         </div>
       </div>
@@ -181,13 +222,13 @@
                   <th class="th-price">
                     <div class="th-content">
                       <span class="th-icon">💰</span>
-                      <span>Harga Satuan</span>
+                      <span>Harga Satuan <span v-if="form.currency === 'USD'" class="th-usd-badge">USD</span></span>
                     </div>
                   </th>
                   <th class="th-subtotal">
                     <div class="th-content">
                       <span class="th-icon">💵</span>
-                      <span>Subtotal</span>
+                      <span>Subtotal (IDR)</span>
                     </div>
                   </th>
                 </tr>
@@ -240,7 +281,15 @@
                   </td>
                   <td class="td-subtotal">
                     <span class="subtotal-value">
-                      {{ formatCurrency((item.quantity || 0) * (item.price || 0)) }}
+                      <template v-if="form.currency === 'USD'">
+                        <span style="display:block;font-size:11px;color:#1d4ed8;font-weight:700;">
+                          $ {{ new Intl.NumberFormat('en-US',{minimumFractionDigits:2}).format((item.quantity||0)*(item.price||0)) }}
+                        </span>
+                        {{ formatCurrency((item.quantity||0)*(item.price||0)*(form.exchange_rate||1)) }}
+                      </template>
+                      <template v-else>
+                        {{ formatCurrency((item.quantity || 0) * (item.price || 0)) }}
+                      </template>
                     </span>
                   </td>
                 </tr>
@@ -447,16 +496,23 @@ const form = reactive({
   due_date: dueDateDefault,
   notes: '',
   details: [],
-  coa_id: null, // ✅ 1 COA untuk semuanya
+  coa_id: null,
   payment_type: 'TEMPO',
   paid_amount: 0,
   ppn_percentage: 12,
+  currency: 'IDR',
+  exchange_rate: 16000,
 })
 
+// subtotalCurrency = nominal dalam currency asli (USD atau IDR)
+const subtotalCurrency = computed(() => {
+  return form.details.reduce((acc, item) => acc + (item.quantity || 0) * (item.price || 0), 0)
+})
+
+// subtotal selalu IDR
 const subtotal = computed(() => {
-  return form.details.reduce((acc, item) => {
-    return acc + (item.quantity || 0) * (item.price || 0)
-  }, 0)
+  const rate = form.currency === 'USD' ? (form.exchange_rate || 1) : 1
+  return subtotalCurrency.value * rate
 })
 
 const ppnAmount = computed(() => {
@@ -559,6 +615,8 @@ const saveBill = async () => {
     const payload = {
       ...form,
       ppn_percentage: ppnPercentage.value,
+      currency: form.currency,
+      exchange_rate: form.currency === 'USD' ? form.exchange_rate : 1,
     }
 
     await apiClient.post('/purchase-bills', payload)
@@ -1613,5 +1671,53 @@ onMounted(fetchFormData)
 #supplier-select + .choices .choices__inner,
 .choices[data-type*="select-one"] .choices__inner {
   min-height: 44px;
+}
+
+/* ===== CURRENCY TOGGLE ===== */
+.currency-toggle {
+  display: flex;
+  gap: 10px;
+}
+.currency-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: #fafbfc;
+}
+.currency-option:hover { border-color: #7c3aed; background: #faf5ff; }
+.currency-option.active { border-color: #7c3aed; background: #f3e8ff; color: #5b21b6; }
+.currency-option input { display: none; }
+
+/* ===== KURS INPUT ===== */
+.input-kurs-wrapper {
+  display: flex;
+  align-items: center;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fafbfc;
+  transition: all 0.2s;
+}
+.input-kurs-wrapper:focus-within { border-color: #7c3aed; background: white; box-shadow: 0 0 0 4px rgba(124,58,237,0.1); }
+.kurs-prefix { padding: 0 14px; font-weight: 700; color: #64748b; font-size: 14px; white-space: nowrap; }
+
+.th-usd-badge {
+  display: inline-block;
+  background: #1d4ed8;
+  color: white;
+  font-size: 9px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  margin-left: 4px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
 }
 </style>

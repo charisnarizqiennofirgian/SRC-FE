@@ -13,12 +13,46 @@
           </div>
         </div>
         <div class="header-actions">
-          <button class="btn-export pdf" @click="exportPDF" :disabled="!hasData">
-            <span class="btn-icon-sm">📄</span> Export PDF
-          </button>
-          <button class="btn-export excel" @click="exportExcel" :disabled="!hasData">
-            <span class="btn-icon-sm">📊</span> Export Excel
-          </button>
+          <div class="export-group">
+            <div class="export-group-label">Ekspor Laporan</div>
+            <div class="export-btns">
+              <button class="btn-exp btn-pdf" @click="exportPDF" :disabled="!hasData">
+                <span class="exp-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="9" y1="13" x2="15" y2="13"/>
+                    <line x1="9" y1="17" x2="15" y2="17"/>
+                  </svg>
+                </span>
+                <span class="exp-label">
+                  <span class="exp-main">PDF</span>
+                  <span class="exp-sub">Cetak laporan</span>
+                </span>
+              </button>
+
+              <div class="exp-divider"></div>
+
+              <button class="btn-exp btn-excel" @click="exportExcel" :disabled="!hasData">
+                <span class="exp-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <path d="M3 9h18M9 21V9"/>
+                    <line x1="6" y1="14" x2="8.5" y2="18"/>
+                    <line x1="8.5" y1="14" x2="6" y2="18"/>
+                    <line x1="13" y1="14" x2="16" y2="14"/>
+                    <line x1="13" y1="18" x2="16" y2="18"/>
+                    <line x1="14.5" y1="14" x2="14.5" y2="18"/>
+                  </svg>
+                </span>
+                <span class="exp-label">
+                  <span class="exp-main">Excel</span>
+                  <span class="exp-sub">Download .xlsx</span>
+                </span>
+              </button>
+            </div>
+            <div v-if="!hasData" class="export-hint">Tampilkan data terlebih dahulu</div>
+          </div>
         </div>
       </div>
 
@@ -259,8 +293,170 @@ export default {
       }
     },
     resetFilters() { this.setDefaultDate(); this.reportData = null },
-    exportPDF() {},
-    exportExcel() {},
+    exportPDF() {
+      const d = this.reportData
+      const fmt = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Math.abs(v || 0))
+      const fmtDate = (dt) => new Date(dt).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
+
+      const asetRows = d.aset.accounts.map((a, i) =>
+        `<tr class="${i % 2 === 0 ? 'even' : ''}"><td>${a.account_name}</td><td class="right">${fmt(a.amount)}</td></tr>`
+      ).join('')
+
+      const kewRows = d.kewajiban.accounts.map((a, i) =>
+        `<tr class="${i % 2 === 0 ? 'even' : ''}"><td>${a.account_name}</td><td class="right">${fmt(a.amount)}</td></tr>`
+      ).join('')
+
+      const modalRows = d.modal.accounts.map((a, i) =>
+        `<tr class="${i % 2 === 0 ? 'even' : ''}"><td>${a.account_name}</td><td class="right">${fmt(a.amount)}</td></tr>`
+      ).join('')
+
+      const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Neraca - ${fmtDate(d.as_of_date)}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Times New Roman', Times, serif; font-size: 10pt; color: #000; padding: 15mm 18mm; }
+    h1 { font-size: 14pt; font-weight: 900; text-align: center; margin-bottom: 2mm; letter-spacing: 1px; }
+    .company { text-align: center; font-size: 12pt; font-weight: 700; margin-bottom: 1mm; }
+    .period  { text-align: center; font-size: 10pt; margin-bottom: 6mm; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
+    .section-title { font-size: 10pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; background: #e5e7eb; padding: 4pt 6pt; margin-bottom: 2mm; }
+    .sub-title { font-size: 9pt; font-weight: 700; text-transform: uppercase; color: #555; margin: 3mm 0 1mm; }
+    table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+    th, td { border: 0.5pt solid #ccc; padding: 3pt 5pt; }
+    th { background: #f3f4f6; font-weight: 700; text-align: left; }
+    td.right { text-align: right; }
+    tr.even td { background: #fafafa; }
+    .total-row td { font-weight: 700; background: #e5e7eb !important; }
+    .grand-total td { font-weight: 900; font-size: 10pt; background: #1e293b !important; color: #fff; }
+    .balance-status { text-align: center; margin: 4mm 0; font-size: 10pt; font-weight: 700; padding: 3mm; border: 1pt solid; border-radius: 4pt; }
+    .ok  { color: #059669; border-color: #059669; background: #f0fdf4; }
+    .err { color: #dc2626; border-color: #dc2626; background: #fef2f2; }
+    .footer { margin-top: 8mm; font-size: 9pt; color: #666; text-align: center; border-top: 0.5pt solid #ccc; padding-top: 3mm; }
+    @media print { body { padding: 0; } @page { size: A4 portrait; margin: 15mm 18mm; } }
+  </style>
+</head>
+<body>
+  <div class="company">PT. SURYA BANGKIT CEMERLANG</div>
+  <h1>NERACA (BALANCE SHEET)</h1>
+  <div class="period">Per Tanggal: ${fmtDate(d.as_of_date)}</div>
+  <div class="balance-status ${d.is_balanced ? 'ok' : 'err'}">
+    ${d.is_balanced ? '✓ Neraca Balance' : '✗ Tidak Balance — Selisih: ' + fmt(d.selisih)}
+  </div>
+  <div class="grid">
+    <!-- ASET -->
+    <div>
+      <div class="section-title">ASET</div>
+      <table>
+        <thead><tr><th>Nama Akun</th><th style="text-align:right;width:120px">Jumlah</th></tr></thead>
+        <tbody>
+          ${asetRows || '<tr><td colspan="2" style="text-align:center;color:#9ca3af">Tidak ada data</td></tr>'}
+          <tr class="total-row"><td>TOTAL ASET</td><td class="right">${fmt(d.aset.total)}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PASIVA -->
+    <div>
+      <div class="section-title">KEWAJIBAN &amp; MODAL</div>
+      <div class="sub-title">Kewajiban</div>
+      <table>
+        <thead><tr><th>Nama Akun</th><th style="text-align:right;width:120px">Jumlah</th></tr></thead>
+        <tbody>
+          ${kewRows || '<tr><td colspan="2" style="text-align:center;color:#9ca3af">Tidak ada data</td></tr>'}
+          <tr class="total-row"><td>Total Kewajiban</td><td class="right">${fmt(d.kewajiban.total)}</td></tr>
+        </tbody>
+      </table>
+
+      <div class="sub-title">Modal</div>
+      <table>
+        <thead><tr><th>Nama Akun</th><th style="text-align:right;width:120px">Jumlah</th></tr></thead>
+        <tbody>
+          ${modalRows || ''}
+          <tr class="even"><td>Laba Tahun Berjalan</td><td class="right">${fmt(d.laba_tahun_berjalan)}</td></tr>
+          <tr class="total-row"><td>Total Modal</td><td class="right">${fmt(d.modal.total + d.laba_tahun_berjalan)}</td></tr>
+        </tbody>
+      </table>
+
+      <table style="margin-top:4mm">
+        <tbody>
+          <tr class="grand-total"><td>TOTAL KEWAJIBAN &amp; MODAL</td><td class="right">${fmt(d.total_pasiva)}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="footer">Dicetak pada ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })} &middot; Sistem ERP PT. SBC</div>
+  <script>window.onload = () => { window.print(); }<\/script>
+</body>
+</html>`
+
+      const win = window.open('', '_blank')
+      win.document.write(html)
+      win.document.close()
+    },
+
+    exportExcel() {
+      import('xlsx').then((XLSX) => {
+        const d = this.reportData
+        const fmt = (v) => Number(Math.abs(v || 0))
+        const fmtDate = (dt) => new Date(dt).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
+
+        const rows = []
+        rows.push(['PT. SURYA BANGKIT CEMERLANG'])
+        rows.push(['NERACA (BALANCE SHEET)'])
+        rows.push([`Per Tanggal: ${fmtDate(d.as_of_date)}`])
+        rows.push([])
+
+        // Header kolom
+        rows.push(['ASET', '', '', 'KEWAJIBAN & MODAL', ''])
+        rows.push(['Nama Akun', 'Jumlah', '', 'Nama Akun', 'Jumlah'])
+
+        // Gabung baris aset & pasiva secara paralel
+        const asetAccounts = [...d.aset.accounts]
+        const pasivaAccounts = [
+          { account_name: '--- KEWAJIBAN ---', amount: null },
+          ...d.kewajiban.accounts,
+          { account_name: 'Total Kewajiban', amount: d.kewajiban.total },
+          { account_name: '', amount: null },
+          { account_name: '--- MODAL ---', amount: null },
+          ...d.modal.accounts,
+          { account_name: 'Laba Tahun Berjalan', amount: d.laba_tahun_berjalan },
+          { account_name: 'Total Modal', amount: d.modal.total + d.laba_tahun_berjalan },
+        ]
+
+        const maxLen = Math.max(asetAccounts.length + 1, pasivaAccounts.length + 1)
+        for (let i = 0; i < maxLen; i++) {
+          const aset  = asetAccounts[i]
+          const pasiva = pasivaAccounts[i]
+          rows.push([
+            aset  ? aset.account_name  : '',
+            aset  ? fmt(aset.amount)   : '',
+            '',
+            pasiva ? pasiva.account_name : '',
+            pasiva && pasiva.amount !== null ? fmt(pasiva.amount) : '',
+          ])
+        }
+
+        rows.push([])
+        rows.push(['TOTAL ASET', fmt(d.aset.total), '', 'TOTAL KEWAJIBAN & MODAL', fmt(d.total_pasiva)])
+        rows.push([])
+        rows.push([d.is_balanced ? 'Neraca Balance ✓' : `Tidak Balance — Selisih: ${d.selisih}`])
+        rows.push([`Diekspor: ${new Date().toLocaleDateString('id-ID')}`])
+
+        const ws = XLSX.utils.aoa_to_sheet(rows)
+
+        // Lebar kolom
+        ws['!cols'] = [{ wch: 36 }, { wch: 18 }, { wch: 4 }, { wch: 36 }, { wch: 18 }]
+
+        const wb = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(wb, ws, 'Neraca')
+        XLSX.writeFile(wb, `Neraca_${d.as_of_date}.xlsx`)
+      }).catch(() => {
+        alert('Gagal memuat library Excel. Pastikan package xlsx terinstal.')
+      })
+    },
     formatDate(date) {
       return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
     },
@@ -290,14 +486,117 @@ export default {
 .page-title { font-size: 24px; font-weight: 800; color: #111827; letter-spacing: -0.5px; margin: 0 0 3px; line-height: 1.1; }
 .page-title .accent { color: #7c3aed; }
 .page-subtitle { font-size: 13px; color: #6b7280; margin: 0; }
-.header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-.btn-export { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1.5px solid; transition: all 0.2s; font-family: inherit; }
-.btn-export:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn-export.pdf { background: #fff5f5; color: #dc2626; border-color: #fecaca; }
-.btn-export.pdf:hover:not(:disabled) { background: #fee2e2; }
-.btn-export.excel { background: #f0fdf4; color: #059669; border-color: #a7f3d0; }
-.btn-export.excel:hover:not(:disabled) { background: #d1fae5; }
-.btn-icon-sm { font-size: 14px; }
+.header-actions { display: flex; align-items: flex-start; }
+
+/* ===== EXPORT GROUP ===== */
+.export-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+.export-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: #9ca3af;
+}
+.export-btns {
+  display: flex;
+  align-items: stretch;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  background: #fff;
+}
+.exp-divider {
+  width: 1px;
+  background: #e5e7eb;
+  flex-shrink: 0;
+}
+.btn-exp {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: all 0.18s ease;
+  position: relative;
+  overflow: hidden;
+}
+.btn-exp::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+.btn-exp:hover:not(:disabled)::before { opacity: 1; }
+
+.btn-pdf { color: #b91c1c; }
+.btn-pdf::before { background: #fef2f2; }
+.btn-pdf:hover:not(:disabled) { color: #991b1b; }
+
+.btn-excel { color: #047857; }
+.btn-excel::before { background: #f0fdf4; }
+.btn-excel:hover:not(:disabled) { color: #065f46; }
+
+.btn-exp:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.exp-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.18s;
+}
+.btn-pdf .exp-icon   { background: #fee2e2; }
+.btn-excel .exp-icon { background: #d1fae5; }
+.btn-exp:hover:not(:disabled) .exp-icon { transform: scale(1.08); }
+
+.exp-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  position: relative;
+  z-index: 1;
+}
+.exp-main {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.2px;
+}
+.exp-sub {
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.6;
+  line-height: 1.3;
+}
+
+.export-hint {
+  font-size: 10.5px;
+  color: #d97706;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.export-hint::before {
+  content: '⚠';
+  font-size: 10px;
+}
 
 /* ===== FILTER CARD ===== */
 .filter-card {

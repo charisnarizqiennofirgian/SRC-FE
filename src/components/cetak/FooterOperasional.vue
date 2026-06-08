@@ -1,10 +1,17 @@
 <template>
   <footer class="invoice-footer">
-    <p class="closing-text">Atas perhatian dan kerjasama yang baik, kami ucapkan terima kasih.</p>
+    <p class="closing-text">
+      <template v-if="isUSD">
+        Thank you for your attention and cooperation.
+      </template>
+      <template v-else>
+        Atas perhatian dan kerjasama yang baik, kami ucapkan terima kasih.
+      </template>
+    </p>
 
     <div class="signature-section">
       <div class="signature-col">
-        <p>Hormat kami,</p>
+        <p>{{ isUSD ? 'Yours sincerely,' : 'Hormat kami,' }}</p>
         <div class="signature-space"></div>
         <p class="signature-name">Louis Sebastian Agussoegito</p>
       </div>
@@ -21,6 +28,15 @@
     </div>
   </footer>
 </template>
+
+<script setup>
+defineProps({
+  isUSD: {
+    type: Boolean,
+    default: false,
+  },
+})
+</script>
 
 <style scoped>
 .invoice-footer {

@@ -1,23 +1,32 @@
 <template>
   <p class="intro-text">
-    Dengan ini kami mengirim daftar pesanan kami untuk {{ extractUsername(po.supplier?.address) }} sebagai berikut :
+    <template v-if="isUSD">
+      We hereby submit our purchase order to
+      <strong>{{ po.supplier?.name }}</strong> as follows:
+    </template>
+    <template v-else>
+      Dengan ini kami mengirim daftar pesanan kami untuk {{ extractUsername(po.supplier?.address) }} sebagai berikut :
+    </template>
   </p>
 
   <TabelCetakOperasional :details="details" :po="po" />
 
   <div v-if="po.notes" class="notes-section">
-    <span class="notes-label">Catatan:</span>
+    <span class="notes-label">{{ isUSD ? 'Notes:' : 'Catatan:' }}</span>
     <span class="notes-value">{{ po.notes }}</span>
   </div>
 
-  <FooterOperasional />
+  <FooterOperasional :isUSD="isUSD" />
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import TabelCetakOperasional from './TabelCetakOperasional.vue'
 import FooterOperasional from './FooterOperasional.vue'
 
-defineProps(['details', 'po'])
+const props = defineProps(['details', 'po'])
+
+const isUSD = computed(() => props.po?.currency === 'USD')
 
 const extractUsername = (address) => {
   if (!address) return ''

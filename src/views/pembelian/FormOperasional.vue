@@ -62,6 +62,37 @@
               <input type="date" v-model="form.delivery_date" class="form-control" required />
             </div>
 
+            <div class="form-group">
+              <label class="form-label">Mata Uang</label>
+              <div class="currency-toggle">
+                <label class="currency-option" :class="{ active: form.currency === 'IDR' }">
+                  <input type="radio" v-model="form.currency" value="IDR" />
+                  <span>IDR (Rupiah)</span>
+                </label>
+                <label class="currency-option" :class="{ active: form.currency === 'USD' }">
+                  <input type="radio" v-model="form.currency" value="USD" />
+                  <span>USD (Dollar)</span>
+                </label>
+              </div>
+            </div>
+
+            <div v-if="form.currency === 'USD'" class="form-group">
+              <label class="form-label">Kurs USD → IDR</label>
+              <div class="input-kurs-wrapper">
+                <span class="kurs-prefix">Rp</span>
+                <input
+                  type="number"
+                  v-model.number="form.exchange_rate"
+                  class="form-control has-prefix"
+                  placeholder="Contoh: 16000"
+                  min="1"
+                  step="any"
+                  required
+                />
+              </div>
+              <small class="form-hint-kurs">1 USD = Rp {{ formatRibuan(form.exchange_rate) }}</small>
+            </div>
+
             <div class="form-group full-width">
               <label class="form-label">Catatan (Opsional)</label>
               <textarea
@@ -92,8 +123,13 @@
                 <tr>
                   <th class="th-material">Barang</th>
                   <th class="th-qty">Jumlah</th>
-                  <th class="th-price">Harga Satuan</th>
-                  <th class="th-subtotal">Subtotal</th>
+                  <th class="th-price">
+                    Harga Satuan
+                    <span v-if="form.currency === 'USD'" class="th-currency-badge">USD</span>
+                  </th>
+                  <th class="th-subtotal">
+                    Subtotal (IDR)
+                  </th>
                   <th class="th-date">Tgl Kirim</th>
                   <th class="th-action">Aksi</th>
                 </tr>
@@ -143,7 +179,13 @@
                     />
                   </td>
                   <td class="td-subtotal">
-                    {{ formatCurrency((item.quantity || 0) * (item.price || 0)) }}
+                    <template v-if="form.currency === 'USD'">
+                      <span class="usd-price">$ {{ formatUSD((item.quantity || 0) * (item.price || 0)) }}</span>
+                      <span class="idr-equiv">≈ {{ formatCurrency((item.quantity || 0) * (item.price || 0) * (form.exchange_rate || 1)) }}</span>
+                    </template>
+                    <template v-else>
+                      {{ formatCurrency((item.quantity || 0) * (item.price || 0)) }}
+                    </template>
                   </td>
                   <td class="td-date">
                     <input
@@ -201,14 +243,19 @@
             <div class="summary-compact">
               <div class="summary-item-compact">
                 <span class="label">Subtotal:</span>
-                <span class="value">{{ formatCurrency(totalSubtotal) }}</span>
+                <span class="value">
+                  <template v-if="form.currency === 'USD'">
+                    $ {{ formatUSD(totalSubtotalUSD) }} <small class="idr-small">({{ formatCurrency(totalSubtotal) }})</small>
+                  </template>
+                  <template v-else>{{ formatCurrency(totalSubtotal) }}</template>
+                </span>
               </div>
               <div class="summary-item-compact">
                 <span class="label">PPN ({{ formatPPNDisplay(form.ppn_percentage) }}):</span>
                 <span class="value ppn">{{ formatCurrency(totalPPN) }}</span>
               </div>
               <div class="summary-item-compact total">
-                <span class="label">Grand Total:</span>
+                <span class="label">Grand Total (IDR):</span>
                 <span class="value">{{ formatCurrency(grandTotal) }}</span>
               </div>
             </div>
@@ -349,27 +396,28 @@ const choicesInstances = ref([])
 const form = reactive({
   supplier_id: '',
   order_date: new Date().toISOString().slice(0, 10),
-  delivery_date: '', // ✅ FIXED: Conflict Removed
+  delivery_date: '',
   notes: '',
   ppn_percentage: 12,
+  currency: 'IDR',
+  exchange_rate: 16000,
   details: [],
 })
 
-const totalSubtotal = computed(() => {
-  return form.details.reduce((sum, item) => {
-    return sum + (item.quantity || 0) * (item.price || 0)
-  }, 0)
+// totalSubtotalUSD = jumlah harga dalam currency asli (USD)
+const totalSubtotalUSD = computed(() => {
+  return form.details.reduce((sum, item) => sum + (item.quantity || 0) * (item.price || 0), 0)
 })
 
-// ✅ UPDATED: DETECT 11.12 → HITUNG PAKAI 11%
+// totalSubtotal = selalu IDR
+const totalSubtotal = computed(() => {
+  const rate = form.currency === 'USD' ? (form.exchange_rate || 1) : 1
+  return totalSubtotalUSD.value * rate
+})
+
 const totalPPN = computed(() => {
   let ppnRate = form.ppn_percentage
-
-  // Special case: 11.12 → hitung pakai 11%
-  if (ppnRate === 11.12) {
-    ppnRate = 11
-  }
-
+  if (ppnRate === 11.12) ppnRate = 11
   return (totalSubtotal.value * ppnRate) / 100
 })
 
@@ -464,11 +512,13 @@ const saveOrder = async () => {
     const payload = {
       ...form,
       type: 'operasional',
+      currency: form.currency,
+      exchange_rate: form.currency === 'USD' ? form.exchange_rate : 1,
       details: form.details.map((d) => ({
-        item_id:       d.item_id,
-        quantity:      d.quantity,
-        price:         d.price,
-        delivery_date: d.delivery_date || null,
+        item_id:        d.item_id,
+        quantity:       d.quantity,
+        price:          d.price,
+        delivery_date:  d.delivery_date || null,
         specifications: d.specifications,
       })),
     }
@@ -501,11 +551,13 @@ const fetchPOData = async () => {
     const data = response.data.data
 
     poNumber.value = data.po_number
-    form.supplier_id = data.supplier_id
-    form.order_date = data.order_date
-    form.delivery_date = data.delivery_date || '' // ✅ FIXED: Conflict Removed
-    form.notes = data.notes || ''
+    form.supplier_id   = data.supplier_id
+    form.order_date    = data.order_date
+    form.delivery_date = data.delivery_date || ''
+    form.notes         = data.notes || ''
     form.ppn_percentage = parseFloat(data.ppn_percentage ?? 12)
+    form.currency      = data.currency || 'IDR'
+    form.exchange_rate = parseFloat(data.exchange_rate ?? 16000)
 
     form.details = data.details.map((d) => ({
       item_id:       d.item_id,
@@ -674,6 +726,16 @@ const formatCurrency = (value) => {
     currency: 'IDR',
     minimumFractionDigits: 0,
   }).format(value)
+}
+
+const formatUSD = (value) => {
+  if (isNaN(value)) return '0.00'
+  return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)
+}
+
+const formatRibuan = (value) => {
+  if (!value || isNaN(value)) return '0'
+  return new Intl.NumberFormat('id-ID').format(value)
 }
 
 // ✅ UPDATED: Tampilan PPN di summary
@@ -1668,4 +1730,59 @@ textarea.form-control {
 }
 .th-date { width: 150px; }
 .td-date input { padding: 8px 10px; font-size: 13px; border-radius: 8px; }
+
+/* ===== CURRENCY TOGGLE ===== */
+.currency-toggle {
+  display: flex;
+  gap: 10px;
+}
+.currency-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: #fafbfc;
+}
+.currency-option:hover { border-color: #7c3aed; background: #faf5ff; }
+.currency-option.active { border-color: #7c3aed; background: #f3e8ff; color: #5b21b6; }
+.currency-option input { display: none; }
+
+/* ===== KURS INPUT ===== */
+.input-kurs-wrapper {
+  display: flex;
+  align-items: center;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fafbfc;
+  transition: all 0.2s;
+}
+.input-kurs-wrapper:focus-within { border-color: #7c3aed; background: white; box-shadow: 0 0 0 4px rgba(124,58,237,0.1); }
+.kurs-prefix { padding: 0 14px; font-weight: 700; color: #64748b; font-size: 14px; white-space: nowrap; }
+.form-control.has-prefix { border: none; background: transparent; box-shadow: none; border-radius: 0; }
+.form-hint-kurs { font-size: 12px; color: #6d28d9; font-weight: 600; margin-top: 6px; display: block; }
+
+/* ===== USD SUBTOTAL IN TABLE ===== */
+.usd-price { display: block; font-weight: 700; color: #1d4ed8; font-size: 13px; }
+.idr-equiv { display: block; font-size: 11px; color: #059669; font-weight: 600; }
+.th-currency-badge {
+  display: inline-block;
+  background: #1d4ed8;
+  color: white;
+  font-size: 9px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  margin-left: 4px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* ===== SUMMARY IDR SMALL ===== */
+.idr-small { font-size: 11px; color: rgba(255,255,255,0.8); margin-left: 4px; }
 </style>

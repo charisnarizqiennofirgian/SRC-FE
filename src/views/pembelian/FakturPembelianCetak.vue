@@ -8,23 +8,30 @@
       <PrintKopWrapper>
 
       <div class="po-title-section">
-        <h2 class="po-title">FAKTUR PEMBELIAN (INVOICE)</h2>
-        <p class="po-number-line">No. Faktur Internal: {{ faktur.bill_number }}</p>
-        <p class="po-number-line">No. Faktur Supplier: {{ faktur.supplier_invoice_number }}</p>
+        <h2 class="po-title">{{ isUSD ? 'PURCHASE INVOICE' : 'FAKTUR PEMBELIAN (INVOICE)' }}</h2>
+        <p class="po-number-line">{{ isUSD ? 'Internal Invoice No.' : 'No. Faktur Internal' }}: {{ faktur.bill_number }}</p>
+        <p class="po-number-line">{{ isUSD ? 'Supplier Invoice No.' : 'No. Faktur Supplier' }}: {{ faktur.supplier_invoice_number }}</p>
         <p class="po-number-line" v-if="faktur.goods_receipt">
-          Ref. Penerimaan: {{ faktur.goods_receipt.gr_number }}
+          {{ isUSD ? 'Ref. Receipt' : 'Ref. Penerimaan' }}: {{ faktur.goods_receipt.gr_number }}
         </p>
       </div>
 
       <section class="invoice-info">
         <p class="date-line">Demak, {{ formatTanggal(faktur.bill_date) }}</p>
         <div class="info-supplier">
-          <p>Tagihan Dari Yth.</p>
+          <p>{{ isUSD ? 'Bill From:' : 'Tagihan Dari Yth.' }}</p>
           <p class="supplier-name">{{ faktur.supplier.name }}</p>
           <p>{{ faktur.supplier.address_city || faktur.supplier.address }}</p>
         </div>
-        <p class="intro-text">Dengan hormat,</p>
-        <p>Berikut adalah rincian tagihan atas barang yang telah kami terima:</p>
+
+        <div v-if="isUSD" class="currency-info-box">
+          <span>Currency: <strong>USD</strong></span>
+          <span>Exchange Rate: <strong>1 USD = {{ formatCurrency(faktur.exchange_rate) }}</strong></span>
+        </div>
+
+        <p v-if="!isUSD" class="intro-text">Dengan hormat,</p>
+        <p v-if="!isUSD">Berikut adalah rincian tagihan atas barang yang telah kami terima:</p>
+        <p v-if="isUSD" class="intro-text">Please find below the details of the invoice for goods received:</p>
       </section>
 
       <!-- TABEL DETAIL BARANG -->
@@ -32,11 +39,12 @@
         <thead>
           <tr>
             <th>No</th>
-            <th>Nama Barang</th>
-            <th>Qty</th>
-            <th>Satuan</th>
-            <th>Harga Satuan</th>
-            <th>Jumlah</th>
+            <th>{{ isUSD ? 'Description' : 'Nama Barang' }}</th>
+            <th>{{ isUSD ? 'Qty' : 'Qty' }}</th>
+            <th>{{ isUSD ? 'Unit' : 'Satuan' }}</th>
+            <th>{{ isUSD ? 'Unit Price (USD)' : 'Harga Satuan' }}</th>
+            <th v-if="isUSD">Unit Price (IDR)</th>
+            <th>{{ isUSD ? 'Amount (IDR)' : 'Jumlah' }}</th>
           </tr>
         </thead>
         <tbody>
@@ -45,7 +53,11 @@
             <td>{{ item.item?.name || 'N/A' }}</td>
             <td class="right">{{ parseFloat(item.quantity) }}</td>
             <td class="center">{{ item.item?.unit?.name || '' }}</td>
-            <td class="right">{{ formatCurrency(item.price) }}</td>
+            <td class="right">
+              <template v-if="isUSD">{{ formatUSD(item.price) }}</template>
+              <template v-else>{{ formatCurrency(item.price) }}</template>
+            </td>
+            <td v-if="isUSD" class="right">{{ formatCurrency(item.price * exchangeRate) }}</td>
             <td class="right">{{ formatCurrency(item.subtotal) }}</td>
           </tr>
         </tbody>
@@ -56,30 +68,34 @@
         <div class="totals">
           <table>
             <tr>
-              <td>Sub Total</td>
+              <td>{{ isUSD ? 'Sub Total' : 'Sub Total' }}</td>
               <td>{{ formatCurrency(faktur.subtotal) }}</td>
             </tr>
             <tr>
-              <td>PPN {{ formatPercentage(faktur.ppn_percentage) }}%</td>
+              <td>{{ isUSD ? 'VAT' : 'PPN' }} {{ formatPercentage(faktur.ppn_percentage) }}%</td>
               <td>{{ formatCurrency(faktur.ppn_amount) }}</td>
             </tr>
             <tr class="grand-total">
-              <td>Total</td>
+              <td>{{ isUSD ? 'Grand Total (IDR)' : 'Total' }}</td>
               <td>{{ formatCurrency(faktur.total_amount) }}</td>
+            </tr>
+            <tr v-if="isUSD" class="exchange-row">
+              <td>Exchange Rate</td>
+              <td>1 USD = {{ formatCurrency(faktur.exchange_rate) }}</td>
             </tr>
           </table>
         </div>
       </section>
 
       <!-- FOOTER -->
-      <FooterOperasional />
+      <FooterOperasional :isUSD="isUSD" />
       </PrintKopWrapper>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import apiClient from '../../api/axios'
 import PrintKopWrapper from '@/components/cetak/PrintKopWrapper.vue'
@@ -89,6 +105,9 @@ const route = useRoute()
 const loading = ref(true)
 const faktur = ref(null)
 
+const isUSD = computed(() => faktur.value?.currency === 'USD')
+const exchangeRate = computed(() => parseFloat(faktur.value?.exchange_rate ?? 1))
+
 const fetchFakturDetail = async () => {
   try {
     const fakturId = route.params.id
@@ -96,7 +115,6 @@ const fetchFakturDetail = async () => {
       `/purchase-bills/${fakturId}?include=supplier,details.item.unit,goodsReceipt`,
     )
     faktur.value = response.data.data
-    console.log('Faktur Data:', faktur.value)
   } catch (error) {
     console.error('Gagal memuat detail Faktur:', error)
   } finally {
@@ -106,7 +124,8 @@ const fetchFakturDetail = async () => {
 
 const formatTanggal = (tanggal) => {
   if (!tanggal) return ''
-  return new Date(tanggal).toLocaleDateString('id-ID', {
+  const locale = isUSD.value ? 'en-US' : 'id-ID'
+  return new Date(tanggal).toLocaleDateString(locale, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -120,6 +139,11 @@ const formatCurrency = (value) => {
     currency: 'IDR',
     minimumFractionDigits: 0,
   }).format(value)
+}
+
+const formatUSD = (value) => {
+  if (value == null || isNaN(value)) return '$ 0.00'
+  return '$ ' + new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)
 }
 
 const formatPercentage = (value) => {
@@ -220,6 +244,18 @@ body {
   font-size: 10pt;
 }
 
+.currency-info-box {
+  display: flex;
+  gap: 16mm;
+  margin: 2mm 0 3mm 0;
+  padding: 2mm 4mm;
+  border: 0.75pt solid #1d4ed8;
+  border-radius: 2mm;
+  background: #eff6ff;
+  font-size: 9pt;
+  font-family: 'Times New Roman', Times, serif;
+}
+
 .items-table {
   width: 100%;
   border-collapse: collapse;
@@ -256,7 +292,7 @@ body {
 }
 
 .totals {
-  width: 45%;
+  width: 55%;
 }
 
 .totals table {
@@ -282,6 +318,12 @@ body {
   font-weight: bold;
   font-size: 11pt;
   background-color: #e8e8e8;
+}
+
+.totals .exchange-row td {
+  background-color: #eff6ff;
+  font-style: italic;
+  font-size: 9pt;
 }
 
 @page {

@@ -3,12 +3,13 @@
     <thead>
       <tr>
         <th>No</th>
-        <th>Nama Barang</th>
-        <th>Qty</th>
-        <th>Satuan</th>
-        <th>Harga Satuan</th>
-        <th>Jumlah</th>
-        <th>Tanggal Kirim</th>
+        <th>{{ isUSD ? 'Description' : 'Nama Barang' }}</th>
+        <th>{{ isUSD ? 'Qty' : 'Qty' }}</th>
+        <th>{{ isUSD ? 'Unit' : 'Satuan' }}</th>
+        <th>{{ isUSD ? 'Unit Price (USD)' : 'Harga Satuan' }}</th>
+        <th v-if="isUSD">Unit Price (IDR)</th>
+        <th>{{ isUSD ? 'Amount (IDR)' : 'Jumlah' }}</th>
+        <th>{{ isUSD ? 'Delivery Date' : 'Tanggal Kirim' }}</th>
       </tr>
     </thead>
     <tbody>
@@ -17,27 +18,44 @@
         <td>{{ item.item.name }}</td>
         <td class="right">{{ parseFloat(item.quantity_ordered) }}</td>
         <td class="center">{{ item.item.unit.name }}</td>
-        <td class="right">{{ formatCurrency(item.price) }}</td>
+        <td class="right">
+          <template v-if="isUSD">
+            {{ formatUSD(item.price) }}
+          </template>
+          <template v-else>
+            {{ formatCurrency(item.price) }}
+          </template>
+        </td>
+        <td v-if="isUSD" class="right">
+          {{ formatCurrency(item.price * exchangeRate) }}
+        </td>
         <td class="right">{{ formatCurrency(item.subtotal) }}</td>
         <td class="center">{{ po.delivery_date ? formatTanggal(po.delivery_date) : '-' }}</td>
       </tr>
+
       <!-- Total Rows -->
       <tr class="total-row">
         <td></td>
-        <td colspan="4" class="left bold">Sub Total</td>
+        <td :colspan="isUSD ? 5 : 4" class="left bold">{{ isUSD ? 'Sub Total' : 'Sub Total' }}</td>
         <td class="right bold">{{ formatCurrency(subTotal) }}</td>
         <td></td>
       </tr>
       <tr v-if="ppnRate > 0" class="total-row">
         <td></td>
-        <td colspan="4" class="left bold">PPN {{ ppnRate }}%</td>
+        <td :colspan="isUSD ? 5 : 4" class="left bold">VAT {{ ppnRate }}%</td>
         <td class="right bold">{{ formatCurrency(ppn) }}</td>
         <td></td>
       </tr>
       <tr class="total-row">
         <td></td>
-        <td colspan="4" class="left bold">Total</td>
+        <td :colspan="isUSD ? 5 : 4" class="left bold">{{ isUSD ? 'Grand Total (IDR)' : 'Total' }}</td>
         <td class="right bold">{{ formatCurrency(grandTotal) }}</td>
+        <td></td>
+      </tr>
+      <tr v-if="isUSD" class="total-row exchange-row">
+        <td></td>
+        <td :colspan="isUSD ? 5 : 4" class="left bold">Exchange Rate</td>
+        <td class="right bold">1 USD = {{ formatCurrency(exchangeRate) }}</td>
         <td></td>
       </tr>
     </tbody>
@@ -48,6 +66,9 @@
 import { computed } from 'vue'
 const props = defineProps(['details', 'po'])
 
+const isUSD = computed(() => props.po?.currency === 'USD')
+const exchangeRate = computed(() => parseFloat(props.po?.exchange_rate ?? 1))
+
 const subTotal = computed(() => {
   return props.details.reduce((acc, item) => acc + parseFloat(item.subtotal || 0), 0)
 })
@@ -57,13 +78,8 @@ const ppnRate = computed(() => {
   return raw === 11.12 ? 11 : raw
 })
 
-const ppn = computed(() => {
-  return subTotal.value * (ppnRate.value / 100)
-})
-
-const grandTotal = computed(() => {
-  return subTotal.value + ppn.value
-})
+const ppn = computed(() => subTotal.value * (ppnRate.value / 100))
+const grandTotal = computed(() => subTotal.value + ppn.value)
 
 const formatCurrency = (value) => {
   if (isNaN(value)) return 'Rp 0'
@@ -74,9 +90,15 @@ const formatCurrency = (value) => {
   }).format(value)
 }
 
+const formatUSD = (value) => {
+  if (isNaN(value)) return '$ 0.00'
+  return '$ ' + new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)
+}
+
 const formatTanggal = (tanggal) => {
   if (!tanggal) return '-'
-  return new Date(tanggal).toLocaleDateString('id-ID', {
+  const locale = isUSD.value ? 'en-US' : 'id-ID'
+  return new Date(tanggal).toLocaleDateString(locale, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -109,19 +131,10 @@ const formatTanggal = (tanggal) => {
   letter-spacing: 0.3pt;
 }
 
-.center {
-  text-align: center;
-}
-.right {
-  text-align: right;
-}
-.left {
-  text-align: left;
-}
-.bold {
-  font-weight: 700;
-}
-.total-row td {
-  background-color: #f0f0f0;
-}
+.center { text-align: center; }
+.right  { text-align: right; }
+.left   { text-align: left; }
+.bold   { font-weight: 700; }
+.total-row td { background-color: #f0f0f0; }
+.exchange-row td { background-color: #e8f4fd; font-style: italic; }
 </style>
