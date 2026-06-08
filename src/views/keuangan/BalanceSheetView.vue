@@ -393,7 +393,8 @@ export default {
     body { font-family: 'Times New Roman', Times, serif; font-size: 10pt; color: #000; padding: 15mm 18mm; }
     h1 { font-size: 14pt; font-weight: 900; text-align: center; margin-bottom: 2mm; letter-spacing: 1px; }
     .company { text-align: center; font-size: 12pt; font-weight: 700; margin-bottom: 1mm; }
-    .period  { text-align: center; font-size: 10pt; margin-bottom: 6mm; }
+    .period  { text-align: center; font-size: 10pt; margin-bottom: 0; }
+    .kop { margin-bottom: 4mm; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
     .section-title { font-size: 10pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; background: #1e293b; color: #fff; padding: 4pt 6pt; margin-bottom: 2mm; }
     .sub-title { font-size: 9pt; font-weight: 700; text-transform: uppercase; color: #555; margin: 4mm 0 1mm; }
@@ -409,17 +410,32 @@ export default {
     tr.kewajiban-subtotal td:last-child { text-align: right; }
     .total-row td { font-weight: 700; background: #e5e7eb !important; }
     .grand-total td { font-weight: 900; font-size: 10pt; background: #1e293b !important; color: #fff; }
-    .balance-status { text-align: center; margin: 4mm 0; font-size: 10pt; font-weight: 700; padding: 3mm; border: 1pt solid; border-radius: 4pt; }
+    .balance-status { text-align: center; margin: 0 0 4mm; font-size: 10pt; font-weight: 700; padding: 3mm; border: 1pt solid; border-radius: 4pt; }
     .ok  { color: #059669; border-color: #059669; background: #f0fdf4; }
     .err { color: #dc2626; border-color: #dc2626; background: #fef2f2; }
     .footer { margin-top: 8mm; font-size: 9pt; color: #666; text-align: center; border-top: 0.5pt solid #ccc; padding-top: 3mm; }
-    @media print { body { padding: 0; } @page { size: A4 portrait; margin: 15mm 18mm; } }
+    @media print {
+      @page { size: A4 portrait; margin: 15mm 18mm; }
+      body { padding: 0; }
+      .kop {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        background: #fff;
+        padding-bottom: 3mm;
+        border-bottom: 1pt solid #ccc;
+        margin-bottom: 0;
+      }
+      .content { padding-top: 30mm; }
+    }
   </style>
 </head>
 <body>
-  <div class="company">PT. SURYA BANGKIT CEMERLANG</div>
-  <h1>NERACA (BALANCE SHEET)</h1>
-  <div class="period">Per Tanggal: ${fmtDate(d.as_of_date)}</div>
+  <div class="kop">
+    <div class="company">PT. SURYA BANGKIT CEMERLANG</div>
+    <h1>NERACA (BALANCE SHEET)</h1>
+    <div class="period">Per Tanggal: ${fmtDate(d.as_of_date)}</div>
+  </div>
+  <div class="content">
   <div class="balance-status ${d.is_balanced ? 'ok' : 'err'}">
     ${d.is_balanced ? '✓ Neraca Balance' : '✗ Tidak Balance — Selisih: ' + fmt(d.selisih)}
   </div>
@@ -458,6 +474,7 @@ export default {
     </div>
   </div>
   <div class="footer">Dicetak pada ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })} &middot; Sistem ERP PT. SBC</div>
+  </div>
   <script>window.onload = () => { window.print(); }<\/script>
 </body>
 </html>`

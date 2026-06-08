@@ -29,6 +29,20 @@
           <div class="export-group">
             <div class="export-group-label">Ekspor Laporan</div>
             <div class="export-btns">
+              <button class="btn-exp btn-pdf-gl" @click="exportPDF" :disabled="!hasData">
+                <span class="exp-icon exp-icon-pdf-gl">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                  </svg>
+                </span>
+                <span class="exp-label">
+                  <span class="exp-main">PDF</span>
+                  <span class="exp-sub">Cetak / .pdf</span>
+                </span>
+              </button>
+              <div class="exp-divider"></div>
               <button class="btn-exp btn-excel-gl" @click="exportExcel" :disabled="!hasData">
                 <span class="exp-icon exp-icon-gl">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -399,6 +413,170 @@ export default {
     },
     resetFilters() { this.filters.account_id = ''; this.setDefaultDates(); this.ledgerData = null },
     viewJournal(id) { this.$router.push(`/admin/keuangan/jurnal-umum/${id}`) },
+    exportPDF() {
+      if (!this.ledgerData) return
+      const account   = this.ledgerData.account
+      const fmt       = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Math.abs(v || 0))
+      const fmtDate   = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'
+      const fmtDateSh = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'
+      const period    = `${fmtDateSh(this.filters.start_date)} — ${fmtDateSh(this.filters.end_date)}`
+      const printDate = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
+
+      const txnRows = this.transactions.map((trx, i) => `
+        <tr class="${i % 2 === 0 ? 'even' : ''}">
+          <td class="c">${i + 1}</td>
+          <td class="c">${fmtDate(trx.transaction_date)}</td>
+          <td class="mono">${trx.journal_number}</td>
+          <td class="desc">${trx.description || '-'}</td>
+          <td class="r debit-c">${trx.debit > 0 ? fmt(trx.debit) : ''}</td>
+          <td class="r credit-c">${trx.credit > 0 ? fmt(trx.credit) : ''}</td>
+          <td class="r ${trx.running_balance >= 0 ? 'pos-c' : 'neg-c'}">${fmt(trx.running_balance)}</td>
+        </tr>`).join('')
+
+      const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<title>Buku Besar — ${account.code} ${account.name}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; color: #1a1a1a; padding: 14mm 16mm; }
+
+  /* KOP */
+  .kop { margin-bottom: 4mm; }
+  .kop-inner { display: flex; align-items: center; gap: 4mm; border-bottom: 3pt solid #1e3a5f; padding-bottom: 3.5mm; }
+  .kop-logo { width: 13mm; height: 13mm; background: #1e3a5f; border-radius: 2mm; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .kop-logo span { color: #fff; font-size: 15pt; font-weight: 900; font-family: Arial, sans-serif; }
+  .kop-text { flex: 1; }
+  .kop-company { font-size: 12pt; font-weight: 900; color: #1e3a5f; font-family: Arial, sans-serif; line-height: 1.2; }
+  .kop-tagline { font-size: 7.5pt; color: #6b7280; margin-top: 0.5mm; }
+  .kop-right { text-align: right; }
+  .kop-doc-title { font-size: 7.5pt; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; }
+  .kop-doc-period { font-size: 8.5pt; color: #1e3a5f; font-weight: 700; margin-top: 0.5mm; }
+
+  /* JUDUL */
+  .report-header { margin: 3mm 0 4mm; }
+  .report-title { font-size: 14pt; font-weight: 900; color: #1e3a5f; letter-spacing: 0.5px; text-transform: uppercase; font-family: Arial, sans-serif; }
+  .account-badge { display: inline-block; background: #1e3a5f; color: #fff; font-size: 8pt; font-weight: 700; padding: 1.5mm 3mm; border-radius: 1mm; margin-top: 2mm; letter-spacing: 0.5px; font-family: Arial, sans-serif; }
+  .report-divider { height: 1pt; background: #1e3a5f; margin: 2.5mm 0; opacity: 0.2; }
+
+  /* TABEL */
+  table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+  thead { display: table-header-group; }
+  thead tr { background: #1e3a5f; }
+  thead th { padding: 3mm 3mm; color: #fff; font-weight: 700; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5px; border: 0.5pt solid #2d4a6f; }
+  tbody tr { border-bottom: 0.5pt solid #e5e7eb; }
+  tbody tr.even td { background: #f8fafc; }
+  tbody td { padding: 2.5mm 3mm; vertical-align: middle; }
+  tfoot tr { background: #1e293b; }
+  tfoot td { padding: 2.5mm 3mm; color: #fff; font-weight: 700; font-size: 8.5pt; border: 0.5pt solid #2d4a6f; }
+  tfoot tr.final { background: #1e3a5f; }
+  tfoot tr.final td { font-size: 10pt; font-weight: 900; }
+
+  /* SALDO AWAL */
+  .saldo-awal { background: #fffbeb !important; }
+  .saldo-awal td { font-style: italic; color: #92400e; }
+  .badge-sa { background: #fef3c7; color: #92400e; border: 0.5pt solid #fde68a; padding: 1pt 4pt; border-radius: 2pt; font-size: 7.5pt; font-weight: 800; font-style: normal; }
+
+  /* ALIGNMENT */
+  .c { text-align: center; }
+  .r { text-align: right; font-family: 'Courier New', monospace; font-weight: 600; }
+  .mono { font-family: 'Courier New', monospace; font-size: 8.5pt; }
+  .desc { max-width: 120pt; }
+  .debit-c { color: #065f46; }
+  .credit-c { color: #1e40af; }
+  .pos-c { color: #065f46; font-weight: 800; }
+  .neg-c { color: #991b1b; font-weight: 800; }
+
+  /* FOOTER */
+  .print-footer { margin-top: 5mm; border-top: 0.75pt solid #d1d5db; padding-top: 2.5mm; display: flex; justify-content: space-between; font-size: 7.5pt; color: #9ca3af; }
+
+  /* PRINT */
+  @page { size: A4 portrait; margin: 14mm 16mm; }
+  @media print {
+    body { padding: 0; }
+    .kop { position: fixed; top: 0; left: 0; right: 0; background: #fff; padding-bottom: 2mm; margin-bottom: 0; }
+    .content { padding-top: 28mm; }
+    thead { display: table-header-group; }
+  }
+</style>
+</head>
+<body>
+
+<div class="kop">
+  <div class="kop-inner">
+    <div class="kop-logo"><span>S</span></div>
+    <div class="kop-text">
+      <div class="kop-company">PT. SURYA BANGKIT CEMERLANG</div>
+      <div class="kop-tagline">Perusahaan Pengolahan Kayu &amp; Moulding</div>
+    </div>
+    <div class="kop-right">
+      <div class="kop-doc-title">Laporan Keuangan</div>
+      <div class="kop-doc-period">${period}</div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+  <div class="report-header">
+    <div class="report-title">Buku Besar</div>
+    <div><span class="account-badge">${account.code} &mdash; ${account.name}</span></div>
+    <div class="report-divider"></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th class="c" style="width:24pt">No</th>
+        <th style="width:58pt">Tanggal</th>
+        <th style="width:72pt">No. Jurnal</th>
+        <th>Keterangan</th>
+        <th class="r" style="width:72pt">Debit</th>
+        <th class="r" style="width:72pt">Kredit</th>
+        <th class="r" style="width:80pt">Saldo Berjalan</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="saldo-awal">
+        <td></td>
+        <td class="c">—</td>
+        <td><span class="badge-sa">SALDO AWAL</span></td>
+        <td>Saldo awal periode</td>
+        <td></td>
+        <td></td>
+        <td class="r ${this.ledgerData.saldo_awal >= 0 ? 'pos-c' : 'neg-c'}">${fmt(this.ledgerData.saldo_awal)}</td>
+      </tr>
+      ${txnRows || '<tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:6mm;font-style:italic">Tidak ada transaksi pada periode ini</td></tr>'}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="4" style="color:rgba(255,255,255,0.7);font-size:7.5pt;letter-spacing:0.5px">TOTAL MUTASI PERIODE</td>
+        <td class="r" style="color:#6ee7b7">${fmt(this.summary.total_debit)}</td>
+        <td class="r" style="color:#93c5fd">${fmt(this.summary.total_credit)}</td>
+        <td></td>
+      </tr>
+      <tr class="final">
+        <td colspan="6" style="color:rgba(255,255,255,0.85);font-size:8pt;letter-spacing:0.8px">SALDO AKHIR PERIODE</td>
+        <td class="r" style="color:${this.summary.saldo_akhir >= 0 ? '#fff' : '#fca5a5'}">${fmt(this.summary.saldo_akhir)}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="print-footer">
+    <span>Dicetak pada ${printDate}</span>
+    <span>PT. Surya Bangkit Cemerlang &mdash; Sistem ERP</span>
+    <span>Dokumen ini digenerate secara otomatis</span>
+  </div>
+</div>
+
+</body></html>`
+
+      const w = window.open('', '_blank')
+      w.document.write(html)
+      w.document.close()
+      w.focus()
+      setTimeout(() => { w.print() }, 500)
+    },
     exportExcel() {
       import('xlsx').then((XLSX) => {
         const account  = this.ledgerData.account
@@ -919,7 +1097,11 @@ export default {
   white-space: nowrap; border: 1.5px solid transparent;
 }
 .btn-exp:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn-excel-gl { background: #f0fdfa; color: #0f766e; border-color: #99f6e4; }
+.btn-pdf-gl { background: #fef2f2; color: #dc2626; border-color: #fecaca; border-radius: 9px 0 0 9px; }
+.btn-pdf-gl:hover:not(:disabled) { background: #fee2e2; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(220,38,38,0.15); }
+.exp-icon-pdf-gl { background: #fee2e2; color: #dc2626; }
+.exp-divider { width: 1px; background: #e5e7eb; flex-shrink: 0; }
+.btn-excel-gl { background: #f0fdfa; color: #0f766e; border-color: #99f6e4; border-radius: 0 9px 9px 0; }
 .btn-excel-gl:hover:not(:disabled) { background: #ccfbf1; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15,118,110,0.2); }
 .exp-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .exp-icon-gl { background: #d1fae5; color: #059669; }

@@ -278,42 +278,162 @@ export default {
       const labaBersihColor = isProfit ? '#059669' : '#dc2626'
       const labaBersihBg = isProfit ? '#f0fdf4' : '#fff5f5'
       const labaBersihLabel = isProfit ? 'LABA BERSIH' : 'RUGI BERSIH'
-      const html = `<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">
-<title>Laporan Laba Rugi</title>
+      const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<title>Laporan Laba Rugi — PT. Surya Bangkit Cemerlang</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Times New Roman',Times,serif;font-size:11pt;color:#000;background:#fff;padding:15mm 20mm}
-  .company{font-size:11pt;text-align:center;font-weight:700;margin-bottom:1mm}
-  h1{font-size:14pt;font-weight:900;text-align:center;text-decoration:underline;letter-spacing:1px;margin-bottom:1mm}
-  .period{font-size:10pt;text-align:center;color:#555;margin-bottom:6mm}
-  .section-title{font-size:10pt;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;background:#f5f5f5;padding:2mm 4mm;border-left:3pt solid #000;margin:5mm 0 2mm}
-  table{width:100%;border-collapse:collapse}
-  table td{padding:2mm 3mm;font-size:10.5pt;border-bottom:0.5pt solid #eee}
-  .acc-name{width:70%}
-  .acc-amt{text-align:right;font-weight:500}
-  .acc-empty{text-align:center;color:#999;font-style:italic;font-size:9.5pt;padding:4mm}
-  .section-total{display:flex;justify-content:space-between;padding:2.5mm 3mm;font-weight:800;font-size:11pt;border-top:1pt solid #000;border-bottom:2pt double #000;margin-bottom:4mm}
-  .milestone{display:flex;justify-content:space-between;padding:3mm 4mm;font-weight:800;font-size:12pt;background:#e8f5e9;border:1pt solid #a5d6a7;margin:4mm 0;border-radius:1mm}
-  .net-result{display:flex;justify-content:space-between;align-items:center;padding:4mm 5mm;font-weight:900;font-size:14pt;border:2pt solid ${labaBersihColor};border-radius:1mm;margin-top:5mm;color:${labaBersihColor};background:${labaBersihBg}}
-  .print-footer{margin-top:8mm;border-top:0.75pt solid #ccc;padding-top:3mm;font-size:8.5pt;color:#777;text-align:center}
-  @page{size:A4 portrait;margin:15mm 20mm}
-  @media print{body{padding:0}}
-</style></head><body>
-  <div class="company">PT. SURYA BANGKIT CEMERLANG</div>
-  <h1>LAPORAN LABA RUGI</h1>
-  <div class="period">Periode: ${period}</div>
-  <div class="section-title">PENDAPATAN</div>
-  <table>${accountRows(this.reportData.pendapatan.accounts)}</table>
-  <div class="section-total"><span>TOTAL PENDAPATAN</span><span>${fmtRupiah(this.reportData.pendapatan.total)}</span></div>
-  <div class="section-title">HARGA POKOK PENJUALAN (HPP)</div>
-  <table>${accountRows(this.reportData.hpp.accounts)}</table>
-  <div class="section-total"><span>TOTAL HPP</span><span>(${fmtRupiah(this.reportData.hpp.total)})</span></div>
-  <div class="milestone"><span>LABA KOTOR</span><span>${fmtRupiah(this.reportData.laba_kotor)}</span></div>
-  <div class="section-title">BIAYA OPERASIONAL</div>
-  <table>${accountRows(this.reportData.biaya.accounts)}</table>
-  <div class="section-total"><span>TOTAL BIAYA OPERASIONAL</span><span>(${fmtRupiah(this.reportData.biaya.total)})</span></div>
-  <div class="net-result"><span>${labaBersihLabel}</span><span>${fmtRupiah(this.reportData.laba_bersih)}</span></div>
-  <div class="print-footer">Dicetak pada ${printDate} · Sistem ERP SBC</div>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Times New Roman', Times, serif; font-size: 10pt; color: #1a1a1a; background: #fff; padding: 14mm 18mm; }
+
+  /* ── KOP ── */
+  .kop { margin-bottom: 5mm; }
+  .kop-inner { display: flex; align-items: center; gap: 5mm; border-bottom: 3pt solid #1e3a5f; padding-bottom: 4mm; }
+  .kop-logo { width: 14mm; height: 14mm; background: #1e3a5f; border-radius: 2mm; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .kop-logo span { color: #fff; font-size: 16pt; font-weight: 900; font-family: Arial, sans-serif; line-height: 1; }
+  .kop-text { flex: 1; }
+  .kop-company { font-size: 13pt; font-weight: 900; color: #1e3a5f; letter-spacing: 0.5px; line-height: 1.2; font-family: Arial, sans-serif; }
+  .kop-tagline { font-size: 8pt; color: #6b7280; letter-spacing: 0.3px; margin-top: 0.5mm; }
+  .kop-right { text-align: right; }
+  .kop-doc-title { font-size: 8pt; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1.5px; }
+  .kop-doc-period { font-size: 9pt; color: #1e3a5f; font-weight: 700; margin-top: 0.5mm; }
+
+  /* ── JUDUL LAPORAN ── */
+  .report-header { text-align: center; margin: 4mm 0 5mm; }
+  .report-title { font-size: 15pt; font-weight: 900; color: #1e3a5f; letter-spacing: 1px; text-transform: uppercase; font-family: Arial, sans-serif; }
+  .report-subtitle { font-size: 9.5pt; color: #4b5563; margin-top: 1mm; }
+  .report-divider { height: 1pt; background: linear-gradient(to right, #1e3a5f, #93c5fd, #1e3a5f); margin: 3mm 0; }
+
+  /* ── TABEL AKUN ── */
+  .section { margin-bottom: 3mm; }
+  .section-header { display: flex; align-items: center; gap: 2mm; background: #1e3a5f; color: #fff; padding: 2.5mm 4mm; margin-bottom: 0; }
+  .section-num { background: rgba(255,255,255,0.15); font-size: 8pt; font-weight: 700; padding: 0.5mm 2mm; border-radius: 1mm; letter-spacing: 0.5px; }
+  .section-label { font-size: 9.5pt; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  table { width: 100%; border-collapse: collapse; }
+  table tr:nth-child(even) td { background: #f8fafc; }
+  table td { padding: 2mm 4mm; font-size: 9.5pt; border-bottom: 0.5pt solid #e5e7eb; }
+  .acc-name { width: 65%; color: #374151; }
+  .acc-amt { text-align: right; font-family: 'Courier New', monospace; font-size: 9.5pt; color: #111827; }
+  .acc-empty { text-align: center; color: #9ca3af; font-style: italic; font-size: 9pt; padding: 3mm; }
+
+  /* ── SUBTOTAL BARIS ── */
+  .subtotal-row { display: flex; justify-content: space-between; align-items: center; padding: 2.5mm 4mm; background: #eff6ff; border-top: 1.5pt solid #3b82f6; border-bottom: 0.5pt solid #bfdbfe; margin-bottom: 3mm; }
+  .subtotal-label { font-size: 9.5pt; font-weight: 800; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.5px; }
+  .subtotal-amount { font-size: 10pt; font-weight: 900; font-family: 'Courier New', monospace; color: #1d4ed8; }
+
+  /* ── HPP subtotal (merah/negatif) ── */
+  .subtotal-row.hpp { background: #fef2f2; border-top-color: #ef4444; border-bottom-color: #fecaca; }
+  .subtotal-row.hpp .subtotal-label, .subtotal-row.hpp .subtotal-amount { color: #b91c1c; }
+
+  /* ── BIAYA subtotal ── */
+  .subtotal-row.biaya { background: #fff7ed; border-top-color: #f59e0b; border-bottom-color: #fde68a; }
+  .subtotal-row.biaya .subtotal-label, .subtotal-row.biaya .subtotal-amount { color: #92400e; }
+
+  /* ── MILESTONE (Laba Kotor) ── */
+  .milestone { display: flex; justify-content: space-between; align-items: center; padding: 3mm 4mm; background: #f0fdf4; border: 1.5pt solid #16a34a; border-radius: 1.5mm; margin: 2mm 0 4mm; }
+  .milestone-label { font-size: 10pt; font-weight: 800; color: #15803d; text-transform: uppercase; letter-spacing: 0.5px; }
+  .milestone-amount { font-size: 11pt; font-weight: 900; font-family: 'Courier New', monospace; color: #15803d; }
+
+  /* ── HASIL AKHIR ── */
+  .net-result { display: flex; justify-content: space-between; align-items: center; padding: 4mm 5mm; font-weight: 900; border-left: 5pt solid ${labaBersihColor}; background: ${labaBersihBg}; margin-top: 4mm; }
+  .net-label { font-size: 12pt; font-weight: 900; color: ${labaBersihColor}; text-transform: uppercase; letter-spacing: 1px; font-family: Arial, sans-serif; }
+  .net-amount { font-size: 14pt; font-weight: 900; font-family: 'Courier New', monospace; color: ${labaBersihColor}; }
+
+  /* ── FOOTER ── */
+  .print-footer { margin-top: 6mm; border-top: 0.75pt solid #d1d5db; padding-top: 3mm; display: flex; justify-content: space-between; font-size: 8pt; color: #9ca3af; }
+
+  /* ── PRINT ── */
+  @page { size: A4 portrait; margin: 14mm 18mm; }
+  @media print {
+    body { padding: 0; }
+    .kop { position: fixed; top: 0; left: 0; right: 0; background: #fff; padding-bottom: 2mm; margin-bottom: 0; }
+    .content { padding-top: 34mm; }
+  }
+</style>
+</head>
+<body>
+
+<div class="kop">
+  <div class="kop-inner">
+    <div class="kop-logo"><span>S</span></div>
+    <div class="kop-text">
+      <div class="kop-company">PT. SURYA BANGKIT CEMERLANG</div>
+      <div class="kop-tagline">Perusahaan Pengolahan Kayu &amp; Moulding</div>
+    </div>
+    <div class="kop-right">
+      <div class="kop-doc-title">Laporan Keuangan</div>
+      <div class="kop-doc-period">${period}</div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+  <div class="report-header">
+    <div class="report-title">Laporan Laba Rugi</div>
+    <div class="report-subtitle">Untuk Periode yang Berakhir pada ${period}</div>
+    <div class="report-divider"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">I</span>
+      <span class="section-label">Pendapatan</span>
+    </div>
+    <table>
+      ${accountRows(this.reportData.pendapatan.accounts)}
+    </table>
+    <div class="subtotal-row">
+      <span class="subtotal-label">Total Pendapatan</span>
+      <span class="subtotal-amount">${fmtRupiah(this.reportData.pendapatan.total)}</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">II</span>
+      <span class="section-label">Harga Pokok Penjualan (HPP)</span>
+    </div>
+    <table>
+      ${accountRows(this.reportData.hpp.accounts)}
+    </table>
+    <div class="subtotal-row hpp">
+      <span class="subtotal-label">Total HPP</span>
+      <span class="subtotal-amount">(${fmtRupiah(this.reportData.hpp.total)})</span>
+    </div>
+  </div>
+
+  <div class="milestone">
+    <span class="milestone-label">Laba Kotor</span>
+    <span class="milestone-amount">${fmtRupiah(this.reportData.laba_kotor)}</span>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">III</span>
+      <span class="section-label">Biaya Operasional</span>
+    </div>
+    <table>
+      ${accountRows(this.reportData.biaya.accounts)}
+    </table>
+    <div class="subtotal-row biaya">
+      <span class="subtotal-label">Total Biaya Operasional</span>
+      <span class="subtotal-amount">(${fmtRupiah(this.reportData.biaya.total)})</span>
+    </div>
+  </div>
+
+  <div class="net-result">
+    <span class="net-label">${labaBersihLabel}</span>
+    <span class="net-amount">${fmtRupiah(this.reportData.laba_bersih)}</span>
+  </div>
+
+  <div class="print-footer">
+    <span>Dicetak pada ${printDate}</span>
+    <span>PT. Surya Bangkit Cemerlang &mdash; Sistem ERP</span>
+    <span>Dokumen ini digenerate secara otomatis</span>
+  </div>
+</div>
+
 </body></html>`
       const w = window.open('', '_blank')
       w.document.write(html)
