@@ -284,7 +284,7 @@
                   <span class="label-text">Tipe Akun</span>
                   <span class="required">*</span>
                 </label>
-                <select id="accountType" v-model="accountForm.type" class="form-control" required>
+                <select id="accountType" v-model="accountForm.type" class="form-control" required @change="accountForm.sub_type = ''">
                   <option value="">-- Pilih Tipe --</option>
                   <option v-for="(label, value) in accountTypes" :key="value" :value="value">
                     {{ label }}
@@ -303,6 +303,25 @@
                   <option value="EUR">EUR - Euro</option>
                 </select>
               </div>
+            </div>
+
+            <div class="form-group" v-if="accountForm.type === 'ASET' || accountForm.type === 'KEWAJIBAN'">
+              <label for="accountSubType" class="form-label">
+                <span class="label-icon">🗂️</span>
+                <span class="label-text">Sub Tipe</span>
+                <span class="label-hint">(untuk pengelompokan di Neraca)</span>
+              </label>
+              <select id="accountSubType" v-model="accountForm.sub_type" class="form-control">
+                <option value="">-- Tanpa Sub Tipe --</option>
+                <template v-if="accountForm.type === 'ASET'">
+                  <option value="aktiva_lancar">Aktiva Lancar</option>
+                  <option value="aktiva_tetap">Aktiva Tetap</option>
+                </template>
+                <template v-if="accountForm.type === 'KEWAJIBAN'">
+                  <option value="hutang_lancar">Hutang Lancar</option>
+                  <option value="hutang_jangka_panjang">Hutang Jangka Panjang</option>
+                </template>
+              </select>
             </div>
 
             <div class="form-group" v-if="isEditing">
@@ -543,6 +562,7 @@ const openAddModal = () => {
     code: '',
     name: '',
     type: '',
+    sub_type: '',
     currency: 'IDR',
     is_active: true,
   }
@@ -1484,6 +1504,11 @@ onMounted(() => {
 .required {
   color: #ef4444;
   font-weight: 700;
+}
+.label-hint {
+  font-size: 11px;
+  color: #9ca3af;
+  font-weight: 400;
 }
 
 .form-control {
