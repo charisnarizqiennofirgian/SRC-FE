@@ -131,33 +131,77 @@
         <!-- TWO-COLUMN TABLE -->
         <div class="bs-grid">
 
-          <!-- ASET -->
+          <!-- AKTIVA -->
           <div class="bs-col">
             <div class="col-title-bar aset-bar">
-              <span class="ctb-label">ASET</span>
+              <span class="ctb-label">AKTIVA</span>
               <span class="ctb-total">{{ formatRupiah(reportData.aset.total) }}</span>
             </div>
 
-            <div class="account-table">
-              <div class="at-head">
-                <span>Nama Akun</span>
-                <span>Jumlah</span>
+            <!-- Aktiva Lancar -->
+            <div class="sub-section" v-if="reportData.aset.aktiva_lancar.accounts.length > 0">
+              <div class="sub-head">
+                <div class="sub-indicator lancar-indicator"></div>
+                <span class="sub-label">AKTIVA LANCAR</span>
               </div>
-              <div
-                v-for="(account, i) in reportData.aset.accounts"
-                :key="account.account_id"
-                :class="['at-row', i % 2 === 0 ? 'at-row-even' : '']"
-              >
-                <span class="at-name">{{ account.account_name }}</span>
-                <span class="at-amount">{{ formatRupiah(account.amount) }}</span>
+              <div class="account-table">
+                <div class="at-head"><span>Nama Akun</span><span>Jumlah</span></div>
+                <div v-for="(acc, i) in reportData.aset.aktiva_lancar.accounts" :key="acc.account_id"
+                  :class="['at-row', i % 2 === 0 ? 'at-row-even' : '']">
+                  <span class="at-name">{{ acc.account_name }}</span>
+                  <span class="at-amount">{{ formatRupiah(acc.amount) }}</span>
+                </div>
               </div>
-              <div v-if="reportData.aset.accounts.length === 0" class="at-empty">
-                <span>Belum ada data aset</span>
+              <div class="subtotal-row">
+                <span>Total Aktiva Lancar</span>
+                <span>{{ formatRupiah(reportData.aset.aktiva_lancar.total) }}</span>
               </div>
             </div>
 
+            <!-- Aktiva Tetap -->
+            <div class="sub-section" v-if="reportData.aset.aktiva_tetap.accounts.length > 0">
+              <div class="sub-head">
+                <div class="sub-indicator tetap-indicator"></div>
+                <span class="sub-label">AKTIVA TETAP</span>
+              </div>
+              <div class="account-table">
+                <div class="at-head"><span>Nama Akun</span><span>Jumlah</span></div>
+                <div v-for="(acc, i) in reportData.aset.aktiva_tetap.accounts" :key="acc.account_id"
+                  :class="['at-row', i % 2 === 0 ? 'at-row-even' : '']">
+                  <span class="at-name">{{ acc.account_name }}</span>
+                  <span class="at-amount">{{ formatRupiah(acc.amount) }}</span>
+                </div>
+              </div>
+              <div class="subtotal-row">
+                <span>Total Aktiva Tetap</span>
+                <span>{{ formatRupiah(reportData.aset.aktiva_tetap.total) }}</span>
+              </div>
+            </div>
+
+            <!-- Aktiva Lainnya (belum dikategorikan) -->
+            <div class="sub-section" v-if="reportData.aset.lainnya.accounts.length > 0">
+              <div class="sub-head">
+                <div class="sub-indicator lainnya-indicator"></div>
+                <span class="sub-label">AKTIVA LAINNYA</span>
+              </div>
+              <div class="account-table">
+                <div class="at-head"><span>Nama Akun</span><span>Jumlah</span></div>
+                <div v-for="(acc, i) in reportData.aset.lainnya.accounts" :key="acc.account_id"
+                  :class="['at-row', i % 2 === 0 ? 'at-row-even' : '']">
+                  <span class="at-name">{{ acc.account_name }}</span>
+                  <span class="at-amount">{{ formatRupiah(acc.amount) }}</span>
+                </div>
+              </div>
+              <div class="subtotal-row">
+                <span>Total Aktiva Lainnya</span>
+                <span>{{ formatRupiah(reportData.aset.lainnya.total) }}</span>
+              </div>
+            </div>
+
+            <div v-if="reportData.aset.accounts.length === 0" class="at-empty">Belum ada data aktiva</div>
+
             <div class="col-total-bar aset-total-bar">
-              <span class="ctb-total-label">TOTAL ASET</span>
+              <span class="ctb-total-label">TOTAL AKTIVA</span>
               <span class="ctb-total-value">{{ formatRupiah(reportData.aset.total) }}</span>
             </div>
           </div>
@@ -168,37 +212,73 @@
           <!-- PASIVA -->
           <div class="bs-col">
             <div class="col-title-bar pasiva-bar">
-              <span class="ctb-label">KEWAJIBAN &amp; MODAL</span>
+              <span class="ctb-label">PASIVA</span>
               <span class="ctb-total">{{ formatRupiah(reportData.total_pasiva) }}</span>
             </div>
 
-            <!-- Kewajiban -->
-            <div class="sub-section">
+            <!-- Hutang Lancar -->
+            <div class="sub-section" v-if="reportData.kewajiban.hutang_lancar.accounts.length > 0">
               <div class="sub-head">
                 <div class="sub-indicator liab-indicator"></div>
-                <span class="sub-label">KEWAJIBAN</span>
+                <span class="sub-label">HUTANG LANCAR</span>
               </div>
               <div class="account-table">
-                <div class="at-head">
-                  <span>Nama Akun</span>
-                  <span>Jumlah</span>
-                </div>
-                <div
-                  v-for="(account, i) in reportData.kewajiban.accounts"
-                  :key="account.account_id"
-                  :class="['at-row', i % 2 === 0 ? 'at-row-even' : '']"
-                >
-                  <span class="at-name">{{ account.account_name }}</span>
-                  <span class="at-amount">{{ formatRupiah(account.amount) }}</span>
-                </div>
-                <div v-if="reportData.kewajiban.accounts.length === 0" class="at-empty">
-                  <span>Belum ada data kewajiban</span>
+                <div class="at-head"><span>Nama Akun</span><span>Jumlah</span></div>
+                <div v-for="(acc, i) in reportData.kewajiban.hutang_lancar.accounts" :key="acc.account_id"
+                  :class="['at-row', i % 2 === 0 ? 'at-row-even' : '']">
+                  <span class="at-name">{{ acc.account_name }}</span>
+                  <span class="at-amount">{{ formatRupiah(acc.amount) }}</span>
                 </div>
               </div>
               <div class="subtotal-row">
-                <span>Total Kewajiban</span>
-                <span>{{ formatRupiah(reportData.kewajiban.total) }}</span>
+                <span>Total Hutang Lancar</span>
+                <span>{{ formatRupiah(reportData.kewajiban.hutang_lancar.total) }}</span>
               </div>
+            </div>
+
+            <!-- Hutang Jangka Panjang -->
+            <div class="sub-section" v-if="reportData.kewajiban.hutang_jangka_panjang.accounts.length > 0">
+              <div class="sub-head">
+                <div class="sub-indicator liab-jp-indicator"></div>
+                <span class="sub-label">HUTANG JANGKA PANJANG</span>
+              </div>
+              <div class="account-table">
+                <div class="at-head"><span>Nama Akun</span><span>Jumlah</span></div>
+                <div v-for="(acc, i) in reportData.kewajiban.hutang_jangka_panjang.accounts" :key="acc.account_id"
+                  :class="['at-row', i % 2 === 0 ? 'at-row-even' : '']">
+                  <span class="at-name">{{ acc.account_name }}</span>
+                  <span class="at-amount">{{ formatRupiah(acc.amount) }}</span>
+                </div>
+              </div>
+              <div class="subtotal-row">
+                <span>Total Hutang Jangka Panjang</span>
+                <span>{{ formatRupiah(reportData.kewajiban.hutang_jangka_panjang.total) }}</span>
+              </div>
+            </div>
+
+            <!-- Kewajiban Lainnya -->
+            <div class="sub-section" v-if="reportData.kewajiban.lainnya.accounts.length > 0">
+              <div class="sub-head">
+                <div class="sub-indicator lainnya-indicator"></div>
+                <span class="sub-label">KEWAJIBAN LAINNYA</span>
+              </div>
+              <div class="account-table">
+                <div class="at-head"><span>Nama Akun</span><span>Jumlah</span></div>
+                <div v-for="(acc, i) in reportData.kewajiban.lainnya.accounts" :key="acc.account_id"
+                  :class="['at-row', i % 2 === 0 ? 'at-row-even' : '']">
+                  <span class="at-name">{{ acc.account_name }}</span>
+                  <span class="at-amount">{{ formatRupiah(acc.amount) }}</span>
+                </div>
+              </div>
+              <div class="subtotal-row">
+                <span>Total Kewajiban Lainnya</span>
+                <span>{{ formatRupiah(reportData.kewajiban.lainnya.total) }}</span>
+              </div>
+            </div>
+
+            <div class="subtotal-row kewajiban-total" v-if="reportData.kewajiban.accounts.length > 0">
+              <span>TOTAL KEWAJIBAN</span>
+              <span>{{ formatRupiah(reportData.kewajiban.total) }}</span>
             </div>
 
             <!-- Modal -->
@@ -208,19 +288,12 @@
                 <span class="sub-label">MODAL</span>
               </div>
               <div class="account-table">
-                <div class="at-head">
-                  <span>Nama Akun</span>
-                  <span>Jumlah</span>
+                <div class="at-head"><span>Nama Akun</span><span>Jumlah</span></div>
+                <div v-for="(acc, i) in reportData.modal.accounts" :key="acc.account_id"
+                  :class="['at-row', i % 2 === 0 ? 'at-row-even' : '']">
+                  <span class="at-name">{{ acc.account_name }}</span>
+                  <span class="at-amount">{{ formatRupiah(acc.amount) }}</span>
                 </div>
-                <div
-                  v-for="(account, i) in reportData.modal.accounts"
-                  :key="account.account_id"
-                  :class="['at-row', i % 2 === 0 ? 'at-row-even' : '']"
-                >
-                  <span class="at-name">{{ account.account_name }}</span>
-                  <span class="at-amount">{{ formatRupiah(account.amount) }}</span>
-                </div>
-                <!-- Laba Row -->
                 <div class="at-row laba-row">
                   <span class="at-name laba-name">Laba Tahun Berjalan</span>
                   <span :class="['at-amount', reportData.laba_tahun_berjalan >= 0 ? 'profit-text' : 'loss-text']">
@@ -235,7 +308,7 @@
             </div>
 
             <div class="col-total-bar pasiva-total-bar">
-              <span class="ctb-total-label">TOTAL KEWAJIBAN &amp; MODAL</span>
+              <span class="ctb-total-label">TOTAL PASIVA</span>
               <span class="ctb-total-value">{{ formatRupiah(reportData.total_pasiva) }}</span>
             </div>
           </div>
@@ -298,16 +371,16 @@ export default {
       const fmt = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Math.abs(v || 0))
       const fmtDate = (dt) => new Date(dt).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
 
-      const asetRows = d.aset.accounts.map((a, i) =>
-        `<tr class="${i % 2 === 0 ? 'even' : ''}"><td>${a.account_name}</td><td class="right">${fmt(a.amount)}</td></tr>`
-      ).join('')
-
-      const kewRows = d.kewajiban.accounts.map((a, i) =>
-        `<tr class="${i % 2 === 0 ? 'even' : ''}"><td>${a.account_name}</td><td class="right">${fmt(a.amount)}</td></tr>`
-      ).join('')
+      const groupRows = (label, accounts, total) => {
+        if (!accounts || accounts.length === 0) return ''
+        const rows = accounts.map((a, i) =>
+          `<tr class="${i % 2 === 0 ? 'even' : ''}"><td style="padding-left:12pt">${a.account_name}</td><td class="right">${fmt(a.amount)}</td></tr>`
+        ).join('')
+        return `<tr class="group-head"><td colspan="2">${label}</td></tr>${rows}<tr class="subtotal-row"><td>Total ${label}</td><td class="right">${fmt(total)}</td></tr>`
+      }
 
       const modalRows = d.modal.accounts.map((a, i) =>
-        `<tr class="${i % 2 === 0 ? 'even' : ''}"><td>${a.account_name}</td><td class="right">${fmt(a.amount)}</td></tr>`
+        `<tr class="${i % 2 === 0 ? 'even' : ''}"><td style="padding-left:12pt">${a.account_name}</td><td class="right">${fmt(a.amount)}</td></tr>`
       ).join('')
 
       const html = `<!DOCTYPE html>
@@ -322,13 +395,18 @@ export default {
     .company { text-align: center; font-size: 12pt; font-weight: 700; margin-bottom: 1mm; }
     .period  { text-align: center; font-size: 10pt; margin-bottom: 6mm; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
-    .section-title { font-size: 10pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; background: #e5e7eb; padding: 4pt 6pt; margin-bottom: 2mm; }
-    .sub-title { font-size: 9pt; font-weight: 700; text-transform: uppercase; color: #555; margin: 3mm 0 1mm; }
+    .section-title { font-size: 10pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; background: #1e293b; color: #fff; padding: 4pt 6pt; margin-bottom: 2mm; }
+    .sub-title { font-size: 9pt; font-weight: 700; text-transform: uppercase; color: #555; margin: 4mm 0 1mm; }
     table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
     th, td { border: 0.5pt solid #ccc; padding: 3pt 5pt; }
     th { background: #f3f4f6; font-weight: 700; text-align: left; }
     td.right { text-align: right; }
     tr.even td { background: #fafafa; }
+    tr.group-head td { background: #dbeafe; font-weight: 700; font-size: 9pt; text-transform: uppercase; letter-spacing: 0.5px; padding: 3pt 5pt; }
+    tr.subtotal-row td { background: #eff6ff; font-weight: 700; border-top: 1pt solid #93c5fd; }
+    tr.subtotal-row td:last-child { text-align: right; }
+    tr.kewajiban-subtotal td { background: #fef2f2; border-top: 1.5pt solid #fca5a5; font-weight: 800; }
+    tr.kewajiban-subtotal td:last-child { text-align: right; }
     .total-row td { font-weight: 700; background: #e5e7eb !important; }
     .grand-total td { font-weight: 900; font-size: 10pt; background: #1e293b !important; color: #fff; }
     .balance-status { text-align: center; margin: 4mm 0; font-size: 10pt; font-weight: 700; padding: 3mm; border: 1pt solid; border-radius: 4pt; }
@@ -346,43 +424,35 @@ export default {
     ${d.is_balanced ? '✓ Neraca Balance' : '✗ Tidak Balance — Selisih: ' + fmt(d.selisih)}
   </div>
   <div class="grid">
-    <!-- ASET -->
+    <!-- AKTIVA -->
     <div>
-      <div class="section-title">ASET</div>
+      <div class="section-title">AKTIVA</div>
       <table>
         <thead><tr><th>Nama Akun</th><th style="text-align:right;width:120px">Jumlah</th></tr></thead>
         <tbody>
-          ${asetRows || '<tr><td colspan="2" style="text-align:center;color:#9ca3af">Tidak ada data</td></tr>'}
-          <tr class="total-row"><td>TOTAL ASET</td><td class="right">${fmt(d.aset.total)}</td></tr>
+          ${groupRows('Aktiva Lancar', d.aset.aktiva_lancar.accounts, d.aset.aktiva_lancar.total)}
+          ${groupRows('Aktiva Tetap', d.aset.aktiva_tetap.accounts, d.aset.aktiva_tetap.total)}
+          ${groupRows('Aktiva Lainnya', d.aset.lainnya.accounts, d.aset.lainnya.total)}
+          <tr class="grand-total"><td>TOTAL AKTIVA</td><td class="right">${fmt(d.aset.total)}</td></tr>
         </tbody>
       </table>
     </div>
 
     <!-- PASIVA -->
     <div>
-      <div class="section-title">KEWAJIBAN &amp; MODAL</div>
-      <div class="sub-title">Kewajiban</div>
+      <div class="section-title">PASIVA</div>
       <table>
         <thead><tr><th>Nama Akun</th><th style="text-align:right;width:120px">Jumlah</th></tr></thead>
         <tbody>
-          ${kewRows || '<tr><td colspan="2" style="text-align:center;color:#9ca3af">Tidak ada data</td></tr>'}
-          <tr class="total-row"><td>Total Kewajiban</td><td class="right">${fmt(d.kewajiban.total)}</td></tr>
-        </tbody>
-      </table>
-
-      <div class="sub-title">Modal</div>
-      <table>
-        <thead><tr><th>Nama Akun</th><th style="text-align:right;width:120px">Jumlah</th></tr></thead>
-        <tbody>
-          ${modalRows || ''}
-          <tr class="even"><td>Laba Tahun Berjalan</td><td class="right">${fmt(d.laba_tahun_berjalan)}</td></tr>
-          <tr class="total-row"><td>Total Modal</td><td class="right">${fmt(d.modal.total + d.laba_tahun_berjalan)}</td></tr>
-        </tbody>
-      </table>
-
-      <table style="margin-top:4mm">
-        <tbody>
-          <tr class="grand-total"><td>TOTAL KEWAJIBAN &amp; MODAL</td><td class="right">${fmt(d.total_pasiva)}</td></tr>
+          ${groupRows('Hutang Lancar', d.kewajiban.hutang_lancar.accounts, d.kewajiban.hutang_lancar.total)}
+          ${groupRows('Hutang Jangka Panjang', d.kewajiban.hutang_jangka_panjang.accounts, d.kewajiban.hutang_jangka_panjang.total)}
+          ${groupRows('Kewajiban Lainnya', d.kewajiban.lainnya.accounts, d.kewajiban.lainnya.total)}
+          <tr class="kewajiban-subtotal"><td>TOTAL KEWAJIBAN</td><td>${fmt(d.kewajiban.total)}</td></tr>
+          <tr class="group-head"><td colspan="2">Modal</td></tr>
+          ${modalRows}
+          <tr class="even"><td style="padding-left:12pt">Laba Tahun Berjalan</td><td class="right">${fmt(d.laba_tahun_berjalan)}</td></tr>
+          <tr class="subtotal-row"><td>Total Modal</td><td class="right">${fmt(d.modal.total + d.laba_tahun_berjalan)}</td></tr>
+          <tr class="grand-total"><td>TOTAL PASIVA</td><td class="right">${fmt(d.total_pasiva)}</td></tr>
         </tbody>
       </table>
     </div>
@@ -403,52 +473,65 @@ export default {
         const fmt = (v) => Number(Math.abs(v || 0))
         const fmtDate = (dt) => new Date(dt).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
 
+        // Build flat list for aktiva column
+        const aktiva = []
+        const addGroup = (label, accounts, total) => {
+          if (!accounts || accounts.length === 0) return
+          aktiva.push({ name: label, amount: null, isHeader: true })
+          accounts.forEach(a => aktiva.push({ name: '  ' + a.account_name, amount: fmt(a.amount) }))
+          aktiva.push({ name: 'Total ' + label, amount: fmt(total), isSubtotal: true })
+        }
+        addGroup('Aktiva Lancar', d.aset.aktiva_lancar.accounts, d.aset.aktiva_lancar.total)
+        addGroup('Aktiva Tetap', d.aset.aktiva_tetap.accounts, d.aset.aktiva_tetap.total)
+        addGroup('Aktiva Lainnya', d.aset.lainnya.accounts, d.aset.lainnya.total)
+
+        // Build flat list for pasiva column
+        const pasiva = []
+        const addPasivaGroup = (label, accounts, total) => {
+          if (!accounts || accounts.length === 0) return
+          pasiva.push({ name: label, amount: null, isHeader: true })
+          accounts.forEach(a => pasiva.push({ name: '  ' + a.account_name, amount: fmt(a.amount) }))
+          pasiva.push({ name: 'Total ' + label, amount: fmt(total), isSubtotal: true })
+        }
+        addPasivaGroup('Hutang Lancar', d.kewajiban.hutang_lancar.accounts, d.kewajiban.hutang_lancar.total)
+        addPasivaGroup('Hutang Jangka Panjang', d.kewajiban.hutang_jangka_panjang.accounts, d.kewajiban.hutang_jangka_panjang.total)
+        addPasivaGroup('Kewajiban Lainnya', d.kewajiban.lainnya.accounts, d.kewajiban.lainnya.total)
+        pasiva.push({ name: 'TOTAL KEWAJIBAN', amount: fmt(d.kewajiban.total), isSubtotal: true })
+        pasiva.push({ name: '', amount: null })
+        pasiva.push({ name: 'Modal', amount: null, isHeader: true })
+        d.modal.accounts.forEach(a => pasiva.push({ name: '  ' + a.account_name, amount: fmt(a.amount) }))
+        pasiva.push({ name: '  Laba Tahun Berjalan', amount: fmt(d.laba_tahun_berjalan) })
+        pasiva.push({ name: 'Total Modal', amount: fmt(d.modal.total + d.laba_tahun_berjalan), isSubtotal: true })
+
         const rows = []
         rows.push(['PT. SURYA BANGKIT CEMERLANG'])
         rows.push(['NERACA (BALANCE SHEET)'])
         rows.push([`Per Tanggal: ${fmtDate(d.as_of_date)}`])
         rows.push([])
-
-        // Header kolom
-        rows.push(['ASET', '', '', 'KEWAJIBAN & MODAL', ''])
+        rows.push(['AKTIVA', '', '', 'PASIVA', ''])
         rows.push(['Nama Akun', 'Jumlah', '', 'Nama Akun', 'Jumlah'])
 
-        // Gabung baris aset & pasiva secara paralel
-        const asetAccounts = [...d.aset.accounts]
-        const pasivaAccounts = [
-          { account_name: '--- KEWAJIBAN ---', amount: null },
-          ...d.kewajiban.accounts,
-          { account_name: 'Total Kewajiban', amount: d.kewajiban.total },
-          { account_name: '', amount: null },
-          { account_name: '--- MODAL ---', amount: null },
-          ...d.modal.accounts,
-          { account_name: 'Laba Tahun Berjalan', amount: d.laba_tahun_berjalan },
-          { account_name: 'Total Modal', amount: d.modal.total + d.laba_tahun_berjalan },
-        ]
-
-        const maxLen = Math.max(asetAccounts.length + 1, pasivaAccounts.length + 1)
+        const maxLen = Math.max(aktiva.length, pasiva.length)
         for (let i = 0; i < maxLen; i++) {
-          const aset  = asetAccounts[i]
-          const pasiva = pasivaAccounts[i]
+          const a = aktiva[i]
+          const p = pasiva[i]
           rows.push([
-            aset  ? aset.account_name  : '',
-            aset  ? fmt(aset.amount)   : '',
+            a ? a.name : '',
+            a && a.amount !== null && a.amount !== undefined ? a.amount : '',
             '',
-            pasiva ? pasiva.account_name : '',
-            pasiva && pasiva.amount !== null ? fmt(pasiva.amount) : '',
+            p ? p.name : '',
+            p && p.amount !== null && p.amount !== undefined ? p.amount : '',
           ])
         }
 
         rows.push([])
-        rows.push(['TOTAL ASET', fmt(d.aset.total), '', 'TOTAL KEWAJIBAN & MODAL', fmt(d.total_pasiva)])
+        rows.push(['TOTAL AKTIVA', fmt(d.aset.total), '', 'TOTAL PASIVA', fmt(d.total_pasiva)])
         rows.push([])
-        rows.push([d.is_balanced ? 'Neraca Balance ✓' : `Tidak Balance — Selisih: ${d.selisih}`])
+        rows.push([d.is_balanced ? 'Neraca Balance' : `Tidak Balance — Selisih: ${d.selisih}`])
         rows.push([`Diekspor: ${new Date().toLocaleDateString('id-ID')}`])
 
         const ws = XLSX.utils.aoa_to_sheet(rows)
-
-        // Lebar kolom
-        ws['!cols'] = [{ wch: 36 }, { wch: 18 }, { wch: 4 }, { wch: 36 }, { wch: 18 }]
+        ws['!cols'] = [{ wch: 40 }, { wch: 20 }, { wch: 3 }, { wch: 40 }, { wch: 20 }]
 
         const wb = XLSX.utils.book_new()
         XLSX.utils.book_append_sheet(wb, ws, 'Neraca')
@@ -693,13 +776,18 @@ export default {
 /* subtotal row */
 .subtotal-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; background: #f8f9fa; border: 1.5px solid #f3f4f6; border-radius: 8px; font-size: 13px; font-weight: 700; color: #374151; }
 .subtotal-row span:last-child { font-family: 'Courier New', monospace; font-size: 13.5px; color: #111827; }
+.subtotal-row.kewajiban-total { background: #fef2f2; border-color: #fecaca; color: #991b1b; letter-spacing: 0.5px; }
 
 /* sub section */
 .sub-section { display: flex; flex-direction: column; gap: 10px; }
 .sub-head { display: flex; align-items: center; gap: 8px; }
 .sub-indicator { width: 3px; height: 16px; border-radius: 2px; flex-shrink: 0; }
-.liab-indicator { background: #dc2626; }
-.modal-indicator { background: #7c3aed; }
+.lancar-indicator   { background: #0ea5e9; }
+.tetap-indicator    { background: #f59e0b; }
+.liab-indicator     { background: #dc2626; }
+.liab-jp-indicator  { background: #b91c1c; }
+.lainnya-indicator  { background: #6b7280; }
+.modal-indicator    { background: #7c3aed; }
 .sub-label { font-size: 10.5px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: #9ca3af; }
 
 /* col total bar */
