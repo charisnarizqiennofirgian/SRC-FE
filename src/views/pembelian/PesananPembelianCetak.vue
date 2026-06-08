@@ -13,11 +13,15 @@
 
         <!-- INFO SUPPLIER -->
         <section class="invoice-info">
-          <p class="date-line">Demak, {{ formatTanggal(po.order_date) }}</p>
+          <p class="date-line">Demak, {{ formatTanggal(po.order_date, po.currency) }}</p>
           <div class="info-supplier">
-            <p>Kepada Yth.</p>
+            <p>{{ po.currency === 'USD' ? 'To:' : 'Kepada Yth.' }}</p>
             <p class="supplier-name">{{ po.supplier.name }}</p>
             <p>{{ po.supplier.address_city || po.supplier.address }}</p>
+          </div>
+          <div v-if="po.currency === 'USD'" class="currency-info-box">
+            <span>Currency: <strong>USD</strong></span>
+            <span>Exchange Rate: <strong>1 USD = {{ formatCurrencyIDR(po.exchange_rate) }}</strong></span>
           </div>
         </section>
 
@@ -66,13 +70,23 @@ const fetchPODetail = async () => {
   }
 }
 
-const formatTanggal = (tanggal) => {
+const formatTanggal = (tanggal, currency = 'IDR') => {
   if (!tanggal) return ''
-  return new Date(tanggal).toLocaleDateString('id-ID', {
+  const locale = currency === 'USD' ? 'en-US' : 'id-ID'
+  return new Date(tanggal).toLocaleDateString(locale, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
   })
+}
+
+const formatCurrencyIDR = (value) => {
+  if (!value || isNaN(value)) return 'Rp 0'
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+  }).format(value)
 }
 
 onMounted(async () => {
@@ -209,6 +223,18 @@ body {
 @page {
   size: A4 portrait;
   margin: 15mm 20mm;
+}
+
+.currency-info-box {
+  display: flex;
+  gap: 16mm;
+  margin-top: 2mm;
+  padding: 2mm 4mm;
+  border: 0.75pt solid #1d4ed8;
+  border-radius: 2mm;
+  background: #eff6ff;
+  font-size: 9pt;
+  font-family: 'Times New Roman', Times, serif;
 }
 
 @media print {
