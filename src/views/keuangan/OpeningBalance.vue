@@ -30,6 +30,7 @@
           <h3 class="ob-exists-title">Opening Balance Sudah Diinput</h3>
           <p class="ob-exists-sub">Tanggal: {{ formatDate(existingOB?.date) }} | Total Debit: {{ formatRupiah(existingOB?.total_debit) }}</p>
         </div>
+        <button class="btn-download-ob" @click="downloadExistingOB" title="Download data Opening Balance saat ini sebagai Excel">📥 Download Excel</button>
         <button class="btn-hapus-ob" @click="konfirmasiHapus">🗑️ Hapus & Input Ulang</button>
       </div>
 
@@ -421,6 +422,35 @@ const handleUpload = async (event) => {
   }
 }
 
+const downloadExistingOB = async () => {
+  if (!existingOB.value?.lines?.length) return
+  try {
+    const XLSX = await import('xlsx')
+    const rows = [
+      ['KODE AKUN', 'NAMA AKUN', 'SALDO AKHIR DEBIT', 'SALDO AKHIR KREDIT'],
+      ...existingOB.value.lines.map(line => [
+        line.account?.code ?? '',
+        line.account?.name ?? '',
+        line.debit  > 0 ? Number(line.debit)  : '',
+        line.credit > 0 ? Number(line.credit) : '',
+      ])
+    ]
+    const ws = XLSX.utils.aoa_to_sheet(rows)
+    ws['!cols'] = [{ wch: 15 }, { wch: 40 }, { wch: 22 }, { wch: 22 }]
+    Object.keys(ws).forEach(key => {
+      if (key[0] === '!') return
+      const cell = ws[key]
+      if (cell && typeof cell.v === 'number') { cell.z = '#,##0'; cell.t = 'n' }
+    })
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Opening Balance')
+    const tanggal = existingOB.value.date?.split('T')[0] ?? 'data'
+    XLSX.writeFile(wb, `opening-balance-${tanggal}.xlsx`)
+  } catch {
+    showError('Gagal', 'Tidak dapat mengunduh data Opening Balance')
+  }
+}
+
 const konfirmasiHapus = async () => {
   const confirm = await Swal.fire({
     title: 'Hapus Opening Balance?',
@@ -497,7 +527,9 @@ onMounted(async () => {
 .ob-exists-icon { font-size:40px; }
 .ob-exists-title { font-size:18px; font-weight:800; color:#065f46; margin:0 0 4px; }
 .ob-exists-sub { font-size:13px; color:#047857; margin:0; }
-.btn-hapus-ob { margin-left:auto; padding:10px 20px; background:#ef4444; color:white; border:none; border-radius:10px; font-weight:700; cursor:pointer; }
+.btn-download-ob { margin-left:auto; padding:10px 20px; background:#0ea5e9; color:white; border:none; border-radius:10px; font-weight:700; cursor:pointer; transition:background 0.2s; }
+.btn-download-ob:hover { background:#0284c7; }
+.btn-hapus-ob { padding:10px 20px; background:#ef4444; color:white; border:none; border-radius:10px; font-weight:700; cursor:pointer; }
 .btn-hapus-ob:hover { background:#dc2626; }
 .ob-detail-table-wrapper { padding:24px 32px; overflow-x:auto; }
 .ob-detail-table { width:100%; border-collapse:collapse; font-size:14px; }

@@ -24,10 +24,7 @@
           <p>{{ faktur.supplier.address_city || faktur.supplier.address }}</p>
         </div>
 
-        <div v-if="isUSD" class="currency-info-box">
-          <span>Currency: <strong>USD</strong></span>
-          <span>Exchange Rate: <strong>1 USD = {{ formatCurrency(faktur.exchange_rate) }}</strong></span>
-        </div>
+
 
         <p v-if="!isUSD" class="intro-text">Dengan hormat,</p>
         <p v-if="!isUSD">Berikut adalah rincian tagihan atas barang yang telah kami terima:</p>
@@ -242,18 +239,6 @@ body {
   margin-bottom: 3mm;
   font-family: 'Times New Roman', Times, serif;
   font-size: 10pt;
-}
-
-.currency-info-box {
-  display: flex;
-  gap: 16mm;
-  margin: 2mm 0 3mm 0;
-  padding: 2mm 4mm;
-  border: 0.75pt solid #1d4ed8;
-  border-radius: 2mm;
-  background: #eff6ff;
-  font-size: 9pt;
-  font-family: 'Times New Roman', Times, serif;
 }
 
 .items-table {

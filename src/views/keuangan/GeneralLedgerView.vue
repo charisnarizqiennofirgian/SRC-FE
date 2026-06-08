@@ -26,10 +26,26 @@
             <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             {{ cardView ? 'Tabel' : 'Kartu' }}
           </button>
-          <button class="btn-icon-text btn-primary" @click="exportExcel" :disabled="!hasData">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Export Excel
-          </button>
+          <div class="export-group">
+            <div class="export-group-label">Ekspor Laporan</div>
+            <div class="export-btns">
+              <button class="btn-exp btn-excel-gl" @click="exportExcel" :disabled="!hasData">
+                <span class="exp-icon exp-icon-gl">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+                    <line x1="6" y1="14" x2="8.5" y2="18"/><line x1="8.5" y1="14" x2="6" y2="18"/>
+                    <line x1="13" y1="14" x2="16" y2="14"/><line x1="13" y1="18" x2="16" y2="18"/>
+                    <line x1="14.5" y1="14" x2="14.5" y2="18"/>
+                  </svg>
+                </span>
+                <span class="exp-label">
+                  <span class="exp-main">Excel</span>
+                  <span class="exp-sub">Download .xlsx</span>
+                </span>
+              </button>
+            </div>
+            <div v-if="!hasData" class="export-hint">Tampilkan data terlebih dahulu</div>
+          </div>
         </div>
       </div>
 
@@ -384,7 +400,7 @@ export default {
     resetFilters() { this.filters.account_id = ''; this.setDefaultDates(); this.ledgerData = null },
     viewJournal(id) { this.$router.push(`/admin/keuangan/jurnal-umum/${id}`) },
     exportExcel() {
-      import('xlsx').then(({ utils, writeFile }) => {
+      import('xlsx').then((XLSX) => {
         const account  = this.ledgerData.account
         const fmtDate  = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'
         const num      = (v) => Number(v || 0)
@@ -422,17 +438,17 @@ export default {
         aoa.push(['', '', '', '', '', 'SALDO AKHIR', num(this.summary.saldo_akhir)])
 
         /* ── buat worksheet ── */
-        const ws = utils.aoa_to_sheet(aoa)
+        const ws = XLSX.utils.aoa_to_sheet(aoa)
 
         /* ── lebar kolom ── */
         ws['!cols'] = [
-          { wch: 4  },   // No
-          { wch: 13 },   // Tanggal
-          { wch: 20 },   // No. Jurnal
-          { wch: 40 },   // Keterangan
-          { wch: 18 },   // Debit
-          { wch: 18 },   // Kredit
-          { wch: 20 },   // Saldo Berjalan
+          { wch: 4  },
+          { wch: 13 },
+          { wch: 20 },
+          { wch: 40 },
+          { wch: 18 },
+          { wch: 18 },
+          { wch: 20 },
         ]
 
         /* ── merge judul (A1:G1, A2:G2, A3:G3) ── */
@@ -444,8 +460,7 @@ export default {
 
         /* ── format angka untuk kolom Debit/Kredit/Saldo (E,F,G) ── */
         const numFmt = '#,##0'
-        const headerRow = 4  // baris header kolom (0-based = index 4)
-        const dataStart = 5  // saldo awal + transaksi mulai index 5
+        const dataStart = 5
         const dataEnd   = aoa.length - 1
 
         for (let r = dataStart; r <= dataEnd; r++) {
@@ -458,22 +473,12 @@ export default {
           })
         }
 
-        /* ── styling via cell properties (xlsx-style / sheetjs pro)
-              SheetJS CE tidak support style langsung; kita pakai
-              workaround: set cell.s untuk kolom header supaya bold ── */
-        const boldStyle = { font: { bold: true } }
-        const headerCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
-        headerCols.forEach(col => {
-          const cell = ws[`${col}${headerRow + 1}`]
-          if (cell) cell.s = boldStyle
-        })
-
         /* ── buat workbook & download ── */
-        const wb = utils.book_new()
-        utils.book_append_sheet(wb, ws, 'Buku Besar')
+        const wb = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(wb, ws, 'Buku Besar')
 
         const fileName = `buku-besar-${account.code}-${this.filters.start_date}-${this.filters.end_date}.xlsx`
-        writeFile(wb, fileName)
+        XLSX.writeFile(wb, fileName)
       })
     },
     toggleCardView() { this.cardView = !this.cardView },
@@ -901,6 +906,27 @@ export default {
 .trx-balance { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #fafafa; }
 .tb-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; }
 .tb-value { font-family: 'Courier New', monospace; font-size: 14px; font-weight: 900; }
+
+/* ─── EXPORT GROUP ───────────────────────────────────────── */
+.export-group { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.export-group-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; }
+.export-btns { display: flex; gap: 1px; }
+.btn-exp {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 9px 16px; border-radius: 9px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  font-family: inherit; transition: all 0.18s ease;
+  white-space: nowrap; border: 1.5px solid transparent;
+}
+.btn-exp:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-excel-gl { background: #f0fdfa; color: #0f766e; border-color: #99f6e4; }
+.btn-excel-gl:hover:not(:disabled) { background: #ccfbf1; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15,118,110,0.2); }
+.exp-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.exp-icon-gl { background: #d1fae5; color: #059669; }
+.exp-label { display: flex; flex-direction: column; gap: 1px; }
+.exp-main { font-size: 13px; font-weight: 700; line-height: 1.2; }
+.exp-sub { font-size: 10px; font-weight: 500; opacity: 0.7; }
+.export-hint { font-size: 11px; color: #9ca3af; font-style: italic; }
 
 /* ─── SHARED ─────────────────────────────────────────────── */
 .pos { color: #059669; }

@@ -19,10 +19,6 @@
             <p class="supplier-name">{{ po.supplier.name }}</p>
             <p>{{ po.supplier.address_city || po.supplier.address }}</p>
           </div>
-          <div v-if="po.currency === 'USD'" class="currency-info-box">
-            <span>Currency: <strong>USD</strong></span>
-            <span>Exchange Rate: <strong>1 USD = {{ formatCurrencyIDR(po.exchange_rate) }}</strong></span>
-          </div>
         </section>
 
         <!-- LAYOUT DINAMIS -->
@@ -223,18 +219,6 @@ body {
 @page {
   size: A4 portrait;
   margin: 15mm 20mm;
-}
-
-.currency-info-box {
-  display: flex;
-  gap: 16mm;
-  margin-top: 2mm;
-  padding: 2mm 4mm;
-  border: 0.75pt solid #1d4ed8;
-  border-radius: 2mm;
-  background: #eff6ff;
-  font-size: 9pt;
-  font-family: 'Times New Roman', Times, serif;
 }
 
 @media print {
