@@ -1,6 +1,6 @@
 <template>
   <p class="intro-text">
-    <template v-if="isUSD">
+    <template v-if="isForeign">
       We hereby submit our purchase order to
       <strong>{{ po.supplier?.name }}</strong> as follows:
     </template>
@@ -12,11 +12,11 @@
   <TabelCetakOperasional :details="details" :po="po" />
 
   <div v-if="po.notes" class="notes-section">
-    <span class="notes-label">{{ isUSD ? 'Notes:' : 'Catatan:' }}</span>
+    <span class="notes-label">{{ isForeign ? 'Notes:' : 'Catatan:' }}</span>
     <span class="notes-value">{{ po.notes }}</span>
   </div>
 
-  <FooterOperasional :isUSD="isUSD" />
+  <FooterOperasional :isForeign="isForeign" />
 </template>
 
 <script setup>
@@ -27,6 +27,7 @@ import FooterOperasional from './FooterOperasional.vue'
 const props = defineProps(['details', 'po'])
 
 const isUSD = computed(() => props.po?.currency === 'USD')
+const isForeign = computed(() => props.po?.currency === 'USD' || props.po?.currency === 'EUR')
 
 const extractUsername = (address) => {
   if (!address) return ''

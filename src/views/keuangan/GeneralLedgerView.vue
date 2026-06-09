@@ -72,15 +72,15 @@
         <div class="filter-inner">
           <div class="filter-field filter-coa">
             <label class="filter-label">Akun COA</label>
-            <div class="select-wrapper">
-              <select v-model="filters.account_id" class="form-control" required>
-                <option value="">— Pilih akun —</option>
-                <option v-for="account in accounts" :key="account.id" :value="account.id">
-                  {{ account.code }} · {{ account.name }}
-                </option>
-              </select>
-              <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
+            <vue-select
+              v-model="filters.account_id"
+              :options="accounts"
+              :reduce="acc => acc.id"
+              :get-option-label="acc => `${acc.code} · ${acc.name}`"
+              placeholder="Cari kode atau nama akun..."
+              class="coa-select"
+              :clearable="true"
+            />
           </div>
           <div class="filter-field">
             <label class="filter-label">Tanggal Mulai</label>
@@ -364,10 +364,12 @@
 <script>
 import axios from 'axios'
 import DashboardLayout from '@/components/DashboardLayout.vue'
+import VueSelect from 'vue-select'
+import 'vue-select/dist/vue-select.css'
 
 export default {
   name: 'GeneralLedgerView',
-  components: { DashboardLayout },
+  components: { DashboardLayout, VueSelect },
   data() {
     return {
       filters: { account_id: '', start_date: '', end_date: '' },
@@ -780,9 +782,6 @@ export default {
 .filter-field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 160px; }
 .filter-coa { flex: 2.5; min-width: 220px; }
 .filter-label { font-size: 11px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.5px; }
-.select-wrapper { position: relative; }
-.select-wrapper .form-control { appearance: none; padding-right: 34px; }
-.select-arrow { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af; pointer-events: none; }
 .form-control {
   padding: 10px 14px;
   border: 1.5px solid #e5e7eb;
@@ -1109,6 +1108,61 @@ export default {
 .exp-main { font-size: 13px; font-weight: 700; line-height: 1.2; }
 .exp-sub { font-size: 10px; font-weight: 500; opacity: 0.7; }
 .export-hint { font-size: 11px; color: #9ca3af; font-style: italic; }
+
+/* ─── VUE-SELECT COA ─────────────────────────────────────── */
+.coa-select :deep(.vs__dropdown-toggle) {
+  border: 1.5px solid #e5e7eb;
+  border-radius: 9px;
+  padding: 3px 8px;
+  min-height: 42px;
+  background: #fafafa;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-size: 13.5px;
+}
+.coa-select :deep(.vs__dropdown-toggle:focus-within),
+.coa-select.vs--open :deep(.vs__dropdown-toggle) {
+  border-color: #0f766e;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+.coa-select :deep(.vs__selected) {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #111827;
+  margin: 1px 2px;
+}
+.coa-select :deep(.vs__search::placeholder) {
+  color: #9ca3af;
+  font-size: 13px;
+}
+.coa-select :deep(.vs__search) {
+  font-size: 13.5px;
+  color: #111827;
+}
+.coa-select :deep(.vs__dropdown-menu) {
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  margin-top: 4px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.coa-select :deep(.vs__dropdown-option) {
+  padding: 9px 14px;
+  font-size: 13px;
+  color: #374151;
+  font-family: inherit;
+}
+.coa-select :deep(.vs__dropdown-option--highlight) {
+  background: #f0fdfa;
+  color: #0f766e;
+}
+.coa-select :deep(.vs__clear) {
+  color: #9ca3af;
+}
+.coa-select :deep(.vs__open-indicator) {
+  color: #9ca3af;
+}
 
 /* ─── SHARED ─────────────────────────────────────────────── */
 .pos { color: #059669; }

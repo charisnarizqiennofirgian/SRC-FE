@@ -1,7 +1,7 @@
 <template>
   <footer class="invoice-footer">
     <p class="closing-text">
-      <template v-if="isUSD">
+      <template v-if="isForeign">
         Thank you for your attention and cooperation.
       </template>
       <template v-else>
@@ -11,7 +11,7 @@
 
     <div class="signature-section">
       <div class="signature-col">
-        <p>{{ isUSD ? 'Yours sincerely,' : 'Hormat kami,' }}</p>
+        <p>{{ isForeign ? 'Yours sincerely,' : 'Hormat kami,' }}</p>
         <div class="signature-space"></div>
         <p class="signature-name">Louis Sebastian Agussoegito</p>
       </div>
@@ -31,7 +31,7 @@
 
 <script setup>
 defineProps({
-  isUSD: {
+  isForeign: {
     type: Boolean,
     default: false,
   },

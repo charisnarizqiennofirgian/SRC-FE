@@ -96,7 +96,7 @@
           <div class="stat-item stat-total">
             <span class="stat-icon">📦</span>
             <div class="stat-content">
-              <span class="stat-value">{{ data.length }}</span>
+              <span class="stat-value">{{ allItems.length }}</span>
               <span class="stat-label">Total Items</span>
             </div>
           </div>
@@ -131,10 +131,10 @@
           <table class="data-table">
             <thead class="table-header">
               <tr class="header-row-main">
-                <th class="th-sticky" rowspan="2">No. SO</th>
-                <th class="th-sticky" rowspan="2">Item</th>
-                <th class="th-sticky" rowspan="2">Buyer</th>
+                <th class="th-sticky" rowspan="2">No. SO &amp; Buyer</th>
+                <th rowspan="2">Item</th>
                 <th class="th-num" rowspan="2">Target</th>
+                <th class="th-num" rowspan="2">Tgl. Kirim</th>
                 <!-- Zona Hulu -->
                 <th colspan="5" class="zone-header zone-hulu">
                   <span class="zone-icon">🌲</span>
@@ -176,131 +176,150 @@
                   </div>
                 </td>
               </tr>
-              <!-- Data Rows -->
-              <tr
-                v-for="(row, index) in paginatedData"
-                :key="index"
-                class="data-row"
-                :class="{
-                  'row-done': row.is_done,
-                  'row-even': index % 2 === 0,
-                }"
-              >
-                <!-- SO Number -->
-                <td class="td-so">
-                  <div class="so-wrapper">
-                    <span class="so-number">{{ row.so_number }}</span>
-                    <span class="so-date">{{ row.so_date }}</span>
-                  </div>
-                </td>
-                <!-- Item -->
-                <td class="td-item">
-                  <div class="item-wrapper">
-                    <div class="item-name">{{ row.item_name }}</div>
-                    <div class="item-code">{{ row.item_code }}</div>
-                  </div>
-                </td>
-                <!-- Buyer -->
-                <td class="td-buyer">
-                  <span class="buyer-name">{{ row.buyer_name }}</span>
-                </td>
-                <!-- Target -->
-                <td class="td-num">
-                  <span class="target-value">{{ formatNumber(row.target) }}</span>
-                </td>
-
-                <!-- Zona Hulu (Status) -->
-                <td class="td-status stage-hulu">
-                  <span :class="['status-indicator', getStatusClass(row.status_sanwil)]">
-                    {{ getStatusIcon(row.status_sanwil) }}
-                  </span>
-                </td>
-                <td class="td-status stage-hulu">
-                  <span :class="['status-indicator', getStatusClass(row.status_kd)]">
-                    {{ getStatusIcon(row.status_kd) }}
-                  </span>
-                </td>
-                <td class="td-status stage-hulu">
-                  <span :class="['status-indicator', getStatusClass(row.status_pembahanan)]">
-                    {{ getStatusIcon(row.status_pembahanan) }}
-                  </span>
-                </td>
-                <td class="td-status stage-hulu">
-                  <span :class="['status-indicator', getStatusClass(row.status_moulding)]">
-                    {{ getStatusIcon(row.status_moulding) }}
-                  </span>
-                </td>
-                <td class="td-status stage-hulu">
-                  <span :class="['status-indicator', getStatusClass(row.status_mesin)]">
-                    {{ getStatusIcon(row.status_mesin) }}
-                  </span>
-                </td>
-
-                <!-- Zona Hilir (Qty) -->
-                <td class="td-qty stage-ruskomp">
-                  <span :class="['qty-value', row.qty_ruskomp > 0 ? 'has-value' : 'no-value']">
-                    {{ formatNumber(row.qty_ruskomp) }}
-                  </span>
-                </td>
-                <td class="td-qty stage-assembling">
-                  <span :class="['qty-value', row.qty_assembling > 0 ? 'has-value' : 'no-value']">
-                    {{ formatNumber(row.qty_assembling) }}
-                  </span>
-                </td>
-                <td class="td-qty stage-rustik">
-                  <span :class="['qty-value', row.qty_rustik > 0 ? 'has-value' : 'no-value']">
-                    {{ formatNumber(row.qty_rustik) }}
-                  </span>
-                </td>
-                <td class="td-qty stage-sanding">
-                  <span :class="['qty-value', row.qty_sanding > 0 ? 'has-value' : 'no-value']">
-                    {{ formatNumber(row.qty_sanding) }}
-                  </span>
-                </td>
-                <td class="td-qty stage-finishing">
-                  <span :class="['qty-value', row.qty_finishing > 0 ? 'has-value' : 'no-value']">
-                    {{ formatNumber(row.qty_finishing) }}
-                  </span>
-                </td>
-                <td class="td-qty stage-qcfinal">
-                  <span :class="['qty-value', row.qty_qc_final > 0 ? 'has-value' : 'no-value']">
-                    {{ formatNumber(row.qty_qc_final) }}
-                  </span>
-                </td>
-                <td class="td-qty stage-packing">
-                  <span :class="['qty-value', row.qty_packing > 0 ? 'has-value' : 'no-value']">
-                    {{ formatNumber(row.qty_packing) }}
-                  </span>
-                </td>
-
-                <!-- Reject -->
-                <td class="td-qty">
-                  <span
-                    v-if="row.has_reject"
-                    class="reject-badge-table"
-                    @click="openRejectDetail(row)"
-                    title="Klik untuk lihat detail reject"
+              <!-- Data Rows — grouped per SO -->
+              <template v-for="(so, soIndex) in paginatedData" :key="so.so_id">
+                <tr
+                  v-for="(item, itemIndex) in so.items"
+                  :key="`${so.so_id}-${item.item_id}`"
+                  class="data-row"
+                  :class="{
+                    'row-done': item.is_done,
+                    'row-even': soIndex % 2 === 0,
+                    'row-first-item': itemIndex === 0,
+                  }"
+                >
+                  <!-- SO + Buyer — rowspan ke semua item SO ini -->
+                  <td
+                    v-if="itemIndex === 0"
+                    :rowspan="so.items.length"
+                    class="td-so td-so-group"
                   >
-                    ⚠️ {{ formatNumber(row.qty_reject) }} pcs
-                  </span>
-                  <span v-else class="no-reject">-</span>
-                </td>
+                    <div class="so-wrapper">
+                      <span class="so-number">{{ so.so_number }}</span>
+                      <span class="so-buyer">{{ so.buyer_name }}</span>
+                      <span v-if="so.customer_po_number" class="so-po">PO: {{ so.customer_po_number }}</span>
+                      <span class="so-date">{{ so.so_date }}</span>
+                      <span v-if="so.is_done" class="so-done-badge">✓ DONE</span>
+                    </div>
+                  </td>
 
-                <!-- Sisa -->
-                <td class="td-num">
-                  <div class="sisa-cell">
-                    <span v-if="row.is_done" class="completion-badge">
-                      <span class="badge-icon">✓</span> DONE
+                  <!-- Item -->
+                  <td class="td-item">
+                    <div class="item-wrapper">
+                      <div class="item-name">{{ item.item_name }}</div>
+                      <div class="item-code">{{ item.item_code }}</div>
+                    </div>
+                  </td>
+
+                  <!-- Target -->
+                  <td class="td-num">
+                    <span class="target-value">{{ formatNumber(item.target) }}</span>
+                  </td>
+
+                  <!-- Tgl. Kirim -->
+                  <td class="td-num">
+                    <span class="tgl-kirim-value">{{ item.delivery_date || '-' }}</span>
+                  </td>
+
+                  <!-- Zona Hulu (Status) -->
+                  <td class="td-status stage-hulu">
+                    <span :class="['status-indicator', getStatusClass(item.status_sanwil)]">
+                      {{ getStatusIcon(item.status_sanwil) }}
                     </span>
-                    <span v-else class="sisa-value">{{ formatNumber(row.sisa) }}</span>
-                    <button
-                      class="btn-detail"
-                      @click="openDetail(row)"
-                      title="Lihat Detail"
-                    >🔍</button>
-                  </div>
-                </td>
-              </tr>
+                  </td>
+                  <td class="td-status stage-hulu">
+                    <span :class="['status-indicator', getStatusClass(item.status_kd)]">
+                      {{ getStatusIcon(item.status_kd) }}
+                    </span>
+                  </td>
+                  <td class="td-status stage-hulu">
+                    <span :class="['status-indicator', getStatusClass(item.status_pembahanan)]">
+                      {{ getStatusIcon(item.status_pembahanan) }}
+                    </span>
+                  </td>
+                  <td class="td-status stage-hulu">
+                    <span :class="['status-indicator', getStatusClass(item.status_moulding)]">
+                      {{ getStatusIcon(item.status_moulding) }}
+                    </span>
+                  </td>
+                  <td class="td-status stage-hulu">
+                    <span :class="['status-indicator', getStatusClass(item.status_mesin)]">
+                      {{ getStatusIcon(item.status_mesin) }}
+                    </span>
+                  </td>
+
+                  <!-- Zona Hilir (Qty) -->
+                  <td class="td-qty stage-ruskomp">
+                    <span :class="['qty-value', item.qty_ruskomp > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_ruskomp) }}
+                    </span>
+                  </td>
+                  <td class="td-qty stage-assembling">
+                    <span :class="['qty-value', item.qty_assembling > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_assembling) }}
+                    </span>
+                  </td>
+                  <td class="td-qty stage-sanding">
+                    <span :class="['qty-value', item.qty_sanding > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_sanding) }}
+                    </span>
+                  </td>
+                  <td class="td-qty stage-rustik">
+                    <span :class="['qty-value', item.qty_rustik > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_rustik) }}
+                    </span>
+                  </td>
+                  <td class="td-qty stage-finishing">
+                    <span :class="['qty-value', item.qty_finishing > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_finishing) }}
+                    </span>
+                  </td>
+                  <td class="td-qty stage-qcfinal">
+                    <span :class="['qty-value', item.qty_qc_final > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_qc_final) }}
+                    </span>
+                  </td>
+                  <td class="td-qty stage-packing">
+                    <span :class="['qty-value', item.qty_packing > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_packing) }}
+                    </span>
+                  </td>
+
+                  <!-- Reject -->
+                  <td class="td-qty">
+                    <span
+                      v-if="item.has_reject"
+                      class="reject-badge-table"
+                      @click="openRejectDetail(so, item)"
+                      title="Klik untuk lihat detail reject"
+                    >
+                      ⚠️ {{ formatNumber(item.qty_reject) }} pcs
+                    </span>
+                    <span v-else class="no-reject">-</span>
+                  </td>
+
+                  <!-- Sisa -->
+                  <td class="td-num">
+                    <div class="sisa-cell">
+                      <span v-if="item.is_done" class="completion-badge">
+                        <span class="badge-icon">✓</span> DONE
+                      </span>
+                      <span v-else class="sisa-value">{{ formatNumber(item.sisa) }}</span>
+                      <button
+                        v-if="itemIndex === 0"
+                        class="btn-detail"
+                        @click="openDetail(so, item)"
+                        title="Lihat Detail"
+                      >🔍</button>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Separator antar SO -->
+                <tr class="so-separator">
+                  <td colspan="18"></td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
@@ -310,11 +329,11 @@
           <div class="pagination-info">
             <span class="info-icon">📄</span>
             <span class="info-text">
-              Menampilkan <strong>{{ paginationStart }} - {{ paginationEnd }}</strong> dari
-              <strong>{{ data.length }}</strong> item
+              Menampilkan SO <strong>{{ paginationStart }} - {{ paginationEnd }}</strong> dari
+              <strong>{{ uniqueSOCount }}</strong> SO
               <span class="info-separator">•</span>
               <span class="info-detail">
-                <strong>{{ uniqueSOCount }}</strong> SO
+                <strong>{{ allItems.length }}</strong> item
               </span>
             </span>
           </div>
@@ -554,21 +573,7 @@ const fetchData = async () => {
     const response = await axios.get('/production-monitoring', { params })
 
     if (response.data.success) {
-      // Backend mengembalikan nested per-SO, flatten ke flat rows
-      const flat = []
-      for (const so of response.data.data) {
-        for (const item of so.items) {
-          flat.push({
-            so_id:              so.so_id,
-            so_number:          so.so_number,
-            so_date:            so.so_date,
-            buyer_name:         so.buyer_name,
-            customer_po_number: so.customer_po_number,
-            ...item,
-          })
-        }
-      }
-      data.value = flat
+      data.value = response.data.data
     }
   } catch (error) {
     console.error('Error fetching data:', error)
@@ -576,6 +581,8 @@ const fetchData = async () => {
     isLoading.value = false
   }
 }
+
+const allItems = computed(() => data.value.flatMap(so => so.items ?? []))
 
 const resetFilter = () => {
   search.value = ''
@@ -631,18 +638,11 @@ const paginationEnd = computed(() => {
   return end > data.value.length ? data.value.length : end
 })
 
-const uniqueSOCount = computed(() => {
-  const soIds = [...new Set(data.value.map((row) => row.so_id))]
-  return soIds.length
-})
+const uniqueSOCount = computed(() => data.value.length)
 
-const doneCount = computed(() => {
-  return data.value.filter((row) => row.is_done).length
-})
+const doneCount = computed(() => allItems.value.filter(item => item.is_done).length)
 
-const pendingCount = computed(() => {
-  return data.value.filter((row) => !row.is_done).length
-})
+const pendingCount = computed(() => allItems.value.filter(item => !item.is_done).length)
 
 onMounted(() => {
   fetchData()
@@ -654,8 +654,8 @@ const loadingDetail = ref(false)
 const detailData    = ref(null)
 const selectedRow   = ref(null)
 
-const openDetail = async (row) => {
-  selectedRow.value  = row
+const openDetail = async (so, item) => {
+  selectedRow.value  = { ...item, so_id: so.so_id, so_number: so.so_number, buyer_name: so.buyer_name }
   showModal.value    = true
   loadingDetail.value = true
   detailData.value   = null
@@ -663,8 +663,8 @@ const openDetail = async (row) => {
   try {
     const res = await axios.get('/production-monitoring/detail', {
       params: {
-        so_id:   row.so_id,
-        item_id: row.item_id,
+        so_id:   so.so_id,
+        item_id: item.item_id,
       }
     })
     if (res.data.success) {
@@ -683,15 +683,15 @@ const closeModal = () => {
   selectedRow.value = null
 }
 
-const openRejectDetail = async (row) => {
-  selectedRow.value  = row
+const openRejectDetail = async (so, item) => {
+  selectedRow.value  = { ...item, so_id: so.so_id, so_number: so.so_number, buyer_name: so.buyer_name }
   showModal.value    = true
   loadingDetail.value = true
   detailData.value   = null
 
   try {
     const res = await axios.get('/production-monitoring/detail', {
-      params: { so_id: row.so_id, item_id: row.item_id }
+      params: { so_id: so.so_id, item_id: item.item_id }
     })
     if (res.data.success) {
       detailData.value = res.data
@@ -1272,6 +1272,7 @@ const getStageClass = (type) => {
   background: linear-gradient(180deg, #1f2937 0%, #111827 100%) !important;
 }
 
+
 .th-num {
   text-align: right !important;
 }
@@ -1401,13 +1402,22 @@ const getStageClass = (type) => {
 
 /* Cell Styles */
 .td-so {
-  min-width: 140px;
+  min-width: 160px;
+}
+
+.td-so-group {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: #f9fafb;
+  border-right: 2px solid #e5e7eb;
+  vertical-align: top;
 }
 
 .so-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .so-number {
@@ -1416,9 +1426,40 @@ const getStageClass = (type) => {
   font-size: 13px;
 }
 
+.so-buyer {
+  font-weight: 600;
+  color: #3b82f6;
+  font-size: 12px;
+}
+
+.so-po {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
 .so-date {
   font-size: 11px;
   color: #6b7280;
+}
+
+.so-done-badge {
+  display: inline-block;
+  background: #d1fae5;
+  color: #065f46;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #a7f3d0;
+}
+
+.so-separator {
+  height: 6px;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+}
+
+.so-separator td {
+  padding: 0 !important;
 }
 
 .td-item {
@@ -1447,13 +1488,10 @@ const getStageClass = (type) => {
   display: inline-block;
 }
 
-.td-buyer {
-  min-width: 150px;
-}
-
-.buyer-name {
-  font-weight: 500;
+.tgl-kirim-value {
+  font-size: 12px;
   color: #374151;
+  white-space: nowrap;
 }
 
 .td-num {

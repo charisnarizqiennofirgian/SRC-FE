@@ -117,6 +117,10 @@
                   <input type="radio" v-model="form.currency" value="USD" />
                   <span>USD (Dollar)</span>
                 </label>
+                <label class="currency-option" :class="{ active: form.currency === 'EUR' }">
+                  <input type="radio" v-model="form.currency" value="EUR" />
+                  <span>EUR (Euro)</span>
+                </label>
               </div>
             </div>
 
@@ -141,6 +145,30 @@
               <small class="form-hint info">
                 <span class="hint-icon">💡</span>
                 1 USD = Rp {{ new Intl.NumberFormat('id-ID').format(form.exchange_rate) }}
+              </small>
+            </div>
+
+            <div v-if="form.currency === 'EUR'" class="form-group">
+              <label class="form-label">
+                <span class="label-icon">📈</span>
+                <span class="label-text">Kurs EUR → IDR</span>
+                <span class="required">*</span>
+              </label>
+              <div class="input-kurs-wrapper">
+                <span class="kurs-prefix">Rp</span>
+                <input
+                  type="number"
+                  v-model.number="form.exchange_rate"
+                  class="form-control"
+                  placeholder="Contoh: 17500"
+                  min="1"
+                  step="any"
+                  required
+                />
+              </div>
+              <small class="form-hint info">
+                <span class="hint-icon">💡</span>
+                1 EUR = Rp {{ new Intl.NumberFormat('id-ID').format(form.exchange_rate) }}
               </small>
             </div>
           </div>
@@ -222,7 +250,7 @@
                   <th class="th-price">
                     <div class="th-content">
                       <span class="th-icon">💰</span>
-                      <span>Harga Satuan <span v-if="form.currency === 'USD'" class="th-usd-badge">USD</span></span>
+                      <span>Harga Satuan <span v-if="form.currency === 'USD'" class="th-usd-badge">USD</span><span v-if="form.currency === 'EUR'" class="th-usd-badge th-eur-badge">EUR</span></span>
                     </div>
                   </th>
                   <th class="th-subtotal">
@@ -284,6 +312,12 @@
                       <template v-if="form.currency === 'USD'">
                         <span style="display:block;font-size:11px;color:#1d4ed8;font-weight:700;">
                           $ {{ new Intl.NumberFormat('en-US',{minimumFractionDigits:2}).format((item.quantity||0)*(item.price||0)) }}
+                        </span>
+                        {{ formatCurrency((item.quantity||0)*(item.price||0)*(form.exchange_rate||1)) }}
+                      </template>
+                      <template v-else-if="form.currency === 'EUR'">
+                        <span style="display:block;font-size:11px;color:#7c3aed;font-weight:700;">
+                          € {{ new Intl.NumberFormat('en-US',{minimumFractionDigits:2}).format((item.quantity||0)*(item.price||0)) }}
                         </span>
                         {{ formatCurrency((item.quantity||0)*(item.price||0)*(form.exchange_rate||1)) }}
                       </template>
@@ -511,7 +545,8 @@ const subtotalCurrency = computed(() => {
 
 // subtotal selalu IDR
 const subtotal = computed(() => {
-  const rate = form.currency === 'USD' ? (form.exchange_rate || 1) : 1
+  const isForeign = form.currency === 'USD' || form.currency === 'EUR'
+  const rate = isForeign ? (form.exchange_rate || 1) : 1
   return subtotalCurrency.value * rate
 })
 
@@ -616,7 +651,7 @@ const saveBill = async () => {
       ...form,
       ppn_percentage: ppnPercentage.value,
       currency: form.currency,
-      exchange_rate: form.currency === 'USD' ? form.exchange_rate : 1,
+      exchange_rate: (form.currency === 'USD' || form.currency === 'EUR') ? form.exchange_rate : 1,
     }
 
     await apiClient.post('/purchase-bills', payload)
@@ -1720,4 +1755,5 @@ onMounted(fetchFormData)
   letter-spacing: 0.5px;
   vertical-align: middle;
 }
+.th-eur-badge { background: #7c3aed; }
 </style>

@@ -8,27 +8,27 @@
       <PrintKopWrapper>
 
       <div class="po-title-section">
-        <h2 class="po-title">{{ isUSD ? 'PURCHASE INVOICE' : 'FAKTUR PEMBELIAN (INVOICE)' }}</h2>
-        <p class="po-number-line">{{ isUSD ? 'Internal Invoice No.' : 'No. Faktur Internal' }}: {{ faktur.bill_number }}</p>
-        <p class="po-number-line">{{ isUSD ? 'Supplier Invoice No.' : 'No. Faktur Supplier' }}: {{ faktur.supplier_invoice_number }}</p>
+        <h2 class="po-title">{{ isForeign ? 'PURCHASE INVOICE' : 'FAKTUR PEMBELIAN (INVOICE)' }}</h2>
+        <p class="po-number-line">{{ isForeign ? 'Internal Invoice No.' : 'No. Faktur Internal' }}: {{ faktur.bill_number }}</p>
+        <p class="po-number-line">{{ isForeign ? 'Supplier Invoice No.' : 'No. Faktur Supplier' }}: {{ faktur.supplier_invoice_number }}</p>
         <p class="po-number-line" v-if="faktur.goods_receipt">
-          {{ isUSD ? 'Ref. Receipt' : 'Ref. Penerimaan' }}: {{ faktur.goods_receipt.gr_number }}
+          {{ isForeign ? 'Ref. Receipt' : 'Ref. Penerimaan' }}: {{ faktur.goods_receipt.gr_number }}
         </p>
       </div>
 
       <section class="invoice-info">
         <p class="date-line">Demak, {{ formatTanggal(faktur.bill_date) }}</p>
         <div class="info-supplier">
-          <p>{{ isUSD ? 'Bill From:' : 'Tagihan Dari Yth.' }}</p>
+          <p>{{ isForeign ? 'Bill From:' : 'Tagihan Dari Yth.' }}</p>
           <p class="supplier-name">{{ faktur.supplier.name }}</p>
           <p>{{ faktur.supplier.address_city || faktur.supplier.address }}</p>
         </div>
 
 
 
-        <p v-if="!isUSD" class="intro-text">Dengan hormat,</p>
-        <p v-if="!isUSD">Berikut adalah rincian tagihan atas barang yang telah kami terima:</p>
-        <p v-if="isUSD" class="intro-text">Please find below the details of the invoice for goods received:</p>
+        <p v-if="!isForeign" class="intro-text">Dengan hormat,</p>
+        <p v-if="!isForeign">Berikut adalah rincian tagihan atas barang yang telah kami terima:</p>
+        <p v-if="isForeign" class="intro-text">Please find below the details of the invoice for goods received:</p>
       </section>
 
       <!-- TABEL DETAIL BARANG -->
@@ -36,12 +36,12 @@
         <thead>
           <tr>
             <th>No</th>
-            <th>{{ isUSD ? 'Description' : 'Nama Barang' }}</th>
-            <th>{{ isUSD ? 'Qty' : 'Qty' }}</th>
-            <th>{{ isUSD ? 'Unit' : 'Satuan' }}</th>
-            <th>{{ isUSD ? 'Unit Price (USD)' : 'Harga Satuan' }}</th>
-            <th v-if="isUSD">Unit Price (IDR)</th>
-            <th>{{ isUSD ? 'Amount (IDR)' : 'Jumlah' }}</th>
+            <th>{{ isForeign ? 'Description' : 'Nama Barang' }}</th>
+            <th>Qty</th>
+            <th>{{ isForeign ? 'Unit' : 'Satuan' }}</th>
+            <th>{{ isForeign ? `Unit Price (${foreignCurrencyCode})` : 'Harga Satuan' }}</th>
+            <th v-if="isForeign">Unit Price (IDR)</th>
+            <th>{{ isForeign ? 'Amount (IDR)' : 'Jumlah' }}</th>
           </tr>
         </thead>
         <tbody>
@@ -51,10 +51,10 @@
             <td class="right">{{ parseFloat(item.quantity) }}</td>
             <td class="center">{{ item.item?.unit?.name || '' }}</td>
             <td class="right">
-              <template v-if="isUSD">{{ formatUSD(item.price) }}</template>
+              <template v-if="isForeign">{{ foreignSymbol }} {{ formatForeign(item.price) }}</template>
               <template v-else>{{ formatCurrency(item.price) }}</template>
             </td>
-            <td v-if="isUSD" class="right">{{ formatCurrency(item.price * exchangeRate) }}</td>
+            <td v-if="isForeign" class="right">{{ formatCurrency(item.price * exchangeRate) }}</td>
             <td class="right">{{ formatCurrency(item.subtotal) }}</td>
           </tr>
         </tbody>
@@ -69,23 +69,23 @@
               <td>{{ formatCurrency(faktur.subtotal) }}</td>
             </tr>
             <tr>
-              <td>{{ isUSD ? 'VAT' : 'PPN' }} {{ formatPercentage(faktur.ppn_percentage) }}%</td>
+              <td>{{ isForeign ? 'VAT' : 'PPN' }} {{ formatPercentage(faktur.ppn_percentage) }}%</td>
               <td>{{ formatCurrency(faktur.ppn_amount) }}</td>
             </tr>
             <tr class="grand-total">
-              <td>{{ isUSD ? 'Grand Total (IDR)' : 'Total' }}</td>
+              <td>{{ isForeign ? 'Grand Total (IDR)' : 'Total' }}</td>
               <td>{{ formatCurrency(faktur.total_amount) }}</td>
             </tr>
-            <tr v-if="isUSD" class="exchange-row">
+            <tr v-if="isForeign" class="exchange-row">
               <td>Exchange Rate</td>
-              <td>1 USD = {{ formatCurrency(faktur.exchange_rate) }}</td>
+              <td>1 {{ foreignCurrencyCode }} = {{ formatCurrency(faktur.exchange_rate) }}</td>
             </tr>
           </table>
         </div>
       </section>
 
       <!-- FOOTER -->
-      <FooterOperasional :isUSD="isUSD" />
+      <FooterOperasional :isForeign="isForeign" />
       </PrintKopWrapper>
     </div>
   </div>
@@ -103,6 +103,10 @@ const loading = ref(true)
 const faktur = ref(null)
 
 const isUSD = computed(() => faktur.value?.currency === 'USD')
+const isEUR = computed(() => faktur.value?.currency === 'EUR')
+const isForeign = computed(() => isUSD.value || isEUR.value)
+const foreignSymbol = computed(() => isEUR.value ? '€' : '$')
+const foreignCurrencyCode = computed(() => faktur.value?.currency ?? 'USD')
 const exchangeRate = computed(() => parseFloat(faktur.value?.exchange_rate ?? 1))
 
 const fetchFakturDetail = async () => {
@@ -121,7 +125,7 @@ const fetchFakturDetail = async () => {
 
 const formatTanggal = (tanggal) => {
   if (!tanggal) return ''
-  const locale = isUSD.value ? 'en-US' : 'id-ID'
+  const locale = isForeign.value ? 'en-US' : 'id-ID'
   return new Date(tanggal).toLocaleDateString(locale, {
     day: 'numeric',
     month: 'long',
@@ -138,9 +142,9 @@ const formatCurrency = (value) => {
   }).format(value)
 }
 
-const formatUSD = (value) => {
-  if (value == null || isNaN(value)) return '$ 0.00'
-  return '$ ' + new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)
+const formatForeign = (value) => {
+  if (value == null || isNaN(value)) return '0.00'
+  return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)
 }
 
 const formatPercentage = (value) => {

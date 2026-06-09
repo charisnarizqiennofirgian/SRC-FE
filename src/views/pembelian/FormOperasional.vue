@@ -73,6 +73,10 @@
                   <input type="radio" v-model="form.currency" value="USD" />
                   <span>USD (Dollar)</span>
                 </label>
+                <label class="currency-option" :class="{ active: form.currency === 'EUR' }">
+                  <input type="radio" v-model="form.currency" value="EUR" />
+                  <span>EUR (Euro)</span>
+                </label>
               </div>
             </div>
 
@@ -91,6 +95,23 @@
                 />
               </div>
               <small class="form-hint-kurs">1 USD = Rp {{ formatRibuan(form.exchange_rate) }}</small>
+            </div>
+
+            <div v-if="form.currency === 'EUR'" class="form-group">
+              <label class="form-label">Kurs EUR → IDR</label>
+              <div class="input-kurs-wrapper">
+                <span class="kurs-prefix">Rp</span>
+                <input
+                  type="number"
+                  v-model.number="form.exchange_rate"
+                  class="form-control has-prefix"
+                  placeholder="Contoh: 17500"
+                  min="1"
+                  step="any"
+                  required
+                />
+              </div>
+              <small class="form-hint-kurs">1 EUR = Rp {{ formatRibuan(form.exchange_rate) }}</small>
             </div>
 
             <div class="form-group full-width">
@@ -126,6 +147,7 @@
                   <th class="th-price">
                     Harga Satuan
                     <span v-if="form.currency === 'USD'" class="th-currency-badge">USD</span>
+                    <span v-if="form.currency === 'EUR'" class="th-currency-badge th-eur-badge">EUR</span>
                   </th>
                   <th class="th-subtotal">
                     Subtotal (IDR)
@@ -180,7 +202,11 @@
                   </td>
                   <td class="td-subtotal">
                     <template v-if="form.currency === 'USD'">
-                      <span class="usd-price">$ {{ formatUSD((item.quantity || 0) * (item.price || 0)) }}</span>
+                      <span class="usd-price">$ {{ formatForeign((item.quantity || 0) * (item.price || 0)) }}</span>
+                      <span class="idr-equiv">≈ {{ formatCurrency((item.quantity || 0) * (item.price || 0) * (form.exchange_rate || 1)) }}</span>
+                    </template>
+                    <template v-else-if="form.currency === 'EUR'">
+                      <span class="eur-price">€ {{ formatForeign((item.quantity || 0) * (item.price || 0)) }}</span>
                       <span class="idr-equiv">≈ {{ formatCurrency((item.quantity || 0) * (item.price || 0) * (form.exchange_rate || 1)) }}</span>
                     </template>
                     <template v-else>
@@ -245,7 +271,10 @@
                 <span class="label">Subtotal:</span>
                 <span class="value">
                   <template v-if="form.currency === 'USD'">
-                    $ {{ formatUSD(totalSubtotalUSD) }} <small class="idr-small">({{ formatCurrency(totalSubtotal) }})</small>
+                    $ {{ formatForeign(totalSubtotalForeign) }} <small class="idr-small">({{ formatCurrency(totalSubtotal) }})</small>
+                  </template>
+                  <template v-else-if="form.currency === 'EUR'">
+                    € {{ formatForeign(totalSubtotalForeign) }} <small class="idr-small">({{ formatCurrency(totalSubtotal) }})</small>
                   </template>
                   <template v-else>{{ formatCurrency(totalSubtotal) }}</template>
                 </span>
@@ -404,15 +433,16 @@ const form = reactive({
   details: [],
 })
 
-// totalSubtotalUSD = jumlah harga dalam currency asli (USD)
-const totalSubtotalUSD = computed(() => {
+// totalSubtotalForeign = jumlah harga dalam currency asli (USD/EUR)
+const totalSubtotalForeign = computed(() => {
   return form.details.reduce((sum, item) => sum + (item.quantity || 0) * (item.price || 0), 0)
 })
 
 // totalSubtotal = selalu IDR
 const totalSubtotal = computed(() => {
-  const rate = form.currency === 'USD' ? (form.exchange_rate || 1) : 1
-  return totalSubtotalUSD.value * rate
+  const isForeign = form.currency === 'USD' || form.currency === 'EUR'
+  const rate = isForeign ? (form.exchange_rate || 1) : 1
+  return totalSubtotalForeign.value * rate
 })
 
 const totalPPN = computed(() => {
@@ -513,7 +543,7 @@ const saveOrder = async () => {
       ...form,
       type: 'operasional',
       currency: form.currency,
-      exchange_rate: form.currency === 'USD' ? form.exchange_rate : 1,
+      exchange_rate: (form.currency === 'USD' || form.currency === 'EUR') ? form.exchange_rate : 1,
       details: form.details.map((d) => ({
         item_id:        d.item_id,
         quantity:       d.quantity,
@@ -728,7 +758,7 @@ const formatCurrency = (value) => {
   }).format(value)
 }
 
-const formatUSD = (value) => {
+const formatForeign = (value) => {
   if (isNaN(value)) return '0.00'
   return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)
 }
@@ -1768,8 +1798,9 @@ textarea.form-control {
 .form-control.has-prefix { border: none; background: transparent; box-shadow: none; border-radius: 0; }
 .form-hint-kurs { font-size: 12px; color: #6d28d9; font-weight: 600; margin-top: 6px; display: block; }
 
-/* ===== USD SUBTOTAL IN TABLE ===== */
+/* ===== FOREIGN CURRENCY SUBTOTAL IN TABLE ===== */
 .usd-price { display: block; font-weight: 700; color: #1d4ed8; font-size: 13px; }
+.eur-price { display: block; font-weight: 700; color: #7c3aed; font-size: 13px; }
 .idr-equiv { display: block; font-size: 11px; color: #059669; font-weight: 600; }
 .th-currency-badge {
   display: inline-block;
@@ -1782,6 +1813,7 @@ textarea.form-control {
   font-weight: 700;
   letter-spacing: 0.5px;
 }
+.th-eur-badge { background: #7c3aed; }
 
 /* ===== SUMMARY IDR SMALL ===== */
 .idr-small { font-size: 11px; color: rgba(255,255,255,0.8); margin-left: 4px; }

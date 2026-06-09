@@ -15,7 +15,7 @@
         <section class="invoice-info">
           <p class="date-line">Demak, {{ formatTanggal(po.order_date, po.currency) }}</p>
           <div class="info-supplier">
-            <p>{{ po.currency === 'USD' ? 'To:' : 'Kepada Yth.' }}</p>
+            <p>{{ (po.currency === 'USD' || po.currency === 'EUR') ? 'To:' : 'Kepada Yth.' }}</p>
             <p class="supplier-name">{{ po.supplier.name }}</p>
             <p>{{ po.supplier.address_city || po.supplier.address }}</p>
           </div>
@@ -68,7 +68,7 @@ const fetchPODetail = async () => {
 
 const formatTanggal = (tanggal, currency = 'IDR') => {
   if (!tanggal) return ''
-  const locale = currency === 'USD' ? 'en-US' : 'id-ID'
+  const locale = (currency === 'USD' || currency === 'EUR') ? 'en-US' : 'id-ID'
   return new Date(tanggal).toLocaleDateString(locale, {
     day: 'numeric',
     month: 'long',
