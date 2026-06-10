@@ -259,13 +259,115 @@
           </div>
         </div>
       </div>
+
+    <!-- Widget: Sales Order Cetak (PPIC) -->
+    <div class="widget-card so-print-widget">
+      <div class="widget-header">
+        <div class="widget-title">
+          <span class="widget-icon">🖨️</span>
+          <h2>Daftar Sales Order — Cetak</h2>
+        </div>
+        <div class="so-search-box">
+          <input
+            v-model="soSearchQuery"
+            type="text"
+            placeholder="Cari No. SO / Customer..."
+            class="so-search-input"
+          />
+        </div>
+      </div>
+
+      <div v-if="isLoadingSO" class="loading-state">
+        <div class="spinner so-spinner"></div>
+        <p>Memuat daftar Sales Order...</p>
+      </div>
+
+      <div v-else-if="filteredSO.length === 0" class="empty-state">
+        <span class="empty-icon">📭</span>
+        <p>Tidak ada Sales Order ditemukan.</p>
+      </div>
+
+      <div v-else class="table-wrapper">
+        <table class="so-table">
+          <thead>
+            <tr>
+              <th class="so-th-no">No</th>
+              <th class="so-th-number">No. Pesanan</th>
+              <th class="so-th-customer">Customer</th>
+              <th class="so-th-date">Tgl. Pesanan</th>
+              <th class="so-th-status">Status</th>
+              <th class="so-th-actions">Cetak</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(so, index) in paginatedSO" :key="so.id" class="so-row">
+              <td class="so-td-no">{{ soPagination.from + index }}</td>
+              <td>
+                <span class="so-number-badge">{{ so.so_number }}</span>
+              </td>
+              <td class="so-td-customer">
+                <span class="so-customer-icon">👤</span>
+                {{ so.buyer?.name || 'N/A' }}
+              </td>
+              <td class="so-td-date">{{ formatSODate(so.so_date) }}</td>
+              <td>
+                <span :class="getSoStatusClass(so.status)">{{ so.status }}</span>
+              </td>
+              <td class="so-td-actions">
+                <div class="so-print-btns">
+                  <button
+                    @click="cetakTglKirim(so.id)"
+                    class="so-btn-print"
+                    title="Cetak Tgl. Kirim"
+                  >
+                    📄 Tgl. Kirim
+                  </button>
+                  <button
+                    @click="cetakPPIC(so.id)"
+                    class="so-btn-ppic"
+                    title="Cetak Disesuaikan PPIC"
+                  >
+                    📋 PPIC
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-if="soPagination.last_page > 1" class="so-pagination">
+        <span class="so-pagination-info">
+          {{ soPagination.from }}–{{ soPagination.to }} dari {{ soPagination.total }} SO
+        </span>
+        <div class="so-pagination-btns">
+          <button
+            class="so-page-btn"
+            :disabled="soPagination.current_page === 1"
+            @click="soPage--"
+          >← Prev</button>
+          <button
+            v-for="p in soPaginationPages"
+            :key="p"
+            :class="['so-page-btn', { active: p === soPagination.current_page, dots: p === '...' }]"
+            :disabled="p === '...'"
+            @click="p !== '...' && (soPage = p)"
+          >{{ p }}</button>
+          <button
+            class="so-page-btn"
+            :disabled="soPagination.current_page === soPagination.last_page"
+            @click="soPage++"
+          >Next →</button>
+        </div>
+      </div>
+    </div>
     </div>
   </DashboardLayout>
 </template>
 
 <script setup>
 import DashboardLayout from '../components/DashboardLayout.vue'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '@/api/axios'
 
@@ -274,6 +376,105 @@ const userName = ref('User')
 const monitoringData = ref([])
 const isLoading = ref(false)
 const totalSO = ref(0)
+
+// Sales Order widget state
+const allSalesOrders = ref([])
+const isLoadingSO = ref(false)
+const soSearchQuery = ref('')
+const soPage = ref(1)
+const soPerPage = 10
+
+const filteredSO = computed(() => {
+  if (!soSearchQuery.value) return allSalesOrders.value
+  const q = soSearchQuery.value.toLowerCase()
+  return allSalesOrders.value.filter(
+    (so) =>
+      so.so_number?.toLowerCase().includes(q) ||
+      so.buyer?.name?.toLowerCase().includes(q),
+  )
+})
+
+const soPagination = computed(() => {
+  const total = filteredSO.value.length
+  const lastPage = Math.max(1, Math.ceil(total / soPerPage))
+  const current = Math.min(soPage.value, lastPage)
+  const from = total > 0 ? (current - 1) * soPerPage + 1 : 0
+  const to = Math.min(current * soPerPage, total)
+  return { current_page: current, last_page: lastPage, total, from, to }
+})
+
+const paginatedSO = computed(() => {
+  const start = (soPagination.value.current_page - 1) * soPerPage
+  return filteredSO.value.slice(start, start + soPerPage)
+})
+
+const soPaginationPages = computed(() => {
+  const pages = []
+  const last = soPagination.value.last_page
+  const cur = soPagination.value.current_page
+  if (last <= 7) {
+    for (let i = 1; i <= last; i++) pages.push(i)
+  } else if (cur <= 4) {
+    for (let i = 1; i <= 5; i++) pages.push(i)
+    pages.push('...')
+    pages.push(last)
+  } else if (cur >= last - 3) {
+    pages.push(1)
+    pages.push('...')
+    for (let i = last - 4; i <= last; i++) pages.push(i)
+  } else {
+    pages.push(1)
+    pages.push('...')
+    for (let i = cur - 1; i <= cur + 1; i++) pages.push(i)
+    pages.push('...')
+    pages.push(last)
+  }
+  return pages
+})
+
+watch(soSearchQuery, () => { soPage.value = 1 })
+
+const fetchSalesOrders = async () => {
+  isLoadingSO.value = true
+  try {
+    const response = await axios.get('/sales-orders', { params: { per_page: 200 } })
+    const data = response.data.data
+    allSalesOrders.value = data?.data || data || []
+  } catch (error) {
+    console.error('Error fetching sales orders:', error)
+  } finally {
+    isLoadingSO.value = false
+  }
+}
+
+const cetakTglKirim = (id) => {
+  const routeData = router.resolve({ name: 'CetakSalesOrder', params: { id } })
+  window.open(routeData.href, '_blank')
+}
+
+const cetakPPIC = (id) => {
+  const routeData = router.resolve({ name: 'CetakSalesOrderPPIC', params: { id } })
+  window.open(routeData.href, '_blank')
+}
+
+const formatSODate = (dateString) => {
+  if (!dateString) return '-'
+  return new Date(dateString).toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+const getSoStatusClass = (status) => {
+  const map = {
+    Draft: 'so-status so-draft',
+    Confirmed: 'so-status so-confirmed',
+    Shipped: 'so-status so-shipped',
+    Cancelled: 'so-status so-cancelled',
+  }
+  return map[status] || 'so-status so-default'
+}
 
 const fetchMonitoringData = async () => {
   isLoading.value = true
@@ -346,6 +547,7 @@ onMounted(() => {
     }
   }
   fetchMonitoringData()
+  fetchSalesOrders()
 })
 </script>
 
@@ -1072,6 +1274,210 @@ onMounted(() => {
   padding: 4px 0 !important;
   background: #f3f4f6 !important;
   border: none !important;
+}
+
+/* ============================================
+   SO PRINT WIDGET
+   ============================================ */
+.so-print-widget {
+  margin-top: 28px;
+}
+
+.so-search-box {
+  display: flex;
+  align-items: center;
+}
+
+.so-search-input {
+  padding: 8px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  font-size: 13px;
+  min-width: 240px;
+  outline: none;
+  transition: var(--transition-base);
+}
+
+.so-search-input:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+}
+
+.so-spinner {
+  border-top-color: #8b5cf6;
+}
+
+.so-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.so-table th,
+.so-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.so-table thead {
+  background: #f9fafb;
+}
+
+.so-table th {
+  font-weight: 700;
+  font-size: 11px;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.so-table tbody tr:hover {
+  background: #faf5ff;
+}
+
+.so-th-no,
+.so-td-no {
+  width: 50px;
+  text-align: center;
+}
+
+.so-th-actions {
+  width: 180px;
+  text-align: center;
+}
+
+.so-number-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.so-td-customer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #374151;
+}
+
+.so-customer-icon {
+  font-size: 14px;
+}
+
+.so-td-date {
+  color: #6b7280;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.so-status {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.so-draft     { background: #f3f4f6; color: #6b7280; }
+.so-confirmed { background: #dcfce7; color: #15803d; }
+.so-shipped   { background: #dbeafe; color: #1d4ed8; }
+.so-cancelled { background: #fee2e2; color: #b91c1c; }
+.so-default   { background: #e5e7eb; color: #374151; }
+
+.so-td-actions { text-align: center; }
+
+.so-print-btns {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.so-btn-print,
+.so-btn-ppic {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: var(--transition-base);
+}
+
+.so-btn-print {
+  background: #ede9fe;
+  color: #7c3aed;
+  border: 1px solid #c4b5fd;
+}
+
+.so-btn-print:hover {
+  background: #7c3aed;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.so-btn-ppic {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #6ee7b7;
+}
+
+.so-btn-ppic:hover {
+  background: #059669;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+.so-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  font-size: 13px;
+}
+
+.so-pagination-info {
+  color: #6b7280;
+}
+
+.so-pagination-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.so-page-btn {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: white;
+  font-size: 12px;
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.so-page-btn.active {
+  background: #7c3aed;
+  color: white;
+  border-color: #7c3aed;
+}
+
+.so-page-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.so-page-btn.dots {
+  cursor: default;
 }
 
 /* ============================================
