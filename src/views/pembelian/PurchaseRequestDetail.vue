@@ -86,6 +86,14 @@
           >
             🛒 Convert ke PO
           </button>
+          <button
+            v-if="pr.status === 'completed'"
+            @click="unpostPR"
+            class="btn-unpost"
+            :disabled="isProcessing"
+          >
+            ↩ Unpost PR
+          </button>
         </div>
       </div>
 
@@ -272,6 +280,20 @@ const cancelPR = async () => {
   }
 }
 
+const unpostPR = async () => {
+  if (!confirm('Unpost PR ini? PO yang sudah dibuat akan otomatis dibatalkan.')) return
+  isProcessing.value = true
+  try {
+    const res = await apiClient.post(`/purchase-requests/${route.params.id}/unpost`)
+    toast.success(res.data.message)
+    await fetchPR()
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Gagal unpost PR')
+  } finally {
+    isProcessing.value = false
+  }
+}
+
 const convertToPO = async () => {
   if (!convertForm.supplier_id) { toast.error('Pilih supplier!'); return }
   if (!convertForm.order_date)  { toast.error('Isi tanggal order!'); return }
@@ -353,6 +375,8 @@ onMounted(async () => {
 .btn-submit-pr:disabled { opacity: 0.6; cursor: not-allowed; }
 .btn-cancel-pr { padding: 10px 20px; background: #fee2e2; color: #dc2626; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
 .btn-convert { padding: 10px 20px; background: linear-gradient(135deg, #059669, #047857); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
+.btn-unpost { padding: 10px 20px; background: #fef3c7; color: #92400e; border: 2px solid #f59e0b; border-radius: 8px; font-weight: 700; cursor: pointer; }
+.btn-unpost:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .table-wrapper { overflow-x: auto; }
 .detail-table { width: 100%; border-collapse: collapse; min-width: 500px; }
