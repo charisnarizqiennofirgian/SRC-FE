@@ -85,6 +85,13 @@
           </div>
         </div>
         <div class="header-right-info">
+          <button
+            v-if="activeTab === 'rst'"
+            class="btn-tambah-komponen"
+            @click="router.push({ name: 'TambahMasterBarang' })"
+          >
+            + Tambah Kayu RST
+          </button>
           <div class="info-badge-count">
             <span class="badge-icon">📦</span>
             <span class="badge-text">{{ activePagination ? activePagination.total : reportData.length }} Items</span>
@@ -851,11 +858,14 @@
 
 <script setup>
 import { ref, watch, onMounted, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
 
 const toast = useToast()
+const router = useRouter()
+const route = useRoute()
 
 const tabs = [
   { key: 'logs', label: 'Kayu Log', category: 'Kayu Log', icon: '🪵' },
@@ -1357,6 +1367,10 @@ const saveDimension = async () => {
 }
 
 onMounted(() => {
+  const tabFromQuery = route.query.tab
+  if (tabFromQuery && tabs.some((t) => t.key === tabFromQuery)) {
+    activeTab.value = tabFromQuery
+  }
   fetchWarehouses()
   fetchUnits()
   fetchReport()
@@ -1638,7 +1652,28 @@ onMounted(() => {
 
 .header-right-info {
   display: flex;
+  align-items: center;
   gap: 1rem;
+}
+
+.btn-tambah-komponen {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.25rem;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(22, 163, 74, 0.3);
+  transition: all 0.2s;
+}
+.btn-tambah-komponen:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(22, 163, 74, 0.4);
 }
 
 .info-badge-count {
