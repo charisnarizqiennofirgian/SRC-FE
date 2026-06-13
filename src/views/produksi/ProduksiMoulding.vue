@@ -135,64 +135,85 @@
             </div>
           </div>
 
-          <!-- SECTION 2: LINES (RST → Komponen + Reject per baris) -->
+          <!-- SECTION 2: GRUP PRODUKSI (N ukuran kayu → 1 komponen per grup) -->
           <div class="form-section-modern">
             <div class="section-header section-header-moulding">
               <div class="section-icon-badge section-badge-rst">
                 <span class="section-icon">🔗</span>
               </div>
               <div class="section-title-group">
-                <h3 class="section-title">Baris Produksi</h3>
+                <h3 class="section-title">Grup Produksi</h3>
                 <p class="section-subtitle">
-                  Tiap baris: 1 RST → 1 Komponen + reject opsional
+                  Tiap grup: beberapa ukuran kayu RST → 1 Komponen + reject opsional
                   <span class="btn-quick-add-wrap">
-                    <button type="button" class="btn-quick-add" @click="openModalKomponen">➕ Komponen Baru</button>
+                    <button type="button" class="btn-quick-add" @click="openModalKomponen">➕ Komponen Cepat</button>
+                    <button type="button" class="btn-stok-index" @click="router.push({ name: 'StockIndex', query: { tab: 'rst' } })">+ Stok Kayu RST</button>
                   </span>
                 </p>
               </div>
             </div>
 
             <div
-              v-for="(line, idx) in form.lines"
-              :key="line.local_id"
-              class="item-row-card"
+              v-for="(group, gi) in form.groups"
+              :key="group.local_id"
+              class="group-card"
             >
-              <!-- Header baris -->
-              <div class="item-row-header">
-                <span class="item-row-number">Baris #{{ idx + 1 }}</span>
-                <button v-if="form.lines.length > 1" type="button" class="btn-remove-row" @click="removeLine(idx)">✕</button>
+              <!-- Header grup -->
+              <div class="group-header">
+                <span class="group-number">Grup #{{ gi + 1 }}</span>
+                <button v-if="form.groups.length > 1" type="button" class="btn-remove-row" @click="removeGroup(gi)">✕ Hapus Grup</button>
               </div>
 
-              <!-- INPUT RST -->
+              <!-- INPUT KAYU RST (bisa banyak) -->
               <div class="line-block line-block--input">
-                <span class="line-label">📥 INPUT RST</span>
-                <div class="form-grid-2col">
-                  <div class="form-group-modern">
-                    <label class="form-label-modern">Item RST <span class="required-star">*</span></label>
-                    <vue-select
-                      v-model="line.input_item_id"
-                      :options="rstItemsForSelect"
-                      :reduce="(o) => o.id"
-                      label="label"
-                      placeholder="🔍 Cari kayu RST..."
-                      class="vue-select-item"
-                    >
-                      <template #option="o">
-                        <div class="item-option">
-                          <span class="item-option-code">{{ o.code }}</span>
-                          <span class="item-option-name">{{ o.name }}</span>
+                <span class="line-label">📥 INPUT KAYU RST ({{ group.inputs.length }} ukuran)</span>
+
+                <div
+                  v-for="(inp, ii) in group.inputs"
+                  :key="inp.local_id"
+                  class="input-row"
+                >
+                  <div class="form-grid-2col" style="margin-bottom:0;">
+                    <div class="form-group-modern">
+                      <label v-if="ii === 0" class="form-label-modern">Item RST <span class="required-star">*</span></label>
+                      <vue-select
+                        v-model="inp.item_id"
+                        :options="rstItemsForSelect"
+                        :reduce="(o) => o.id"
+                        label="label"
+                        placeholder="🔍 Cari kayu RST..."
+                        class="vue-select-item"
+                      >
+                        <template #option="o">
+                          <div class="item-option">
+                            <span class="item-option-code">{{ o.code }}</span>
+                            <span class="item-option-name">{{ o.name }}</span>
+                          </div>
+                        </template>
+                      </vue-select>
+                    </div>
+                    <div class="form-group-modern" style="flex-direction:row;align-items:flex-end;gap:0.5rem;">
+                      <div style="flex:1;">
+                        <label v-if="ii === 0" class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
+                        <div class="input-wrapper-icon">
+                          <span class="input-icon">🔢</span>
+                          <input v-model.number="inp.qty" type="number" min="0.01" step="0.01" class="form-input-modern" placeholder="0" />
                         </div>
-                      </template>
-                    </vue-select>
-                  </div>
-                  <div class="form-group-modern">
-                    <label class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
-                    <div class="input-wrapper-icon">
-                      <span class="input-icon">🔢</span>
-                      <input v-model.number="line.input_qty" type="number" min="0.01" step="0.01" class="form-input-modern" placeholder="0" />
+                      </div>
+                      <button
+                        v-if="group.inputs.length > 1"
+                        type="button"
+                        class="btn-remove-input"
+                        :style="ii === 0 ? 'margin-top:1.75rem;' : ''"
+                        @click="removeInput(gi, ii)"
+                      >✕</button>
                     </div>
                   </div>
                 </div>
+
+                <button type="button" class="btn-add-input" @click="addInput(gi)">
+                  ➕ Tambah Ukuran Kayu
+                </button>
               </div>
 
               <!-- OUTPUT KOMPONEN -->
@@ -202,7 +223,7 @@
                   <div class="form-group-modern">
                     <label class="form-label-modern">Item Komponen <span class="required-star">*</span></label>
                     <vue-select
-                      v-model="line.output_item_id"
+                      v-model="group.output_item_id"
                       :options="komponenItemsForSelect"
                       :reduce="(o) => o.id"
                       label="label"
@@ -219,10 +240,10 @@
                     </vue-select>
                   </div>
                   <div class="form-group-modern">
-                    <label class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
+                    <label class="form-label-modern">Qty Output (pcs) <span class="required-star">*</span></label>
                     <div class="input-wrapper-icon">
                       <span class="input-icon">🔢</span>
-                      <input v-model.number="line.output_qty" type="number" min="1" class="form-input-modern" placeholder="0" />
+                      <input v-model.number="group.output_qty" type="number" min="1" class="form-input-modern" placeholder="0" />
                     </div>
                   </div>
                 </div>
@@ -230,18 +251,18 @@
 
               <!-- REJECT (toggle) -->
               <div class="line-reject-toggle">
-                <button type="button" class="btn-toggle-reject" @click="line.show_reject = !line.show_reject">
-                  {{ line.show_reject ? '▲ Sembunyikan Reject' : '⚠️ + Tambah Reject' }}
+                <button type="button" class="btn-toggle-reject" @click="group.show_reject = !group.show_reject">
+                  {{ group.show_reject ? '▲ Sembunyikan Reject' : '⚠️ + Tambah Reject' }}
                 </button>
               </div>
 
-              <div v-if="line.show_reject" class="line-block line-block--reject">
+              <div v-if="group.show_reject" class="line-block line-block--reject">
                 <span class="line-label">♻️ REJECT → Gudang REJECT</span>
                 <div class="form-grid-2col" style="margin-bottom:0.75rem;">
                   <div class="form-group-modern">
                     <label class="form-label-modern">Item Reject (RST atau Komponen)</label>
                     <vue-select
-                      v-model="line.reject_item_id"
+                      v-model="group.reject_item_id"
                       :options="[...rstItemsForSelect, ...komponenItemsForSelect]"
                       :reduce="(o) => o.id"
                       label="label"
@@ -253,7 +274,7 @@
                     <label class="form-label-modern">Qty Reject</label>
                     <div class="input-wrapper-icon">
                       <span class="input-icon">🔢</span>
-                      <input v-model.number="line.reject_qty" type="number" min="0.01" step="0.01" class="form-input-modern" placeholder="0" />
+                      <input v-model.number="group.reject_qty" type="number" min="0.01" step="0.01" class="form-input-modern" placeholder="0" />
                     </div>
                   </div>
                 </div>
@@ -261,23 +282,23 @@
                   <div class="form-group-modern">
                     <label class="form-label-modern">Penyebab</label>
                     <div class="reject-type-toggle">
-                      <button type="button" :class="['toggle-btn', line.reject_type === 'moulding' ? 'active-reject' : '']" @click="line.reject_type = 'moulding'">⚙️ Moulding</button>
-                      <button type="button" :class="['toggle-btn', line.reject_type === 'pembahanan' ? 'active-reject' : '']" @click="line.reject_type = 'pembahanan'">🪚 Pembahanan</button>
+                      <button type="button" :class="['toggle-btn', group.reject_type === 'moulding' ? 'active-reject' : '']" @click="group.reject_type = 'moulding'">⚙️ Moulding</button>
+                      <button type="button" :class="['toggle-btn', group.reject_type === 'pembahanan' ? 'active-reject' : '']" @click="group.reject_type = 'pembahanan'">🪚 Pembahanan</button>
                     </div>
                   </div>
                   <div class="form-group-modern">
                     <label class="form-label-modern">Keterangan</label>
                     <div class="input-wrapper-icon">
                       <span class="input-icon">📝</span>
-                      <input v-model="line.reject_notes" type="text" class="form-input-modern" placeholder="Contoh: urat bengkok" />
+                      <input v-model="group.reject_notes" type="text" class="form-input-modern" placeholder="Contoh: urat bengkok" />
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <button type="button" class="btn-add-row btn-add-rst" @click="addLine">
-              ➕ Tambah Baris
+            <button type="button" class="btn-add-row btn-add-rst" @click="addGroup">
+              ➕ Tambah Grup Komponen
             </button>
           </div>
 
@@ -288,7 +309,6 @@
               <span class="btn-text">Batal</span>
             </button>
 
-            <!-- Tombol Selesai Moulding — hanya muncul kalau ada PO dipilih -->
             <button
               v-if="form.ref_po_id"
               type="button"
@@ -367,12 +387,17 @@ const komponenItems    = ref([])
 const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
 
-const newLine = () => ({
+const newInput = () => ({
+  local_id: Date.now() + Math.random(),
+  item_id:  null,
+  qty:      null,
+})
+
+const newGroup = () => ({
   local_id:        Date.now() + Math.random(),
-  input_item_id:   null,
-  input_qty:       null,
   output_item_id:  null,
   output_qty:      null,
+  inputs:          [newInput()],
   reject_item_id:  null,
   reject_qty:      null,
   reject_type:     'moulding',
@@ -385,7 +410,7 @@ const form = reactive({
   estimated_finish_date: '',
   ref_po_id:             null,
   notes:                 '',
-  lines: [newLine()],
+  groups:                [newGroup()],
 })
 
 // === MODAL KOMPONEN BARU ===
@@ -455,9 +480,11 @@ const handlePoDeselect = () => {
   poTargets.value = []
 }
 
-// === LINES ===
-const addLine    = () => form.lines.push(newLine())
-const removeLine = (i) => form.lines.splice(i, 1)
+// === GRUP & INPUT MANAGEMENT ===
+const addGroup    = () => form.groups.push(newGroup())
+const removeGroup = (gi) => form.groups.splice(gi, 1)
+const addInput    = (gi) => form.groups[gi].inputs.push(newInput())
+const removeInput = (gi, ii) => form.groups[gi].inputs.splice(ii, 1)
 
 // === MODAL KOMPONEN BARU ===
 const openModalKomponen  = () => {
@@ -482,9 +509,9 @@ const simpanKomponenBaru = async () => {
     })
     const itemBaru = res.data.data
     komponenItems.value.push({ id: itemBaru.id, code: itemBaru.code, name: itemBaru.name, category: itemBaru.category })
-    // Pilih di baris terakhir yang belum ada output
-    const lastLine = form.lines[form.lines.length - 1]
-    if (lastLine && !lastLine.output_item_id) lastLine.output_item_id = itemBaru.id
+    // Pilih di grup terakhir yang belum ada output
+    const lastGroup = form.groups[form.groups.length - 1]
+    if (lastGroup && !lastGroup.output_item_id) lastGroup.output_item_id = itemBaru.id
     showSuccess('Berhasil', `Komponen '${itemBaru.name}' berhasil ditambahkan`)
     closeModalKomponen()
   } catch (error) {
@@ -498,8 +525,15 @@ const simpanKomponenBaru = async () => {
 const handleSubmit = async () => {
   if (!form.ref_po_id) { showError('Validasi', 'Production Order wajib dipilih'); return }
 
-  const validLines = form.lines.filter((l) => l.input_item_id && l.input_qty > 0 && l.output_item_id && l.output_qty > 0)
-  if (validLines.length === 0) { showError('Validasi', 'Minimal satu baris RST → Komponen wajib diisi'); return }
+  const validGroups = form.groups.filter((g) => {
+    const hasOutput = g.output_item_id && g.output_qty > 0
+    const hasInputs = g.inputs.some((i) => i.item_id && i.qty > 0)
+    return hasOutput && hasInputs
+  })
+  if (validGroups.length === 0) {
+    showError('Validasi', 'Minimal satu grup dengan output komponen dan input kayu wajib diisi')
+    return
+  }
 
   isSubmitting.value = true
   try {
@@ -507,15 +541,16 @@ const handleSubmit = async () => {
       date:      form.date,
       ref_po_id: Number(form.ref_po_id),
       notes:     form.notes || null,
-      lines: validLines.map((l) => ({
-        input_item_id:  Number(l.input_item_id),
-        input_qty:      Number(l.input_qty),
-        output_item_id: Number(l.output_item_id),
-        output_qty:     Number(l.output_qty),
-        reject_item_id: l.reject_item_id && l.reject_qty > 0 ? Number(l.reject_item_id) : null,
-        reject_qty:     l.reject_qty > 0 ? Number(l.reject_qty) : null,
-        reject_type:    l.reject_type   || null,
-        reject_notes:   l.reject_notes  || null,
+      groups: validGroups.map((g) => ({
+        output_item_id: Number(g.output_item_id),
+        output_qty:     Number(g.output_qty),
+        inputs: g.inputs
+          .filter((i) => i.item_id && i.qty > 0)
+          .map((i) => ({ item_id: Number(i.item_id), qty: Number(i.qty) })),
+        reject_item_id: g.reject_item_id && g.reject_qty > 0 ? Number(g.reject_item_id) : null,
+        reject_qty:     g.reject_qty > 0 ? Number(g.reject_qty) : null,
+        reject_type:    g.reject_type  || null,
+        reject_notes:   g.reject_notes || null,
       })),
     }
 
@@ -612,34 +647,34 @@ onMounted(fetchInitialData)
 .po-hint-table th { padding: 6px 10px; text-align: left; color: #15803d; font-size: 0.78rem; text-transform: uppercase; border-bottom: 1px solid #bbf7d0; }
 .po-hint-table td { padding: 6px 10px; color: #374151; border-bottom: 1px solid #dcfce7; }
 
-.item-row-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
-.item-row-card--output { border-color: #bfdbfe; background: #eff6ff; }
-.item-row-card--reject { border-color: #fecaca; background: #fff5f5; }
-.item-row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-.item-row-number { font-size: 0.82rem; font-weight: 700; color: #6b7280; text-transform: uppercase; }
-.btn-remove-row { background: #fee2e2; color: #ef4444; border: none; border-radius: 6px; padding: 3px 10px; font-size: 0.82rem; cursor: pointer; font-weight: 700; }
+/* Group card */
+.group-card { background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 16px; padding: 1.5rem; margin-bottom: 1.25rem; }
+.group-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+.group-number { font-size: 0.88rem; font-weight: 800; color: #374151; text-transform: uppercase; letter-spacing: 0.05em; background: #e5e7eb; padding: 3px 12px; border-radius: 999px; }
+
+.btn-remove-row { background: #fee2e2; color: #ef4444; border: none; border-radius: 8px; padding: 5px 14px; font-size: 0.82rem; cursor: pointer; font-weight: 700; }
+
+/* Input row */
+.input-row { margin-bottom: 0.75rem; }
+.btn-remove-input { background: #fee2e2; color: #ef4444; border: none; border-radius: 8px; padding: 0 10px; height: 52px; font-size: 0.9rem; cursor: pointer; font-weight: 700; flex-shrink: 0; }
+
+.btn-add-input { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; margin-top: 0.5rem; border: 2px dashed #16a34a; background: #f0fdf4; color: #15803d; }
+.btn-add-input:hover { background: #dcfce7; }
 
 .btn-add-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; margin-top: 0.5rem; border: 2px dashed; }
 .btn-add-rst    { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
 .btn-add-rst:hover { background: #fde68a; }
-.btn-add-output { background: #eff6ff; border-color: #2563eb; color: #1d4ed8; }
-.btn-add-output:hover { background: #dbeafe; }
-.btn-add-reject { background: #fff5f5; border-color: #dc2626; color: #b91c1c; }
-.btn-add-reject:hover { background: #fecaca; }
 
 .reject-type-toggle { display: flex; gap: 0.75rem; }
 .toggle-btn { flex: 1; padding: 0.75rem 0.5rem; border: 2px solid #e5e7eb; border-radius: 10px; background: white; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; color: #374151; }
 .toggle-btn:hover { border-color: #dc2626; }
 .active-reject { border-color: #dc2626 !important; background: #fff5f5 !important; color: #dc2626 !important; }
 
-.optional-tag { display: inline-block; padding: 1px 8px; border-radius: 999px; background: #e0f2fe; color: #0369a1; font-size: 0.72rem; font-weight: 600; vertical-align: middle; }
-
-.empty-reject { padding: 1rem; text-align: center; color: #9ca3af; font-size: 0.9rem; }
-.btn-link { background: none; border: none; color: #16a34a; font-weight: 600; cursor: pointer; text-decoration: underline; font-size: 0.9rem; }
-
-.btn-quick-add-wrap { margin-left: 8px; }
+.btn-quick-add-wrap { margin-left: 8px; display: inline-flex; gap: 6px; align-items: center; }
 .btn-quick-add { padding: 2px 10px; background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; border-radius: 999px; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
 .btn-quick-add:hover { background: #bbf7d0; }
+.btn-stok-index { padding: 2px 10px; background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 999px; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+.btn-stok-index:hover { background: #bfdbfe; }
 
 .form-actions-modern { display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1.5rem; border-top: 2px solid #e5e7eb; }
 .btn-action { display: flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1.75rem; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; }
@@ -669,7 +704,6 @@ onMounted(fetchInitialData)
 .line-reject-toggle { margin-bottom: 0.5rem; }
 .btn-toggle-reject { background: none; border: 1px dashed #d1d5db; color: #6b7280; border-radius: 8px; padding: 5px 14px; font-size: 0.8rem; cursor: pointer; transition: all 0.15s; }
 .btn-toggle-reject:hover { border-color: #f97316; color: #f97316; }
-.btn-quick-add-wrap { margin-left: 8px; }
 
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
 .modal-card { background: white; border-radius: 20px; width: 100%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); overflow: hidden; }
@@ -688,7 +722,6 @@ onMounted(fetchInitialData)
 .item-option-code { font-size: 0.82rem; font-weight: 700; color: #16a34a; }
 .item-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
 .item-option-produk { font-size: 0.78rem; color: #2563eb; font-weight: 600; }
-.item-option-stock { font-size: 0.78rem; }
 
 @media (max-width: 768px) {
   .form-grid-2col, .form-grid-3col, .form-grid-4col { grid-template-columns: 1fr; }
