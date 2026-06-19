@@ -236,27 +236,62 @@
           <!-- =================== JEBLOSAN → RST =================== -->
           <template v-else>
 
-            <!-- INFO: Stok Jeblosan yang akan diambil otomatis -->
+            <!-- INPUT: Jeblosan (pilih item + qty) -->
             <div class="form-section-modern">
-              <div class="section-header section-header-log">
-                <div class="section-icon-badge section-badge-log"><span class="section-icon">📥</span></div>
+              <div class="section-header section-header-jeblosan">
+                <div class="section-icon-badge section-badge-jeblosan"><span class="section-icon">📥</span></div>
                 <div class="section-title-group">
-                  <h3 class="section-title">Input Jeblosan — Otomatis dari Gudang SAWMILL</h3>
+                  <h3 class="section-title">Input — Jeblosan dari Gudang SAWMILL <span class="required-star">*</span></h3>
                   <p class="section-subtitle">
-                    Semua stok jeblosan di Gudang SAWMILL akan diambil habis
-                    <span v-if="loadingStock" class="loading-inline">⏳ memuat...</span>
+                    Pilih item dan jumlah jeblosan yang diproses hari ini
+                    <span v-if="loadingStock" class="loading-inline">⏳ memuat stok...</span>
                   </p>
                 </div>
               </div>
 
               <div v-if="!loadingStock && sawmillStock.length === 0" class="empty-hint">
-                📭 Tidak ada stok jeblosan di Gudang SAWMILL — tidak bisa proses RST
+                📭 Tidak ada stok jeblosan di Gudang SAWMILL — lakukan proses Log→Jeblosan terlebih dahulu
               </div>
 
-              <div v-else-if="sawmillStock.length > 0" class="sawmill-stock-info">
-                <span class="sawmill-stock-icon">✅</span>
-                <span>{{ sawmillStock.length }} item jeblosan tersedia di Gudang SAWMILL — akan diambil semua otomatis</span>
-              </div>
+              <template v-else>
+                <div v-for="(row, idx) in form.jeblosanInputs" :key="row.local_id" class="item-row-card item-row-card--jeblosan">
+                  <div class="item-row-header">
+                    <span class="item-row-number">Jeblosan #{{ idx + 1 }}</span>
+                    <button v-if="form.jeblosanInputs.length > 1" type="button" class="btn-remove-row" @click="removeJeblosanInput(idx)">✕</button>
+                  </div>
+                  <div class="form-grid-2col">
+                    <div class="form-group-modern">
+                      <label class="form-label-modern">Item Jeblosan <span class="required-star">*</span></label>
+                      <vue-select
+                        v-model="row.item_id"
+                        :options="jeblosanStockForSelect"
+                        :reduce="o => o.id"
+                        label="label"
+                        placeholder="Pilih jeblosan dari stok..."
+                        class="vue-select-item"
+                        @option:selected="(opt) => onJeblosanInputSelected(idx, opt)"
+                      />
+                      <div v-if="row.item_id" class="stock-hint">
+                        Stok tersedia: <strong>{{ getAvailableStock(row.item_id) }} pcs</strong>
+                      </div>
+                    </div>
+                    <div class="form-group-modern">
+                      <label class="form-label-modern">Qty diproses (pcs) <span class="required-star">*</span></label>
+                      <div class="input-wrapper-icon">
+                        <span class="input-icon">🔢</span>
+                        <input
+                          v-model.number="row.qty_pcs"
+                          type="number" min="1"
+                          :max="getAvailableStock(row.item_id) || undefined"
+                          class="form-input-modern"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <button type="button" class="btn-add-row btn-add-jeblosan" @click="addJeblosanInput">➕ Tambah Baris</button>
+              </template>
             </div>
 
             <!-- OUTPUT: RST -->
@@ -506,9 +541,10 @@ const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
 
 // ===== FORM =====
-const newLog      = () => ({ local_id: Date.now() + Math.random(), item_log_id: null, qty_log_pcs: null })
-const newJeblosan = () => ({ local_id: Date.now() + Math.random(), item_id: null, qty_pcs: null, volume_m3: 0, volume_per_pcs: 0 })
-const newRst      = () => ({ local_id: Date.now() + Math.random(), item_rst_id: null, qty_rst_pcs: null, volume_rst_m3: 0, volume_per_pcs: 0 })
+const newLog           = () => ({ local_id: Date.now() + Math.random(), item_log_id: null, qty_log_pcs: null })
+const newJeblosan      = () => ({ local_id: Date.now() + Math.random(), item_id: null, qty_pcs: null, volume_m3: 0, volume_per_pcs: 0 })
+const newJeblosanInput = () => ({ local_id: Date.now() + Math.random(), item_id: null, qty_pcs: null, volume_per_pcs: 0 })
+const newRst           = () => ({ local_id: Date.now() + Math.random(), item_rst_id: null, qty_rst_pcs: null, volume_rst_m3: 0, volume_per_pcs: 0 })
 
 const form = reactive({
   process_type:          'log_jeblosan',
@@ -516,9 +552,10 @@ const form = reactive({
   estimated_finish_date: '',
   notes:                 '',
   ref_po_id:             null,
-  logs:      [newLog()],
-  jeblosans: [newJeblosan()],
-  rsts:      [newRst()],
+  logs:           [newLog()],
+  jeblosans:      [newJeblosan()],
+  jeblosanInputs: [newJeblosanInput()],
+  rsts:           [newRst()],
 })
 
 // ===== COMPUTED =====
@@ -537,6 +574,20 @@ const jeblosanItemsForSelect = computed(() =>
 const rstItemsForSelect = computed(() =>
   rstItems.value.map(i => ({ id: i.id, code: i.code, name: i.name, volume_m3: i.volume_m3 || 0, label: `${i.code} - ${i.name}` }))
 )
+
+const jeblosanStockForSelect = computed(() =>
+  sawmillStock.value.map(s => ({
+    id:            s.item_id,
+    label:         `${s.item_code} - ${s.item_name} (stok: ${s.qty_available} pcs)`,
+    qty_available: s.qty_available,
+    volume_m3:     s.volume_m3,
+  }))
+)
+
+const getAvailableStock = (itemId) => {
+  const s = sawmillStock.value.find(s => s.item_id === itemId)
+  return s ? s.qty_available : 0
+}
 
 
 // ===== FETCH =====
@@ -581,7 +632,7 @@ const fetchSawmillStock = async () => {
 // ===== PROCESS TYPE =====
 const setProcessType = (type) => {
   form.process_type = type
-  if (type === 'jeblosan_rst' && sawmillStock.value.length === 0) {
+  if (type === 'jeblosan_rst') {
     fetchSawmillStock()
   }
 }
@@ -623,6 +674,13 @@ const updateJeblosanVolume = (idx) => {
 }
 
 // ===== JEBLOSAN→RST handlers =====
+const addJeblosanInput    = () => form.jeblosanInputs.push(newJeblosanInput())
+const removeJeblosanInput = (i) => form.jeblosanInputs.splice(i, 1)
+
+const onJeblosanInputSelected = (idx, opt) => {
+  form.jeblosanInputs[idx].volume_per_pcs = opt?.volume_m3 ?? 0
+}
+
 const addRst    = () => form.rsts.push(newRst())
 const removeRst = (i) => form.rsts.splice(i, 1)
 
@@ -644,8 +702,9 @@ const handleSubmit = async () => {
       return
     }
   } else {
-    if (sawmillStock.value.length === 0) {
-      showError('Validasi', 'Tidak ada stok jeblosan di Gudang SAWMILL')
+    const validJebInput = form.jeblosanInputs.filter(j => j.item_id && j.qty_pcs > 0)
+    if (validJebInput.length === 0) {
+      showError('Validasi', 'Minimal satu input jeblosan wajib diisi')
       return
     }
     const validRst = form.rsts.filter(r => r.item_rst_id && r.qty_rst_pcs > 0)
@@ -678,6 +737,14 @@ const handleSubmit = async () => {
           volume_m3: Number(j.volume_m3 || 0),
         }))
     } else {
+      payload.jeblosans = form.jeblosanInputs
+        .filter(j => j.item_id && j.qty_pcs > 0)
+        .map(j => ({
+          item_id:   Number(j.item_id),
+          qty_pcs:   Number(j.qty_pcs),
+          volume_m3: Number((j.volume_per_pcs || 0) * (j.qty_pcs || 0)),
+        }))
+
       payload.rsts = form.rsts
         .filter(r => r.item_rst_id && r.qty_rst_pcs > 0)
         .map(r => ({
@@ -695,9 +762,10 @@ const handleSubmit = async () => {
     form.estimated_finish_date = ''
     form.notes                 = ''
     form.ref_po_id             = null
-    form.logs      = [newLog()]
-    form.jeblosans = [newJeblosan()]
-    form.rsts      = [newRst()]
+    form.logs           = [newLog()]
+    form.jeblosans      = [newJeblosan()]
+    form.jeblosanInputs = [newJeblosanInput()]
+    form.rsts           = [newRst()]
     poInfo.value               = { buyer_name: null, so_number: null }
     poTargets.value            = []
 
@@ -984,6 +1052,7 @@ onMounted(fetchBaseData)
 .item-option-stock { font-size: 0.78rem; color: #6b7280; }
 
 .sawmill-stock-info { display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem 1.25rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; font-size: 0.9rem; color: #15803d; font-weight: 500; }
+.stock-hint { font-size: 0.78rem; color: #6b7280; margin-top: 0.25rem; }
 .sawmill-stock-icon { font-size: 1.1rem; }
 
 .btn-quick-add { margin-left: 8px; padding: 2px 10px; background: #d97706; color: white; border: none; border-radius: 999px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
