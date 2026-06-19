@@ -1171,10 +1171,11 @@ const handleAdjusment = async (item) => {
     const quantity = Math.abs(adjustmentAmount)
 
     const response = await apiClient.post('/stock-adjustments', {
-      item_id:  item.id,
-      type:     type,
-      quantity: quantity,
-      notes:    `Penyesuaian manual: ${adjustmentAmount > 0 ? '+' : ''}${adjustmentAmount}. Dari ${currentStock} menjadi ${newStock}.`,
+      item_id:      item.id,
+      type:         type,
+      quantity:     quantity,
+      warehouse_id: selectedWarehouse.value || null,
+      notes:        `Penyesuaian manual: ${adjustmentAmount > 0 ? '+' : ''}${adjustmentAmount}. Dari ${currentStock} menjadi ${newStock}.`,
     })
 
     item.stock     = response.data.new_stock
