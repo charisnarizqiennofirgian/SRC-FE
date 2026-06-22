@@ -131,7 +131,7 @@
                   </router-link>
 
                   <router-link
-                    v-if="pesanan.status === 'Open' || pesanan.status === 'Terbuka'"
+                    v-if="pesanan.status === 'Open' || pesanan.status === 'Terbuka' || pesanan.status === 'Diterima Sebagian'"
                     :to="{ name: 'tambah-penerimaan-barang', params: { po_id: pesanan.id } }"
                     class="btn-action btn-receive"
                     title="Terima Barang"

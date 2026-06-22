@@ -138,19 +138,31 @@
                     <th class="th-ordered">
                       <div class="th-content">
                         <span class="th-icon">📊</span>
-                        <span>Jumlah Dipesan</span>
+                        <span>Dipesan</span>
+                      </div>
+                    </th>
+                    <th class="th-already">
+                      <div class="th-content">
+                        <span class="th-icon">📥</span>
+                        <span>Sudah Diterima</span>
+                      </div>
+                    </th>
+                    <th class="th-remaining">
+                      <div class="th-content">
+                        <span class="th-icon">⏳</span>
+                        <span>Sisa</span>
                       </div>
                     </th>
                     <th class="th-received">
                       <div class="th-content">
                         <span class="th-icon">✅</span>
-                        <span>Jumlah Diterima</span>
+                        <span>Terima Sekarang</span>
                       </div>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(item, index) in form.details" :key="item.item_id" class="data-row">
+                  <tr v-for="(item, index) in form.details" :key="item.item_id" class="data-row" :class="{ 'row-complete': item.quantity_remaining === 0 }">
                     <td class="td-no">
                       <span class="row-number">{{ index + 1 }}</span>
                     </td>
@@ -163,15 +175,25 @@
                     <td class="td-ordered">
                       <span class="qty-badge">{{ item.quantity_ordered }}</span>
                     </td>
+                    <td class="td-already">
+                      <span class="qty-badge qty-already">{{ item.quantity_received_total }}</span>
+                    </td>
+                    <td class="td-remaining">
+                      <span class="qty-badge" :class="item.quantity_remaining === 0 ? 'qty-done' : 'qty-remaining'">
+                        {{ item.quantity_remaining }}
+                      </span>
+                    </td>
                     <td class="td-received">
                       <input
+                        v-if="item.quantity_remaining > 0"
                         type="number"
                         v-model="item.quantity_received"
                         class="qty-input"
                         min="0"
-                        :max="item.quantity_ordered"
+                        :max="item.quantity_remaining"
                         step="0.01"
                       />
+                      <span v-else class="done-label">Lunas ✓</span>
                     </td>
                   </tr>
                 </tbody>
@@ -246,14 +268,21 @@ onMounted(async () => {
     const response = await apiClient.get(`/purchase-orders/${po_id}`)
     po.value = response.data.data
 
-    // Isi form.details dengan data dari PO
-    form.value.details = po.value.details.map((detail) => ({
-      item_id: detail.item_id,
-      item_name: detail.item.name,
-      item_unit: detail.item.unit.name,
-      quantity_ordered: parseFloat(detail.quantity_ordered),
-      quantity_received: parseFloat(detail.quantity_ordered),
-    }))
+    // Isi form.details dengan data dari PO, hitung sisa per item
+    form.value.details = po.value.details.map((detail) => {
+      const ordered  = parseFloat(detail.quantity_ordered)
+      const alreadyReceived = parseFloat(detail.quantity_received_total ?? 0)
+      const remaining = Math.max(0, ordered - alreadyReceived)
+      return {
+        item_id: detail.item_id,
+        item_name: detail.item.name,
+        item_unit: detail.item.unit.name,
+        quantity_ordered: ordered,
+        quantity_received_total: alreadyReceived,
+        quantity_remaining: remaining,
+        quantity_received: remaining, // default = sisa yang belum diterima
+      }
+    })
   } catch (err) {
     error.value = 'Gagal memuat data Pesanan Pembelian.'
     toast.error(error.value)
@@ -264,13 +293,26 @@ onMounted(async () => {
 })
 
 const submitForm = async () => {
+  // Validasi: pastikan tidak ada input melebihi sisa
+  for (const item of form.value.details) {
+    if (parseFloat(item.quantity_received) > item.quantity_remaining) {
+      toast.error(`Jumlah terima "${item.item_name}" melebihi sisa (${item.quantity_remaining}).`)
+      return
+    }
+  }
+
+  // Validasi: pastikan ada minimal 1 item yang diterima > 0
+  const hasAny = form.value.details.some(d => parseFloat(d.quantity_received) > 0)
+  if (!hasAny) {
+    toast.error('Masukkan jumlah penerimaan untuk minimal 1 item.')
+    return
+  }
+
   isSaving.value = true
   try {
-    // Kirim data ke backend
     await apiClient.post('/goods-receipts', form.value)
-
     toast.success('Penerimaan barang berhasil disimpan & stok diperbarui!')
-    router.push('/admin/pembelian') // Arahkan kembali ke daftar PO
+    router.push('/admin/pembelian')
   } catch (err) {
     toast.error('Gagal menyimpan penerimaan barang.')
     console.error('Error saat menyimpan penerimaan barang:', err)
@@ -611,21 +653,31 @@ textarea.form-control {
 }
 
 .th-no {
-  width: 8%;
+  width: 5%;
   text-align: center;
 }
 
 .th-item {
-  width: 45%;
+  width: 30%;
 }
 
 .th-ordered {
-  width: 20%;
+  width: 12%;
+  text-align: center;
+}
+
+.th-already {
+  width: 14%;
+  text-align: center;
+}
+
+.th-remaining {
+  width: 12%;
   text-align: center;
 }
 
 .th-received {
-  width: 27%;
+  width: 17%;
   text-align: center;
 }
 
@@ -691,6 +743,40 @@ textarea.form-control {
   font-size: 14px;
   border-radius: 8px;
   border: 2px solid #a5b4fc;
+}
+
+.qty-already {
+  background: linear-gradient(135deg, #fef9c3, #fef08a);
+  color: #854d0e;
+  border-color: #fbbf24;
+}
+
+.qty-remaining {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  color: #991b1b;
+  border-color: #f87171;
+}
+
+.qty-done {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  color: #14532d;
+  border-color: #4ade80;
+}
+
+.done-label {
+  color: #16a34a;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.row-complete {
+  background: #f0fdf4;
+  opacity: 0.75;
+}
+
+.td-already,
+.td-remaining {
+  text-align: center;
 }
 
 .td-received {
