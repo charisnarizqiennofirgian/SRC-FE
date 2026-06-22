@@ -16,9 +16,32 @@
             <span class="widget-icon">🏭</span>
             <h2>Top Priority Production</h2>
           </div>
-          <router-link to="/produksi/monitoring" class="view-all-btn">
-            Lihat Semua Order →
-          </router-link>
+          <div class="monitor-filter-bar">
+            <div class="monitor-month-filter">
+              <span class="filter-label">📅 Tgl. Kirim:</span>
+              <select v-model="monitorMonthFilter" class="monitor-month-select">
+                <option value="">Semua Bulan</option>
+                <option value="1">Januari</option>
+                <option value="2">Februari</option>
+                <option value="3">Maret</option>
+                <option value="4">April</option>
+                <option value="5">Mei</option>
+                <option value="6">Juni</option>
+                <option value="7">Juli</option>
+                <option value="8">Agustus</option>
+                <option value="9">September</option>
+                <option value="10">Oktober</option>
+                <option value="11">November</option>
+                <option value="12">Desember</option>
+              </select>
+              <select v-model="monitorYearFilter" class="monitor-year-select">
+                <option v-for="y in monitorYearOptions" :key="y" :value="y">{{ y }}</option>
+              </select>
+            </div>
+            <router-link to="/produksi/monitoring" class="view-all-btn">
+              Lihat Semua →
+            </router-link>
+          </div>
         </div>
 
         <!-- Legend -->
@@ -43,9 +66,9 @@
         </div>
 
         <!-- Empty State -->
-        <div v-else-if="monitoringData.length === 0" class="empty-state">
+        <div v-else-if="filteredMonitoringData.length === 0" class="empty-state">
           <span class="empty-icon">📦</span>
-          <p>Tidak ada Sales Order aktif saat ini.</p>
+          <p>{{ monitorMonthFilter ? 'Tidak ada SO dengan Tgl. Kirim pada bulan tersebut.' : 'Tidak ada Sales Order aktif saat ini.' }}</p>
         </div>
 
         <!-- Table -->
@@ -86,7 +109,7 @@
               </tr>
             </thead>
             <tbody>
-              <template v-for="(so, soIndex) in monitoringData" :key="so.so_id">
+              <template v-for="(so, soIndex) in filteredMonitoringData" :key="so.so_id">
                 <tr
                   v-for="(item, itemIndex) in so.items"
                   :key="`${so.so_id}-${item.item_id}`"
@@ -238,12 +261,14 @@
         </div>
 
         <!-- Footer Summary -->
-        <div v-if="monitoringData.length > 0" class="widget-footer">
+        <div v-if="filteredMonitoringData.length > 0" class="widget-footer">
           <div class="summary-left">
             <span class="summary-icon">📊</span>
             <span class="summary-text">
-              Menampilkan <strong>{{ monitoringData.length }}</strong> item dari {{ totalSO }} SO
-              aktif
+              Menampilkan <strong>{{ filteredMonitoringData.length }}</strong> SO
+              <template v-if="monitorMonthFilter">
+                · bulan {{ monthName(monitorMonthFilter) }} {{ monitorYearFilter }}
+              </template>
             </span>
           </div>
           <div class="summary-stats">
@@ -377,6 +402,40 @@ const monitoringData = ref([])
 const isLoading = ref(false)
 const totalSO = ref(0)
 
+// Monitoring filter state
+const currentYear = new Date().getFullYear()
+const monitorMonthFilter = ref('')
+const monitorYearFilter  = ref(String(currentYear))
+const monitorYearOptions = [currentYear - 1, currentYear, currentYear + 1]
+
+// Backend returns delivery_date as "dd/mm/yyyy" — parse accordingly
+const parseDeliveryDate = (str) => {
+  if (!str || str === '-') return null
+  const parts = str.split('/')
+  if (parts.length === 3) {
+    return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]))
+  }
+  return new Date(str)
+}
+
+const filteredMonitoringData = computed(() => {
+  if (!monitorMonthFilter.value) return monitoringData.value
+  const month = parseInt(monitorMonthFilter.value)
+  const year  = monitorYearFilter.value ? parseInt(monitorYearFilter.value) : null
+  return monitoringData.value.filter((so) => {
+    return so.items?.some((item) => {
+      const d = parseDeliveryDate(item.delivery_date)
+      if (!d || isNaN(d)) return false
+      const matchMonth = d.getMonth() + 1 === month
+      const matchYear  = year ? d.getFullYear() === year : true
+      return matchMonth && matchYear
+    })
+  })
+})
+
+const MONTH_NAMES = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
+const monthName = (m) => MONTH_NAMES[parseInt(m)] || ''
+
 // Sales Order widget state
 const allSalesOrders = ref([])
 const isLoadingSO = ref(false)
@@ -480,9 +539,7 @@ const fetchMonitoringData = async () => {
   isLoading.value = true
 
   try {
-    const response = await axios.get('/production-monitoring', {
-      params: { limit: 10 },
-    })
+    const response = await axios.get('/production-monitoring')
 
     if (response.data.success) {
       monitoringData.value = response.data.data
@@ -1283,6 +1340,55 @@ onMounted(() => {
   margin-top: 28px;
 }
 
+/* ============================================
+   MONITOR FILTER BAR
+   ============================================ */
+.monitor-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.monitor-month-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.monitor-month-select,
+.monitor-year-select {
+  padding: 7px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  transition: var(--transition-base);
+}
+
+.monitor-month-select { min-width: 130px; }
+.monitor-year-select  { min-width: 80px; }
+
+.monitor-month-select:focus,
+.monitor-year-select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* ============================================
+   SO PRINT WIDGET
+   ============================================ */
 .so-search-box {
   display: flex;
   align-items: center;
@@ -1293,7 +1399,7 @@ onMounted(() => {
   border: 1px solid #d1d5db;
   border-radius: 999px;
   font-size: 13px;
-  min-width: 240px;
+  min-width: 220px;
   outline: none;
   transition: var(--transition-base);
 }
