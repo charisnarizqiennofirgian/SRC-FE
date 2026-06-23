@@ -122,6 +122,39 @@
               </div>
             </div>
 
+            <!-- PRODUK YANG DIKERJAKAN -->
+            <div v-if="form.ref_po_id" class="form-group-modern" style="margin-bottom:1.25rem;">
+              <label class="form-label-modern">
+                Produk yang Dikerjakan <span class="required-star">*</span>
+              </label>
+              <vue-select
+                v-model="form.production_order_detail_id"
+                :options="poDetailItems"
+                :reduce="(d) => d.id"
+                label="label"
+                placeholder="🔍 Pilih produk..."
+                :clearable="true"
+                class="vue-select-po"
+              >
+                <template #option="d">
+                  <div class="detail-option">
+                    <span class="detail-option-name">{{ d.item_name }}</span>
+                    <span class="detail-option-code">{{ d.item_code }}</span>
+                    <span :class="['detail-option-badge', d.mesin_done ? 'badge-done' : 'badge-pending']">
+                      {{ d.mesin_done ? '✓ Sudah' : '○ Belum' }}
+                    </span>
+                  </div>
+                </template>
+                <template #selected-option="d">
+                  <span>{{ d.item_name }}</span>
+                  <span v-if="d.mesin_done" class="badge-done-inline">✓</span>
+                </template>
+              </vue-select>
+              <p v-if="poDetailItems.length > 0" class="detail-hint">
+                {{ poDetailItems.filter(d => d.mesin_done).length }} / {{ poDetailItems.length }} produk sudah proses Mesin
+              </p>
+            </div>
+
             <!-- Info PO -->
             <div v-if="poInfo.buyer_name" class="po-selected-info">
               <span class="po-info-icon">👤</span>
@@ -340,6 +373,7 @@ const machines         = ref([])
 const s4sItems         = ref([])
 const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
+const poDetailItems    = ref([])
 
 const newLine = () => ({
   local_id:        Date.now() + Math.random(),
@@ -354,11 +388,12 @@ const newLine = () => ({
 })
 
 const form = reactive({
-  date:                  new Date().toISOString().slice(0, 10),
-  estimated_finish_date: '',
-  ref_po_id:             null,
-  machine_id:            null,
-  notes:                 '',
+  date:                        new Date().toISOString().slice(0, 10),
+  estimated_finish_date:       '',
+  ref_po_id:                   null,
+  production_order_detail_id:  null,
+  machine_id:                  null,
+  notes:                       '',
   lines: [newLine()],
 })
 
@@ -400,23 +435,33 @@ const fetchInitialData = async () => {
 }
 
 const handlePoChange = async (opt) => {
-  poInfo.value    = { buyer_name: null, so_number: null }
-  poTargets.value = []
+  poInfo.value                      = { buyer_name: null, so_number: null }
+  poTargets.value                   = []
+  poDetailItems.value               = []
+  form.production_order_detail_id   = null
   if (!opt) return
   try {
-    const res  = await apiClient.get(`/production-orders/${opt.id}`)
-    const data = res.data.data || {}
+    const [poRes, detailRes] = await Promise.all([
+      apiClient.get(`/production-orders/${opt.id}`),
+      apiClient.get(`/operator-mesin/po-detail-items/${opt.id}`),
+    ])
+    const data = poRes.data.data || {}
     poInfo.value = {
       buyer_name: data.sales_order?.buyer_name || opt.buyer_name || null,
       so_number:  data.sales_order?.so_number  || opt.so_number  || null,
     }
     poTargets.value = data.targets || []
+
+    const details = detailRes.data.data || []
+    poDetailItems.value = details.map((d) => ({ ...d, label: d.item_name }))
   } catch (e) { console.error(e) }
 }
 
 const handlePoDeselect = () => {
-  poInfo.value    = { buyer_name: null, so_number: null }
-  poTargets.value = []
+  poInfo.value                    = { buyer_name: null, so_number: null }
+  poTargets.value                 = []
+  poDetailItems.value             = []
+  form.production_order_detail_id = null
 }
 
 const onS4sItemSelected = (lineIdx, opt) => {
@@ -441,7 +486,15 @@ const removeLine = (i) => form.lines.splice(i, 1)
 // === TANDAI SELESAI ===
 const tandaiSelesai = async () => {
   if (!form.ref_po_id) return
-  if (!confirm('Tandai PO ini selesai proses Mesin? PO akan lanjut ke Assembling.')) return
+
+  const pending = poDetailItems.value.filter((d) => !d.mesin_done)
+  if (pending.length > 0) {
+    const names = pending.map((d) => d.item_name).join(', ')
+    showError('Belum Selesai', `Produk berikut belum selesai proses Mesin: ${names}`)
+    return
+  }
+
+  if (!confirm('Semua produk sudah selesai proses Mesin. Lanjut ke Assembling?')) return
 
   isMarkingDone.value = true
   try {
@@ -449,7 +502,15 @@ const tandaiSelesai = async () => {
     showSuccess('Selesai', 'PO berhasil ditandai selesai proses Mesin, lanjut ke Assembling')
     router.push({ name: 'AssemblingView' })
   } catch (error) {
-    showError('Gagal', error.response?.data?.message || 'Gagal menandai selesai')
+    const msg = error.response?.data?.message || 'Gagal menandai selesai'
+    showError('Gagal', msg)
+    // Refresh status
+    if (form.ref_po_id) {
+      try {
+        const res = await apiClient.get(`/operator-mesin/po-detail-items/${form.ref_po_id}`)
+        poDetailItems.value = (res.data.data || []).map((d) => ({ ...d, label: d.item_name }))
+      } catch (_) {}
+    }
   } finally {
     isMarkingDone.value = false
   }
@@ -457,8 +518,9 @@ const tandaiSelesai = async () => {
 
 // === SUBMIT ===
 const handleSubmit = async () => {
-  if (!form.ref_po_id)  { showError('Validasi', 'Production Order wajib dipilih'); return }
-  if (!form.machine_id) { showError('Validasi', 'Mesin wajib dipilih'); return }
+  if (!form.ref_po_id)                   { showError('Validasi', 'Production Order wajib dipilih'); return }
+  if (!form.production_order_detail_id)  { showError('Validasi', 'Produk yang dikerjakan wajib dipilih'); return }
+  if (!form.machine_id)                  { showError('Validasi', 'Mesin wajib dipilih'); return }
 
   const validLines = form.lines.filter((l) => l.input_item_id && l.input_qty > 0 && l.output_item_id && l.output_qty > 0)
   if (validLines.length === 0) { showError('Validasi', 'Minimal satu baris Komponen → Output wajib diisi'); return }
@@ -473,10 +535,11 @@ const handleSubmit = async () => {
   isSubmitting.value = true
   try {
     const payload = {
-      date:       form.date,
-      ref_po_id:  Number(form.ref_po_id),
-      machine_id: Number(form.machine_id),
-      notes:      form.notes || null,
+      date:                       form.date,
+      ref_po_id:                  Number(form.ref_po_id),
+      production_order_detail_id: Number(form.production_order_detail_id),
+      machine_id:                 Number(form.machine_id),
+      notes:                      form.notes || null,
       lines: validLines.map((l) => ({
         input_item_id:  Number(l.input_item_id),
         input_qty:      Number(l.input_qty),
@@ -490,12 +553,14 @@ const handleSubmit = async () => {
     await apiClient.post('/operator-mesin/store', payload)
     showSuccess('Sukses', 'Proses Mesin berhasil dicatat')
 
-    form.ref_po_id  = null
-    form.machine_id = null
-    form.notes      = ''
-    form.lines      = [newLine()]
-    poInfo.value    = { buyer_name: null, so_number: null }
-    poTargets.value = []
+    form.ref_po_id                   = null
+    form.production_order_detail_id  = null
+    form.machine_id                  = null
+    form.notes                       = ''
+    form.lines                       = [newLine()]
+    poInfo.value                     = { buyer_name: null, so_number: null }
+    poTargets.value                  = []
+    poDetailItems.value              = []
   } catch (error) {
     const message =
       error.response?.data?.message ||
@@ -629,6 +694,16 @@ onMounted(fetchInitialData)
 .item-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
 .item-option-produk { font-size: 0.78rem; color: #2563eb; font-weight: 600; }
 .item-option-stock { font-size: 0.78rem; color: #6b7280; }
+
+/* Detail item dropdown */
+.detail-option { display: flex; align-items: center; gap: 0.5rem; padding: 6px 12px; flex-wrap: wrap; }
+.detail-option-name { font-size: 0.9rem; font-weight: 600; color: #111827; flex: 1; }
+.detail-option-code { font-size: 0.78rem; color: #6b7280; }
+.detail-option-badge { font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; flex-shrink: 0; }
+.badge-done { background: #dcfce7; color: #15803d; }
+.badge-pending { background: #f3f4f6; color: #6b7280; }
+.badge-done-inline { font-size: 0.75rem; font-weight: 700; color: #15803d; margin-left: 4px; }
+.detail-hint { font-size: 0.78rem; color: #6b7280; margin: 4px 0 0; }
 
 .output-item-display { display: flex; align-items: center; min-height: 54px; padding: 0.9rem 1.25rem; border: 2.5px solid #bfdbfe; border-radius: 12px; background: #eff6ff; }
 .output-item-name { font-size: 0.95rem; font-weight: 600; color: #1e40af; }
