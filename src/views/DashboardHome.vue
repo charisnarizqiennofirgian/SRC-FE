@@ -96,8 +96,8 @@
                 <th class="col-status stage-sanwil">Sawmill</th>
                 <th class="col-status stage-kd">KD</th>
                 <th class="col-status stage-pembahanan">Pembahanan</th>
-                <th class="col-status stage-moulding">Moulding</th>
-                <th class="col-status stage-mesin">Mesin</th>
+                <th class="col-num stage-moulding">Moulding</th>
+                <th class="col-num stage-mesin">Mesin</th>
                 <!-- Hilir -->
                 <th class="col-num stage-ruskomp">Rustik Komp</th>
                 <th class="col-num stage-assembling">Assembling</th>
@@ -171,14 +171,14 @@
                       {{ getStatusIcon(item.status_pembahanan) }}
                     </span>
                   </td>
-                  <td class="col-status stage-moulding">
-                    <span :class="['status-indicator', getStatusClass(item.status_moulding)]">
-                      {{ getStatusIcon(item.status_moulding) }}
+                  <td class="col-num stage-moulding">
+                    <span :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value']">
+                      {{ item.qty_moulding > 0 ? formatNumber(item.qty_moulding) : '-' }}
                     </span>
                   </td>
-                  <td class="col-status stage-mesin">
-                    <span :class="['status-indicator', getStatusClass(item.status_mesin)]">
-                      {{ getStatusIcon(item.status_mesin) }}
+                  <td class="col-num stage-mesin">
+                    <span :class="['qty-value', item.qty_mesin > 0 ? 'has-value' : 'no-value']">
+                      {{ item.qty_mesin > 0 ? formatNumber(item.qty_mesin) : '-' }}
                     </span>
                   </td>
 
@@ -929,10 +929,18 @@ onMounted(() => {
    ============================================ */
 .stage-sanwil,
 .stage-kd,
-.stage-pembahanan,
-.stage-moulding,
-.stage-mesin {
+.stage-pembahanan {
   background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%) !important;
+}
+
+.stage-moulding {
+  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%) !important;
+  color: #1e40af !important;
+}
+
+.stage-mesin {
+  background: linear-gradient(180deg, #ecfeff 0%, #cffafe 100%) !important;
+  color: #0e7490 !important;
 }
 
 .stage-assembling {

@@ -153,8 +153,8 @@
                 <th class="th-stage stage-hulu">Sawmill</th>
                 <th class="th-stage stage-hulu">KD</th>
                 <th class="th-stage stage-hulu">Pembahanan</th>
-                <th class="th-stage stage-hulu">Moulding</th>
-                <th class="th-stage stage-hulu">Mesin</th>
+                <th class="th-stage stage-moulding">Moulding</th>
+                <th class="th-stage stage-mesin">Mesin</th>
                 <!-- Hilir -->
                 <th class="th-stage stage-ruskomp">Rustik Komp</th>
                 <th class="th-stage stage-assembling">Assembling</th>
@@ -237,14 +237,14 @@
                       {{ getStatusIcon(item.status_pembahanan) }}
                     </span>
                   </td>
-                  <td class="td-status stage-hulu">
-                    <span :class="['status-indicator', getStatusClass(item.status_moulding)]">
-                      {{ getStatusIcon(item.status_moulding) }}
+                  <td class="td-qty stage-moulding">
+                    <span :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value']">
+                      {{ item.qty_moulding > 0 ? formatNumber(item.qty_moulding) : '-' }}
                     </span>
                   </td>
-                  <td class="td-status stage-hulu">
-                    <span :class="['status-indicator', getStatusClass(item.status_mesin)]">
-                      {{ getStatusIcon(item.status_mesin) }}
+                  <td class="td-qty stage-mesin">
+                    <span :class="['qty-value', item.qty_mesin > 0 ? 'has-value' : 'no-value']">
+                      {{ item.qty_mesin > 0 ? formatNumber(item.qty_mesin) : '-' }}
                     </span>
                   </td>
 
@@ -2112,6 +2112,16 @@ const getStageClass = (type) => {
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 700;
+}
+
+.stage-moulding {
+  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%) !important;
+  color: #1e40af !important;
+}
+
+.stage-mesin {
+  background: linear-gradient(180deg, #ecfeff 0%, #cffafe 100%) !important;
+  color: #0e7490 !important;
 }
 
 .stage-ruskomp {
