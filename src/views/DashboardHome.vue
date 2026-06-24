@@ -285,6 +285,182 @@
         </div>
       </div>
 
+    <!-- Widget: Produksi Sampel -->
+    <div class="widget-card sampel-widget">
+      <div class="widget-header">
+        <div class="widget-title">
+          <span class="widget-icon">🧪</span>
+          <h2>Monitoring Produksi Sampel</h2>
+        </div>
+        <div class="monitor-filter-bar">
+          <div class="monitor-month-filter">
+            <span class="filter-label">📅 Tgl. Kirim:</span>
+            <select v-model="sampelMonthFilter" class="monitor-month-select sampel-select">
+              <option value="">Semua Bulan</option>
+              <option value="1">Januari</option>
+              <option value="2">Februari</option>
+              <option value="3">Maret</option>
+              <option value="4">April</option>
+              <option value="5">Mei</option>
+              <option value="6">Juni</option>
+              <option value="7">Juli</option>
+              <option value="8">Agustus</option>
+              <option value="9">September</option>
+              <option value="10">Oktober</option>
+              <option value="11">November</option>
+              <option value="12">Desember</option>
+            </select>
+            <select v-model="sampelYearFilter" class="monitor-year-select sampel-select">
+              <option v-for="y in monitorYearOptions" :key="y" :value="y">{{ y }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="legend-bar sampel-legend">
+        <span class="legend-title">Keterangan:</span>
+        <span class="legend-item"><span class="status-badge badge-waiting">🔴</span> Waiting</span>
+        <span class="legend-item"><span class="status-badge badge-progress">🟡</span> In Progress</span>
+        <span class="legend-item"><span class="status-badge badge-done">✅</span> Done</span>
+        <span class="legend-item"><span class="status-badge" style="background:#f3f4f6">⏭️</span> Skip</span>
+      </div>
+
+      <div v-if="isLoadingSampel" class="loading-state">
+        <div class="spinner sampel-spinner"></div>
+        <p>Memuat data produksi sampel...</p>
+      </div>
+
+      <div v-else-if="filteredSampelData.length === 0" class="empty-state">
+        <span class="empty-icon">🧪</span>
+        <p>{{ sampelMonthFilter ? 'Tidak ada produksi sampel pada bulan tersebut.' : 'Belum ada produksi sampel aktif.' }}</p>
+      </div>
+
+      <div v-else class="table-wrapper">
+        <table class="sampel-table">
+          <thead>
+            <tr>
+              <th class="col-so" rowspan="2">No. SO & Buyer</th>
+              <th class="col-item" rowspan="2">Item</th>
+              <th class="col-num" rowspan="2">Target</th>
+              <th class="col-tgl-kirim" rowspan="2">Tgl. Kirim</th>
+              <th colspan="3" class="zone-header zone-hulu"><span class="zone-icon">🌲</span> Persiapan Bahan</th>
+              <th colspan="4" class="zone-header sampel-zone-hilir"><span class="zone-icon">⚙️</span> Produksi Sampel</th>
+              <th class="col-num" rowspan="2">Sisa</th>
+            </tr>
+            <tr>
+              <th class="col-status stage-sanwil">Sawmill</th>
+              <th class="col-status stage-kd">KD</th>
+              <th class="col-status stage-pembahanan">Pembahanan</th>
+              <th class="col-num stage-moulding">Moulding</th>
+              <th class="col-num sampel-stage-proto">Prototype</th>
+              <th class="col-num sampel-stage-sanding">Sanding</th>
+              <th class="col-num sampel-stage-packing">Packing</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template v-for="(po, poIndex) in filteredSampelData" :key="po.po_id">
+              <tr
+                v-for="(item, itemIndex) in po.items"
+                :key="`${po.po_id}-${item.item_id}`"
+                :class="{ 'row-done': item.is_done, 'row-even': poIndex % 2 === 0 }"
+              >
+                <td v-if="itemIndex === 0" :rowspan="po.items.length" class="col-so td-so-group">
+                  <div class="so-wrapper">
+                    <span class="so-number">{{ po.so_number }}</span>
+                    <span class="so-buyer">{{ po.buyer_name }}</span>
+                    <span class="sampel-po-badge">{{ po.po_number }}</span>
+                    <span class="so-date">{{ po.so_date }}</span>
+                    <span v-if="po.is_done" class="so-done-badge">✓ DONE</span>
+                  </div>
+                </td>
+                <td class="col-item">
+                  <div class="item-wrapper">
+                    <div class="item-name">{{ item.item_name }}</div>
+                    <div class="item-code">{{ item.item_code }}</div>
+                  </div>
+                </td>
+                <td class="col-num">
+                  <span class="target-value">{{ formatNumber(item.target) }}</span>
+                </td>
+                <td class="col-tgl-kirim">
+                  <span class="tgl-kirim-value">{{ item.delivery_date || '-' }}</span>
+                </td>
+                <!-- Hulu -->
+                <td class="col-status stage-sanwil">
+                  <span :class="['status-indicator', getStatusClass(item.status_sanwil)]">
+                    {{ getStatusIcon(item.status_sanwil) }}
+                  </span>
+                </td>
+                <td class="col-status stage-kd">
+                  <span :class="['status-indicator', getStatusClass(item.status_kd)]">
+                    {{ getStatusIcon(item.status_kd) }}
+                  </span>
+                </td>
+                <td class="col-status stage-pembahanan">
+                  <span :class="['status-indicator', getStatusClass(item.status_pembahanan)]">
+                    {{ getStatusIcon(item.status_pembahanan) }}
+                  </span>
+                </td>
+                <!-- Produksi Sampel -->
+                <td class="col-num stage-moulding">
+                  <span :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value']">
+                    {{ item.qty_moulding > 0 ? formatNumber(item.qty_moulding) : '-' }}
+                  </span>
+                </td>
+                <td class="col-num sampel-stage-proto">
+                  <span :class="['qty-value', item.qty_prototype > 0 ? 'has-value' : 'no-value']">
+                    {{ item.qty_prototype > 0 ? formatNumber(item.qty_prototype) : '-' }}
+                  </span>
+                </td>
+                <td class="col-num sampel-stage-sanding">
+                  <span :class="['qty-value', item.qty_sanding > 0 ? 'has-value' : 'no-value']">
+                    {{ item.qty_sanding > 0 ? formatNumber(item.qty_sanding) : '-' }}
+                  </span>
+                </td>
+                <td class="col-num sampel-stage-packing">
+                  <span :class="['qty-value', item.qty_packing > 0 ? 'has-value' : 'no-value']">
+                    {{ item.qty_packing > 0 ? formatNumber(item.qty_packing) : '-' }}
+                  </span>
+                </td>
+                <!-- Sisa -->
+                <td class="col-num">
+                  <span v-if="item.is_done" class="completion-badge">
+                    <span class="badge-icon">✓</span> DONE
+                  </span>
+                  <span v-else class="sisa-value">{{ formatNumber(item.sisa) }}</span>
+                </td>
+              </tr>
+              <tr class="so-separator"><td colspan="12"></td></tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-if="filteredSampelData.length > 0" class="widget-footer">
+        <div class="summary-left">
+          <span class="summary-icon">🧪</span>
+          <span class="summary-text">
+            <strong>{{ filteredSampelData.length }}</strong> PO Sampel
+            <template v-if="sampelMonthFilter">
+              · bulan {{ monthName(sampelMonthFilter) }} {{ sampelYearFilter }}
+            </template>
+          </span>
+        </div>
+        <div class="summary-stats">
+          <span class="stat-item stat-done">
+            <span class="stat-dot"></span>
+            {{ sampelDoneCount }} selesai
+          </span>
+          <span class="stat-divider">•</span>
+          <span class="stat-item stat-pending">
+            <span class="stat-dot"></span>
+            {{ sampelPendingCount }} berjalan
+          </span>
+        </div>
+      </div>
+    </div>
+
     <!-- Widget: Sales Order Cetak (PPIC) -->
     <div class="widget-card so-print-widget">
       <div class="widget-header">
@@ -435,6 +611,44 @@ const filteredMonitoringData = computed(() => {
 
 const MONTH_NAMES = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
 const monthName = (m) => MONTH_NAMES[parseInt(m)] || ''
+
+// Produksi Sampel widget state
+const sampelData = ref([])
+const isLoadingSampel = ref(false)
+const sampelMonthFilter = ref('')
+const sampelYearFilter = ref(String(currentYear))
+
+const filteredSampelData = computed(() => {
+  if (!sampelMonthFilter.value) return sampelData.value
+  const month = parseInt(sampelMonthFilter.value)
+  const year = sampelYearFilter.value ? parseInt(sampelYearFilter.value) : null
+  return sampelData.value.filter((po) => {
+    return po.items?.some((item) => {
+      const d = parseDeliveryDate(item.delivery_date)
+      if (!d || isNaN(d)) return false
+      const matchMonth = d.getMonth() + 1 === month
+      const matchYear = year ? d.getFullYear() === year : true
+      return matchMonth && matchYear
+    })
+  })
+})
+
+const sampelDoneCount = computed(() => sampelData.value.filter((po) => po.is_done).length)
+const sampelPendingCount = computed(() => sampelData.value.filter((po) => !po.is_done).length)
+
+const fetchSampelData = async () => {
+  isLoadingSampel.value = true
+  try {
+    const response = await axios.get('/production-monitoring/sample')
+    if (response.data.success) {
+      sampelData.value = response.data.data
+    }
+  } catch (error) {
+    console.error('Error fetching sample production data:', error)
+  } finally {
+    isLoadingSampel.value = false
+  }
+}
 
 // Sales Order widget state
 const allSalesOrders = ref([])
@@ -604,6 +818,7 @@ onMounted(() => {
     }
   }
   fetchMonitoringData()
+  fetchSampelData()
   fetchSalesOrders()
 })
 </script>
@@ -1339,6 +1554,110 @@ onMounted(() => {
   padding: 4px 0 !important;
   background: #f3f4f6 !important;
   border: none !important;
+}
+
+/* ============================================
+   PRODUKSI SAMPEL WIDGET
+   ============================================ */
+.sampel-widget {
+  margin-top: 28px;
+}
+
+.sampel-spinner {
+  border-top-color: #7c3aed;
+}
+
+.sampel-select {
+  accent-color: #7c3aed;
+}
+.sampel-select:focus {
+  border-color: #7c3aed !important;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15) !important;
+}
+
+.sampel-legend {
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%) !important;
+  border-bottom-color: #8b5cf6 !important;
+}
+
+.sampel-legend .legend-title {
+  color: #4c1d95 !important;
+}
+
+.sampel-table {
+  width: 100%;
+  min-width: 1100px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.sampel-table th,
+.sampel-table td {
+  padding: 14px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-gray-200);
+  transition: var(--transition-base);
+}
+
+.sampel-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.sampel-table th {
+  background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
+  font-weight: 700;
+  font-size: 11px;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.sampel-table td {
+  font-size: 13px;
+  color: #1f2937;
+  background: white;
+}
+
+.sampel-table tbody tr:hover {
+  background: #faf5ff;
+}
+
+.sampel-zone-hilir {
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%) !important;
+  color: #4c1d95 !important;
+  border-bottom-color: #8b5cf6 !important;
+}
+
+.sampel-stage-proto {
+  background: linear-gradient(180deg, #f5f3ff 0%, #ede9fe 100%) !important;
+  color: #5b21b6 !important;
+}
+
+.sampel-stage-sanding {
+  background: linear-gradient(180deg, #fefce8 0%, #fef9c3 100%) !important;
+  color: #92400e !important;
+}
+
+.sampel-stage-packing {
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%) !important;
+  color: #065f46 !important;
+}
+
+.sampel-po-badge {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6d28d9;
+  background: #ede9fe;
+  border: 1px solid #c4b5fd;
+  padding: 2px 7px;
+  border-radius: 4px;
 }
 
 /* ============================================
