@@ -336,6 +336,31 @@
             </tr>
           </tbody>
         </table>
+
+        <div v-if="historyMeta.last_page > 1" class="history-pagination">
+          <span class="pagination-info">
+            {{ historyMeta.from }}–{{ historyMeta.to }} dari {{ historyMeta.total }} data
+          </span>
+          <div class="pagination-btns">
+            <button
+              class="page-btn"
+              :disabled="historyPage === 1"
+              @click="goHistoryPage(historyPage - 1)"
+            >← Prev</button>
+            <button
+              v-for="p in historyPages"
+              :key="p"
+              :class="['page-btn', { active: p === historyPage, dots: p === '...' }]"
+              :disabled="p === '...'"
+              @click="p !== '...' && goHistoryPage(p)"
+            >{{ p }}</button>
+            <button
+              class="page-btn"
+              :disabled="historyPage === historyMeta.last_page"
+              @click="goHistoryPage(historyPage + 1)"
+            >Next →</button>
+          </div>
+        </div>
       </div>
     </div>
   </DashboardLayout>
@@ -453,18 +478,50 @@ const fetchDivisions = async () => {
   }
 }
 
+const historyPage    = ref(1)
+const historyPerPage = 20
+const historyMeta    = ref({ total: 0, last_page: 1, from: 0, to: 0 })
+
 const fetchRecentLogs = async () => {
   try {
     const response = await axios.get('/material-usages', {
-      params: { per_page: 10 },
+      params: { per_page: historyPerPage, page: historyPage.value },
     })
     if (response.data.success) {
-      recentLogs.value = response.data.data.data || []
+      const d = response.data.data
+      recentLogs.value       = d.data || []
+      historyMeta.value      = { total: d.total, last_page: d.last_page, from: d.from, to: d.to }
     }
   } catch (error) {
     console.error('Error fetching logs:', error)
   }
 }
+
+const goHistoryPage = (p) => {
+  if (p < 1 || p > historyMeta.value.last_page) return
+  historyPage.value = p
+  fetchRecentLogs()
+}
+
+const historyPages = computed(() => {
+  const pages = []
+  const last  = historyMeta.value.last_page
+  const cur   = historyPage.value
+  if (last <= 7) {
+    for (let i = 1; i <= last; i++) pages.push(i)
+  } else if (cur <= 4) {
+    for (let i = 1; i <= 5; i++) pages.push(i)
+    pages.push('...'); pages.push(last)
+  } else if (cur >= last - 3) {
+    pages.push(1); pages.push('...')
+    for (let i = last - 4; i <= last; i++) pages.push(i)
+  } else {
+    pages.push(1); pages.push('...')
+    for (let i = cur - 1; i <= cur + 1; i++) pages.push(i)
+    pages.push('...'); pages.push(last)
+  }
+  return pages
+})
 
 const onSearchInput = () => {
   showDropdown.value = true
@@ -1428,6 +1485,61 @@ onMounted(() => {
 .cell-division {
   color: #6b7280;
   font-weight: 600;
+}
+
+.history-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #f3f4f6;
+  background: #f9fafb;
+}
+
+.pagination-info {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.pagination-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.page-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #374151;
+  transition: all 0.15s ease;
+}
+
+.page-btn:hover:not(:disabled):not(.dots) {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #92400e;
+}
+
+.page-btn.active {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: white;
+  border-color: #f59e0b;
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.page-btn.dots {
+  cursor: default;
+  border: none;
+  background: none;
 }
 
 @media (max-width: 900px) {

@@ -13,10 +13,10 @@
             </p>
           </div>
         </div>
-        <router-link to="/admin/pembelian" class="btn-back">
+        <button class="btn-back" @click="router.back()">
           <span class="btn-icon">←</span>
           <span>Kembali ke Daftar</span>
-        </router-link>
+        </button>
       </div>
     </div>
 
@@ -611,6 +611,8 @@ onMounted(async () => {
   font-weight: 700;
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: none;
+  cursor: pointer;
 }
 
 .btn-back:hover {

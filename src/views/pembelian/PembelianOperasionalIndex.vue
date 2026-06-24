@@ -169,19 +169,32 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import PaginationComponent from '../../components/BasePagination.vue'
 
-const daftarPesanan = ref([])
-const searchQuery = ref('')
-const sourceFilter = ref('')
+const route  = useRoute()
+const router = useRouter()
 
-const halamanSekarang = ref(1)
-const perHalaman = ref(15)
-const totalHalaman = ref(1)
-const totalItem = ref(0)
+const daftarPesanan = ref([])
+const searchQuery   = ref('')
+const sourceFilter  = ref(route.query.source || '')
+
+const halamanSekarang = ref(Number(route.query.page) || 1)
+const perHalaman      = ref(Number(route.query.per_page) || 15)
+const totalHalaman    = ref(1)
+const totalItem       = ref(0)
+
+const syncQuery = () => {
+  router.replace({
+    query: {
+      ...(sourceFilter.value   ? { source: sourceFilter.value }             : {}),
+      ...(halamanSekarang.value > 1 ? { page: halamanSekarang.value }       : {}),
+      ...(perHalaman.value !== 15   ? { per_page: perHalaman.value }        : {}),
+    },
+  })
+}
 
 const fetchDaftarPesanan = async () => {
   try {
@@ -204,16 +217,19 @@ const fetchDaftarPesanan = async () => {
 
 const gantiHalaman = (page) => {
   halamanSekarang.value = page
+  syncQuery()
   fetchDaftarPesanan()
 }
 
 const handlePerPageChange = () => {
   halamanSekarang.value = 1
+  syncQuery()
   fetchDaftarPesanan()
 }
 
 const handleFilterChange = () => {
   halamanSekarang.value = 1
+  syncQuery()
   fetchDaftarPesanan()
 }
 
