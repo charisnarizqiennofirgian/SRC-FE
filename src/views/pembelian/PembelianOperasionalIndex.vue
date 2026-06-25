@@ -107,7 +107,7 @@
                 <span class="total-amount">{{ formatRupiah(pesanan.grand_total) }}</span>
               </td>
               <td class="td-status">
-                <span :class="['status-badge', `status-${pesanan.status.toLowerCase()}`]">
+                <span :class="['status-badge', `status-${pesanan.status.toLowerCase().replace(/\s+/g, '-')}`]">
                   {{ pesanan.status }}
                 </span>
               </td>
@@ -691,6 +691,12 @@ const formatRupiah = (angka) => {
   background: linear-gradient(135deg, #d1fae5, #a7f3d0);
   color: #065f46;
   border: 2px solid #34d399;
+}
+
+.status-diterima-sebagian {
+  background: linear-gradient(135deg, #fef9c3, #fef08a);
+  color: #854d0e;
+  border: 2px solid #facc15;
 }
 
 .td-action {
