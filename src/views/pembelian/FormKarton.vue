@@ -546,13 +546,6 @@ const initializeChoices = async () => {
   })
 }
 
-watch(
-  () => form.details.length,
-  () => {
-    initializeChoices()
-  },
-)
-
 const tambahBarang = async () => {
   form.details.push({
     item_id: '',
@@ -572,9 +565,11 @@ const tambahBarang = async () => {
   initializeChoices()
 }
 
-const hapusBarang = (index) => {
+const hapusBarang = async (index) => {
   if (form.details.length > 1) {
     form.details.splice(index, 1)
+    await nextTick()
+    initializeChoices()
   }
 }
 
@@ -1761,7 +1756,7 @@ textarea.form-control {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 10001;
   backdrop-filter: blur(4px);
 }
 .modal-container-barang {

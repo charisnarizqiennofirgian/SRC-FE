@@ -475,6 +475,7 @@ import DashboardLayout from '../../components/DashboardLayout.vue'
 import { useToast } from 'vue-toastification'
 import Choices from 'choices.js'
 import 'choices.js/public/assets/styles/choices.min.css'
+import { debounce } from 'lodash-es'
 
 const router = useRouter()
 const route = useRoute()
@@ -600,13 +601,15 @@ const initChoicesForIndex = async (index, item) => {
 
 const initAllChoices = async () => {
   await nextTick()
-  await initSupplierChoice()
-  for (let i = 0; i < form.details.length; i++) await initChoicesForIndex(i, form.details[i])
+  await Promise.all([
+    initSupplierChoice(),
+    ...form.details.map((item, i) => initChoicesForIndex(i, item)),
+  ])
 }
 
 watch(
   () => form.details,
-  (newDetails) => {
+  debounce((newDetails) => {
     newDetails.forEach((item) => {
       // Auto-fill saat user pilih barang
       if (item.item_id) {
@@ -644,7 +647,7 @@ watch(
             : 0
       }
     })
-  },
+  }, 100),
   { deep: true },
 )
 
@@ -1743,7 +1746,7 @@ textarea.form-control {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 10001;
   backdrop-filter: blur(4px);
 }
 .modal-container-barang {
