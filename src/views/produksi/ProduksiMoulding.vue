@@ -501,24 +501,28 @@ const handlePoChange = async (opt) => {
   poDetailItems.value                = []
   form.production_order_detail_id    = null
   if (!opt) return
-  try {
-    const [poRes, detailRes] = await Promise.all([
-      apiClient.get(`/production-orders/${opt.id}`),
-      apiClient.get(`/produksi/moulding/po-detail-items/${opt.id}`),
-    ])
-    const data = poRes.data.data || {}
-    poInfo.value = {
-      buyer_name: data.sales_order?.buyer_name || opt.buyer_name || null,
-      so_number:  data.sales_order?.so_number  || opt.so_number  || null,
-    }
-    poTargets.value = data.targets || []
 
-    const details = detailRes.data.data || []
-    poDetailItems.value = details.map((d) => ({
-      ...d,
-      label: d.item_name,
-    }))
-  } catch (e) { console.error(e) }
+  const [poResult, detailResult] = await Promise.allSettled([
+    apiClient.get(`/production-orders/${opt.id}`),
+    apiClient.get(`/produksi/moulding/po-detail-items/${opt.id}`),
+  ])
+
+  const data = poResult.status === 'fulfilled' ? (poResult.value.data.data || {}) : {}
+  if (poResult.status === 'rejected') console.error('PO info gagal dimuat:', poResult.reason)
+
+  poInfo.value = {
+    buyer_name: data.sales_order?.buyer_name || opt.buyer_name || null,
+    so_number:  data.sales_order?.so_number  || opt.so_number  || null,
+  }
+  poTargets.value = data.targets || []
+
+  if (detailResult.status === 'fulfilled') {
+    const details = detailResult.value.data.data || []
+    poDetailItems.value = details.map((d) => ({ ...d, label: d.item_name }))
+  } else {
+    console.error('Detail produk gagal dimuat:', detailResult.reason)
+    showError('Error', 'Gagal memuat daftar produk untuk PO ini')
+  }
 }
 
 const handlePoDeselect = () => {
