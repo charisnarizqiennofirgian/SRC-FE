@@ -480,7 +480,7 @@ const komponenItemsForSelect = computed(() =>
 const fetchInitialData = async () => {
   try {
     const [poRes, rstRes, kompRes] = await Promise.all([
-      apiClient.get('/produksi/moulding/available-pos'),
+      apiClient.get('/produksi/moulding/available-pos', { params: { type: 'production' } }),
       apiClient.get('/produksi/moulding/rst-items'),
       apiClient.get('/stock-report', { params: { categories: 'Komponen', per_page: 9999 } }),
     ])

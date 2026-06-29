@@ -245,7 +245,7 @@
                         <div class="item-option">
                           <span class="item-option-code">{{ o.code }}</span>
                           <span class="item-option-name">{{ o.name }}</span>
-                          <span v-if="o.category" class="item-option-produk">📁 {{ o.category }}</span>
+                          <span v-if="o.nama_produk" class="item-option-produk">📦 {{ o.nama_produk }}</span>
                         </div>
                       </template>
                     </vue-select>
@@ -442,11 +442,14 @@ const rstItemsForSelect = computed(() =>
 
 const komponenItemsForSelect = computed(() =>
   komponenItems.value.map((i) => ({
-    id:       i.id,
-    code:     i.code,
-    name:     i.name,
-    category: i.category,
-    label:    `${i.code} - ${i.name}`,
+    id:          i.id,
+    code:        i.code,
+    name:        i.name,
+    nama_produk: i.nama_produk || '',
+    category:    i.category,
+    label:       i.nama_produk
+      ? `${i.code} - ${i.name} (${i.nama_produk})`
+      : `${i.code} - ${i.name}`,
   }))
 )
 
@@ -454,7 +457,7 @@ const komponenItemsForSelect = computed(() =>
 const fetchInitialData = async () => {
   try {
     const [poRes, rstRes, kompRes] = await Promise.all([
-      apiClient.get('/produksi/moulding/available-pos'),
+      apiClient.get('/produksi/moulding/available-pos', { params: { type: 'sample' } }),
       apiClient.get('/produksi/moulding/rst-items'),
       apiClient.get('/produksi/moulding/komponen-items'),
     ])
@@ -740,7 +743,7 @@ onMounted(fetchInitialData)
 .item-option { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; }
 .item-option-code { font-size: 0.82rem; font-weight: 700; color: #16a34a; }
 .item-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
-.item-option-produk { font-size: 0.78rem; color: #6b7280; font-weight: 600; }
+.item-option-produk { font-size: 0.78rem; color: #2563eb; font-weight: 600; }
 
 .detail-option { display: flex; align-items: center; gap: 0.5rem; padding: 6px 12px; flex-wrap: wrap; }
 .detail-option-name { font-size: 0.9rem; font-weight: 600; color: #111827; flex: 1; }
