@@ -513,7 +513,7 @@ const previewType = (dok) => {
 const bukaPreview = async (dok) => {
   modalPreview.value = { show: true, dok, url: null, type: previewType(dok), loading: true }
 
-  if (previewType(dok.tipe_file) === 'unsupported') {
+  if (modalPreview.value.type === 'unsupported') {
     modalPreview.value.loading = false
     return
   }
