@@ -86,7 +86,7 @@
                     title="Lihat Detail"
                   >🔍</router-link>
                   <router-link
-                    v-if="pr.status === 'draft'"
+                    v-if="pr.status === 'draft' || pr.status === 'submitted'"
                     :to="{ name: 'PurchaseRequestEdit', params: { id: pr.id } }"
                     class="btn-edit"
                     title="Edit"

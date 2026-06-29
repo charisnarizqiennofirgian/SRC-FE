@@ -252,6 +252,22 @@
                               <span>Harga Satuan akan diinput manual di tabel atas</span>
                             </div>
                           </template>
+
+                          <label class="spec-label spec-label-full">Keterangan</label>
+                          <input
+                            type="text"
+                            v-model="item.specifications.keterangan"
+                            placeholder="Contoh: Kayu kering, grade A, dll..."
+                            class="form-control-spec spec-keterangan"
+                          />
+
+                          <label class="spec-label spec-label-full">Peruntukan</label>
+                          <input
+                            type="text"
+                            v-model="item.specifications.peruntukan"
+                            placeholder="Contoh: KILT LOUNGE ARMCHAIR XL - Kaki Depan"
+                            class="form-control-spec spec-keterangan"
+                          />
                         </div>
                       </div>
                     </td>
@@ -535,6 +551,8 @@ const defaultKayuSpec = () => ({
   harga_kubikasi: null,
   kubikasi: 0,
   is_manual_price: false,
+  keterangan: '',
+  peruntukan: '',
 })
 
 const initSupplierChoice = async () => {
@@ -1307,6 +1325,12 @@ textarea.form-control {
   color: #78350f !important;
   font-weight: 800 !important;
   cursor: not-allowed;
+}
+.spec-label-full {
+  text-align: right;
+}
+.spec-keterangan {
+  grid-column: 2 / -1;
 }
 .manual-note {
   grid-column: 2 / span 3;

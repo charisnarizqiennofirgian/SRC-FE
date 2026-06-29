@@ -63,6 +63,13 @@
 
         <!-- ACTION BUTTONS -->
         <div class="card-actions">
+          <router-link
+            v-if="pr.status === 'draft' || pr.status === 'submitted'"
+            :to="{ name: 'PurchaseRequestEdit', params: { id: pr.id } }"
+            class="btn-edit-pr"
+          >
+            ✏️ Edit PR
+          </router-link>
           <button
             v-if="pr.status === 'draft'"
             @click="submitPR"
@@ -371,6 +378,8 @@ onMounted(async () => {
 .status-completed   { background: #d1fae5; color: #065f46; }
 .status-cancelled   { background: #fee2e2; color: #991b1b; }
 
+.btn-edit-pr { padding: 10px 20px; background: #fefce8; color: #854d0e; border: 2px solid #fde68a; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+.btn-edit-pr:hover { background: #fef9c3; border-color: #fbbf24; }
 .btn-submit-pr { padding: 10px 20px; background: #0369a1; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
 .btn-submit-pr:disabled { opacity: 0.6; cursor: not-allowed; }
 .btn-cancel-pr { padding: 10px 20px; background: #fee2e2; color: #dc2626; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }

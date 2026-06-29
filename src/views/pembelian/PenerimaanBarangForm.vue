@@ -159,10 +159,22 @@
                         <span>Terima Sekarang</span>
                       </div>
                     </th>
+                    <th v-if="isKayu" class="th-price">
+                      <div class="th-content">
+                        <span class="th-icon">💰</span>
+                        <span>Harga Satuan</span>
+                      </div>
+                    </th>
+                    <th v-if="isKayu" class="th-subtotal">
+                      <div class="th-content">
+                        <span class="th-icon">💵</span>
+                        <span>Subtotal</span>
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(item, index) in form.details" :key="item.item_id" class="data-row" :class="{ 'row-complete': item.quantity_remaining === 0 }">
+                  <tr v-for="(item, index) in form.details" :key="item.item_id" class="data-row" :class="{ 'row-complete': !isKayu && item.quantity_remaining === 0 }">
                     <td class="td-no">
                       <span class="row-number">{{ index + 1 }}</span>
                     </td>
@@ -184,16 +196,44 @@
                       </span>
                     </td>
                     <td class="td-received">
-                      <input
-                        v-if="item.quantity_remaining > 0"
-                        type="number"
-                        v-model="item.quantity_received"
-                        class="qty-input"
-                        min="0"
-                        :max="item.quantity_remaining"
-                        step="0.01"
-                      />
-                      <span v-else class="done-label">Lunas ✓</span>
+                      <template v-if="isKayu">
+                        <!-- Kayu: selalu bisa input, tidak ada batas max -->
+                        <input
+                          type="number"
+                          v-model="item.quantity_received"
+                          class="qty-input"
+                          min="0"
+                          step="0.01"
+                        />
+                      </template>
+                      <template v-else>
+                        <input
+                          v-if="item.quantity_remaining > 0"
+                          type="number"
+                          v-model="item.quantity_received"
+                          class="qty-input"
+                          min="0"
+                          :max="item.quantity_remaining"
+                          step="0.01"
+                        />
+                        <span v-else class="done-label">Lunas ✓</span>
+                      </template>
+                    </td>
+                    <td v-if="isKayu" class="td-price">
+                      <div class="input-price-wrapper">
+                        <span class="price-prefix">Rp</span>
+                        <input
+                          type="number"
+                          v-model.number="item.price"
+                          class="qty-input price-input"
+                          min="0"
+                          step="1"
+                          placeholder="0"
+                        />
+                      </div>
+                    </td>
+                    <td v-if="isKayu" class="td-subtotal">
+                      <span class="subtotal-value">{{ formatRupiah((item.quantity_received || 0) * (item.price || 0)) }}</span>
                     </td>
                   </tr>
                 </tbody>
@@ -235,7 +275,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import apiClient from '@/api/axios'
@@ -248,9 +288,10 @@ const toast = useToast()
 const loading = ref(true)
 const isSaving = ref(false)
 const error = ref(null)
-const po = ref({}) // Untuk menyimpan data PO asli
+const po = ref({})
 
-// Form data reaktif
+const isKayu = computed(() => po.value?.type === 'kayu')
+
 const form = ref({
   purchase_order_id: null,
   receipt_date: new Date().toISOString().slice(0, 10),
@@ -259,7 +300,6 @@ const form = ref({
   details: [],
 })
 
-// Dijalankan saat komponen dimuat
 onMounted(async () => {
   const po_id = route.params.po_id
   form.value.purchase_order_id = po_id
@@ -268,19 +308,21 @@ onMounted(async () => {
     const response = await apiClient.get(`/purchase-orders/${po_id}`)
     po.value = response.data.data
 
-    // Isi form.details dengan data dari PO, hitung sisa per item
     form.value.details = po.value.details.map((detail) => {
-      const ordered  = parseFloat(detail.quantity_ordered)
+      const ordered         = parseFloat(detail.quantity_ordered)
       const alreadyReceived = parseFloat(detail.quantity_received_total ?? 0)
-      const remaining = Math.max(0, ordered - alreadyReceived)
+      const remaining       = Math.max(0, ordered - alreadyReceived)
       return {
-        item_id: detail.item_id,
-        item_name: detail.item.name,
-        item_unit: detail.item.unit.name,
-        quantity_ordered: ordered,
+        item_id:                 detail.item_id,
+        item_name:               detail.item.name,
+        item_unit:               detail.item.unit.name,
+        quantity_ordered:        ordered,
         quantity_received_total: alreadyReceived,
-        quantity_remaining: remaining,
-        quantity_received: remaining, // default = sisa yang belum diterima
+        quantity_remaining:      remaining,
+        // Kayu RST: default 0 — user isi manual qty yang datang hari ini saja
+        // Non-kayu: default = sisa (seperti sebelumnya)
+        quantity_received:       isKayu.value ? 0 : remaining,
+        price:                   null,
       }
     })
   } catch (err) {
@@ -293,36 +335,60 @@ onMounted(async () => {
 })
 
 const submitForm = async () => {
-  // Validasi: pastikan tidak ada input melebihi sisa
-  for (const item of form.value.details) {
-    if (parseFloat(item.quantity_received) > item.quantity_remaining) {
-      toast.error(`Jumlah terima "${item.item_name}" melebihi sisa (${item.quantity_remaining}).`)
-      return
+  const details = form.value.details
+
+  if (!isKayu.value) {
+    // Non-kayu: qty tidak boleh melebihi sisa
+    for (const item of details) {
+      if (parseFloat(item.quantity_received) > item.quantity_remaining) {
+        toast.error(`Jumlah terima "${item.item_name}" melebihi sisa (${item.quantity_remaining}).`)
+        return
+      }
     }
   }
 
-  // Validasi: pastikan ada minimal 1 item yang diterima > 0
-  const hasAny = form.value.details.some(d => parseFloat(d.quantity_received) > 0)
+  const hasAny = details.some(d => parseFloat(d.quantity_received) > 0)
   if (!hasAny) {
     toast.error('Masukkan jumlah penerimaan untuk minimal 1 item.')
     return
   }
 
+  // Kayu: wajib isi harga
+  if (isKayu.value) {
+    for (const item of details) {
+      if (parseFloat(item.quantity_received) > 0 && (item.price === null || item.price === '' || item.price < 0)) {
+        toast.error(`Harga satuan untuk "${item.item_name}" harus diisi.`)
+        return
+      }
+    }
+  }
+
   isSaving.value = true
   try {
-    await apiClient.post('/goods-receipts', form.value)
+    const payload = {
+      ...form.value,
+      details: form.value.details.map(d => ({
+        item_id:           d.item_id,
+        quantity_received: d.quantity_received,
+        price:             isKayu.value ? (d.price ?? null) : null,
+      })),
+    }
+    await apiClient.post('/goods-receipts', payload)
     toast.success('Penerimaan barang berhasil disimpan & stok diperbarui!')
-    router.push('/admin/pembelian')
+    router.push('/admin/pembelian/kayu')
   } catch (err) {
     toast.error('Gagal menyimpan penerimaan barang.')
-    console.error('Error saat menyimpan penerimaan barang:', err)
+    console.error(err)
   } finally {
     isSaving.value = false
   }
 }
 
+const formatRupiah = (val) =>
+  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val || 0)
+
 const cancel = () => {
-  router.push('/admin/pembelian')
+  router.push('/admin/pembelian/kayu')
 }
 </script>
 
@@ -800,6 +866,22 @@ textarea.form-control {
   outline: none;
   border-color: #10b981;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.th-price, .th-subtotal { width: 16%; }
+.td-price, .td-subtotal { text-align: right; padding-right: 16px; }
+
+.input-price-wrapper {
+  display: flex; align-items: center; gap: 4px;
+}
+.price-prefix {
+  font-size: 13px; font-weight: 700; color: #64748b; white-space: nowrap;
+}
+.price-input {
+  max-width: 150px; text-align: right;
+}
+.subtotal-value {
+  font-size: 14px; font-weight: 700; color: #065f46;
 }
 
 /* Form Actions */

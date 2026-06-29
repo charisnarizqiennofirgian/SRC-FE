@@ -3,7 +3,7 @@
     Dengan ini kami mengirim daftar pesanan kami untuk {{ extractUsername(po.supplier?.address) }} sebagai berikut :
   </p>
 
-  <TabelCetakKayu :details="details" :po="po" />
+  <TabelCetakKayu :details="details" :po="po" :showPeruntukan="showPeruntukan" />
 
   <div v-if="po.notes" class="notes-section">
     <span class="notes-label">Catatan:</span>
@@ -16,7 +16,7 @@
 <script setup>
 import TabelCetakKayu from './TabelCetakKayu.vue'
 import FooterKayu from './FooterKayu.vue'
-defineProps(['details', 'po'])
+defineProps(['details', 'po', 'showPeruntukan'])
 
 const extractUsername = (address) => {
   if (!address) return ''

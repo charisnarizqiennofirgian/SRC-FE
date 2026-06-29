@@ -5,9 +5,8 @@
         <th>No</th>
         <th>Invoice Size (P x L x T)</th>
         <th>Cutting Size (P x L x T)</th>
-
         <th>Keterangan</th>
-
+        <th v-if="showPeruntukan">Peruntukan</th>
         <th>Qty (Batang)</th>
         <th>Kubikasi (m³)</th>
         <th>Harga Satuan</th>
@@ -29,6 +28,13 @@
         <td class="center">
           <span v-if="item.specifications.is_manual_price" class="badge badge-mall"> MALL </span>
           <span v-else class="badge badge-rst"> RST </span>
+          <div v-if="item.specifications.keterangan" class="keterangan-text">
+            {{ item.specifications.keterangan }}
+          </div>
+        </td>
+
+        <td v-if="showPeruntukan" class="center peruntukan-cell">
+          {{ item.specifications.peruntukan || '-' }}
         </td>
 
         <td class="right">{{ parseFloat(item.quantity_ordered) }}</td>
@@ -36,20 +42,20 @@
         <td class="right">{{ formatCurrency(item.price) }}</td>
         <td class="right">{{ formatCurrency(item.subtotal) }}</td>
       </tr>
-      <!-- Total Rows -->
+      <!-- Total Rows — colspan +1 saat ada kolom Peruntukan -->
       <tr class="total-row">
         <td></td>
-        <td colspan="6" class="left bold">Sub Total</td>
+        <td :colspan="showPeruntukan ? 7 : 6" class="left bold">Sub Total</td>
         <td class="right bold">{{ formatCurrency(subTotal) }}</td>
       </tr>
       <tr v-if="ppnRate > 0" class="total-row">
         <td></td>
-        <td colspan="6" class="left bold">PPN {{ ppnRate }}%</td>
+        <td :colspan="showPeruntukan ? 7 : 6" class="left bold">PPN {{ ppnRate }}%</td>
         <td class="right bold">{{ formatCurrency(ppn) }}</td>
       </tr>
       <tr class="total-row">
         <td></td>
-        <td colspan="6" class="left bold">Total</td>
+        <td :colspan="showPeruntukan ? 7 : 6" class="left bold">Total</td>
         <td class="right bold">{{ formatCurrency(grandTotal) }}</td>
       </tr>
     </tbody>
@@ -58,7 +64,7 @@
 
 <script setup>
 import { computed } from 'vue'
-const props = defineProps(['details', 'po'])
+const props = defineProps(['details', 'po', 'showPeruntukan'])
 
 const subTotal = computed(() => {
   return props.details.reduce((acc, item) => acc + parseFloat(item.subtotal || 0), 0)
@@ -136,5 +142,18 @@ const formatCurrency = (value) => {
 }
 .badge-rst {
   background-color: #10b981;
+}
+.keterangan-text {
+  margin-top: 2pt;
+  font-size: 8pt;
+  color: #374151;
+  font-style: italic;
+  white-space: pre-wrap;
+  text-align: left;
+}
+.peruntukan-cell {
+  font-size: 8.5pt;
+  font-style: italic;
+  text-align: left;
 }
 </style>

@@ -91,6 +91,9 @@
 
         <!-- ACTIONS -->
         <div class="dok-actions">
+          <button class="btn-view" @click="bukaPreview(dok)" title="Lihat">
+            👁️ Lihat
+          </button>
           <button class="btn-download" @click="downloadDokumen(dok)" title="Download">
             ⬇️ Download
           </button>
@@ -130,6 +133,55 @@
         :disabled="pagination.current_page === pagination.last_page"
         @click="goToPage(pagination.current_page + 1)"
       >Next →</button>
+    </div>
+
+    <!-- MODAL PREVIEW -->
+    <div v-if="modalPreview.show" class="preview-overlay" @click.self="tutupPreview">
+      <div class="modal-preview">
+        <div class="preview-header">
+          <div class="preview-title-wrap">
+            <span class="preview-icon-head">{{ getFileIcon(modalPreview.dok?.tipe_file) }}</span>
+            <span class="preview-nama">{{ modalPreview.dok?.nama_file }}</span>
+            <span class="preview-ext-badge">{{ getEkstensi(modalPreview.dok?.nama_asli) }}</span>
+          </div>
+          <div class="preview-head-actions">
+            <button class="btn-dl-preview" @click="downloadDokumen(modalPreview.dok)">⬇️ Download</button>
+            <button class="preview-close" @click="tutupPreview">✕</button>
+          </div>
+        </div>
+
+        <div class="preview-body">
+          <!-- Loading -->
+          <div v-if="modalPreview.loading" class="preview-loading">
+            <div class="spinner"></div>
+            <p>Memuat file...</p>
+          </div>
+
+          <!-- PDF -->
+          <iframe
+            v-else-if="modalPreview.type === 'pdf' && modalPreview.url"
+            :src="modalPreview.url"
+            class="preview-iframe"
+          ></iframe>
+
+          <!-- Gambar -->
+          <div v-else-if="modalPreview.type === 'image' && modalPreview.url" class="preview-img-wrap">
+            <img :src="modalPreview.url" class="preview-img" :alt="modalPreview.dok?.nama_file" />
+          </div>
+
+          <!-- Tidak bisa preview -->
+          <div v-else class="preview-unsupported">
+            <div class="unsupported-icon">{{ getFileIcon(modalPreview.dok?.tipe_file) }}</div>
+            <p class="unsupported-title">Preview tidak tersedia</p>
+            <p class="unsupported-desc">
+              File <strong>.{{ getEkstensi(modalPreview.dok?.nama_asli) }}</strong>
+              tidak bisa dilihat langsung di browser.<br>
+              Silakan download untuk membuka file ini.
+            </p>
+            <button class="btn-dl-big" @click="downloadDokumen(modalPreview.dok)">⬇️ Download File</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- MODAL UPLOAD -->
@@ -310,6 +362,8 @@ const isDragging      = ref(false)
 const inputFile       = ref(null)
 const daftarDokumen   = ref([])
 
+const modalPreview = ref({ show: false, dok: null, url: null, type: null, loading: false })
+
 const showModalRevisi  = ref(false)
 const isRevising       = ref(false)
 const isDraggingRevisi = ref(false)
@@ -446,6 +500,42 @@ const downloadDokumen = async (dok) => {
   } catch {
     showError('Gagal', 'Gagal mengunduh file')
   }
+}
+
+const previewType = (dok) => {
+  const tipe = dok.tipe_file || ''
+  const ext  = (dok.nama_asli || '').split('.').pop().toLowerCase()
+  if (tipe.includes('pdf')   || ext === 'pdf')                        return 'pdf'
+  if (tipe.includes('image') || ['jpg','jpeg','png'].includes(ext))   return 'image'
+  return 'unsupported'
+}
+
+const bukaPreview = async (dok) => {
+  modalPreview.value = { show: true, dok, url: null, type: previewType(dok), loading: true }
+
+  if (previewType(dok.tipe_file) === 'unsupported') {
+    modalPreview.value.loading = false
+    return
+  }
+
+  try {
+    const res      = await apiClient.get(`/dokumen/${dok.id}/download`, { responseType: 'blob' })
+    const mimeType = modalPreview.value.type === 'pdf' ? 'application/pdf'
+                   : modalPreview.value.type === 'image' ? (dok.tipe_file || 'image/jpeg')
+                   : dok.tipe_file
+    const blob     = new Blob([res.data], { type: mimeType })
+    modalPreview.value.url = URL.createObjectURL(blob)
+  } catch {
+    showError('Gagal', 'Gagal memuat preview')
+    modalPreview.value.type = 'unsupported'
+  } finally {
+    modalPreview.value.loading = false
+  }
+}
+
+const tutupPreview = () => {
+  if (modalPreview.value.url) URL.revokeObjectURL(modalPreview.value.url)
+  modalPreview.value = { show: false, dok: null, url: null, type: null, loading: false }
 }
 
 const konfirmasiHapus = async (dok) => {
@@ -642,6 +732,8 @@ onMounted(fetchDokumen)
 .badge-lainnya { background:#f3f4f6; color:#374151; }
 
 .dok-actions { padding:12px 16px; border-top:1px solid #f0f0f0; display:flex; gap:8px; }
+.btn-view { flex:1; padding:9px; background:#f0fdf4; color:#065f46; border:1.5px solid #bbf7d0; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; transition:all 0.2s; }
+.btn-view:hover { background:#dcfce7; }
 .btn-download { flex:1; padding:9px; background:#0891b2; color:white; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; transition:all 0.2s; }
 .btn-download:hover { background:#0e7490; }
 .btn-revisi { padding:9px 12px; background:#fef3c7; color:#92400e; border:none; border-radius:8px; cursor:pointer; font-size:14px; transition:all 0.2s; }
@@ -701,4 +793,74 @@ onMounted(fetchDokumen)
   .filter-row { flex-direction:column; }
   .search-box { width:100%; }
 }
+
+/* ===== MODAL PREVIEW ===== */
+.preview-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 2000; padding: 16px;
+}
+.modal-preview {
+  background: white; border-radius: 16px;
+  width: 95vw; height: 92vh;
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+}
+.preview-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 20px; background: #0f172a; color: white;
+  flex-shrink: 0; gap: 12px;
+}
+.preview-title-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.preview-icon-head  { font-size: 22px; flex-shrink: 0; }
+.preview-nama       { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.preview-ext-badge  { background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; flex-shrink: 0; }
+.preview-head-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.btn-dl-preview {
+  background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3);
+  padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+  white-space: nowrap; transition: background 0.15s;
+}
+.btn-dl-preview:hover { background: rgba(255,255,255,0.25); }
+.preview-close {
+  background: rgba(255,255,255,0.15); border: none; color: white;
+  width: 32px; height: 32px; border-radius: 50%; font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: background 0.15s;
+}
+.preview-close:hover { background: rgba(239,68,68,0.7); }
+
+.preview-body { flex: 1; overflow: hidden; background: #1e293b; position: relative; }
+
+.preview-loading {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%; gap: 14px; color: #94a3b8;
+}
+
+.preview-iframe {
+  width: 100%; height: 100%; border: none; display: block;
+}
+
+.preview-img-wrap {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  overflow: auto; padding: 16px;
+}
+.preview-img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.preview-unsupported {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%; gap: 16px; padding: 40px; text-align: center; color: #94a3b8;
+}
+.unsupported-icon  { font-size: 72px; line-height: 1; }
+.unsupported-title { font-size: 20px; font-weight: 700; color: #e2e8f0; margin: 0; }
+.unsupported-desc  { font-size: 14px; line-height: 1.7; color: #94a3b8; margin: 0; }
+.unsupported-desc strong { color: #cbd5e1; }
+.btn-dl-big {
+  margin-top: 8px; padding: 12px 28px;
+  background: #0891b2; color: white; border: none; border-radius: 10px;
+  font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.2s;
+}
+.btn-dl-big:hover { background: #0e7490; }
 </style>

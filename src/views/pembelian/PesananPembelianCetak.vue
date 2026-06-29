@@ -23,7 +23,7 @@
 
         <!-- LAYOUT DINAMIS -->
         <LayoutKarton v-if="po.type === 'karton'" :details="po.details" :po="po" />
-        <LayoutKayu v-else-if="po.type === 'kayu'" :details="po.details" :po="po" />
+        <LayoutKayu v-else-if="po.type === 'kayu'" :details="po.details" :po="po" :showPeruntukan="isInternal" />
         <LayoutOperasional v-else :details="po.details" :po="po" />
       </PrintKopWrapper>
     </div>
@@ -31,7 +31,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import apiClient from '../../api/axios'
 
@@ -43,6 +43,7 @@ import LayoutKayu from '@/components/cetak/LayoutKayu.vue'
 const route = useRoute()
 const loading = ref(true)
 const po = ref(null)
+const isInternal = computed(() => route.query.internal === '1')
 
 const fetchPODetail = async () => {
   try {
