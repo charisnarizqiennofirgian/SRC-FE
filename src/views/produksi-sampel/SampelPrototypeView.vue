@@ -49,9 +49,14 @@
                 <div class="g2">
                   <div class="fg"><label class="fl">Item Komponen *</label>
                     <vue-select v-model="row.item_id" :options="sourceOpts" :reduce="o=>o.item_id" label="label" placeholder="Pilih komponen..." class="vs"
+                      :filter-by="filterSourceItem"
                       @option:selected="(o)=>{ row.warehouse_id=o.warehouse_id; row.max_qty=o.qty_available }">
                       <template #option="o">
-                        <div><div style="font-weight:600;font-size:.88rem;">{{ o.item_code }} — {{ o.item_name }}</div><div style="font-size:.75rem;color:#6b7280;">Stok: {{ o.qty_available }} pcs</div></div>
+                        <div>
+                          <div style="font-weight:600;font-size:.88rem;">{{ o.item_code }} — {{ o.item_name }}</div>
+                          <div v-if="o.nama_produk" style="font-size:.75rem;color:#7c3aed;font-weight:500;margin-top:1px;">{{ o.nama_produk }}</div>
+                          <div style="font-size:.75rem;color:#6b7280;">Stok: {{ o.qty_available }} pcs · {{ o.warehouse_name }}</div>
+                        </div>
                       </template>
                     </vue-select>
                     <div v-if="row.max_qty>0" class="stock-hint">Tersedia: {{ row.max_qty }} pcs</div>
@@ -61,7 +66,7 @@
                     <p v-if="row.qty>row.max_qty&&row.max_qty>0" class="qty-warn">⚠️ Melebihi stok</p>
                   </div>
                 </div>
-                <div v-if="row.warehouse_id" class="wh-hint">📦 Sumber: Gudang Mesin</div>
+                <div v-if="row.warehouse_id" class="wh-hint">📦 Sumber: {{ sourceOpts.find(o=>o.warehouse_id===row.warehouse_id&&o.item_id===row.item_id)?.warehouse_name || 'Gudang' }}</div>
               </div>
               <button type="button" class="btn-add a-cyan" @click="form.inputs.push(newInput())">➕ Tambah Komponen</button>
             </template>
@@ -118,8 +123,17 @@ const poInfo = reactive({ buyer_name: null, so_number: null }); const poTargets 
 const newInput  = () => ({ lid: Date.now()+Math.random(), item_id: null, warehouse_id: null, qty: null, max_qty: 0 })
 const form = reactive({ date: new Date().toISOString().slice(0,10), ref_po_id: null, notes: '', inputs: [newInput()], outputs: [] })
 
+const filterSourceItem = (option, label, search) => {
+  const s = search.toLowerCase()
+  return (
+    option.item_code?.toLowerCase().includes(s) ||
+    option.item_name?.toLowerCase().includes(s) ||
+    option.nama_produk?.toLowerCase().includes(s)
+  )
+}
+
 const posOpts   = computed(() => productionOrders.value.map(p => ({ id: p.id, label: p.po_number })))
-const sourceOpts = computed(() => sourceItems.value.map(i => ({ item_id: i.item_id, item_code: i.item_code, item_name: i.item_name, qty_available: i.qty_available, warehouse_id: i.warehouse_id, label: `${i.item_code} - ${i.item_name}` })))
+const sourceOpts = computed(() => sourceItems.value.map(i => ({ item_id: i.item_id, item_code: i.item_code, item_name: i.item_name, nama_produk: i.nama_produk ?? null, qty_available: i.qty_available, warehouse_id: i.warehouse_id, warehouse_name: i.warehouse_name, label: `${i.item_code} - ${i.item_name}` })))
 
 const fetchBase = async () => {
   loadingItems.value = true
