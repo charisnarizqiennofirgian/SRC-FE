@@ -227,7 +227,7 @@
                           v-model.number="item.price"
                           class="qty-input price-input"
                           min="0"
-                          step="1"
+                          step="any"
                           placeholder="0"
                         />
                       </div>
