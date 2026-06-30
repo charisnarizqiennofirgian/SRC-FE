@@ -102,9 +102,8 @@ const fetchSourceItems = async (opt) => {
   if (!opt) return
   loadingItems.value = true; sourceItems.value = []; form.items = [newItem()]
   try {
-    const r = await apiClient.get('/assembling-produksi/source-items')
-    // Filter by selected warehouse
-    sourceItems.value = (r.data.data || []).filter(i => i.warehouse_id === opt.id)
+    const r = await apiClient.get(`/assembling-produksi/source-items?warehouse_id=${opt.id}`)
+    sourceItems.value = r.data.data || []
   } catch (e) { console.error(e) }
   finally { loadingItems.value = false }
 }
