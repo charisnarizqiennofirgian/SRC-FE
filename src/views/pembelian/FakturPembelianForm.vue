@@ -338,6 +338,28 @@
                 <span class="sum-label">Subtotal</span>
                 <span class="sum-value">{{ formatCurrency(subtotal) }}</span>
               </div>
+              <div class="summary-row ppn-selector-row">
+                <span class="sum-label">Tarif PPN</span>
+                <div class="ppn-options-compact">
+                  <label class="ppn-radio">
+                    <input type="radio" v-model.number="ppnPercentage" :value="0" />
+                    <span>0%</span>
+                  </label>
+                  <label class="ppn-radio">
+                    <input type="radio" v-model.number="ppnPercentage" :value="11" />
+                    <span>11%</span>
+                  </label>
+                  <label class="ppn-radio">
+                    <input type="radio" v-model.number="ppnPercentage" :value="12" />
+                    <span>12%</span>
+                  </label>
+                  <label class="ppn-radio ppn-special">
+                    <input type="radio" v-model.number="ppnPercentage" :value="11.12" />
+                    <span>12% ⚡</span>
+                    <small class="ppn-note">Hitung 11%</small>
+                  </label>
+                </div>
+              </div>
               <div class="summary-row ppn-row">
                 <span class="sum-label">
                   <span class="ppn-badge">{{ ppnPercentage }}%</span>
@@ -551,7 +573,9 @@ const subtotal = computed(() => {
 })
 
 const ppnAmount = computed(() => {
-  return subtotal.value * (ppnPercentage.value / 100)
+  let rate = ppnPercentage.value
+  if (rate === 11.12) rate = 11
+  return subtotal.value * (rate / 100)
 })
 
 const grandTotal = computed(() => {
@@ -1360,6 +1384,68 @@ onMounted(fetchFormData)
   font-size: 10px;
   font-weight: 700;
   border-radius: 4px;
+}
+
+.ppn-selector-row {
+  padding: 8px 0;
+  border-bottom: 1px dashed #e5e7eb;
+  margin-bottom: 4px;
+}
+
+.ppn-options-compact {
+  display: flex;
+  gap: 8px;
+}
+
+.ppn-radio {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 4px 10px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+
+.ppn-radio:has(input:checked) {
+  border-color: #f59e0b;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ppn-radio input[type="radio"] {
+  display: none;
+}
+
+.ppn-radio.ppn-special {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-color: #fbbf24;
+  position: relative;
+}
+
+.ppn-radio.ppn-special:has(input:checked) {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border-color: #d97706;
+}
+
+.ppn-radio.ppn-special span {
+  color: #92400e;
+}
+
+.ppn-radio.ppn-special:has(input:checked) span {
+  color: white;
+}
+
+.ppn-note {
+  display: block;
+  font-size: 10px;
+  color: #92400e;
+  opacity: 0.8;
+  font-weight: 400;
+  margin-top: 1px;
 }
 
 .summary-divider {

@@ -91,7 +91,7 @@
         <div class="signature-box-three">
           <span class="signature-label">Mengetahui,</span>
           <div class="signature-space"></div>
-          <span class="signature-name">ELLEN APRILIANA</span>
+          <span class="signature-name">Ellen Apriliana</span>
         </div>
         <div class="signature-box-three">
           <span class="signature-label">Penerima,</span>
