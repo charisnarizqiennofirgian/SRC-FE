@@ -10,10 +10,10 @@
             <p class="page-subtitle">Form penerimaan barang dari Purchase Order</p>
           </div>
         </div>
-        <router-link to="/admin/pembelian" class="btn-back">
+        <button type="button" @click="router.back()" class="btn-back">
           <span class="btn-icon">←</span>
           <span>Kembali ke Daftar</span>
-        </router-link>
+        </button>
       </div>
     </div>
 
@@ -123,121 +123,143 @@
               <table class="detail-table">
                 <thead>
                   <tr>
-                    <th class="th-no">
-                      <div class="th-content">
-                        <span class="th-icon">#</span>
-                        <span>No</span>
-                      </div>
-                    </th>
-                    <th class="th-item">
-                      <div class="th-content">
-                        <span class="th-icon">📦</span>
-                        <span>Nama Barang</span>
-                      </div>
-                    </th>
-                    <th class="th-ordered">
-                      <div class="th-content">
-                        <span class="th-icon">📊</span>
-                        <span>Dipesan</span>
-                      </div>
-                    </th>
-                    <th class="th-already">
-                      <div class="th-content">
-                        <span class="th-icon">📥</span>
-                        <span>Sudah Diterima</span>
-                      </div>
-                    </th>
-                    <th class="th-remaining">
-                      <div class="th-content">
-                        <span class="th-icon">⏳</span>
-                        <span>Sisa</span>
-                      </div>
-                    </th>
-                    <th class="th-received">
-                      <div class="th-content">
-                        <span class="th-icon">✅</span>
-                        <span>Terima Sekarang</span>
-                      </div>
-                    </th>
-                    <th v-if="isKayu" class="th-price">
-                      <div class="th-content">
-                        <span class="th-icon">💰</span>
-                        <span>Harga Satuan</span>
-                      </div>
-                    </th>
-                    <th v-if="isKayu" class="th-subtotal">
-                      <div class="th-content">
-                        <span class="th-icon">💵</span>
-                        <span>Subtotal</span>
-                      </div>
-                    </th>
+                    <th class="th-no"><div class="th-content"><span>#</span></div></th>
+                    <th class="th-item"><div class="th-content"><span class="th-icon">📦</span><span>Nama Barang</span></div></th>
+                    <th class="th-ordered"><div class="th-content"><span>Dipesan</span></div></th>
+                    <th class="th-already"><div class="th-content"><span>Sudah Diterima</span></div></th>
+                    <th class="th-remaining"><div class="th-content"><span>Sisa</span></div></th>
+                    <th v-if="isKayu" class="th-grade"><div class="th-content"><span>Grade</span></div></th>
+                    <th class="th-received"><div class="th-content"><span class="th-icon">✅</span><span>Terima Sekarang</span></div></th>
+                    <th v-if="isKayu" class="th-price"><div class="th-content"><span class="th-icon">💰</span><span>Harga Satuan</span></div></th>
+                    <th v-if="isKayu" class="th-subtotal"><div class="th-content"><span>Subtotal</span></div></th>
+                    <th v-if="isKayu" class="th-aksi"><div class="th-content"><span>Aksi</span></div></th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr v-for="(item, index) in form.details" :key="item.item_id" class="data-row" :class="{ 'row-complete': !isKayu && item.quantity_remaining === 0 }">
-                    <td class="td-no">
-                      <span class="row-number">{{ index + 1 }}</span>
-                    </td>
+
+                <!-- KAYU RST: multi-row per item (satu baris per grade) -->
+                <tbody v-if="isKayu">
+                  <template v-for="(item, idx) in form.details" :key="'kayu-' + item.item_id">
+                    <tr
+                      v-for="(gr, gi) in item.grade_rows"
+                      :key="`k-${item.item_id}-${gi}`"
+                      class="data-row"
+                    >
+                      <td v-if="gi === 0" :rowspan="item.grade_rows.length" class="td-no td-rowspan">
+                        <span class="row-number">{{ idx + 1 }}</span>
+                      </td>
+                      <td v-if="gi === 0" :rowspan="item.grade_rows.length" class="td-item td-rowspan">
+                        <div class="item-info">
+                          <span class="item-name">{{ item.item_name }}</span>
+                          <span class="item-unit">{{ item.item_unit }}</span>
+                        </div>
+                      </td>
+                      <td v-if="gi === 0" :rowspan="item.grade_rows.length" class="td-ordered td-rowspan">
+                        <span class="qty-badge">{{ item.quantity_ordered }}</span>
+                      </td>
+                      <td v-if="gi === 0" :rowspan="item.grade_rows.length" class="td-already td-rowspan">
+                        <span class="qty-badge qty-already">{{ item.quantity_received_total }}</span>
+                      </td>
+                      <td v-if="gi === 0" :rowspan="item.grade_rows.length" class="td-remaining td-rowspan">
+                        <span class="qty-badge" :class="item.quantity_remaining === 0 ? 'qty-done' : 'qty-remaining'">
+                          {{ item.quantity_remaining }}
+                        </span>
+                      </td>
+                      <td class="td-grade">
+                        <input
+                          type="text"
+                          v-model="gr.grade"
+                          list="grade-datalist"
+                          class="qty-input grade-input"
+                          placeholder="A / B / C ..."
+                        />
+                      </td>
+                      <td class="td-received">
+                        <input
+                          type="number"
+                          v-model="gr.quantity_received"
+                          class="qty-input"
+                          min="0"
+                          step="0.01"
+                        />
+                      </td>
+                      <td class="td-price">
+                        <div class="input-price-wrapper">
+                          <span class="price-prefix">Rp</span>
+                          <input
+                            type="number"
+                            v-model.number="gr.price"
+                            class="qty-input price-input"
+                            min="0"
+                            step="any"
+                            placeholder="0"
+                          />
+                        </div>
+                      </td>
+                      <td class="td-subtotal">
+                        <span class="subtotal-value">{{ formatRupiah((gr.quantity_received || 0) * (gr.price || 0)) }}</span>
+                      </td>
+                      <td class="td-aksi">
+                        <button type="button" class="btn-grade-add" @click="addGradeRow(idx)" title="Tambah baris grade">＋</button>
+                        <button
+                          v-if="item.grade_rows.length > 1"
+                          type="button"
+                          class="btn-grade-remove"
+                          @click="removeGradeRow(idx, gi)"
+                          title="Hapus baris ini"
+                        >－</button>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+
+                <!-- NON-KAYU: satu baris per item -->
+                <tbody v-else>
+                  <tr v-if="form.details.length === 0" class="empty-row">
+                    <td colspan="6">Tidak ada item</td>
+                  </tr>
+                  <tr
+                    v-for="(item, index) in form.details"
+                    :key="item.item_id"
+                    class="data-row"
+                    :class="{ 'row-complete': item.quantity_remaining === 0 }"
+                  >
+                    <td class="td-no"><span class="row-number">{{ index + 1 }}</span></td>
                     <td class="td-item">
                       <div class="item-info">
                         <span class="item-name">{{ item.item_name }}</span>
                         <span class="item-unit">{{ item.item_unit }}</span>
                       </div>
                     </td>
-                    <td class="td-ordered">
-                      <span class="qty-badge">{{ item.quantity_ordered }}</span>
-                    </td>
-                    <td class="td-already">
-                      <span class="qty-badge qty-already">{{ item.quantity_received_total }}</span>
-                    </td>
+                    <td class="td-ordered"><span class="qty-badge">{{ item.quantity_ordered }}</span></td>
+                    <td class="td-already"><span class="qty-badge qty-already">{{ item.quantity_received_total }}</span></td>
                     <td class="td-remaining">
                       <span class="qty-badge" :class="item.quantity_remaining === 0 ? 'qty-done' : 'qty-remaining'">
                         {{ item.quantity_remaining }}
                       </span>
                     </td>
                     <td class="td-received">
-                      <template v-if="isKayu">
-                        <!-- Kayu: selalu bisa input, tidak ada batas max -->
-                        <input
-                          type="number"
-                          v-model="item.quantity_received"
-                          class="qty-input"
-                          min="0"
-                          step="0.01"
-                        />
-                      </template>
-                      <template v-else>
-                        <input
-                          v-if="item.quantity_remaining > 0"
-                          type="number"
-                          v-model="item.quantity_received"
-                          class="qty-input"
-                          min="0"
-                          :max="item.quantity_remaining"
-                          step="0.01"
-                        />
-                        <span v-else class="done-label">Lunas ✓</span>
-                      </template>
-                    </td>
-                    <td v-if="isKayu" class="td-price">
-                      <div class="input-price-wrapper">
-                        <span class="price-prefix">Rp</span>
-                        <input
-                          type="number"
-                          v-model.number="item.price"
-                          class="qty-input price-input"
-                          min="0"
-                          step="any"
-                          placeholder="0"
-                        />
-                      </div>
-                    </td>
-                    <td v-if="isKayu" class="td-subtotal">
-                      <span class="subtotal-value">{{ formatRupiah((item.quantity_received || 0) * (item.price || 0)) }}</span>
+                      <input
+                        v-if="item.quantity_remaining > 0"
+                        type="number"
+                        v-model="item.quantity_received"
+                        class="qty-input"
+                        min="0"
+                        :max="item.quantity_remaining"
+                        step="0.01"
+                      />
+                      <span v-else class="done-label">Lunas ✓</span>
                     </td>
                   </tr>
                 </tbody>
+
               </table>
+              <!-- datalist untuk grade suggestions (di luar table agar valid HTML) -->
+              <datalist id="grade-datalist">
+                <option value="A" />
+                <option value="B" />
+                <option value="C" />
+                <option value="Sortasi" />
+              </datalist>
             </div>
           </div>
         </div>
@@ -312,6 +334,18 @@ onMounted(async () => {
       const ordered         = parseFloat(detail.quantity_ordered)
       const alreadyReceived = parseFloat(detail.quantity_received_total ?? 0)
       const remaining       = Math.max(0, ordered - alreadyReceived)
+      if (isKayu.value) {
+        return {
+          item_id:                 detail.item_id,
+          item_name:               detail.item.name,
+          item_unit:               detail.item.unit.name,
+          quantity_ordered:        ordered,
+          quantity_received_total: alreadyReceived,
+          quantity_remaining:      remaining,
+          // Grade rows: each row = { grade, quantity_received, price }
+          grade_rows: [{ grade: '', quantity_received: 0, price: null }],
+        }
+      }
       return {
         item_id:                 detail.item_id,
         item_name:               detail.item.name,
@@ -319,9 +353,7 @@ onMounted(async () => {
         quantity_ordered:        ordered,
         quantity_received_total: alreadyReceived,
         quantity_remaining:      remaining,
-        // Kayu RST: default 0 — user isi manual qty yang datang hari ini saja
-        // Non-kayu: default = sisa (seperti sebelumnya)
-        quantity_received:       isKayu.value ? 0 : remaining,
+        quantity_received:       remaining,
         price:                   null,
       }
     })
@@ -334,10 +366,42 @@ onMounted(async () => {
   }
 })
 
+const addGradeRow = (itemIdx) => {
+  form.value.details[itemIdx].grade_rows.push({ grade: '', quantity_received: 0, price: null })
+}
+
+const removeGradeRow = (itemIdx, gradeIdx) => {
+  form.value.details[itemIdx].grade_rows.splice(gradeIdx, 1)
+}
+
 const submitForm = async () => {
   const details = form.value.details
+  let detailsPayload = []
 
-  if (!isKayu.value) {
+  if (isKayu.value) {
+    // Validasi dan flatten grade_rows
+    for (const item of details) {
+      for (const gr of item.grade_rows) {
+        const qty = parseFloat(gr.quantity_received) || 0
+        if (qty > 0) {
+          if (gr.price === null || gr.price === '' || parseFloat(gr.price) < 0) {
+            toast.error(`Harga satuan untuk "${item.item_name}" Grade "${gr.grade || '-'}" harus diisi.`)
+            return
+          }
+          detailsPayload.push({
+            item_id:           item.item_id,
+            quantity_received: qty,
+            price:             gr.price,
+            grade:             gr.grade || null,
+          })
+        }
+      }
+    }
+    if (detailsPayload.length === 0) {
+      toast.error('Masukkan jumlah penerimaan untuk minimal 1 baris grade.')
+      return
+    }
+  } else {
     // Non-kayu: qty tidak boleh melebihi sisa
     for (const item of details) {
       if (parseFloat(item.quantity_received) > item.quantity_remaining) {
@@ -345,37 +409,31 @@ const submitForm = async () => {
         return
       }
     }
-  }
-
-  const hasAny = details.some(d => parseFloat(d.quantity_received) > 0)
-  if (!hasAny) {
-    toast.error('Masukkan jumlah penerimaan untuk minimal 1 item.')
-    return
-  }
-
-  // Kayu: wajib isi harga
-  if (isKayu.value) {
-    for (const item of details) {
-      if (parseFloat(item.quantity_received) > 0 && (item.price === null || item.price === '' || item.price < 0)) {
-        toast.error(`Harga satuan untuk "${item.item_name}" harus diisi.`)
-        return
-      }
+    const hasAny = details.some(d => parseFloat(d.quantity_received) > 0)
+    if (!hasAny) {
+      toast.error('Masukkan jumlah penerimaan untuk minimal 1 item.')
+      return
     }
+    detailsPayload = details.map(d => ({
+      item_id:           d.item_id,
+      quantity_received: d.quantity_received,
+      price:             null,
+      grade:             null,
+    }))
   }
 
   isSaving.value = true
   try {
     const payload = {
-      ...form.value,
-      details: form.value.details.map(d => ({
-        item_id:           d.item_id,
-        quantity_received: d.quantity_received,
-        price:             isKayu.value ? (d.price ?? null) : null,
-      })),
+      purchase_order_id:        form.value.purchase_order_id,
+      receipt_date:             form.value.receipt_date,
+      supplier_document_number: form.value.supplier_document_number,
+      notes:                    form.value.notes,
+      details:                  detailsPayload,
     }
     await apiClient.post('/goods-receipts', payload)
     toast.success('Penerimaan barang berhasil disimpan & stok diperbarui!')
-    router.push('/admin/pembelian/kayu')
+    router.back()
   } catch (err) {
     toast.error('Gagal menyimpan penerimaan barang.')
     console.error(err)
@@ -388,7 +446,7 @@ const formatRupiah = (val) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val || 0)
 
 const cancel = () => {
-  router.push('/admin/pembelian/kayu')
+  router.back()
 }
 </script>
 
@@ -868,8 +926,14 @@ textarea.form-control {
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
-.th-price, .th-subtotal { width: 16%; }
+.th-price, .th-subtotal { width: 15%; }
+.th-grade { width: 10%; text-align: center; }
+.th-aksi  { width: 8%;  text-align: center; }
 .td-price, .td-subtotal { text-align: right; padding-right: 16px; }
+.td-grade { text-align: center; }
+.td-aksi  { text-align: center; white-space: nowrap; }
+
+.td-rowspan { vertical-align: middle; }
 
 .input-price-wrapper {
   display: flex; align-items: center; gap: 4px;
@@ -880,9 +944,28 @@ textarea.form-control {
 .price-input {
   max-width: 150px; text-align: right;
 }
+.grade-input {
+  max-width: 90px; text-align: center; text-transform: uppercase;
+}
 .subtotal-value {
   font-size: 14px; font-weight: 700; color: #065f46;
 }
+
+.btn-grade-add,
+.btn-grade-remove {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 700;
+  transition: all 0.2s;
+}
+.btn-grade-add {
+  background: #dcfce7; color: #16a34a; margin-right: 4px;
+}
+.btn-grade-add:hover { background: #bbf7d0; }
+.btn-grade-remove {
+  background: #fee2e2; color: #dc2626;
+}
+.btn-grade-remove:hover { background: #fecaca; }
 
 /* Form Actions */
 .form-actions {

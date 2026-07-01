@@ -337,21 +337,15 @@
                 </td>
               </tr>
 
-              <!-- ROWS KAYU RST -->
+              <!-- ROWS KAYU RST — satu baris per (item, grade) -->
               <tr
                 v-else-if="activeTab === 'rst'"
-                v-for="(item, index) in filteredReport"
-                :key="'rst-' + item.id"
+                v-for="(item, index) in rstRows"
+                :key="`rst-${item.id}-${item._grade ?? 'none'}`"
                 class="data-row-modern"
               >
                 <td class="td-number">
-                  <div class="number-badge">
-                    {{
-                      activePagination
-                        ? (activePagination.current_page - 1) * activePagination.per_page + index + 1
-                        : index + 1
-                    }}
-                  </div>
+                  <div class="number-badge">{{ index + 1 }}</div>
                 </td>
                 <td class="td-code">
                   <div class="code-badge-modern">
@@ -361,16 +355,15 @@
                 </td>
                 <td class="td-name">
                   <div class="item-info-modern">
-                    <div class="item-icon-box">
-                      <span class="item-icon">📦</span>
-                    </div>
+                    <div class="item-icon-box"><span class="item-icon">📦</span></div>
                     <div class="item-text">
                       <span class="item-name-text">{{ item.name }}</span>
                     </div>
                   </div>
                 </td>
                 <td class="td-small">
-                  <span class="badge-unit-modern">{{ item.kualitas || '-' }}</span>
+                  <span v-if="item._grade" class="grade-badge-rst">{{ item._grade }}</span>
+                  <span v-else class="text-gray">-</span>
                 </td>
                 <td class="td-small">{{ item.specifications?.t ?? '-' }}</td>
                 <td class="td-small">{{ item.specifications?.l ?? '-' }}</td>
@@ -383,17 +376,10 @@
                   <span v-else class="text-gray">-</span>
                 </td>
                 <td class="td-small">
-                  <div class="stock-total-inline">
-                    <span class="stock-value">
-                      {{ formatQty(totalQty(filteredStocks(item.stocks))) }}
-                    </span>
-                    <button type="button" class="btn-eye-inline" @click="openDetail(item)">
-                      👁️
-                    </button>
-                  </div>
+                  <span class="stock-value">{{ formatQty(item._qty) }}</span>
                 </td>
                 <td class="td-small">
-                  {{ formatKubikasi(totalKubikasi(item, filteredStocks(item.stocks))) }}
+                  {{ formatKubikasi(kubikasiPerGrade(item, item._qty)) }}
                 </td>
               </tr>
 
@@ -753,15 +739,20 @@
             <thead>
               <tr>
                 <th>Gudang</th>
+                <th v-if="detailStocks.some(r => r.grade)">Grade</th>
                 <th>Qty</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="detailStocks.length === 0">
-                <td colspan="2" class="text-center">Tidak ada stok.</td>
+                <td :colspan="detailStocks.some(r => r.grade) ? 3 : 2" class="text-center">Tidak ada stok.</td>
               </tr>
               <tr v-for="row in detailStocks" :key="row.id">
                 <td>{{ row.warehouse_name }}</td>
+                <td v-if="detailStocks.some(r => r.grade)">
+                  <span v-if="row.grade" class="grade-badge">{{ row.grade }}</span>
+                  <span v-else style="color:#94a3b8">—</span>
+                </td>
                 <td>{{ formatQty(row.quantity) }}</td>
               </tr>
             </tbody>
@@ -1164,6 +1155,46 @@ const totalQty = (stocks) => {
   return (stocks || []).reduce((sum, s) => sum + parseFloat(s.qty || 0), 0)
 }
 
+// RST tab: satu baris per (item, grade) — eksplode inventory per grade
+const rstRows = computed(() => {
+  const rows = []
+  for (const item of filteredReport.value) {
+    const stocks = filteredStocks(item.stocks || [])
+    // Kelompokkan inventory per grade
+    const gradeMap = {}
+    for (const inv of stocks) {
+      const key = inv.grade ?? '__none__'
+      if (!gradeMap[key]) gradeMap[key] = { grade: inv.grade ?? null, qty: 0 }
+      gradeMap[key].qty += parseFloat(inv.qty_pcs) || 0
+    }
+    const grades = Object.values(gradeMap)
+    if (grades.length === 0) {
+      // Belum ada inventory row → tampilkan satu baris dengan kualitas item
+      rows.push({ ...item, _grade: item.kualitas || null, _qty: parseFloat(item.stock) || 0 })
+    } else {
+      for (const g of grades) {
+        rows.push({ ...item, _grade: g.grade || item.kualitas || null, _qty: g.qty })
+      }
+    }
+  }
+  return rows
+})
+
+// Kubikasi untuk qty tertentu (dipakai di RST per-grade row)
+const kubikasiPerGrade = (item, qty) => {
+  if (!item) return 0
+  const spec = item.specifications
+  let m3PerPcs = 0
+  if (spec?.m3_per_pcs) {
+    m3PerPcs = parseFloat(spec.m3_per_pcs) || 0
+  } else if (spec?.t && spec?.l && spec?.p) {
+    m3PerPcs = (parseFloat(spec.t) * parseFloat(spec.l) * parseFloat(spec.p)) / 1_000_000_000
+  } else if (item.volume_m3) {
+    m3PerPcs = parseFloat(item.volume_m3) || 0
+  }
+  return qty * m3PerPcs
+}
+
 const totalKubikasi = (item, stocks) => {
   if (!item) return 0
 
@@ -1199,6 +1230,7 @@ const openDetail = (item) => {
     id: s.id,
     warehouse_name: s.warehouse?.name || s.warehouse?.code || 'Gudang',
     quantity: s.qty || 0,
+    grade: s.grade || null,
   }))
   isDetailOpen.value = true
 }
@@ -2451,6 +2483,29 @@ onMounted(() => {
 .modal-table td {
   padding: 10px 14px;
   border-bottom: 1px solid #e5e7eb;
+}
+
+.grade-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  background: linear-gradient(135deg, #fef9c3, #fef08a);
+  color: #854d0e;
+  border: 1.5px solid #fbbf24;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.grade-badge-rst {
+  display: inline-block;
+  padding: 3px 12px;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e40af;
+  border: 1.5px solid #93c5fd;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .modal-footer {

@@ -375,28 +375,51 @@
             </div>
           </div>
 
-          <!-- ✅ COA Section (Gelondongan) -->
+          <!-- COA Section -->
           <div class="coa-selection-section">
+            <!-- Akun Persediaan/Beban -->
             <div class="form-group">
               <label class="form-label">
-                <span class="label-icon">📊</span>
-                <span class="label-text">Akun COA</span>
+                <span class="label-icon">📦</span>
+                <span class="label-text">Akun Persediaan / Beban</span>
                 <span class="required">*</span>
               </label>
-              <select 
-                id="coa-select" 
-                v-model="form.coa_id" 
-                class="form-control" 
+              <select
+                id="coa-select"
+                v-model="form.coa_id"
+                class="form-control"
                 required>
-                <option :value="null">-- Pilih Akun COA --</option>
+                <option :value="null">-- Pilih Akun --</option>
                 <option v-for="coa in coaAccounts" :key="coa.id" :value="coa.id">
                   {{ coa.code }} - {{ coa.name }}
                 </option>
               </select>
               <small class="form-hint info">
                 <span class="hint-icon">💡</span>
-                Pilih <strong>Persediaan Barang</strong> untuk stok, <strong>Kas</strong> untuk
-                tunai, atau <strong>Bank</strong> untuk transfer
+                Pilih akun <strong>Persediaan</strong> (untuk barang stok) atau <strong>Biaya</strong> (untuk beban langsung)
+              </small>
+            </div>
+
+            <!-- Akun Kas/Bank — hanya muncul untuk TUNAI dan DP -->
+            <div v-if="form.payment_type === 'TUNAI' || form.payment_type === 'DP'" class="form-group">
+              <label class="form-label">
+                <span class="label-icon">🏦</span>
+                <span class="label-text">Akun Kas / Bank Pembayaran</span>
+                <span class="required">*</span>
+              </label>
+              <select
+                id="kas-select"
+                v-model="form.kas_account_id"
+                class="form-control"
+                required>
+                <option :value="null">-- Pilih Akun Kas/Bank --</option>
+                <option v-for="coa in kasAccounts" :key="coa.id" :value="coa.id">
+                  {{ coa.code }} - {{ coa.name }}
+                </option>
+              </select>
+              <small class="form-hint info">
+                <span class="hint-icon">💡</span>
+                Pilih rekening <strong>Kas</strong> atau <strong>Bank</strong> yang digunakan untuk membayar
               </small>
             </div>
           </div>
@@ -519,7 +542,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, nextTick } from 'vue'
+import { ref, reactive, onMounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '@/api/axios'
 import DashboardLayout from '@/components/DashboardLayout.vue'
@@ -538,6 +561,7 @@ const availableReceipts = ref([])
 const coaAccounts = ref([])
 const ppnPercentage = ref(12)
 const coaChoicesInstance = ref(null)
+const kasChoicesInstance = ref(null)
 const supplierChoicesInstance = ref(null)
 
 const today = new Date().toISOString().slice(0, 10)
@@ -553,12 +577,18 @@ const form = reactive({
   notes: '',
   details: [],
   coa_id: null,
+  kas_account_id: null,
   payment_type: 'TEMPO',
   paid_amount: 0,
   ppn_percentage: 12,
   currency: 'IDR',
   exchange_rate: 16000,
 })
+
+// Hanya akun ASET untuk pilihan Kas/Bank
+const kasAccounts = computed(() =>
+  coaAccounts.value.filter((c) => c.type === 'ASET')
+)
 
 // subtotalCurrency = nominal dalam currency asli (USD atau IDR)
 const subtotalCurrency = computed(() => {
@@ -660,7 +690,12 @@ const handleReceiptSelect = (event) => {
 
 const saveBill = async () => {
   if (!form.coa_id) {
-    toast.error('Pilih akun COA!')
+    toast.error('Pilih akun Persediaan/Beban!')
+    return
+  }
+
+  if ((form.payment_type === 'TUNAI' || form.payment_type === 'DP') && !form.kas_account_id) {
+    toast.error('Pilih akun Kas/Bank untuk pembayaran!')
     return
   }
 
@@ -737,6 +772,29 @@ const initializeSupplierDropdown = () => {
   }, 100)
 }
 
+const initializeKasDropdown = () => {
+  setTimeout(() => {
+    const kasSelect = document.getElementById('kas-select')
+    if (kasSelect && !kasChoicesInstance.value) {
+      try {
+        kasChoicesInstance.value = new Choices(kasSelect, {
+          searchEnabled: true,
+          searchPlaceholderValue: 'Ketik untuk mencari akun Kas/Bank...',
+          noResultsText: 'Akun tidak ditemukan',
+          noChoicesText: 'Tidak ada pilihan',
+          itemSelectText: 'Klik untuk pilih',
+          shouldSort: false,
+          position: 'bottom',
+          renderChoiceLimit: -1,
+          searchResultLimit: 100,
+        })
+      } catch (error) {
+        console.error('Error initializing Kas Choices.js:', error)
+      }
+    }
+  }, 100)
+}
+
 const initializeCoaDropdown = () => {
   // Use setTimeout to ensure DOM is fully rendered
   setTimeout(() => {
@@ -786,6 +844,19 @@ const handlePriceBlur = (event, item) => {
   // Format the display value when user leaves the input
   event.target.value = formatPriceInput(item.price)
 }
+
+watch(() => form.payment_type, async (newType) => {
+  if (newType === 'TEMPO') {
+    form.kas_account_id = null
+    if (kasChoicesInstance.value) {
+      kasChoicesInstance.value.destroy()
+      kasChoicesInstance.value = null
+    }
+  } else {
+    await nextTick()
+    initializeKasDropdown()
+  }
+})
 
 const cancel = () => {
   router.go(-1)
