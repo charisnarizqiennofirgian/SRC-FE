@@ -441,6 +441,7 @@ const sourceItemsForSelect = computed(() =>
     item_id:        i.item_id,
     item_code:      i.item_code,
     item_name:      i.item_name,
+    nama_produk:    i.nama_produk ?? null,
     qty_available:  i.qty_available,
     warehouse_id:   i.warehouse_id,
     warehouse_code: i.warehouse_code,

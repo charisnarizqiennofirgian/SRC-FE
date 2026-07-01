@@ -242,6 +242,7 @@
                         <div class="item-option">
                           <span class="item-option-code">{{ o.item_code }}</span>
                           <span class="item-option-name">{{ o.item_name }}</span>
+                          <span v-if="o.nama_produk" class="item-option-produk">{{ o.nama_produk }}</span>
                           <span class="item-option-stock">Stok: {{ o.qty_available }} pcs</span>
                         </div>
                       </template>
@@ -403,6 +404,7 @@ const s4sItemsForSelect = computed(() =>
     item_id:       i.item_id,
     item_code:     i.item_code,
     item_name:     i.item_name,
+    nama_produk:   i.nama_produk ?? null,
     qty_available: i.qty_available,
     label:         `${i.item_code} - ${i.item_name}`,
   }))
@@ -692,6 +694,7 @@ onMounted(fetchInitialData)
 .item-option { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; }
 .item-option-code { font-size: 0.82rem; font-weight: 700; color: #0891b2; }
 .item-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
+.item-option-produk { font-size: 0.78rem; color: #7c3aed; font-style: italic; }
 .item-option-produk { font-size: 0.78rem; color: #2563eb; font-weight: 600; }
 .item-option-stock { font-size: 0.78rem; color: #6b7280; }
 
