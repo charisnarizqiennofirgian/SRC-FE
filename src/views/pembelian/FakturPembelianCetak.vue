@@ -144,7 +144,7 @@ const formatCurrency = (value) => {
 
 const formatForeign = (value) => {
   if (value == null || isNaN(value)) return '0.00'
-  return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)
+  return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 5 }).format(value)
 }
 
 const formatPercentage = (value) => {
