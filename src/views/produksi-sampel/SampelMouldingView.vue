@@ -258,6 +258,19 @@
                     </div>
                   </div>
                 </div>
+                <div class="form-group-modern">
+                  <label class="form-label-modern">Jenis Finishing <span class="required-star">*</span></label>
+                  <div class="finishing-toggle">
+                    <label class="finishing-option">
+                      <input type="radio" v-model="group.finishing" value="natural" />
+                      <span>🌳 Natural</span>
+                    </label>
+                    <label class="finishing-option">
+                      <input type="radio" v-model="group.finishing" value="warna" />
+                      <span>🎨 Warna</span>
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <!-- REJECT (toggle) -->
@@ -409,6 +422,7 @@ const newGroup = () => ({
   local_id:       Date.now() + Math.random(),
   output_item_id: null,
   output_qty:     null,
+  finishing:      'natural',
   inputs:         [newInput()],
   reject_item_id: null,
   reject_qty:     null,
@@ -564,6 +578,7 @@ const handleSubmit = async () => {
       groups: validGroups.map((g) => ({
         output_item_id: Number(g.output_item_id),
         output_qty:     Number(g.output_qty),
+        finishing:      g.finishing || 'natural',
         inputs: g.inputs
           .filter((i) => i.item_id && i.qty > 0)
           .map((i) => ({ item_id: Number(i.item_id), qty: Number(i.qty) })),
@@ -627,6 +642,17 @@ onMounted(fetchInitialData)
 </script>
 
 <style scoped>
+.finishing-toggle { display: flex; gap: 0.75rem; margin-top: 0.25rem; }
+.finishing-option {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.6rem 1.1rem; border: 2px solid #d1d5db; border-radius: 10px;
+  cursor: pointer; font-weight: 600; font-size: 0.9rem; color: #374151;
+  transition: all 0.15s;
+}
+.finishing-option:has(input:checked) {
+  border-color: #16a34a; background: #f0fdf4; color: #15803d;
+}
+.finishing-option input { accent-color: #16a34a; }
 .page-header-moulding {
   background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
   padding: 2rem 2.5rem; border-radius: 20px; margin-bottom: 2rem;

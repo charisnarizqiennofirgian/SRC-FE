@@ -235,6 +235,21 @@
                 <div v-if="row.warehouse_name" class="source-info">
                   📦 Sumber: <strong>{{ row.warehouse_name }}</strong>
                 </div>
+
+                <!-- Finishing (khusus item type=component) -->
+                <div v-if="row.item_type === 'component'" class="form-group-modern" style="margin-top:1rem;">
+                  <label class="form-label-modern">Jenis Finishing yang Dipakai <span class="required-star">*</span></label>
+                  <div class="finishing-toggle">
+                    <label class="finishing-option">
+                      <input type="radio" v-model="row.finishing" value="natural" />
+                      <span>🌳 Natural</span>
+                    </label>
+                    <label class="finishing-option">
+                      <input type="radio" v-model="row.finishing" value="warna" />
+                      <span>🎨 Warna</span>
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <button type="button" class="btn-add-row btn-add-input" @click="addInput">
@@ -429,7 +444,7 @@ const form = reactive({
   process_type: 'sub_assembling',
   ref_po_id:    null,
   notes:        '',
-  inputs:  [{ local_id: Date.now(), key: null, item_id: null, warehouse_id: null, qty: null, max_qty: 0, warehouse_name: '' }],
+  inputs:  [{ local_id: Date.now(), key: null, item_id: null, warehouse_id: null, qty: null, max_qty: 0, warehouse_name: '', item_type: null, finishing: 'natural' }],
   outputs: [{ local_id: Date.now() + 1, item_id: null, qty: null }],
   rejects: [],
 })
@@ -442,6 +457,7 @@ const sourceItemsForSelect = computed(() =>
     item_code:      i.item_code,
     item_name:      i.item_name,
     nama_produk:    i.nama_produk ?? null,
+    item_type:      i.item_type ?? null,
     qty_available:  i.qty_available,
     warehouse_id:   i.warehouse_id,
     warehouse_code: i.warehouse_code,
@@ -506,13 +522,16 @@ const onItemSelected = (index, opt) => {
   form.inputs[index].warehouse_id   = opt?.warehouse_id  ?? null
   form.inputs[index].warehouse_name = opt?.warehouse_name ?? ''
   form.inputs[index].max_qty        = opt?.qty_available ?? 0
+  form.inputs[index].item_type      = opt?.item_type     ?? null
+  form.inputs[index].finishing      = 'natural'
 }
 
 // === INPUT ===
 const addInput = () => form.inputs.push({
   local_id: Date.now() + Math.random(),
   key: null, item_id: null, warehouse_id: null,
-  qty: null, max_qty: 0, warehouse_name: ''
+  qty: null, max_qty: 0, warehouse_name: '',
+  item_type: null, finishing: 'natural'
 })
 const removeInput = (i) => form.inputs.splice(i, 1)
 
@@ -550,6 +569,7 @@ const handleSubmit = async () => {
         item_id:      Number(i.item_id),
         warehouse_id: Number(i.warehouse_id),
         qty:          Number(i.qty),
+        finishing:    i.item_type === 'component' ? (i.finishing || 'natural') : null,
       })),
       outputs: validOutputs.map((o) => ({
         item_id: Number(o.item_id),
@@ -570,7 +590,7 @@ const handleSubmit = async () => {
     form.ref_po_id     = null
     form.notes         = ''
     form.process_type  = currentType
-    form.inputs        = [{ local_id: Date.now(), key: null, item_id: null, warehouse_id: null, qty: null, max_qty: 0, warehouse_name: '' }]
+    form.inputs        = [{ local_id: Date.now(), key: null, item_id: null, warehouse_id: null, qty: null, max_qty: 0, warehouse_name: '', item_type: null, finishing: 'natural' }]
     form.outputs       = []
     form.rejects       = []
     poInfo.value       = { buyer_name: null, so_number: null }
@@ -595,6 +615,17 @@ onMounted(fetchInitialData)
 </script>
 
 <style scoped>
+.finishing-toggle { display: flex; gap: 0.75rem; margin-top: 0.25rem; }
+.finishing-option {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.6rem 1.1rem; border: 2px solid #d1d5db; border-radius: 10px;
+  cursor: pointer; font-weight: 600; font-size: 0.9rem; color: #374151;
+  transition: all 0.15s;
+}
+.finishing-option:has(input:checked) {
+  border-color: #7c3aed; background: #f5f3ff; color: #6d28d9;
+}
+.finishing-option input { accent-color: #7c3aed; }
 .page-header-assembling {
   background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
   padding: 2rem 2.5rem; border-radius: 20px; margin-bottom: 2rem;

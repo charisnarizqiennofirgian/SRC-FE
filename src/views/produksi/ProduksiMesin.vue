@@ -10,7 +10,7 @@
           <div class="header-text-content">
             <h1 class="page-title-mesin">Produksi Mesin</h1>
             <p class="page-subtitle-mesin">
-              Catat proses per mesin — input komponen S4S, output ke Gudang Mesin, dan reject.
+              Satu transaksi bisa banyak baris, tiap baris pilih mesinnya sendiri (Bor, CNC, dll) — input komponen S4S, output ke Gudang Mesin, dan reject.
             </p>
           </div>
         </div>
@@ -80,46 +80,21 @@
               </div>
             </div>
 
-            <div class="form-grid-2col">
-              <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Production Order <span class="required-star">*</span>
-                </label>
-                <vue-select
-                  v-model="form.ref_po_id"
-                  :options="productionOrders"
-                  :reduce="(po) => po.id"
-                  label="label"
-                  placeholder="🔍 Cari PO..."
-                  :clearable="true"
-                  class="vue-select-po"
-                  @option:selected="handlePoChange"
-                  @option:deselected="handlePoDeselect"
-                />
-              </div>
-
-              <div class="form-group-modern">
-                <label class="form-label-modern">
-                  Mesin yang Dipakai <span class="required-star">*</span>
-                </label>
-                <vue-select
-                  v-model="form.machine_id"
-                  :options="machines"
-                  :reduce="(m) => m.id"
-                  label="name"
-                  placeholder="🔍 Pilih mesin..."
-                  :clearable="true"
-                  class="vue-select-po"
-                >
-                  <template #option="m">
-                    <div class="machine-option">
-                      <span class="machine-code">{{ m.code }}</span>
-                      <span class="machine-name">{{ m.name }}</span>
-                      <span class="machine-desc">{{ m.description }}</span>
-                    </div>
-                  </template>
-                </vue-select>
-              </div>
+            <div class="form-group-modern" style="margin-bottom:1.25rem;">
+              <label class="form-label-modern">
+                Production Order <span class="required-star">*</span>
+              </label>
+              <vue-select
+                v-model="form.ref_po_id"
+                :options="productionOrders"
+                :reduce="(po) => po.id"
+                label="label"
+                placeholder="🔍 Cari PO..."
+                :clearable="true"
+                class="vue-select-po"
+                @option:selected="handlePoChange"
+                @option:deselected="handlePoDeselect"
+              />
             </div>
 
             <!-- PRODUK YANG DIKERJAKAN -->
@@ -202,7 +177,7 @@
               <div class="section-title-group">
                 <h3 class="section-title">Baris Produksi</h3>
                 <p class="section-subtitle">
-                  Tiap baris: 1 Komponen S4S → 1 Output Mesin + reject opsional
+                  Tiap baris: pilih mesin sendiri, 1 Komponen S4S → 1 Output Mesin + reject opsional
                   <span v-if="loadingS4s" class="loading-inline">⏳ memuat...</span>
                 </p>
               </div>
@@ -221,6 +196,28 @@
               <div class="item-row-header">
                 <span class="item-row-number">Baris #{{ idx + 1 }}</span>
                 <button v-if="form.lines.length > 1" type="button" class="btn-remove-row" @click="removeLine(idx)">✕</button>
+              </div>
+
+              <!-- MESIN per baris -->
+              <div class="form-group-modern" style="margin-bottom:1rem;">
+                <label class="form-label-modern">Mesin yang Dipakai <span class="required-star">*</span></label>
+                <vue-select
+                  v-model="line.machine_id"
+                  :options="machines"
+                  :reduce="(m) => m.id"
+                  label="name"
+                  placeholder="🔍 Pilih mesin — Bor, CNC, dll..."
+                  :clearable="true"
+                  class="vue-select-po"
+                >
+                  <template #option="m">
+                    <div class="machine-option">
+                      <span class="machine-code">{{ m.code }}</span>
+                      <span class="machine-name">{{ m.name }}</span>
+                      <span class="machine-desc">{{ m.description }}</span>
+                    </div>
+                  </template>
+                </vue-select>
               </div>
 
               <!-- INPUT dari S4S -->
@@ -258,6 +255,19 @@
                       <input v-model.number="line.input_qty" type="number" min="0.01" step="0.01" :max="line.max_qty" class="form-input-modern" placeholder="0" />
                     </div>
                     <p v-if="line.input_qty > line.max_qty && line.max_qty > 0" class="qty-warning">⚠️ Melebihi stok tersedia</p>
+                  </div>
+                </div>
+                <div class="form-group-modern">
+                  <label class="form-label-modern">Jenis Finishing <span class="required-star">*</span></label>
+                  <div class="finishing-toggle">
+                    <label class="finishing-option">
+                      <input type="radio" v-model="line.finishing" value="natural" />
+                      <span>🌳 Natural</span>
+                    </label>
+                    <label class="finishing-option">
+                      <input type="radio" v-model="line.finishing" value="warna" />
+                      <span>🎨 Warna</span>
+                    </label>
                   </div>
                 </div>
               </div>
@@ -378,8 +388,10 @@ const poDetailItems    = ref([])
 
 const newLine = () => ({
   local_id:        Date.now() + Math.random(),
+  machine_id:      null,
   input_item_id:   null,
   input_qty:       null,
+  finishing:       'natural',
   max_qty:         0,
   output_item_id:  null,
   output_qty:      null,
@@ -393,7 +405,6 @@ const form = reactive({
   estimated_finish_date:       '',
   ref_po_id:                   null,
   production_order_detail_id:  null,
-  machine_id:                  null,
   notes:                       '',
   lines: [newLine()],
 })
@@ -522,12 +533,15 @@ const tandaiSelesai = async () => {
 const handleSubmit = async () => {
   if (!form.ref_po_id)                   { showError('Validasi', 'Production Order wajib dipilih'); return }
   if (!form.production_order_detail_id)  { showError('Validasi', 'Produk yang dikerjakan wajib dipilih'); return }
-  if (!form.machine_id)                  { showError('Validasi', 'Mesin wajib dipilih'); return }
 
   const validLines = form.lines.filter((l) => l.input_item_id && l.input_qty > 0 && l.output_item_id && l.output_qty > 0)
   if (validLines.length === 0) { showError('Validasi', 'Minimal satu baris Komponen → Output wajib diisi'); return }
 
   for (let i = 0; i < validLines.length; i++) {
+    if (!validLines[i].machine_id) {
+      showError('Validasi', `Baris #${i + 1}: Mesin wajib dipilih`)
+      return
+    }
     if (validLines[i].input_qty > validLines[i].max_qty && validLines[i].max_qty > 0) {
       showError('Validasi', `Baris #${i + 1}: Qty melebihi stok S4S tersedia (${validLines[i].max_qty} pcs)`)
       return
@@ -540,11 +554,12 @@ const handleSubmit = async () => {
       date:                       form.date,
       ref_po_id:                  Number(form.ref_po_id),
       production_order_detail_id: Number(form.production_order_detail_id),
-      machine_id:                 Number(form.machine_id),
       notes:                      form.notes || null,
       lines: validLines.map((l) => ({
+        machine_id:     Number(l.machine_id),
         input_item_id:  Number(l.input_item_id),
         input_qty:      Number(l.input_qty),
+        finishing:      l.finishing || 'natural',
         output_item_id: Number(l.output_item_id),
         output_qty:     Number(l.output_qty),
         reject_qty:     l.reject_qty > 0 ? Number(l.reject_qty) : null,
@@ -557,7 +572,6 @@ const handleSubmit = async () => {
 
     form.ref_po_id                   = null
     form.production_order_detail_id  = null
-    form.machine_id                  = null
     form.notes                       = ''
     form.lines                       = [newLine()]
     poInfo.value                     = { buyer_name: null, so_number: null }
@@ -578,6 +592,17 @@ onMounted(fetchInitialData)
 </script>
 
 <style scoped>
+.finishing-toggle { display: flex; gap: 0.75rem; margin-top: 0.25rem; }
+.finishing-option {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.6rem 1.1rem; border: 2px solid #d1d5db; border-radius: 10px;
+  cursor: pointer; font-weight: 600; font-size: 0.9rem; color: #374151;
+  transition: all 0.15s;
+}
+.finishing-option:has(input:checked) {
+  border-color: #0891b2; background: #ecfeff; color: #0e7490;
+}
+.finishing-option input { accent-color: #0891b2; }
 .page-header-mesin {
   background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
   padding: 2rem 2.5rem; border-radius: 20px; margin-bottom: 2rem;
