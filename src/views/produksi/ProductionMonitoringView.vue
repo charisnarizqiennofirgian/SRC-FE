@@ -180,7 +180,7 @@
               <template v-for="(so, soIndex) in paginatedData" :key="so.so_id">
                 <tr
                   v-for="(item, itemIndex) in so.items"
-                  :key="`${so.so_id}-${item.item_id}`"
+                  :key="item.detail_id ?? `${so.so_id}-${item.item_id}-${itemIndex}`"
                   class="data-row"
                   :class="{
                     'row-done': item.is_done,

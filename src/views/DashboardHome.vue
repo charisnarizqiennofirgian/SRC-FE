@@ -112,7 +112,7 @@
               <template v-for="(so, soIndex) in filteredMonitoringData" :key="so.so_id">
                 <tr
                   v-for="(item, itemIndex) in so.items"
-                  :key="`${so.so_id}-${item.item_id}`"
+                  :key="item.detail_id ?? `${so.so_id}-${item.item_id}-${itemIndex}`"
                   :class="{
                     'row-done': item.is_done,
                     'row-even': soIndex % 2 === 0,
@@ -362,7 +362,7 @@
             <template v-for="(po, poIndex) in filteredSampelData" :key="po.po_id">
               <tr
                 v-for="(item, itemIndex) in po.items"
-                :key="`${po.po_id}-${item.item_id}`"
+                :key="item.detail_id ?? `${po.po_id}-${item.item_id}-${itemIndex}`"
                 :class="{ 'row-done': item.is_done, 'row-even': poIndex % 2 === 0 }"
               >
                 <td v-if="itemIndex === 0" :rowspan="po.items.length" class="col-so td-so-group">
