@@ -191,8 +191,9 @@
                     <vue-select
                       v-model="row.key"
                       :options="sourceItemsForSelect"
+                      :filterBy="filterSourceItem"
                       label="label"
-                      placeholder="🔍 Pilih komponen..."
+                      placeholder="🔍 Pilih komponen (bisa cari nama produk)..."
                       class="vue-select-item"
                       @option:selected="(opt) => onItemSelected(index, opt)"
                     >
@@ -356,6 +357,7 @@
                     v-model="row.item_id"
                     :options="sourceItemsForSelect"
                     :reduce="(o) => o.item_id"
+                    :filterBy="filterSourceItem"
                     label="label"
                     placeholder="🔍 Pilih komponen yang reject..."
                     class="vue-select-item"
@@ -465,6 +467,15 @@ const sourceItemsForSelect = computed(() =>
     label:          `${i.item_code} - ${i.item_name}`,
   }))
 )
+
+const filterSourceItem = (option, label, search) => {
+  const s = search.toLowerCase()
+  return (
+    option.item_code?.toLowerCase().includes(s) ||
+    option.item_name?.toLowerCase().includes(s) ||
+    option.nama_produk?.toLowerCase().includes(s)
+  )
+}
 
 // === FETCH ===
 const fetchInitialData = async () => {

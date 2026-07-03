@@ -230,8 +230,9 @@
                       v-model="line.input_item_id"
                       :options="s4sItemsForSelect"
                       :reduce="(o) => o.item_id"
+                      :filterBy="filterS4sItem"
                       label="label"
-                      placeholder="🔍 Pilih komponen dari S4S..."
+                      placeholder="🔍 Pilih komponen dari S4S (bisa cari nama produk)..."
                       class="vue-select-item"
                       @option:selected="(opt) => onS4sItemSelected(idx, opt)"
                     >
@@ -427,6 +428,15 @@ const getS4sItemName = (itemId) => {
   return found ? `${found.item_code} - ${found.item_name}` : null
 }
 
+const filterS4sItem = (option, label, search) => {
+  const s = search.toLowerCase()
+  return (
+    option.item_code?.toLowerCase().includes(s) ||
+    option.item_name?.toLowerCase().includes(s) ||
+    option.nama_produk?.toLowerCase().includes(s)
+  )
+}
+
 // === FETCH DATA ===
 const fetchInitialData = async () => {
   loadingS4s.value = true
@@ -568,15 +578,9 @@ const handleSubmit = async () => {
     }
 
     await apiClient.post('/operator-mesin/store', payload)
-    showSuccess('Sukses', 'Proses Mesin berhasil dicatat')
+    showSuccess('Sukses', 'Proses Mesin berhasil dicatat, lanjut ke Assembling')
 
-    form.ref_po_id                   = null
-    form.production_order_detail_id  = null
-    form.notes                       = ''
-    form.lines                       = [newLine()]
-    poInfo.value                     = { buyer_name: null, so_number: null }
-    poTargets.value                  = []
-    poDetailItems.value              = []
+    router.push({ name: 'AssemblingView' })
   } catch (error) {
     const message =
       error.response?.data?.message ||
