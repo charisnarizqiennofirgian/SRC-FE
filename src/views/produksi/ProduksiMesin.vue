@@ -184,7 +184,7 @@
             </div>
 
             <div v-if="s4sItems.length === 0 && !loadingS4s" class="empty-hint">
-              📭 Tidak ada stok di Gudang S4S
+              📭 Tidak ada item Komponen dengan stok
             </div>
 
             <div
@@ -241,7 +241,12 @@
                           <span class="item-option-code">{{ o.item_code }}</span>
                           <span class="item-option-name">{{ o.item_name }}</span>
                           <span v-if="o.nama_produk" class="item-option-produk">{{ o.nama_produk }}</span>
-                          <span class="item-option-stock">Stok: {{ o.qty_available }} pcs</span>
+                          <span class="item-option-stock">
+                            Stok S4S: {{ o.qty_available }} pcs
+                            <span v-if="o.qty_available <= 0" class="item-option-warning">
+                              (stok ada di gudang lain, total: {{ o.qty_total }} pcs)
+                            </span>
+                          </span>
                         </div>
                       </template>
                     </vue-select>
@@ -418,6 +423,7 @@ const s4sItemsForSelect = computed(() =>
     item_name:     i.item_name,
     nama_produk:   i.nama_produk ?? null,
     qty_available: i.qty_available,
+    qty_total:     i.qty_total ?? i.qty_available,
     label:         `${i.item_code} - ${i.item_name}`,
   }))
 )
@@ -726,6 +732,7 @@ onMounted(fetchInitialData)
 .item-option-produk { font-size: 0.78rem; color: #7c3aed; font-style: italic; }
 .item-option-produk { font-size: 0.78rem; color: #2563eb; font-weight: 600; }
 .item-option-stock { font-size: 0.78rem; color: #6b7280; }
+.item-option-warning { color: #d97706; font-weight: 600; }
 
 /* Detail item dropdown */
 .detail-option { display: flex; align-items: center; gap: 0.5rem; padding: 6px 12px; flex-wrap: wrap; }
