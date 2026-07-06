@@ -232,12 +232,12 @@
                 <th class="th-small">L (mm)</th>
                 <th class="th-small">P (mm)</th>
                 <th class="th-small">Qty/Set</th>
-                <th class="th-small" title="Gabungan semua gudang — bukan angka khusus gudang yang difilter">Qty Natural</th>
-                <th class="th-small" title="Gabungan semua gudang — bukan angka khusus gudang yang difilter">Qty Warna</th>
+                <th class="th-small" :title="isWarehouseFiltered ? 'Khusus gudang yang difilter' : 'Gabungan semua gudang'">Qty Natural</th>
+                <th class="th-small" :title="isWarehouseFiltered ? 'Khusus gudang yang difilter' : 'Gabungan semua gudang'">Qty Warna</th>
                 <th class="th-small">Total Stok</th>
                 <th class="th-small">M³ Total</th>
-                <th class="th-small" title="Gabungan semua gudang — bukan angka khusus gudang yang difilter">M³ Natural</th>
-                <th class="th-small" title="Gabungan semua gudang — bukan angka khusus gudang yang difilter">M³ Warna</th>
+                <th class="th-small" :title="isWarehouseFiltered ? 'Khusus gudang yang difilter' : 'Gabungan semua gudang'">M³ Natural</th>
+                <th class="th-small" :title="isWarehouseFiltered ? 'Khusus gudang yang difilter' : 'Gabungan semua gudang'">M³ Warna</th>
                 <th class="th-small">Aksi</th>
               </tr>
 
@@ -499,13 +499,11 @@
                 <td class="td-small">
                   <span class="badge-unit-modern">{{ formatQty(item.qty_set || 0) }}</span>
                 </td>
-                <td class="td-small" :title="isWarehouseFiltered ? 'Gabungan semua gudang' : ''">
-                  <span v-if="isWarehouseFiltered" class="qty-scoped-hidden">-</span>
-                  <span v-else class="qty-natural">{{ formatQty(item.qty_natural || 0) }}</span>
+                <td class="td-small" :title="isWarehouseFiltered ? 'Khusus gudang yang difilter' : 'Gabungan semua gudang'">
+                  <span class="qty-natural">{{ formatQty(item.qty_natural_scoped ?? item.qty_natural ?? 0) }}</span>
                 </td>
-                <td class="td-small" :title="isWarehouseFiltered ? 'Gabungan semua gudang' : ''">
-                  <span v-if="isWarehouseFiltered" class="qty-scoped-hidden">-</span>
-                  <span v-else class="qty-warna">{{ formatQty(item.qty_warna || 0) }}</span>
+                <td class="td-small" :title="isWarehouseFiltered ? 'Khusus gudang yang difilter' : 'Gabungan semua gudang'">
+                  <span class="qty-warna">{{ formatQty(item.qty_warna_scoped ?? item.qty_warna ?? 0) }}</span>
                 </td>
                 <td class="td-small">
                   <div class="stock-total-inline">
@@ -519,17 +517,14 @@
                     <button type="button" class="btn-eye-inline" @click="openDetail(item)">👁️</button>
                   </div>
                 </td>
-                <td class="td-small" :title="isWarehouseFiltered ? 'Gabungan semua gudang' : ''">
-                  <span v-if="isWarehouseFiltered" class="qty-scoped-hidden">-</span>
-                  <span v-else>{{ formatKubikasi((item.m3_natural || 0) + (item.m3_warna || 0)) }}</span>
+                <td class="td-small" :title="isWarehouseFiltered ? 'Khusus gudang yang difilter' : 'Gabungan semua gudang'">
+                  {{ formatKubikasi((item.m3_natural_scoped ?? item.m3_natural ?? 0) + (item.m3_warna_scoped ?? item.m3_warna ?? 0)) }}
                 </td>
-                <td class="td-small" :title="isWarehouseFiltered ? 'Gabungan semua gudang' : ''">
-                  <span v-if="isWarehouseFiltered" class="qty-scoped-hidden">-</span>
-                  <span v-else class="qty-natural">{{ formatKubikasi(item.m3_natural || 0) }}</span>
+                <td class="td-small" :title="isWarehouseFiltered ? 'Khusus gudang yang difilter' : 'Gabungan semua gudang'">
+                  <span class="qty-natural">{{ formatKubikasi(item.m3_natural_scoped ?? item.m3_natural ?? 0) }}</span>
                 </td>
-                <td class="td-small" :title="isWarehouseFiltered ? 'Gabungan semua gudang' : ''">
-                  <span v-if="isWarehouseFiltered" class="qty-scoped-hidden">-</span>
-                  <span v-else class="qty-warna">{{ formatKubikasi(item.m3_warna || 0) }}</span>
+                <td class="td-small" :title="isWarehouseFiltered ? 'Khusus gudang yang difilter' : 'Gabungan semua gudang'">
+                  <span class="qty-warna">{{ formatKubikasi(item.m3_warna_scoped ?? item.m3_warna ?? 0) }}</span>
                 </td>
                 <td class="td-small">
                   <button
@@ -892,10 +887,9 @@ const isDetailOpen = ref(false)
 const detailItem = ref(null)
 const detailStocks = ref([])
 
-// Qty Natural/Warna (items.qty_natural/qty_warna) itu angka GLOBAL gabungan semua gudang —
-// tidak punya dimensi warehouse_id. Saat filter gudang aktif, kolom Total sudah discope ke gudang
-// itu (dari inventories), tapi Natural/Warna tidak bisa ikut discope (datanya memang tidak per-gudang).
-// Makanya disembunyikan biar tidak disalahartikan seolah itu juga angka khusus gudang yang difilter.
+// Backend mengirim qty_natural_scoped/qty_warna_scoped (dari inventories per gudang) — akurat
+// baik saat filter gudang aktif maupun "Semua Gudang". isWarehouseFiltered dipakai untuk label
+// tooltip header saja (bukan lagi untuk menyembunyikan kolom).
 const isWarehouseFiltered = computed(() => !!selectedWarehouseId.value)
 
 const uniqueTpk = computed(() => {
@@ -2384,14 +2378,6 @@ onMounted(() => {
   color: #5b21b6;
   border-radius: 6px;
   font-weight: 700;
-  font-size: 0.875rem;
-}
-
-.qty-scoped-hidden {
-  display: inline-block;
-  padding: 4px 10px;
-  color: #9ca3af;
-  font-weight: 600;
   font-size: 0.875rem;
 }
 
