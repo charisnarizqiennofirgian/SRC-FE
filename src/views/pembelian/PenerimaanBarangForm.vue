@@ -10,7 +10,7 @@
             <p class="page-subtitle">Form penerimaan barang dari Purchase Order</p>
           </div>
         </div>
-        <button type="button" @click="router.back()" class="btn-back">
+        <button type="button" @click="goBackToList()" class="btn-back">
           <span class="btn-icon">←</span>
           <span>Kembali ke Daftar</span>
         </button>
@@ -307,6 +307,17 @@ const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 
+// Kalau dibuka dengan ?returnTo=... (mis. dari Pembelian Operasional yang lagi di halaman
+// pagination tertentu), kembali persis ke URL itu — lebih pasti daripada router.back() yang
+// gampang meleset kalau history stack-nya beda dari yang diasumsikan (lewat Detail dulu, dst).
+const goBackToList = () => {
+  if (route.query.returnTo) {
+    router.push(route.query.returnTo)
+  } else {
+    router.back()
+  }
+}
+
 const loading = ref(true)
 const isSaving = ref(false)
 const error = ref(null)
@@ -433,7 +444,7 @@ const submitForm = async () => {
     }
     await apiClient.post('/goods-receipts', payload)
     toast.success('Penerimaan barang berhasil disimpan & stok diperbarui!')
-    router.back()
+    goBackToList()
   } catch (err) {
     toast.error('Gagal menyimpan penerimaan barang.')
     console.error(err)
@@ -446,7 +457,7 @@ const formatRupiah = (val) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val || 0)
 
 const cancel = () => {
-  router.back()
+  goBackToList()
 }
 </script>
 

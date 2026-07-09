@@ -132,7 +132,11 @@
 
                   <router-link
                     v-if="pesanan.status === 'Open' || pesanan.status === 'Terbuka' || pesanan.status === 'Diterima Sebagian'"
-                    :to="{ name: 'tambah-penerimaan-barang', params: { po_id: pesanan.id } }"
+                    :to="{
+                      name: 'tambah-penerimaan-barang',
+                      params: { po_id: pesanan.id },
+                      query: { returnTo: route.fullPath },
+                    }"
                     class="btn-action btn-receive"
                     title="Terima Barang"
                   >
