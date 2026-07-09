@@ -13,7 +13,7 @@
             </p>
           </div>
         </div>
-        <button class="btn-back" @click="router.back()">
+        <button class="btn-back" @click="goBackToList()">
           <span class="btn-icon">←</span>
           <span>Kembali ke Daftar</span>
         </button>
@@ -319,7 +319,7 @@
 
       <!-- Detail Actions -->
       <div class="detail-actions">
-        <router-link to="/admin/pembelian/operasional" class="btn-action btn-cancel">
+        <router-link :to="listReturnTo || '/admin/pembelian/operasional'" class="btn-action btn-cancel">
           <span class="action-icon">←</span>
           <span>Kembali</span>
         </router-link>
@@ -333,7 +333,11 @@
         </router-link>
         <router-link
           v-if="form.status === 'Open' || form.status === 'Terbuka'"
-          :to="{ name: 'tambah-penerimaan-barang', params: { po_id: poId } }"
+          :to="{
+            name: 'tambah-penerimaan-barang',
+            params: { po_id: poId },
+            query: listReturnTo ? { returnTo: listReturnTo } : {},
+          }"
           class="btn-action btn-receive"
         >
           <span class="action-icon">📦</span>
@@ -354,6 +358,19 @@ import { useToast } from 'vue-toastification'
 const router = useRouter()
 const route = useRoute()
 const toast = useToast()
+
+// Kalau halaman ini dibuka dari list dengan ?returnTo=... (mis. Pembelian Operasional yang
+// lagi di halaman pagination tertentu), kembali persis ke situ — bukan router.back() yang bisa
+// meleset. Query ini juga diteruskan ke link "Terima Barang" supaya sampai ke sana pun tetap
+// tahu harus balik ke halaman list mana.
+const listReturnTo = route.query.returnTo || null
+const goBackToList = () => {
+  if (listReturnTo) {
+    router.push(listReturnTo)
+  } else {
+    router.back()
+  }
+}
 
 const poId = route.params.id
 const poNumber = ref('')

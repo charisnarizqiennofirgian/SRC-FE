@@ -114,7 +114,11 @@
               <td class="td-action">
                 <div class="action-buttons">
                   <router-link
-                    :to="{ name: 'detail-po', params: { id: pesanan.id } }"
+                    :to="{
+                      name: 'detail-po',
+                      params: { id: pesanan.id },
+                      query: { returnTo: route.fullPath },
+                    }"
                     class="btn-action btn-detail"
                     title="Lihat Detail"
                   >
