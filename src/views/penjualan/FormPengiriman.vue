@@ -41,21 +41,36 @@
         </div>
         <div class="card-body">
           <div class="form-group-modern">
-            <label class="form-label-modern"> Sales Order <span class="required">*</span> </label>
-            <div class="select-wrapper-modern">
-              <select
-                v-model="form.sales_order_id"
-                @change="onSalesOrderSelect"
-                class="form-select-modern"
-                required
+            <label class="form-label-modern">
+              Sales Order <span class="required">*</span>
+              <span class="label-hint">(bisa pilih lebih dari satu untuk digabung dalam 1 pengiriman)</span>
+            </label>
+            <div class="so-checklist">
+              <label
+                v-for="so in openSalesOrders"
+                :key="so.id"
+                class="so-checklist-item"
+                :class="{ disabled: isSoDisabled(so), checked: isSoSelected(so.id) }"
               >
-                <option disabled value="">-- Pilih Pesanan Penjualan --</option>
-                <option v-for="so in openSalesOrders" :key="so.id" :value="so.id">
+                <input
+                  type="checkbox"
+                  :checked="isSoSelected(so.id)"
+                  :disabled="isSoDisabled(so)"
+                  @change="toggleSalesOrder(so)"
+                />
+                <span class="so-checklist-label">
                   {{ so.so_number }} - {{ so.buyer.name }}
-                </option>
-              </select>
-              <span class="select-arrow">▼</span>
+                  <span class="so-currency-tag">{{ so.currency }}</span>
+                </span>
+              </label>
+              <p v-if="openSalesOrders.length === 0" class="form-hint">
+                Tidak ada Sales Order yang siap dikirim.
+              </p>
             </div>
+            <p v-if="selectedSalesOrders.length > 1" class="form-hint multi-so-hint">
+              {{ selectedSalesOrders.length }} SO digabung dalam pengiriman ini. Sales Invoice tetap
+              akan dibuat terpisah per SO nantinya.
+            </p>
           </div>
 
           <div class="form-group-modern" style="margin-top: 1.5rem">
@@ -74,7 +89,7 @@
         </div>
       </div>
 
-      <template v-if="selectedSalesOrder">
+      <template v-if="selectedSalesOrders.length > 0">
         <div class="form-card">
           <div class="card-header">
             <span class="header-icon">🏢</span>
@@ -402,6 +417,7 @@ INDONESIA</textarea
               <table class="table-modern">
                 <thead>
                   <tr>
+                    <th v-if="selectedSalesOrders.length > 1">Asal SO</th>
                     <th>Nama Barang</th>
                     <th class="text-center">HS Code</th>
                     <th class="text-center">Qty Dipesan</th>
@@ -418,118 +434,165 @@ INDONESIA</textarea
                     <th class="text-center">Total GW (kg)</th>
                     <th class="text-center">Total M3</th>
                     <th class="text-center">Total Wood (m3)</th>
+                    <th v-if="form.shipment_mode === 'AIR'" class="text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="item in form.details" :key="item.sales_order_detail_id">
-                    <td class="item-name">{{ item.item_name }}</td>
-                    <td class="text-center">
-                      <span class="hs-code-badge">{{ item.hs_code || '-' }}</span>
-                    </td>
-                    <td class="text-center">{{ item.quantity_ordered }}</td>
-                    <td class="text-center">{{ item.quantity_already_shipped }}</td>
-                    <td class="text-center">
-                      <span class="stock-badge">{{ item.current_stock }}</span>
-                    </td>
+                  <template v-for="item in form.details" :key="item.sales_order_detail_id">
+                    <tr v-for="(row, rowIdx) in item.packing_rows" :key="item.sales_order_detail_id + '-' + rowIdx">
+                      <td
+                        v-if="selectedSalesOrders.length > 1 && rowIdx === 0"
+                        :rowspan="item.packing_rows.length"
+                        class="text-center"
+                      >
+                        <span class="so-origin-badge">{{ item.so_number }}</span>
+                      </td>
+                      <td v-if="rowIdx === 0" :rowspan="item.packing_rows.length" class="item-name">
+                        {{ item.item_name }}
+                      </td>
+                      <td v-if="rowIdx === 0" :rowspan="item.packing_rows.length" class="text-center">
+                        <span class="hs-code-badge">{{ item.hs_code || '-' }}</span>
+                      </td>
+                      <td v-if="rowIdx === 0" :rowspan="item.packing_rows.length" class="text-center">
+                        {{ item.quantity_ordered }}
+                      </td>
+                      <td v-if="rowIdx === 0" :rowspan="item.packing_rows.length" class="text-center">
+                        {{ item.quantity_already_shipped }}
+                      </td>
+                      <td v-if="rowIdx === 0" :rowspan="item.packing_rows.length" class="text-center">
+                        <span class="stock-badge">{{ item.current_stock }}</span>
+                      </td>
 
-                    <td v-if="form.shipment_mode === 'AIR'" class="text-center">
-                      <input
-                        v-model.number="item.quantity_crates"
-                        type="number"
-                        min="0"
-                        class="form-input-table"
-                        placeholder="0"
-                      />
-                    </td>
+                      <td v-if="form.shipment_mode === 'AIR'" class="text-center">
+                        <input
+                          v-model.number="row.quantity_crates"
+                          type="number"
+                          min="0"
+                          class="form-input-table"
+                          placeholder="0"
+                        />
+                      </td>
 
-                    <td class="text-center">
-                      <input
-                        v-model.number="item.quantity_shipped"
-                        type="number"
-                        min="0"
-                        :max="Math.min(item.quantity_sisa, item.current_stock)"
-                        class="form-input-table"
-                        placeholder="0"
-                        @input="calculateTotals(item)"
-                      />
-                      <div v-if="item.error" class="error-text-small">{{ item.error }}</div>
-                    </td>
+                      <td class="text-center">
+                        <input
+                          v-model.number="row.quantity_shipped"
+                          type="number"
+                          min="0"
+                          class="form-input-table"
+                          placeholder="0"
+                          @input="onRowInput(item, row)"
+                        />
+                        <div
+                          v-if="item.packing_rows.length > 1 && rowIdx === item.packing_rows.length - 1"
+                          class="packing-total-hint"
+                        >
+                          Total: {{ itemTotalShipped(item) }} pcs
+                        </div>
+                        <div
+                          v-if="item.error && rowIdx === item.packing_rows.length - 1"
+                          class="error-text-small"
+                        >
+                          {{ item.error }}
+                        </div>
+                      </td>
 
-                    <td class="text-center">
-                      <input
-                        v-model.number="item.quantity_boxes"
-                        type="number"
-                        min="0"
-                        class="form-input-table"
-                        placeholder="0"
-                        @input="calculateTotals(item)"
-                      />
-                    </td>
+                      <td class="text-center">
+                        <input
+                          v-model.number="row.quantity_boxes"
+                          type="number"
+                          min="0"
+                          class="form-input-table"
+                          placeholder="0"
+                          @input="calculateTotals(row)"
+                        />
+                      </td>
 
-                    <td class="text-center">
-                      <input
-                        v-model.number="item.nw_per_box"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        class="form-input-table"
-                        placeholder="0.00"
-                        @input="calculateTotals(item)"
-                      />
-                    </td>
+                      <td class="text-center">
+                        <input
+                          v-model.number="row.nw_per_box"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          class="form-input-table"
+                          placeholder="0.00"
+                          @input="calculateTotals(row)"
+                        />
+                      </td>
 
-                    <td class="text-center">
-                      <input
-                        v-model.number="item.gw_per_box"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        class="form-input-table"
-                        placeholder="0.00"
-                        @input="calculateTotals(item)"
-                      />
-                    </td>
+                      <td class="text-center">
+                        <input
+                          v-model.number="row.gw_per_box"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          class="form-input-table"
+                          placeholder="0.00"
+                          @input="calculateTotals(row)"
+                        />
+                      </td>
 
-                    <td class="text-center">
-                      <input
-                        v-model.number="item.m3_per_carton"
-                        type="number"
-                        step="0.0001"
-                        min="0"
-                        class="form-input-table"
-                        placeholder="0.0000"
-                        @input="calculateTotals(item)"
-                      />
-                    </td>
+                      <td class="text-center">
+                        <input
+                          v-model.number="row.m3_per_carton"
+                          type="number"
+                          step="0.0001"
+                          min="0"
+                          class="form-input-table"
+                          placeholder="0.0000"
+                          @input="calculateTotals(row)"
+                        />
+                      </td>
 
-                    <td class="text-center">
-                      <input
-                        v-model.number="item.wood_consumed_per_pcs"
-                        type="number"
-                        step="0.0001"
-                        min="0"
-                        class="form-input-table"
-                        placeholder="0.0000"
-                        @input="calculateTotals(item)"
-                      />
-                    </td>
+                      <td class="text-center">
+                        <input
+                          v-model.number="row.wood_consumed_per_pcs"
+                          type="number"
+                          step="0.0001"
+                          min="0"
+                          class="form-input-table"
+                          placeholder="0.0000"
+                          @input="calculateTotals(row)"
+                        />
+                      </td>
 
-                    <td class="text-center">
-                      <span class="total-badge">{{ formatNumber(item.total_nw) }}</span>
-                    </td>
+                      <td class="text-center">
+                        <span class="total-badge">{{ formatNumber(row.total_nw) }}</span>
+                      </td>
 
-                    <td class="text-center">
-                      <span class="total-badge">{{ formatNumber(item.total_gw) }}</span>
-                    </td>
+                      <td class="text-center">
+                        <span class="total-badge">{{ formatNumber(row.total_gw) }}</span>
+                      </td>
 
-                    <td class="text-center">
-                      <span class="total-badge">{{ formatNumber(item.total_m3, 4) }}</span>
-                    </td>
+                      <td class="text-center">
+                        <span class="total-badge">{{ formatNumber(row.total_m3, 4) }}</span>
+                      </td>
 
-                    <td class="text-center">
-                      <span class="total-badge">{{ formatNumber(item.total_wood_consumed, 4) }}</span>
-                    </td>
-                  </tr>
+                      <td class="text-center">
+                        <span class="total-badge">{{ formatNumber(row.total_wood_consumed, 4) }}</span>
+                      </td>
+
+                      <td v-if="form.shipment_mode === 'AIR'" class="text-center packing-row-actions">
+                        <button
+                          v-if="rowIdx === item.packing_rows.length - 1"
+                          type="button"
+                          class="btn-packing-row btn-add-row"
+                          title="Produk ini dikirim dalam crate/box terpisah — tambah baris"
+                          @click="addPackingRow(item)"
+                        >
+                          ＋
+                        </button>
+                        <button
+                          v-if="item.packing_rows.length > 1"
+                          type="button"
+                          class="btn-packing-row btn-remove-row"
+                          title="Hapus baris ini"
+                          @click="removePackingRow(item, rowIdx)"
+                        >
+                          －
+                        </button>
+                      </td>
+                    </tr>
+                  </template>
                 </tbody>
               </table>
             </div>
@@ -586,14 +649,13 @@ const isSaving = ref(false)
 const errorState = ref(null)
 
 const openSalesOrders = ref([])
-const selectedSalesOrder = ref(null)
+const selectedSalesOrders = ref([])
 
 const barcodeImageFile = ref(null)
 const barcodeImagePreview = ref(null)
 const barcodeImageError = ref('')
 
 const form = reactive({
-  sales_order_id: '',
   buyer_id: '',
   delivery_date: new Date().toISOString().split('T')[0],
   incoterm: '',
@@ -641,31 +703,61 @@ const fetchOpenSalesOrders = async () => {
   }
 }
 
-const onSalesOrderSelect = () => {
-  const soId = form.sales_order_id
-  const found = openSalesOrders.value.find((so) => so.id == soId)
-  if (found) {
-    selectedSalesOrder.value = found
-    form.buyer_id = found.buyer_id
+const isSoSelected = (soId) => selectedSalesOrders.value.some((so) => so.id === soId)
 
-    // ✅ Auto-fill dari data buyer
-    form.consignee_info.name = found.buyer?.name || ''
-    form.consignee_info.address = found.buyer?.address || ''
-    form.applicant_info.name = found.buyer?.name || ''
-    form.applicant_info.address = found.buyer?.address || ''
-    form.notify_info.name = found.buyer?.name || ''
-    form.notify_info.address = found.buyer?.address || ''
-    form.port_of_loading = form.shipment_mode === 'AIR'
-      ? 'SOEKARNO HATTA, INDONESIA'
-      : 'TANJUNG EMAS, INDONESIA'
-    form.goods_description = 'TEAK GARDEN FURNITURE AND ACCESSORIES'
-    form.eu_factory_number = found.buyer?.eu_factory_number || ''
+// SO lain cuma boleh digabung kalau buyer & currency-nya sama dengan SO yang sudah dipilih —
+// sesuai kebutuhan lapangan (gabung SO beda produk) tapi tetap 1 dokumen ekspor = 1 buyer/currency.
+const isSoDisabled = (so) => {
+  if (isSoSelected(so.id)) return false
+  if (selectedSalesOrders.value.length === 0) return false
+  const first = selectedSalesOrders.value[0]
+  return so.buyer_id !== first.buyer_id || so.currency !== first.currency
+}
 
-    form.details = found.details
+const toggleSalesOrder = (so) => {
+  const idx = selectedSalesOrders.value.findIndex((s) => s.id === so.id)
+  if (idx >= 0) {
+    selectedSalesOrders.value.splice(idx, 1)
+  } else {
+    if (isSoDisabled(so)) return
+    selectedSalesOrders.value.push(so)
+  }
+  rebuildFromSelectedSalesOrders()
+}
+
+const rebuildFromSelectedSalesOrders = () => {
+  if (selectedSalesOrders.value.length === 0) {
+    form.buyer_id = ''
+    form.details = []
+    return
+  }
+
+  const first = selectedSalesOrders.value[0]
+  form.buyer_id = first.buyer_id
+
+  // ✅ Auto-fill dari data buyer (SO pertama yang dipilih — semua SO tergabung sudah divalidasi buyer sama)
+  form.consignee_info.name = first.buyer?.name || ''
+  form.consignee_info.address = first.buyer?.address || ''
+  form.applicant_info.name = first.buyer?.name || ''
+  form.applicant_info.address = first.buyer?.address || ''
+  form.notify_info.name = first.buyer?.name || ''
+  form.notify_info.address = first.buyer?.address || ''
+  form.port_of_loading = form.shipment_mode === 'AIR'
+    ? 'SOEKARNO HATTA, INDONESIA'
+    : 'TANJUNG EMAS, INDONESIA'
+  form.goods_description = 'TEAK GARDEN FURNITURE AND ACCESSORIES'
+  form.eu_factory_number = first.buyer?.eu_factory_number || ''
+
+  // Gabungkan item dari semua SO terpilih jadi satu tabel, tiap baris tetap ingat SO asalnya.
+  // Tiap item punya packing_rows[] — biasanya cuma 1 baris, tapi mode Air Freight bisa
+  // dipecah jadi beberapa baris crate/box berbeda untuk produk yang sama (lihat addPackingRow).
+  form.details = selectedSalesOrders.value.flatMap((so) =>
+    so.details
       .map((detail) => {
         const qtySisa = parseFloat(detail.quantity) - parseFloat(detail.quantity_shipped)
         return {
           sales_order_detail_id: detail.id,
+          so_number: so.so_number,
           item_id: detail.item_id,
           item_name: detail.item_name,
           hs_code: detail.item?.hs_code || null,
@@ -674,39 +766,84 @@ const onSalesOrderSelect = () => {
           quantity_sisa: qtySisa,
           current_stock: parseFloat(detail.current_stock || 0),
           delivery_date_promise: detail.delivery_date,
-          quantity_shipped: 0,
-          quantity_boxes: null,
-          quantity_crates: null,
-          nw_per_box: detail.item?.nw_per_box || null,
-          gw_per_box: detail.item?.gw_per_box || null,
-          m3_per_carton: detail.item?.m3_per_carton || null,
-          wood_consumed_per_pcs: detail.item?.wood_consumed_per_pcs || null,
-          total_nw: null,
-          total_gw: null,
-          total_m3: null,
-          total_wood_consumed: null,
           error: null,
+          packing_rows: [
+            makeDefaultPackingRow({
+              nw_per_box: detail.item?.nw_per_box || null,
+              gw_per_box: detail.item?.gw_per_box || null,
+              m3_per_carton: detail.item?.m3_per_carton || null,
+              wood_consumed_per_pcs: detail.item?.wood_consumed_per_pcs || null,
+            }),
+          ],
         }
       })
       .filter((detail) => detail.quantity_sisa > 0)
-  } else {
-    selectedSalesOrder.value = null
-    form.details = []
-  }
+  )
 }
 
-const calculateTotals = (item) => {
-  const boxes = parseFloat(item.quantity_boxes) || 0
-  const shipped = parseFloat(item.quantity_shipped) || 0
-  const nw = parseFloat(item.nw_per_box) || 0
-  const gw = parseFloat(item.gw_per_box) || 0
-  const m3 = parseFloat(item.m3_per_carton) || 0
-  const wood = parseFloat(item.wood_consumed_per_pcs) || 0
+const makeDefaultPackingRow = (overrides = {}) => ({
+  quantity_shipped: 0,
+  quantity_boxes: null,
+  quantity_crates: null,
+  nw_per_box: null,
+  gw_per_box: null,
+  m3_per_carton: null,
+  wood_consumed_per_pcs: null,
+  total_nw: null,
+  total_gw: null,
+  total_m3: null,
+  total_wood_consumed: null,
+  ...overrides,
+})
 
-  item.total_nw = boxes && nw ? boxes * nw : null
-  item.total_gw = boxes && gw ? boxes * gw : null
-  item.total_m3 = boxes && m3 ? boxes * m3 : null
-  item.total_wood_consumed = shipped && wood ? shipped * wood : null
+const itemTotalShipped = (item) =>
+  item.packing_rows.reduce((sum, row) => sum + (parseFloat(row.quantity_shipped) || 0), 0)
+
+const validateItem = (item) => {
+  const totalShipped = itemTotalShipped(item)
+  const limit = Math.min(item.quantity_sisa, item.current_stock)
+  item.error =
+    totalShipped > limit
+      ? `Total kirim (${totalShipped}) melebihi sisa/stok tersedia (${limit})`
+      : null
+}
+
+const onRowInput = (item, row) => {
+  calculateTotals(row)
+  validateItem(item)
+}
+
+const addPackingRow = (item) => {
+  const ref = item.packing_rows[0]
+  item.packing_rows.push(
+    makeDefaultPackingRow({
+      nw_per_box: ref?.nw_per_box ?? null,
+      gw_per_box: ref?.gw_per_box ?? null,
+      m3_per_carton: ref?.m3_per_carton ?? null,
+      wood_consumed_per_pcs: ref?.wood_consumed_per_pcs ?? null,
+    }),
+  )
+  validateItem(item)
+}
+
+const removePackingRow = (item, rowIdx) => {
+  if (item.packing_rows.length <= 1) return
+  item.packing_rows.splice(rowIdx, 1)
+  validateItem(item)
+}
+
+const calculateTotals = (row) => {
+  const boxes = parseFloat(row.quantity_boxes) || 0
+  const shipped = parseFloat(row.quantity_shipped) || 0
+  const nw = parseFloat(row.nw_per_box) || 0
+  const gw = parseFloat(row.gw_per_box) || 0
+  const m3 = parseFloat(row.m3_per_carton) || 0
+  const wood = parseFloat(row.wood_consumed_per_pcs) || 0
+
+  row.total_nw = boxes && nw ? boxes * nw : null
+  row.total_gw = boxes && gw ? boxes * gw : null
+  row.total_m3 = boxes && m3 ? boxes * m3 : null
+  row.total_wood_consumed = shipped && wood ? shipped * wood : null
 }
 
 const formatNumber = (value, decimals = 2) => {
@@ -714,21 +851,34 @@ const formatNumber = (value, decimals = 2) => {
   return parseFloat(value).toFixed(decimals)
 }
 
-const grandTotalNW = computed(() => {
-  return form.details.reduce((sum, item) => sum + (parseFloat(item.total_nw) || 0), 0)
-})
+const grandTotalNW = computed(() =>
+  form.details.reduce(
+    (sum, item) => sum + item.packing_rows.reduce((s, r) => s + (parseFloat(r.total_nw) || 0), 0),
+    0,
+  ),
+)
 
-const grandTotalGW = computed(() => {
-  return form.details.reduce((sum, item) => sum + (parseFloat(item.total_gw) || 0), 0)
-})
+const grandTotalGW = computed(() =>
+  form.details.reduce(
+    (sum, item) => sum + item.packing_rows.reduce((s, r) => s + (parseFloat(r.total_gw) || 0), 0),
+    0,
+  ),
+)
 
-const grandTotalM3 = computed(() => {
-  return form.details.reduce((sum, item) => sum + (parseFloat(item.total_m3) || 0), 0)
-})
+const grandTotalM3 = computed(() =>
+  form.details.reduce(
+    (sum, item) => sum + item.packing_rows.reduce((s, r) => s + (parseFloat(r.total_m3) || 0), 0),
+    0,
+  ),
+)
 
-const grandTotalWood = computed(() => {
-  return form.details.reduce((sum, item) => sum + (parseFloat(item.total_wood_consumed) || 0), 0)
-})
+const grandTotalWood = computed(() =>
+  form.details.reduce(
+    (sum, item) =>
+      sum + item.packing_rows.reduce((s, r) => s + (parseFloat(r.total_wood_consumed) || 0), 0),
+    0,
+  ),
+)
 
 watch(
   () => form.shipment_mode,
@@ -761,19 +911,23 @@ const handleBarcodeImageUpload = (event) => {
 
 const handleSubmit = async () => {
   isSaving.value = true
-  const payloadDetails = form.details
-    .filter((d) => d.quantity_shipped > 0)
-    .map((d) => ({
-      sales_order_detail_id: d.sales_order_detail_id,
-      item_id: d.item_id,
-      quantity_shipped: d.quantity_shipped,
-      quantity_boxes: d.quantity_boxes || null,
-      quantity_crates: form.shipment_mode === 'AIR' ? d.quantity_crates || null : null,
-      nw_per_box: d.nw_per_box || null,
-      gw_per_box: d.gw_per_box || null,
-      m3_per_carton: d.m3_per_carton || null,
-      wood_consumed_per_pcs: d.wood_consumed_per_pcs || null,
-    }))
+  // Tiap item bisa punya >1 packing_rows (pecahan crate/box mode Air) — di-flatten jadi
+  // baris detail terpisah, semua tetap merujuk ke sales_order_detail_id yang sama.
+  const payloadDetails = form.details.flatMap((d) =>
+    d.packing_rows
+      .filter((row) => row.quantity_shipped > 0)
+      .map((row) => ({
+        sales_order_detail_id: d.sales_order_detail_id,
+        item_id: d.item_id,
+        quantity_shipped: row.quantity_shipped,
+        quantity_boxes: row.quantity_boxes || null,
+        quantity_crates: form.shipment_mode === 'AIR' ? row.quantity_crates || null : null,
+        nw_per_box: row.nw_per_box || null,
+        gw_per_box: row.gw_per_box || null,
+        m3_per_carton: row.m3_per_carton || null,
+        wood_consumed_per_pcs: row.wood_consumed_per_pcs || null,
+      })),
+  )
 
   if (payloadDetails.length === 0) {
     toast.error('Tidak ada barang yang dikirim. Isi "Qty Kirim (Pcs)" minimal 1 barang.')
@@ -782,7 +936,10 @@ const handleSubmit = async () => {
   }
 
   const formData = new FormData()
-  formData.append('sales_order_id', form.sales_order_id)
+  formData.append(
+    'sales_order_ids',
+    JSON.stringify(selectedSalesOrders.value.map((so) => so.id)),
+  )
   formData.append('buyer_id', form.buyer_id)
   formData.append('delivery_date', form.delivery_date)
   formData.append('incoterm', form.incoterm)
@@ -836,7 +993,7 @@ const handleSubmit = async () => {
 }
 
 const isFormValid = computed(() => {
-  if (!form.sales_order_id || form.details.length === 0) return false
+  if (selectedSalesOrders.value.length === 0 || form.details.length === 0) return false
   return !form.details.some((d) => d.error)
 })
 
@@ -1161,6 +1318,89 @@ const goBack = () => {
   margin-top: 1rem !important;
 }
 
+.label-hint {
+  font-weight: 500;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin-left: 0.5rem;
+}
+
+.so-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 2.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+
+.so-checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.so-checklist-item:hover {
+  background: #f9fafb;
+}
+
+.so-checklist-item.checked {
+  background: #f0f4ff;
+}
+
+.so-checklist-item.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.so-checklist-item input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: #667eea;
+  cursor: inherit;
+}
+
+.so-checklist-label {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 0.9375rem;
+}
+
+.so-currency-tag {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.multi-so-hint {
+  margin-top: 0.75rem;
+  color: #b45309;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.so-origin-badge {
+  display: inline-block;
+  padding: 0.35rem 0.65rem;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.8125rem;
+}
+
 .readonly-field {
   background: #f9fafb;
   color: #374151;
@@ -1354,6 +1594,52 @@ const goBack = () => {
   font-size: 0.8125rem;
   margin-top: 0.5rem;
   font-weight: 600;
+}
+
+.packing-total-hint {
+  color: #667eea;
+  font-size: 0.75rem;
+  margin-top: 0.35rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.packing-row-actions {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
+.btn-packing-row {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-add-row {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.btn-add-row:hover {
+  background: #c7d2fe;
+}
+
+.btn-remove-row {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.btn-remove-row:hover {
+  background: #fecaca;
 }
 
 .total-badge {

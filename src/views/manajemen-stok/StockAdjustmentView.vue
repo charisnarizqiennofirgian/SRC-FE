@@ -1374,13 +1374,27 @@ const handleUploadKomponen = async () => {
   formData.append('file', uploadFileKomponen.value)
 
   try {
-    await apiClient.post('/stock-adjustments/upload-komponen', formData, {
+    const response = await apiClient.post('/stock-adjustments/upload-komponen', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     })
 
-    toast.success('Stok awal KOMPONEN berhasil di-import! Memuat ulang data...')
+    const skipped = response.data?.skipped || []
+    if (skipped.length > 0) {
+      console.warn('Baris yang dilewati saat import Komponen:', skipped)
+      const preview = skipped
+        .slice(0, 5)
+        .map((s) => `Baris ${s.baris} (${s.kode || '-'}): ${s.alasan}`)
+        .join('\n')
+      const more = skipped.length > 5 ? `\n...dan ${skipped.length - 5} baris lainnya (lihat console)` : ''
+      toast.warning(
+        `${skipped.length} baris DILEWATI (tidak ter-import):\n${preview}${more}`,
+        { timeout: 15000 }
+      )
+    } else {
+      toast.success('Stok awal KOMPONEN berhasil di-import! Memuat ulang data...')
+    }
 
     closeModalKomponen()
 

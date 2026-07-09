@@ -76,7 +76,21 @@
             <div class="do-card-body">
               <div class="do-info-row">
                 <span class="info-label">Sales Order:</span>
-                <span class="info-value">{{ do_item.sales_order?.so_number || '-' }}</span>
+                <span class="info-value so-badges">
+                  <span v-for="so in do_item.sales_orders || []" :key="so.id" class="so-badge">{{
+                    so.so_number
+                  }}</span>
+                  <span v-if="!do_item.sales_orders?.length">{{
+                    do_item.sales_order?.so_number || '-'
+                  }}</span>
+                </span>
+              </div>
+              <div v-if="(do_item.sales_orders?.length || 0) > 1" class="do-info-row">
+                <span class="info-label">Catatan:</span>
+                <span class="info-value multi-so-note"
+                  >Gabungan {{ do_item.sales_orders.length }} SO — akan jadi
+                  {{ do_item.sales_orders.length }} invoice terpisah</span
+                >
               </div>
               <div class="do-info-row">
                 <span class="info-label">Customer:</span>
@@ -175,24 +189,31 @@
         <div class="preview-section">
           <h3 class="section-title">
             <span class="title-icon">📦</span>
-            Preview Items
+            Preview Invoice
+            <span v-if="invoiceGroups.length > 1" class="multi-invoice-hint">
+              — akan membuat {{ invoiceGroups.length }} invoice terpisah (1 per Sales Order)
+            </span>
           </h3>
-          <div class="table-wrapper">
+
+          <div
+            v-for="group in invoiceGroups"
+            :key="group.sales_order_id"
+            class="table-wrapper so-group-block"
+          >
+            <div class="so-group-title">📄 Invoice untuk {{ group.so_number }}</div>
             <table class="data-table">
               <thead>
                 <tr>
                   <th>Item</th>
                   <th>Qty</th>
                   <th>Unit</th>
-                  <th class="text-right">Harga ({{ selectedDO.sales_order?.currency || '-' }})</th>
-                  <th class="text-right">
-                    Subtotal ({{ selectedDO.sales_order?.currency || '-' }})
-                  </th>
+                  <th class="text-right">Harga ({{ group.currency }})</th>
+                  <th class="text-right">Subtotal ({{ group.currency }})</th>
                   <th class="text-right">Subtotal (IDR)</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="detail in selectedDO.details" :key="detail.id">
+                <tr v-for="detail in group.items" :key="detail.id">
                   <td>
                     <div class="item-info">
                       <span class="item-name">{{ detail.item_name }}</span>
@@ -201,18 +222,13 @@
                   <td>{{ formatNumber(detail.quantity_shipped) }}</td>
                   <td>{{ detail.item_unit }}</td>
                   <td class="text-right">
-                    {{
-                      formatCurrency(
-                        detail.sales_order_detail?.unit_price || 0,
-                        selectedDO.sales_order?.currency,
-                      )
-                    }}
+                    {{ formatCurrency(detail.sales_order_detail?.unit_price || 0, group.currency) }}
                   </td>
                   <td class="text-right">
                     {{
                       formatCurrency(
                         detail.quantity_shipped * (detail.sales_order_detail?.unit_price || 0),
-                        selectedDO.sales_order?.currency,
+                        group.currency,
                       )
                     }}
                   </td>
@@ -231,36 +247,30 @@
                 <tr class="subtotal-row">
                   <td colspan="4" class="text-right"><strong>Subtotal:</strong></td>
                   <td class="text-right">
-                    <strong>{{
-                      formatCurrency(totals.subtotal_original, selectedDO.sales_order?.currency)
-                    }}</strong>
+                    <strong>{{ formatCurrency(group.subtotal_original, group.currency) }}</strong>
                   </td>
                   <td class="text-right">
-                    <strong>{{ formatRupiah(totals.subtotal_idr) }}</strong>
+                    <strong>{{ formatRupiah(group.subtotal_idr) }}</strong>
                   </td>
                 </tr>
                 <tr class="tax-row">
                   <td colspan="4" class="text-right">
-                    <strong>PPN {{ totals.tax_rate }}%:</strong>
+                    <strong>PPN {{ group.tax_rate }}%:</strong>
                   </td>
                   <td class="text-right">
-                    <strong>{{
-                      formatCurrency(totals.ppn_original, selectedDO.sales_order?.currency)
-                    }}</strong>
+                    <strong>{{ formatCurrency(group.ppn_original, group.currency) }}</strong>
                   </td>
                   <td class="text-right">
-                    <strong>{{ formatRupiah(totals.ppn_idr) }}</strong>
+                    <strong>{{ formatRupiah(group.ppn_idr) }}</strong>
                   </td>
                 </tr>
                 <tr class="total-row">
                   <td colspan="4" class="text-right"><strong>GRAND TOTAL:</strong></td>
                   <td class="text-right">
-                    <strong>{{
-                      formatCurrency(totals.grand_total_original, selectedDO.sales_order?.currency)
-                    }}</strong>
+                    <strong>{{ formatCurrency(group.grand_total_original, group.currency) }}</strong>
                   </td>
                   <td class="text-right">
-                    <strong>{{ formatRupiah(totals.grand_total_idr) }}</strong>
+                    <strong>{{ formatRupiah(group.grand_total_idr) }}</strong>
                   </td>
                 </tr>
               </tfoot>
@@ -314,42 +324,49 @@ export default {
       return this.selectedDO && this.form.invoice_date && this.form.exchange_rate > 0
     },
 
-    totals() {
-      if (!this.selectedDO) {
-        return {
-          subtotal_original: 0,
-          ppn_original: 0,
-          grand_total_original: 0,
-          subtotal_idr: 0,
-          ppn_idr: 0,
-          grand_total_idr: 0,
-          tax_rate: 0,
+    // DO bisa gabungan beberapa SO — invoice tetap dibuat per-SO (buyer bayar per SO), jadi
+    // preview dikelompokkan per SO asal tiap baris, masing-masing dengan tax_rate/currency-nya
+    // sendiri (bukan digabung rata pakai SO "utama" seperti sebelumnya).
+    invoiceGroups() {
+      if (!this.selectedDO) return []
+
+      const rate = this.form.exchange_rate || 1
+      const groups = new Map()
+
+      for (const detail of this.selectedDO.details || []) {
+        const so = detail?.sales_order_detail?.sales_order
+        const soId = so?.id ?? 'unknown'
+
+        if (!groups.has(soId)) {
+          groups.set(soId, {
+            sales_order_id: soId,
+            so_number: so?.so_number || this.selectedDO.sales_order?.so_number || '-',
+            currency: so?.currency || this.selectedDO.sales_order?.currency || '-',
+            tax_rate: parseFloat(so?.tax_rate ?? this.selectedDO.sales_order?.tax_rate) || 0,
+            items: [],
+            subtotal_original: 0,
+          })
         }
-      }
 
-      let subtotal = 0
-      const details = this.selectedDO.details || []
-
-      details.forEach((detail) => {
+        const group = groups.get(soId)
         const price = detail?.sales_order_detail?.unit_price || 0
         const qty = detail?.quantity_shipped || 0
-        subtotal += qty * price
-      })
-
-      const taxRate = parseFloat(this.selectedDO.sales_order?.tax_rate) || 0
-      const ppn = subtotal * (taxRate / 100)
-      const grandTotal = subtotal + ppn
-      const rate = this.form.exchange_rate || 1
-
-      return {
-        subtotal_original: subtotal,
-        ppn_original: ppn,
-        grand_total_original: grandTotal,
-        subtotal_idr: subtotal * rate,
-        ppn_idr: ppn * rate,
-        grand_total_idr: grandTotal * rate,
-        tax_rate: taxRate,
+        group.items.push(detail)
+        group.subtotal_original += qty * price
       }
+
+      return Array.from(groups.values()).map((group) => {
+        const ppn = group.subtotal_original * (group.tax_rate / 100)
+        const grandTotal = group.subtotal_original + ppn
+        return {
+          ...group,
+          ppn_original: ppn,
+          grand_total_original: grandTotal,
+          subtotal_idr: group.subtotal_original * rate,
+          ppn_idr: ppn * rate,
+          grand_total_idr: grandTotal * rate,
+        }
+      })
     },
   },
 
@@ -418,9 +435,17 @@ export default {
       this.submitting = true
       try {
         const response = await apiClient.post('/sales-invoices', this.form)
+        const invoices = response.data.data || []
 
-        this.toast.success('Invoice berhasil dibuat!')
-        this.$router.push(`/admin/penjualan/invoices/${response.data.data.id}`)
+        this.toast.success(response.data.message || 'Invoice berhasil dibuat!')
+
+        if (invoices.length === 1) {
+          this.$router.push(`/admin/penjualan/invoices/${invoices[0].id}`)
+        } else {
+          // Lebih dari 1 invoice dibuat sekaligus (DO gabungan multi-SO) — tidak ada satu
+          // halaman detail yang mewakili semuanya, jadi kembali ke daftar invoice.
+          this.$router.push('/admin/penjualan/invoices')
+        }
       } catch (error) {
         console.error('Error creating invoice:', error)
         const message = error.response?.data?.message || error.message || 'Gagal membuat invoice'
@@ -760,6 +785,52 @@ export default {
 .customer-name {
   color: #10b981;
   font-weight: 700;
+}
+
+.so-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.so-badge {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.multi-so-note {
+  color: #b45309;
+  font-weight: 600;
+  font-size: 12px;
+  text-align: right;
+}
+
+.multi-invoice-hint {
+  font-size: 13px;
+  font-weight: 600;
+  color: #b45309;
+}
+
+.so-group-block {
+  margin-bottom: 24px;
+}
+
+.so-group-block:last-child {
+  margin-bottom: 0;
+}
+
+.so-group-title {
+  font-weight: 700;
+  color: #1f2937;
+  padding: 10px 16px;
+  background: #f0fdf4;
+  border-bottom: 2px solid #e5e7eb;
 }
 
 .do-selected-badge {

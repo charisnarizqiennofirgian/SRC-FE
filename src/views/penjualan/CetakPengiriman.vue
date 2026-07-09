@@ -19,6 +19,7 @@
           <option value="do">Delivery Order (Supir)</option>
           <option value="barcode">Packing List Barcode</option>
           <option value="si">🚢 Shipping Instruction</option>
+          <option value="pi">📄 Proforma Invoice (sesuai isi pengiriman ini)</option>
         </select>
       </div>
 
@@ -237,7 +238,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
@@ -274,6 +275,20 @@ const fetchDeliveryOrder = async () => {
 const handlePrint = () => {
   window.print()
 }
+
+// "Proforma Invoice" bukan template inline di halaman ini — dokumennya beda layout
+// (ProformaInvoiceCetak.vue). Pilih opsi ini langsung pindah ke halaman itu, dengan
+// do_id supaya daftar barangnya ikut isi pengiriman ini (bisa gabungan lintas SO),
+// bukan seluruh isi SO aslinya.
+watch(selectedDocument, (val) => {
+  if (val === 'pi' && deliveryOrder.value) {
+    router.push({
+      name: 'ProformaInvoice',
+      params: { id: deliveryOrder.value.sales_order_id },
+      query: { do_id: deliveryOrder.value.id },
+    })
+  }
+})
 
 const goBack = () => {
   router.push({ name: 'DaftarPengiriman' })

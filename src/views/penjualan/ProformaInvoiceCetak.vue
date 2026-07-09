@@ -71,11 +71,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-if="!so.details || so.details.length === 0">
+            <tr v-if="printDetails.length === 0">
               <td colspan="8" class="td-empty">Tidak ada barang.</td>
             </tr>
             <tr
-              v-for="(detail, index) in so.details"
+              v-for="(detail, index) in printDetails"
               :key="detail.id"
               :class="index % 2 === 1 ? 'tr-stripe' : ''"
             >
@@ -94,7 +94,7 @@
               <td colspan="4" class="td-total-label">TOTAL</td>
               <td class="td-center td-total-val">{{ formatQty(totalQty) }}</td>
               <td></td>
-              <td class="td-right td-total-val td-money">$ {{ formatUsd(so.grand_total) }}</td>
+              <td class="td-right td-total-val td-money">$ {{ formatUsd(printGrandTotal) }}</td>
               <td></td>
             </tr>
           </tfoot>
@@ -167,19 +167,28 @@ const route  = useRoute()
 const router = useRouter()
 const toast  = useToast()
 
-const loading = ref(true)
-const so      = ref(null)
-const noPi    = ref('')
+const loading      = ref(true)
+const so           = ref(null)
+const noPi         = ref('')
+const deliveryOrder = ref(null)
 
 onMounted(async () => {
   const id = route.params.id
+  const doId = route.query.do_id
   try {
-    const [soRes, piRes] = await Promise.all([
+    const calls = [
       apiClient.get(`/sales-orders/${id}`),
       apiClient.get(`/sales-orders/${id}/generate-pi-number`),
-    ])
+    ]
+    if (doId) {
+      calls.push(apiClient.get(`/delivery-orders/${doId}`))
+    }
+    const [soRes, piRes, doRes] = await Promise.all(calls)
     so.value    = soRes.data.data
     noPi.value  = piRes.data.no_pi || ''
+    if (doRes) {
+      deliveryOrder.value = doRes.data.data
+    }
   } catch (err) {
     console.error('Gagal memuat data PI:', err)
     toast.error('Gagal memuat data Proforma Invoice.')
@@ -188,8 +197,35 @@ onMounted(async () => {
   }
 })
 
+// Kalau dibuka dari konteks pengiriman (?do_id=), daftar barang ikut isi DO yang benar-benar
+// dikirim (bisa gabungan lintas SO) — bukan seluruh isi SO aslinya. Field lain (buyer, PO
+// number, payment term, tanda tangan, dll) tetap dari SO seperti biasa, tidak berubah.
+const printDetails = computed(() => {
+  if (!deliveryOrder.value) return so.value?.details || []
+
+  return deliveryOrder.value.details.map((d) => {
+    const unitPrice = parseFloat(d.sales_order_detail?.unit_price || 0)
+    const qty = parseFloat(d.quantity_shipped || 0)
+    return {
+      id: d.id,
+      item_code: d.item?.code || null,
+      item_name: d.item_name,
+      item: d.item,
+      quantity: qty,
+      unit_price: unitPrice,
+      line_total: qty * unitPrice,
+      delivery_date: deliveryOrder.value.delivery_date,
+    }
+  })
+})
+
+const printGrandTotal = computed(() => {
+  if (!deliveryOrder.value) return so.value?.grand_total ?? 0
+  return printDetails.value.reduce((s, d) => s + (d.line_total || 0), 0)
+})
+
 const totalQty = computed(() =>
-  so.value?.details?.reduce((s, d) => s + parseFloat(d.quantity || 0), 0) ?? 0
+  printDetails.value.reduce((s, d) => s + parseFloat(d.quantity || 0), 0)
 )
 
 const MONTHS = [
