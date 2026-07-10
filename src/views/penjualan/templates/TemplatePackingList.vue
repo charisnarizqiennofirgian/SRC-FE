@@ -4,29 +4,30 @@
       <thead>
         <tr>
           <th rowspan="2" style="width: 3%">NO</th>
-          <th rowspan="2" style="width: 8%">CODE</th>
-          <th rowspan="2" style="width: 10%">HS CODE</th>
+          <th rowspan="2" style="width: 9%">CODE</th>
+          <th rowspan="2" style="width: 8%">HS CODE</th>
           <th rowspan="2" style="width: 25%">DESCRIPTION</th>
 
-          <!-- ✅ QUANTITY: colspan dinamis -->
-          <th :colspan="hasCrates ? 3 : 2" style="width: 10%">QUANTITY</th>
+          <!-- ✅ QUANTITY: colspan dinamis — lebar grup dibagi rata browser antar
+               kolom leaf-nya (2 atau 3), tidak perlu diset manual di sini. -->
+          <th :colspan="hasCrates ? 3 : 2">QUANTITY</th>
 
-          <th colspan="2" style="width: 13%">WOOD CONSUMED</th>
-          <th colspan="2" style="width: 13%">VOLUME</th>
-          <th colspan="2" style="width: 12%">WEIGHT (KG)</th>
+          <th colspan="2">WOOD CONSUMED</th>
+          <th colspan="2">VOLUME</th>
+          <th colspan="2">WEIGHT (KG)</th>
         </tr>
         <tr>
           <!-- ✅ Header CRATE hanya jika AIR -->
-          <th v-if="hasCrates" style="width: 5%">CRATE</th>
-          <th style="width: 5%">BOXES</th>
-          <th style="width: 5%">PCS</th>
+          <th v-if="hasCrates">CRATE</th>
+          <th>BOXES</th>
+          <th>PCS</th>
 
-          <th style="width: 6.5%">PCS</th>
-          <th style="width: 6.5%">M3</th>
-          <th style="width: 6.5%">M3/BOX</th>
-          <th style="width: 6.5%">M3</th>
-          <th style="width: 6%">NETT</th>
-          <th style="width: 6%">GROSS</th>
+          <th>PCS</th>
+          <th>M3</th>
+          <th>M3/BOX</th>
+          <th>M3</th>
+          <th>NETT</th>
+          <th>GROSS</th>
         </tr>
       </thead>
       <tbody>
@@ -42,7 +43,7 @@
             {{ item.item?.hs_code ? formatHsCode(item.item.hs_code) : '-' }}
           </td>
 
-          <td>{{ item.item_name }}</td>
+          <td class="item-desc">{{ item.item_name }}</td>
 
           <!-- ✅ Kolom CRATE per item (hanya jika AIR) -->
           <td v-if="hasCrates" class="text-center">
@@ -53,14 +54,14 @@
           <td class="text-center">{{ formatNumber(item.quantity_shipped) }}</td>
 
           <td class="text-center">
-            {{ formatDecimal(item.item?.wood_consumed_per_pcs, 4) }}
+            {{ formatDecimal(item.wood_consumed_per_pcs || item.item?.wood_consumed_per_pcs, 4) }}
           </td>
           <td class="text-center">
             {{ formatDecimal(calculateWoodTotal(item), 4) }}
           </td>
 
           <td class="text-center">
-            {{ formatDecimal(item.item?.volume_m3 || item.item?.m3_per_carton || 0, 4) }}
+            {{ formatDecimal(item.m3_per_carton || item.item?.volume_m3 || item.item?.m3_per_carton || 0, 4) }}
           </td>
 
           <td class="text-center">
@@ -174,6 +175,7 @@ const totals = computed(() => {
 <style scoped>
 .table-print-packing {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   margin-bottom: 10px;
   font-size: 11px; /* 🔹 diperjelas */
@@ -188,6 +190,12 @@ const totals = computed(() => {
   padding: 6px 5px;
   text-align: center;
   vertical-align: middle;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.table-print-packing td.item-desc {
+  text-align: left;
 }
 .table-print-packing th {
   font-weight: 900; /* 🔹 lebih tebal */

@@ -222,12 +222,12 @@
                   <td>{{ formatNumber(detail.quantity_shipped) }}</td>
                   <td>{{ detail.item_unit }}</td>
                   <td class="text-right">
-                    {{ formatCurrency(detail.sales_order_detail?.unit_price || 0, group.currency) }}
+                    {{ formatCurrency(detailUnitPrice(detail), group.currency) }}
                   </td>
                   <td class="text-right">
                     {{
                       formatCurrency(
-                        detail.quantity_shipped * (detail.sales_order_detail?.unit_price || 0),
+                        detail.quantity_shipped * detailUnitPrice(detail),
                         group.currency,
                       )
                     }}
@@ -235,9 +235,7 @@
                   <td class="text-right">
                     {{
                       formatRupiah(
-                        detail.quantity_shipped *
-                          (detail.sales_order_detail?.unit_price || 0) *
-                          form.exchange_rate,
+                        detail.quantity_shipped * detailUnitPrice(detail) * form.exchange_rate,
                       )
                     }}
                   </td>
@@ -349,7 +347,7 @@ export default {
         }
 
         const group = groups.get(soId)
-        const price = detail?.sales_order_detail?.unit_price || 0
+        const price = detail?.current_unit_price ?? detail?.sales_order_detail?.unit_price ?? 0
         const qty = detail?.quantity_shipped || 0
         group.items.push(detail)
         group.subtotal_original += qty * price
@@ -466,6 +464,10 @@ export default {
         month: 'long',
         year: 'numeric',
       })
+    },
+
+    detailUnitPrice(detail) {
+      return detail?.current_unit_price ?? detail?.sales_order_detail?.unit_price ?? 0
     },
 
     formatRupiah(amount) {

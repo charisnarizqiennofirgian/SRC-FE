@@ -42,14 +42,14 @@
           <td class="text-center">{{ formatNumber(item.quantity_shipped) }}</td>
 
           <td class="text-center">
-            {{ formatDecimal(item.item?.wood_consumed_per_pcs, 4) }}
+            {{ formatDecimal(item.wood_consumed_per_pcs || item.item?.wood_consumed_per_pcs, 4) }}
           </td>
           <td class="text-center">
             {{ formatDecimal(calculateWoodTotal(item), 4) }}
           </td>
 
           <td class="text-center">
-            {{ formatDecimal(item.item?.m3_per_carton, 4) }}
+            {{ formatDecimal(item.m3_per_carton || item.item?.volume_m3 || item.item?.m3_per_carton, 4) }}
           </td>
           <td class="text-center">
             {{ formatDecimal(calculateVolumeTotal(item), 4) }}
@@ -198,7 +198,7 @@ const calculateNettTotal = (item) => {
 }
 
 const getPrice = (item) => {
-  return parseFloat(item.sales_order_detail?.unit_price || 0)
+  return parseFloat(item.current_unit_price ?? item.sales_order_detail?.unit_price ?? 0)
 }
 
 const calculatePriceTotal = (item) => {
@@ -247,6 +247,8 @@ const totals = computed(() => {
   border: 1px solid #000;
   padding: 4px 5px; /* sedikit lebih lega */
   vertical-align: middle;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .table-invoice th {

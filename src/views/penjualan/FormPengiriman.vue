@@ -7,7 +7,7 @@
             <span class="icon">🚚</span>
           </div>
           <div class="header-text">
-            <h1 class="page-title">Buat Pengiriman Barang</h1>
+            <h1 class="page-title">{{ isEditMode ? 'Edit Pengiriman Barang' : 'Buat Pengiriman Barang' }}</h1>
             <p class="page-subtitle">Kelola surat jalan dan packing list untuk pengiriman ekspor</p>
           </div>
         </div>
@@ -627,7 +627,7 @@ INDONESIA</textarea
         <button type="submit" class="btn-primary-modern" :disabled="isSaving || !isFormValid">
           <span v-if="isSaving" class="spinner-inline"></span>
           <span v-else class="btn-icon">💾</span>
-          <span>{{ isSaving ? 'Menyimpan...' : 'Simpan DO' }}</span>
+          <span>{{ isSaving ? 'Menyimpan...' : isEditMode ? 'Update DO' : 'Simpan DO' }}</span>
         </button>
       </div>
     </form>
@@ -636,13 +636,19 @@ INDONESIA</textarea
 
 <script setup>
 import { ref, reactive, onMounted, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 
+const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+
+// EditPengiriman pakai komponen yang sama dengan BuatPengiriman — dibedakan dari ada/tidaknya
+// :id di URL.
+const isEditMode = computed(() => !!route.params.id)
+const editingDoId = ref(null)
 
 const loadingMaster = ref(true)
 const isSaving = ref(false)
@@ -687,6 +693,9 @@ const form = reactive({
 
 onMounted(async () => {
   await fetchOpenSalesOrders()
+  if (isEditMode.value) {
+    await loadExistingDeliveryOrder()
+  }
 })
 
 const fetchOpenSalesOrders = async () => {
@@ -698,6 +707,118 @@ const fetchOpenSalesOrders = async () => {
     console.error('Error fetching open sales orders:', error)
     toast.error('Gagal memuat daftar pesanan yang siap kirim.')
     errorState.value = 'Gagal mengambil data pesanan'
+  } finally {
+    loadingMaster.value = false
+  }
+}
+
+// Muat DO yang mau diedit — form.details dibangun LANGSUNG dari baris yang sudah tersimpan
+// di DO ini (dikelompokkan per sales_order_detail_id jadi packing_rows[]), bukan dari
+// rebuildFromSelectedSalesOrders(), supaya nilai yang sudah diisi (crate/box/pcs/NW/GW/M3/
+// wood) tidak hilang dan admin tidak perlu input ulang dari awal.
+const loadExistingDeliveryOrder = async () => {
+  loadingMaster.value = true
+  try {
+    const response = await apiClient.get(`/delivery-orders/${route.params.id}`)
+    const doData = response.data.data
+
+    if (doData.status !== 'DRAFT') {
+      toast.error('Hanya pengiriman berstatus DRAFT yang bisa diedit.')
+      router.push({ name: 'DaftarPengiriman' })
+      return
+    }
+
+    editingDoId.value = doData.id
+
+    form.buyer_id = doData.buyer_id
+    form.delivery_date = doData.delivery_date ? doData.delivery_date.split('T')[0] : form.delivery_date
+    form.shipment_mode = doData.shipment_mode || 'SEA'
+    form.incoterm = doData.incoterm || ''
+    form.bl_date = doData.bl_date
+    form.vessel_name = doData.vessel_name || ''
+    form.mother_vessel = doData.mother_vessel || ''
+    form.eu_factory_number = doData.eu_factory_number || ''
+    form.port_of_loading = doData.port_of_loading || ''
+    form.port_of_discharge = doData.port_of_discharge || ''
+    form.final_destination = doData.final_destination || ''
+    form.bl_number = doData.bl_number || ''
+    form.rex_info = doData.rex_info || ''
+    form.freight_terms = doData.freight_terms || ''
+    form.container_number = doData.container_number || ''
+    form.seal_number = doData.seal_number || ''
+    form.rex_date = doData.rex_date
+    form.goods_description = doData.goods_description || form.goods_description
+    form.consignee_info = doData.consignee_info ? { ...doData.consignee_info } : form.consignee_info
+    form.applicant_info = doData.applicant_info ? { ...doData.applicant_info } : form.applicant_info
+    form.notify_info = doData.notify_info ? { ...doData.notify_info } : form.notify_info
+    form.forwarder_name = doData.forwarder_name || ''
+    form.peb_number = doData.peb_number || ''
+    form.container_type = doData.container_type || ''
+
+    // Checklist SO — cuma buat tampilan badge & validasi kalau admin nambah SO lain saat
+    // edit. Kalau SO-nya sudah tidak ada lagi di daftar "open" (mis. semua sisa item sudah
+    // dikirim di pengiriman lain), pakai info minimal dari DO sendiri sebagai fallback.
+    const involvedSoIds = (doData.sales_orders || []).map((so) => so.id)
+    const matched = openSalesOrders.value.filter((so) => involvedSoIds.includes(so.id))
+    selectedSalesOrders.value =
+      matched.length > 0
+        ? matched
+        : (doData.sales_orders || []).map((so) => ({
+            id: so.id,
+            so_number: so.so_number,
+            buyer_id: so.buyer_id,
+            currency: so.currency,
+            buyer: doData.buyer,
+            details: [],
+          }))
+
+    const grouped = new Map()
+    for (const d of doData.details) {
+      const soDetail = d.sales_order_detail
+      const key = d.sales_order_detail_id
+      if (!grouped.has(key)) {
+        const qtyOrdered = parseFloat(soDetail?.quantity ?? 0)
+        const qtyAlreadyShipped = parseFloat(soDetail?.quantity_shipped ?? 0)
+        grouped.set(key, {
+          sales_order_detail_id: key,
+          so_number: soDetail?.sales_order?.so_number || '-',
+          item_id: d.item_id,
+          item_name: d.item_name,
+          hs_code: d.hs_code || d.item?.hs_code || null,
+          quantity_ordered: qtyOrdered,
+          quantity_already_shipped: qtyAlreadyShipped,
+          quantity_sisa: qtyOrdered - qtyAlreadyShipped,
+          current_stock: parseFloat(d.current_stock ?? d.item?.stock ?? 0),
+          delivery_date_promise: soDetail?.delivery_date,
+          error: null,
+          packing_rows: [],
+        })
+      }
+      grouped.get(key).packing_rows.push({
+        id: d.id,
+        quantity_shipped: parseFloat(d.quantity_shipped) || 0,
+        quantity_boxes: d.quantity_boxes,
+        quantity_crates: d.quantity_crates,
+        nw_per_box: d.nw_per_box,
+        gw_per_box: d.gw_per_box,
+        m3_per_carton: d.m3_per_carton,
+        wood_consumed_per_pcs: d.wood_consumed_per_pcs,
+        total_nw: d.total_nw,
+        total_gw: d.total_gw,
+        total_m3: d.total_m3,
+        total_wood_consumed: d.total_wood_consumed,
+      })
+    }
+    form.details = Array.from(grouped.values())
+    form.details.forEach(validateItem)
+
+    if (doData.barcode_image) {
+      barcodeImagePreview.value = doData.barcode_image
+    }
+  } catch (error) {
+    console.error('Gagal memuat data pengiriman untuk edit:', error)
+    toast.error('Gagal memuat data pengiriman.')
+    errorState.value = 'Gagal memuat data pengiriman'
   } finally {
     loadingMaster.value = false
   }
@@ -751,10 +872,16 @@ const rebuildFromSelectedSalesOrders = () => {
   // Gabungkan item dari semua SO terpilih jadi satu tabel, tiap baris tetap ingat SO asalnya.
   // Tiap item punya packing_rows[] — biasanya cuma 1 baris, tapi mode Air Freight bisa
   // dipecah jadi beberapa baris crate/box berbeda untuk produk yang sama (lihat addPackingRow).
+  // Kalau item ini sudah ada sebelumnya di form.details (mis. lagi edit DO, atau admin toggle
+  // checkbox SO bolak-balik), packing_rows yang sudah diisi dipertahankan — tidak direset ke
+  // default kosong.
+  const existingBySoDetailId = new Map(form.details.map((d) => [d.sales_order_detail_id, d]))
+
   form.details = selectedSalesOrders.value.flatMap((so) =>
     so.details
       .map((detail) => {
         const qtySisa = parseFloat(detail.quantity) - parseFloat(detail.quantity_shipped)
+        const existing = existingBySoDetailId.get(detail.id)
         return {
           sales_order_detail_id: detail.id,
           so_number: so.so_number,
@@ -766,8 +893,8 @@ const rebuildFromSelectedSalesOrders = () => {
           quantity_sisa: qtySisa,
           current_stock: parseFloat(detail.current_stock || 0),
           delivery_date_promise: detail.delivery_date,
-          error: null,
-          packing_rows: [
+          error: existing?.error ?? null,
+          packing_rows: existing?.packing_rows ?? [
             makeDefaultPackingRow({
               nw_per_box: detail.item?.nw_per_box || null,
               gw_per_box: detail.item?.gw_per_box || null,
@@ -917,6 +1044,10 @@ const handleSubmit = async () => {
     d.packing_rows
       .filter((row) => row.quantity_shipped > 0)
       .map((row) => ({
+        // id cuma ada kalau baris ini sudah tersimpan sebelumnya (mode edit) — backend pakai
+        // ini buat bedakan "update baris lama" vs "baris baru" (mis. pecahan crate/box yang
+        // baru ditambah admin saat edit).
+        ...(row.id ? { id: row.id } : {}),
         sales_order_detail_id: d.sales_order_detail_id,
         item_id: d.item_id,
         quantity_shipped: row.quantity_shipped,
@@ -975,9 +1106,19 @@ const handleSubmit = async () => {
   }
 
   try {
-    const response = await apiClient.post('/delivery-orders', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    let response
+    if (isEditMode.value && editingDoId.value) {
+      // PUT dengan multipart body (file upload) tidak diparse PHP dengan benar kalau kirim
+      // request PUT asli — pakai method-spoofing standar Laravel (_method=PUT via POST).
+      formData.append('_method', 'PUT')
+      response = await apiClient.post(`/delivery-orders/${editingDoId.value}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+    } else {
+      response = await apiClient.post('/delivery-orders', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+    }
     if (response.data.success) {
       toast.success(response.data.message)
       barcodeImageFile.value = null

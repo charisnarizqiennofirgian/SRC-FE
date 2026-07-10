@@ -124,7 +124,7 @@ const calculateNettTotal = (item) => {
 }
 
 const getPrice = (item) => {
-  return parseFloat(item.sales_order_detail?.unit_price || 0)
+  return parseFloat(item.current_unit_price ?? item.sales_order_detail?.unit_price ?? 0)
 }
 
 const calculatePriceTotal = (item) => {

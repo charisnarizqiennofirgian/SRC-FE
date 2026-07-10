@@ -133,7 +133,7 @@
         <!-- KIRI BAWAH: TTD Buyer -->
         <div class="fc fc-bottom fc-left">
           <div class="sign-box">
-            <p class="sign-label">CONFIRMED</p>
+            <p class="sign-label">CONFIRMED BY BUYER</p>
             <div class="sign-space"></div>
             <div class="sign-line"></div>
             <p class="sign-name">JACOPO</p>
@@ -143,7 +143,8 @@
         <!-- KANAN BAWAH: TTD SBC -->
         <div class="fc fc-bottom fc-right">
           <div class="sign-box">
-            <p class="sign-label">Semarang, {{ formatSignDate(so.so_date) }}</p>
+            <p class="sign-date">Semarang, {{ formatSignDate(so.so_date) }}</p>
+            <p class="sign-label">PT SURYA BANGKIT CEMERLANG</p>
             <div class="sign-space"></div>
             <div class="sign-line"></div>
             <p class="sign-name">Ellen Apriliana</p>
@@ -204,7 +205,7 @@ const printDetails = computed(() => {
   if (!deliveryOrder.value) return so.value?.details || []
 
   return deliveryOrder.value.details.map((d) => {
-    const unitPrice = parseFloat(d.sales_order_detail?.unit_price || 0)
+    const unitPrice = parseFloat(d.current_unit_price ?? d.sales_order_detail?.unit_price ?? 0)
     const qty = parseFloat(d.quantity_shipped || 0)
     return {
       id: d.id,
@@ -475,15 +476,18 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
 
 /* ─── FOOTER 2×2 ────────────────────────────────────── */
 .pi-footer-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto auto;
+  display: flex;
+  flex-wrap: wrap;
   margin-top: 6mm;
   page-break-inside: avoid;
 }
 
-/* setiap sel */
-.fc { padding: 0 6mm 0 0; }
+/* setiap sel — flex 2 kolom (bukan CSS grid, lebih konsisten di mesin cetak/PDF) */
+.fc {
+  box-sizing: border-box;
+  width: 50%;
+  padding: 0 6mm 0 0;
+}
 .fc.fc-right { padding: 0 0 0 6mm; }
 
 /* baris atas */
@@ -550,16 +554,23 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   width: 52mm;
 }
 
+.sign-date {
+  font-size: 9pt;
+  margin: 0 0 1mm 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .sign-label {
   font-size: 9.5pt;
-  margin: 0 0 0 0;
-  font-weight: 600;
+  margin: 0;
+  font-weight: 700;
   text-align: center;
   white-space: nowrap;
 }
 
 .sign-space {
-  height: 18mm;
+  height: 14mm;
 }
 
 .sign-line {

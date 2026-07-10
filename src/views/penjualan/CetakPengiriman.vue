@@ -44,7 +44,7 @@
             {{ selectedDocument === 'barcode' ? 'PACKING LIST ' : 'PACKING LIST' }}
           </div>
           <div class="title-meta">
-            <div>NO. : {{ deliveryOrder.do_number }}</div>
+            <div>NO. : {{ packingListNumber }}</div>
             <div>DATE : {{ formatDisplayDateFull(deliveryOrder.delivery_date) }}</div>
           </div>
         </div>
@@ -165,44 +165,18 @@
         v-if="selectedDocument === 'pl' || selectedDocument === 'barcode'"
         class="footer-section"
       >
-        <div class="footer-info" style="margin-top: 25px">
-          <div style="display: flex; width: 100%">
-            <div
-              style="
-                flex: 1 1 0;
-                font-size: 10px;
-                font-weight: 700;
-                min-height: 80px;
-                display: flex;
-                flex-direction: column;
-                justify-content: flex-end;
-              "
-            >
-              <div>
-                MADE OUT TO APPLICANT: {{ deliveryOrder.applicant_info?.name || '' }}
-                {{ deliveryOrder.applicant_info?.address || '' }}
-              </div>
-              <div style="margin-top: 36px">FSC100%: SA-COC-012797</div>
-            </div>
+        <div class="footer-columns">
+          <div class="footer-col">
+            <div class="applicant-label">MADE OUT TO APPLICANT:</div>
+            <div class="applicant-name">{{ deliveryOrder.applicant_info?.name || '-' }}</div>
+            <div class="applicant-address">{{ deliveryOrder.applicant_info?.address || '' }}</div>
+            <div class="fsc-label">FSC100%: SA-COC-012797</div>
+          </div>
 
-            <div style="flex: 1 0 0"></div>
-
-            <div
-              style="
-                flex: 1 1 0;
-                text-align: right;
-                font-size: 10px;
-                font-weight: 700;
-                min-height: 80px;
-                display: flex;
-                flex-direction: column;
-                justify-content: flex-end;
-              "
-            >
-              <div>PT. SURYA BANGKIT CEMERLANG</div>
-              <div style="height: 36px"></div>
-              <div>ELLEN APRILIANA</div>
-            </div>
+          <div class="footer-col footer-col-signature">
+            <div class="signature-company">PT. SURYA BANGKIT CEMERLANG</div>
+            <div class="signature-line"></div>
+            <div class="signature-name">ELLEN APRILIANA</div>
           </div>
         </div>
 
@@ -238,7 +212,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
@@ -259,6 +233,14 @@ const loading = ref(true)
 const deliveryOrder = ref(null)
 const doId = ref(route.params.id)
 const selectedDocument = ref('pl')
+
+// Nomor DO (DO-2026-07-0001) dipakai sebagai nomor Packing List, cuma prefiksnya
+// diganti PL- khusus di dokumen ini — nomor DO asli tetap dipakai di dokumen lain
+// (Delivery Order/Supir, Shipping Instruction, dst).
+const packingListNumber = computed(() => {
+  const doNumber = deliveryOrder.value?.do_number || ''
+  return doNumber.replace(/^DO/, 'PL')
+})
 
 const fetchDeliveryOrder = async () => {
   loading.value = true
@@ -320,149 +302,130 @@ onMounted(() => {
 .print-page-container {
   width: 100%;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 2rem 1.5rem;
+  background: #eef1f5;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
 /* ========================================
-   ✅ CONTROL PANEL BARU - MODERN & RAPI
+   CONTROL PANEL — flat, rapi
    ======================================== */
 .print-controls-modern {
   width: 100%;
   max-width: 210mm;
-  background: white;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  background: #fff;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  border-radius: 10px;
+  border: 1px solid #dde1e6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  gap: 1rem;
 }
 
-/* ✅ BUTTON CONTROL - KONSISTEN */
+/* BUTTON CONTROL */
 .btn-control {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.625rem;
-  padding: 0.875rem 1.75rem;
-  border: none;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 0.9375rem;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  min-width: 140px;
+  flex-shrink: 0;
 }
 
 .btn-icon {
-  font-size: 1.125rem;
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .btn-text {
-  font-weight: 700;
-  letter-spacing: 0.015em;
+  font-weight: 600;
 }
 
-/* ✅ BUTTON BACK */
+/* BUTTON BACK */
 .btn-back-modern {
-  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-  color: white;
+  background: #fff;
+  color: #495057;
+  border-color: #ced4da;
 }
 
 .btn-back-modern:hover {
-  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(108, 117, 125, 0.3);
+  background: #f1f3f5;
+  border-color: #adb5bd;
 }
 
-.btn-back-modern:active {
-  transform: translateY(0);
-}
-
-/* ✅ BUTTON PRINT */
+/* BUTTON PRINT */
 .btn-print-modern {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: #2563eb;
+  color: #fff;
 }
 
 .btn-print-modern:hover {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-}
-
-.btn-print-modern:active {
-  transform: translateY(0);
+  background: #1d4ed8;
 }
 
 /* ========================================
-   ✅ DOCUMENT SELECTOR - MODERN
+   DOCUMENT SELECTOR
    ======================================== */
 .document-selector-modern {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-  padding: 0.875rem 1.25rem;
-  border-radius: 12px;
-  border: 2.5px solid #e9ecef;
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
+  gap: 0.75rem;
+  min-width: 0;
 }
 
 .selector-label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-weight: 700;
+  gap: 0.4rem;
+  font-weight: 600;
   color: #495057;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   white-space: nowrap;
 }
 
 .label-icon {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
 }
 
 .label-text {
-  font-weight: 800;
-  letter-spacing: 0.015em;
+  font-weight: 600;
 }
 
-/* ✅ SELECT DROPDOWN - MODERN */
+/* SELECT DROPDOWN */
 .form-select-modern {
   flex: 1;
-  padding: 0.75rem 1rem;
-  border: 2.5px solid #dee2e6;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 0.9375rem;
-  color: #495057;
+  min-width: 0;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #212529;
   cursor: pointer;
-  transition: all 0.3s ease;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.15s ease;
+  background: #fff;
 }
 
 .form-select-modern:hover {
-  border-color: #667eea;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  border-color: #adb5bd;
 }
 
 .form-select-modern:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
-  transform: translateY(-1px);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 /* ========================================
@@ -473,18 +436,18 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 5rem 3rem;
+  padding: 4rem 3rem;
   background: white;
-  border-radius: 20px;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-  margin-top: 30px;
+  border-radius: 12px;
+  border: 1px solid #dde1e6;
+  margin-top: 24px;
 }
 
 .spinner-form {
-  width: 60px;
-  height: 60px;
-  border: 6px solid #e9ecef;
-  border-top-color: #667eea;
+  width: 48px;
+  height: 48px;
+  border: 5px solid #e9ecef;
+  border-top-color: #2563eb;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 1.5rem;
@@ -553,6 +516,7 @@ onMounted(() => {
 
 .header-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   margin-bottom: 12px;
   font-size: 9.5px; /* sedikit lebih besar */
@@ -564,6 +528,8 @@ onMounted(() => {
   border: 1.8px solid #000; /* garis sedikit lebih tebal */
   vertical-align: top;
   line-height: 1.4;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .header-label {
@@ -578,6 +544,62 @@ onMounted(() => {
   width: 32%;
   font-weight: 600; /* sedikit ditebalkan */
   color: #000;
+}
+
+/* ========================================
+   FOOTER — APPLICANT & SIGNATURE
+   ======================================== */
+.footer-columns {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+  margin-top: 25px;
+}
+
+.footer-col {
+  flex: 1 1 0;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.applicant-label {
+  font-weight: 700;
+  text-decoration: underline;
+  margin-bottom: 4px;
+}
+
+.applicant-name {
+  font-weight: 700;
+}
+
+.applicant-address {
+  font-weight: 400;
+  margin-bottom: 10px;
+}
+
+.fsc-label {
+  font-weight: 700;
+}
+
+.footer-col-signature {
+  text-align: center;
+}
+
+.signature-company {
+  font-weight: 700;
+  margin-bottom: 45px;
+}
+
+.signature-line {
+  border-top: 1.2px solid #000;
+  width: 75%;
+  margin: 0 auto;
+}
+
+.signature-name {
+  font-weight: 700;
+  padding-top: 4px;
 }
 
 /* ========================================
@@ -635,22 +657,14 @@ onMounted(() => {
     margin: 8mm;
   }
 
-  html,
-  body {
-    width: 100%;
-    height: 100%;
+  .print-page-container {
+    width: 100% !important;
+    min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
-    overflow: visible !important;
-  }
-
-  .print-page-container {
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    background: none !important;
-    display: block;
+    background-image: none !important;
+    display: block !important;
   }
 
   .print-controls-modern,
@@ -661,10 +675,9 @@ onMounted(() => {
   .print-sheet-a4 {
     width: 100%;
     max-width: 210mm;
-    margin: 0 auto;
+    margin: 0 auto !important;
     padding: 6mm 8mm;
     box-shadow: none !important;
-    page-break-after: always;
     box-sizing: border-box;
     border-radius: 0 !important;
   }
