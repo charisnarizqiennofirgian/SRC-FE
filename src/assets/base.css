@@ -17,9 +17,13 @@ body {
 
 @media print {
   html,
-  body {
+  body,
+  #app {
     height: auto !important;
+    min-height: 0 !important;
     overflow: visible !important;
+    background: #fff !important;
+    background-image: none !important;
   }
 
   /* Sembunyikan icon/logo vue-select saat print */
