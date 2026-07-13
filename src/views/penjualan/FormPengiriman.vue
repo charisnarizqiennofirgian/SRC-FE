@@ -424,8 +424,8 @@ INDONESIA</textarea
                     <th class="text-center">Qty Terkirim</th>
                     <th class="text-center">Stok Tersedia</th>
                     <th v-if="form.shipment_mode === 'AIR'" class="text-center">Kirim (Crate)</th>
-                    <th class="text-center">Kirim (Pcs)</th>
                     <th class="text-center">Kirim (Box)</th>
+                    <th class="text-center">Kirim (Pcs)</th>
                     <th class="text-center">NW/Box (kg)</th>
                     <th class="text-center">GW/Box (kg)</th>
                     <th class="text-center">M3/Carton</th>
@@ -475,6 +475,17 @@ INDONESIA</textarea
 
                       <td class="text-center">
                         <input
+                          v-model.number="row.quantity_boxes"
+                          type="number"
+                          min="0"
+                          class="form-input-table"
+                          placeholder="0"
+                          @input="calculateTotals(row)"
+                        />
+                      </td>
+
+                      <td class="text-center">
+                        <input
                           v-model.number="row.quantity_shipped"
                           type="number"
                           min="0"
@@ -494,17 +505,6 @@ INDONESIA</textarea
                         >
                           {{ item.error }}
                         </div>
-                      </td>
-
-                      <td class="text-center">
-                        <input
-                          v-model.number="row.quantity_boxes"
-                          type="number"
-                          min="0"
-                          class="form-input-table"
-                          placeholder="0"
-                          @input="calculateTotals(row)"
-                        />
                       </td>
 
                       <td class="text-center">

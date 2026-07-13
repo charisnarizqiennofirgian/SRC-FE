@@ -39,12 +39,15 @@
 
       <!-- ✅ KONDISI HEADER: Sembunyikan header panjang kalau pilih SI atau DO -->
       <div v-if="selectedDocument !== 'do' && selectedDocument !== 'si'">
-        <div v-if="selectedDocument === 'pl' || selectedDocument === 'barcode'" class="title-main">
+        <div
+          v-if="['pl', 'barcode', 'invoice', 'invoice-barcode'].includes(selectedDocument)"
+          class="title-main"
+        >
           <div class="title-packing">
-            {{ selectedDocument === 'barcode' ? 'PACKING LIST ' : 'PACKING LIST' }}
+            {{ isInvoiceDocument ? 'COMMERCIAL INVOICE' : 'PACKING LIST' }}
           </div>
           <div class="title-meta">
-            <div>NO. : {{ packingListNumber }}</div>
+            <div>NO. : {{ isInvoiceDocument ? commercialInvoiceNumber : packingListNumber }}</div>
             <div>DATE : {{ formatDisplayDateFull(deliveryOrder.delivery_date) }}</div>
           </div>
         </div>
@@ -170,13 +173,11 @@
             <div class="applicant-label">MADE OUT TO APPLICANT:</div>
             <div class="applicant-name">{{ deliveryOrder.applicant_info?.name || '-' }}</div>
             <div class="applicant-address">{{ deliveryOrder.applicant_info?.address || '' }}</div>
-            <div class="fsc-label">FSC100%: SA-COC-012797</div>
+            <div v-if="isEthimoBuyer" class="fsc-label">FSC100%: SA-COC-012797</div>
           </div>
 
           <div class="footer-col footer-col-signature">
-            <div class="signature-company">PT. SURYA BANGKIT CEMERLANG</div>
-            <div class="signature-line"></div>
-            <div class="signature-name">ELLEN APRILIANA</div>
+            <SignatureCompany />
           </div>
         </div>
 
@@ -217,6 +218,7 @@ import { useRoute, useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
 import KopSuratCetak from '../../components/cetak/KopSuratCetak.vue'
+import SignatureCompany from '../../components/cetak/SignatureCompany.vue'
 
 // ✅ IMPORT TEMPLATE ANAK
 import TemplatePackingList from './templates/TemplatePackingList.vue'
@@ -234,13 +236,28 @@ const deliveryOrder = ref(null)
 const doId = ref(route.params.id)
 const selectedDocument = ref('pl')
 
-// Nomor DO (DO-2026-07-0001) dipakai sebagai nomor Packing List, cuma prefiksnya
-// diganti PL- khusus di dokumen ini — nomor DO asli tetap dipakai di dokumen lain
-// (Delivery Order/Supir, Shipping Instruction, dst).
+// Nomor DO (DO-2026-07-0001) dipakai sebagai nomor Packing List / Commercial Invoice,
+// cuma prefiksnya diganti PL-/CI- khusus di masing-masing dokumen — nomor DO asli tetap
+// dipakai di dokumen lain (Delivery Order/Supir, Shipping Instruction, dst).
 const packingListNumber = computed(() => {
   const doNumber = deliveryOrder.value?.do_number || ''
   return doNumber.replace(/^DO/, 'PL')
 })
+
+const commercialInvoiceNumber = computed(() => {
+  const doNumber = deliveryOrder.value?.do_number || ''
+  return doNumber.replace(/^DO/, 'CI')
+})
+
+const isInvoiceDocument = computed(() =>
+  selectedDocument.value === 'invoice' || selectedDocument.value === 'invoice-barcode',
+)
+
+// Klaim sertifikasi FSC cuma ditampilkan untuk buyer Ethimo — buyer lain tidak
+// mensyaratkan/tidak boleh mencantumkan klaim ini di dokumen ekspor.
+const isEthimoBuyer = computed(() =>
+  (deliveryOrder.value?.buyer?.name || '').toLowerCase().includes('ethimo'),
+)
 
 const fetchDeliveryOrder = async () => {
   loading.value = true
@@ -580,26 +597,6 @@ onMounted(() => {
 
 .fsc-label {
   font-weight: 700;
-}
-
-.footer-col-signature {
-  text-align: center;
-}
-
-.signature-company {
-  font-weight: 700;
-  margin-bottom: 45px;
-}
-
-.signature-line {
-  border-top: 1.2px solid #000;
-  width: 75%;
-  margin: 0 auto;
-}
-
-.signature-name {
-  font-weight: 700;
-  padding-top: 4px;
 }
 
 /* ========================================

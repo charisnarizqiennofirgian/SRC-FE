@@ -104,9 +104,7 @@
             <span>{{ formatDecimal(totals.volumeM3, 4) }}</span>
           </div>
 
-          <div style="font-weight: bold; margin: 5px 0; text-decoration: underline">
-            The data below is exclusive to ILW :
-          </div>
+          <div class="fc-ilw-note">The data below is exclusive to ILW :</div>
 
           <div class="summary-row">
             <span>Volume of Wood Consume (M3) =</span>
@@ -131,13 +129,13 @@
           <div>Swift Code : CENAIDJA</div>
         </div>
 
-        <div style="margin-top: 10px; font-size: 10px">FSC100% SA-COC-012797</div>
+        <div v-if="isEthimoBuyer" style="margin-top: 10px; font-size: 10px">
+          FSC100% SA-COC-012797
+        </div>
       </div>
 
       <div class="bottom-right">
-        <div class="company-name">PT. SURYA BANGKIT CEMERLANG</div>
-        <div class="signature-space"></div>
-        <div class="signer-name">ELLEN APRILIANA</div>
+        <SignatureCompany />
       </div>
     </div>
   </div>
@@ -145,10 +143,17 @@
 
 <script setup>
 import { computed } from 'vue'
+import { amountToWords } from '../../../utils/numberToWords'
+import SignatureCompany from '../../../components/cetak/SignatureCompany.vue'
 
 const props = defineProps({
   data: { type: Object, required: true },
 })
+
+// Klaim sertifikasi FSC cuma ditampilkan untuk buyer Ethimo — lihat CetakPengiriman.vue.
+const isEthimoBuyer = computed(() =>
+  (props.data?.buyer?.name || '').toLowerCase().includes('ethimo'),
+)
 
 const hasCrates = computed(() => {
   const mode = props.data?.shipment_mode || 'SEA'
@@ -176,7 +181,7 @@ const formatMoney = (val) =>
     : '0'
 
 const formatNumberWords = (amount) => {
-  return Math.round(amount).toLocaleString('en-US')
+  return amountToWords(amount)
 }
 
 const calculateWoodTotal = (item) => {
@@ -315,7 +320,7 @@ const totals = computed(() => {
   width: 35%;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
   justify-content: flex-end;
 }
 
@@ -326,40 +331,31 @@ const totals = computed(() => {
 }
 
 .summary-box {
-  border: 2px solid #000;
-  padding: 5px 8px;
-  margin-bottom: 10px;
-  font-size: 8.5px;
+  border: 1.5px solid #000;
+  padding: 3px 6px;
+  margin-bottom: 6px;
+  font-size: 7.5px;
+  max-width: 70mm;
 }
 
 .summary-row {
   display: flex;
   justify-content: space-between;
+  gap: 6px;
   font-weight: bold;
-  margin: 2px 0;
+  margin: 1px 0;
+  white-space: nowrap;
+}
+
+.summary-box .fc-ilw-note {
+  font-weight: bold;
+  margin: 3px 0;
+  text-decoration: underline;
+  font-size: 7.5px;
 }
 
 .bank-info {
   font-size: 9px;
   line-height: 1.4;
-}
-
-.company-name {
-  font-weight: bold;
-  margin-bottom: 50px;
-  text-align: right;
-  font-size: 9px;
-}
-
-.signature-space {
-  width: 140px;
-  border-bottom: 1px solid #000;
-  margin-bottom: 3px;
-}
-
-.signer-name {
-  font-weight: bold;
-  text-align: right;
-  font-size: 9px;
 }
 </style>

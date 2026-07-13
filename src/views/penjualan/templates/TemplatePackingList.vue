@@ -4,30 +4,31 @@
       <thead>
         <tr>
           <th rowspan="2" style="width: 3%">NO</th>
-          <th rowspan="2" style="width: 9%">CODE</th>
+          <th rowspan="2" style="width: 8%">CODE</th>
           <th rowspan="2" style="width: 8%">HS CODE</th>
-          <th rowspan="2" style="width: 25%">DESCRIPTION</th>
+          <th rowspan="2" :style="{ width: (hasCrates ? 25 : 30) + '%' }">DESCRIPTION</th>
 
-          <!-- ✅ QUANTITY: colspan dinamis — lebar grup dibagi rata browser antar
-               kolom leaf-nya (2 atau 3), tidak perlu diset manual di sini. -->
-          <th :colspan="hasCrates ? 3 : 2">QUANTITY</th>
+          <!-- QUANTITY: lebar grup = jumlah lebar sub-kolomnya (dicek konsisten dengan row2) -->
+          <th :colspan="hasCrates ? 3 : 2" :style="{ width: (hasCrates ? 16 : 11) + '%' }">
+            QUANTITY
+          </th>
 
-          <th colspan="2">WOOD CONSUMED</th>
-          <th colspan="2">VOLUME</th>
-          <th colspan="2">WEIGHT (KG)</th>
+          <th colspan="2" style="width: 13%">WOOD CONSUMED</th>
+          <th colspan="2" style="width: 15%">VOLUME</th>
+          <th colspan="2" style="width: 12%">WEIGHT (KG)</th>
         </tr>
         <tr>
-          <!-- ✅ Header CRATE hanya jika AIR -->
-          <th v-if="hasCrates">CRATE</th>
-          <th>BOXES</th>
-          <th>PCS</th>
+          <!-- Header CRATE hanya jika AIR -->
+          <th v-if="hasCrates" style="width: 5%">CRATE</th>
+          <th style="width: 5.5%">BOXES</th>
+          <th style="width: 5.5%">PCS</th>
 
-          <th>PCS</th>
-          <th>M3</th>
-          <th>M3/BOX</th>
-          <th>M3</th>
-          <th>NETT</th>
-          <th>GROSS</th>
+          <th style="width: 6.5%">PCS</th>
+          <th style="width: 6.5%">M3</th>
+          <th style="width: 7.5%">M3/BOX</th>
+          <th style="width: 7.5%">M3</th>
+          <th style="width: 6%">NETT</th>
+          <th style="width: 6%">GROSS</th>
         </tr>
       </thead>
       <tbody>
@@ -173,12 +174,15 @@ const totals = computed(() => {
 })
 </script>
 <style scoped>
+.template-packing-container {
+  font-family: 'Arial Narrow', Arial, sans-serif;
+}
+
 .table-print-packing {
   width: 100%;
-  table-layout: fixed;
   border-collapse: collapse;
   margin-bottom: 10px;
-  font-size: 11px; /* 🔹 diperjelas */
+  font-size: 9px;
 }
 .table-print-packing thead {
   background: #e0e0e0;
@@ -187,7 +191,7 @@ const totals = computed(() => {
 .table-print-packing th,
 .table-print-packing td {
   border: 1.2px solid #000;
-  padding: 6px 5px;
+  padding: 4px 5px;
   text-align: center;
   vertical-align: middle;
   overflow-wrap: break-word;
@@ -197,28 +201,28 @@ const totals = computed(() => {
 .table-print-packing td.item-desc {
   text-align: left;
 }
+
 .table-print-packing th {
-  font-weight: 900; /* 🔹 lebih tebal */
+  font-weight: 900;
   color: #000;
-  font-size: 11px; /* 🔹 lebih besar */
+  font-size: 9px;
   text-transform: uppercase;
 }
 .table-print-packing td {
   color: #000;
-  font-size: 11px; /* 🔹 lebih besar */
-  font-weight: 600; /* 🔹 lebih tebal */
+  font-size: 9px;
+  font-weight: 600;
 }
 
 /* HS CODE */
 .hs-code-cell {
   font-weight: 700;
   background-color: #f8f9fa;
-  font-family: 'Courier New', monospace;
 }
 .hs-code-cell::before {
   content: 'HS ';
-  color: #000; /* lebih gelap */
-  font-weight: 700; /* lebih tebal */
+  color: #000;
+  font-weight: 700;
   letter-spacing: 0.5px;
 }
 
@@ -247,8 +251,8 @@ const totals = computed(() => {
   font-weight: 800;
   background: #e8e8e8;
   border-top: 2.5px solid #000;
-  padding: 7px 5px !important;
-  font-size: 11px;
+  padding: 5px !important;
+  font-size: 9px;
   color: #000;
 }
 </style>

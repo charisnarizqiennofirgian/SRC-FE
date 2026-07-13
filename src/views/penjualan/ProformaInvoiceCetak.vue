@@ -112,7 +112,7 @@
             <li>Delivery address : provided by buyer</li>
             <li>Incoterm : FOB Semarang Port</li>
             <li>Tolerance QTY item : +- 10%</li>
-            <li>All items are certified FSC 100% SA-COC-012797</li>
+            <li v-if="isEthimoBuyer">All items are certified FSC 100% SA-COC-012797</li>
             <li>
               Payment term :
               <span class="fc-payment-term">{{ so.payment_term || '-' }}</span>
@@ -142,13 +142,7 @@
 
         <!-- KANAN BAWAH: TTD SBC -->
         <div class="fc fc-bottom fc-right">
-          <div class="sign-box">
-            <p class="sign-date">Semarang, {{ formatSignDate(so.so_date) }}</p>
-            <p class="sign-label">PT SURYA BANGKIT CEMERLANG</p>
-            <div class="sign-space"></div>
-            <div class="sign-line"></div>
-            <p class="sign-name">Ellen Apriliana</p>
-          </div>
+          <SignatureCompany :date-line="`Semarang, ${formatSignDate(so.so_date)}`" />
         </div>
 
       </div>
@@ -163,6 +157,7 @@ import { useRoute, useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
 import PrintKopWrapper from '../../components/cetak/PrintKopWrapper.vue'
+import SignatureCompany from '../../components/cetak/SignatureCompany.vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -172,6 +167,9 @@ const loading      = ref(true)
 const so           = ref(null)
 const noPi         = ref('')
 const deliveryOrder = ref(null)
+
+// Klaim sertifikasi FSC cuma ditampilkan untuk buyer Ethimo — lihat CetakPengiriman.vue.
+const isEthimoBuyer = computed(() => (so.value?.buyer?.name || '').toLowerCase().includes('ethimo'))
 
 onMounted(async () => {
   const id = route.params.id
@@ -552,13 +550,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   flex-direction: column;
   align-items: center;
   width: 52mm;
-}
-
-.sign-date {
-  font-size: 9pt;
-  margin: 0 0 1mm 0;
-  text-align: center;
-  white-space: nowrap;
 }
 
 .sign-label {

@@ -3,7 +3,7 @@
     <div class="si-title">
       <h2>SHIPPING INSTRUCTION</h2>
       <div class="si-number">
-        No : {{ data.do_number || '-' }}/{{ formatDate(data.delivery_date) }}
+        No : {{ data.do_number || '-' }}
       </div>
     </div>
 
@@ -17,7 +17,7 @@
     <div class="si-row">
       <div class="si-label">Dear Sirs / Ms.</div>
       <div class="si-content">
-        <strong>We herewith request to effect the following shipment :</strong>
+        <strong>We kindly request your assistance to arrange the following shipment :</strong>
       </div>
     </div>
 
@@ -174,14 +174,6 @@ const formatNumber = (val) => {
 const formatVolume = (val) => {
   if (!val && val !== 0) return '0.0000'
   return Number(val).toFixed(4)
-}
-
-const formatDate = (dateString) => {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const year = date.getFullYear()
-  return `${month}/${year}`
 }
 
 const formatDateDMY = (dateString) => {
