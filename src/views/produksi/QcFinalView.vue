@@ -111,6 +111,22 @@
               </div>
             </div>
 
+            <div class="form-group-modern">
+              <label class="form-label-modern">
+                Gudang Sumber <span class="required-star">*</span>
+              </label>
+              <div class="warehouse-toggle">
+                <button
+                  v-for="wh in sourceWarehouseOptions"
+                  :key="wh.id"
+                  type="button"
+                  class="toggle-btn"
+                  :class="{ active: form.source_warehouse_id === wh.id }"
+                  @click="selectSourceWarehouse(wh)"
+                >{{ wh.name }}</button>
+              </div>
+            </div>
+
             <div v-if="!form.source_warehouse_id" class="empty-hint">
               ⬆️ Pilih gudang sumber dulu
             </div>
@@ -211,7 +227,11 @@
               </div>
             </div>
 
-            <div v-if="form.rejects.length === 0" class="empty-reject">
+            <div v-if="!form.source_warehouse_id" class="empty-hint">
+              ⬆️ Pilih gudang sumber dulu (di section Item Lolos QC)
+            </div>
+
+            <div v-else-if="form.rejects.length === 0" class="empty-reject">
               Tidak ada reject —
               <button type="button" class="btn-link" @click="addReject">tambah reject</button>
             </div>
@@ -349,7 +369,12 @@ const loadingItems          = ref(false)
 const productionOrders      = ref([])
 const sourceItems           = ref([])
 const selectedWarehouseName = ref('')
+const sourceWarehouseOptions = ref([])
 const poInfo = ref({ buyer_name: null, so_number: null })
+
+// Urutan tahap hilir sebelum QC — item bisa datang dari salah satu gudang ini
+// tergantung rute produk (tidak semua produk lewat Sanding/Rustik/Finishing)
+const SOURCE_WAREHOUSE_CODES = ['ASSEMBLING', 'RUSKOMP', 'SANDING', 'RUSTIK', 'FINISHING']
 
 const form = reactive({
   date:                new Date().toISOString().slice(0, 10),
@@ -378,21 +403,23 @@ const fetchInitialData = async () => {
     ])
     productionOrders.value = poRes.data.data || []
 
-    // Auto-set source warehouse ke ASSEMBLING
+    // Gudang sumber dipilih manual oleh admin — item QC bisa datang dari salah satu
+    // tahap hilir (Assembling/Ruskomp/Sanding/Rustik/Finishing) tergantung rute produk
     const whAll = whRes.data.data || whRes.data || []
-    const assemblingWh = whAll.find((w) => w.code === 'ASSEMBLING')
-    if (assemblingWh) {
-      form.source_warehouse_id = assemblingWh.id
-      selectedWarehouseName.value = assemblingWh.name
-      await fetchSourceItems()
-    }
+    sourceWarehouseOptions.value = SOURCE_WAREHOUSE_CODES
+      .map((code) => whAll.find((w) => w.code === code))
+      .filter(Boolean)
   } catch (error) {
     console.error('Error in fetchInitialData:', error)
     showError('Gagal', 'Gagal mengambil data awal')
   }
 }
 
-
+const selectSourceWarehouse = async (wh) => {
+  form.source_warehouse_id = wh.id
+  selectedWarehouseName.value = wh.name
+  await fetchSourceItems()
+}
 
 const fetchSourceItems = async () => {
   if (!form.source_warehouse_id) return
