@@ -535,6 +535,7 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   padding-top: 4mm;
   display: flex;
   justify-content: center;
+  align-items: flex-end;
 }
 
 .fc-left.fc-bottom {
@@ -564,17 +565,27 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   height: 14mm;
 }
 
-.sign-line {
-  width: 100%;
-  border-bottom: 0.75pt solid #000;
-  margin-bottom: 1.5mm;
-}
-
 .sign-name {
   font-weight: 700;
   font-size: 10pt;
   margin: 0;
   text-align: center;
+}
+
+/* Selaraskan tampilan tanda tangan SBC (komponen SignatureCompany) dengan box
+   Confirmed by Buyer di halaman ini — garis di atas nama dihapus & font disamakan. */
+:deep(.signature-block) {
+  font-size: 10pt;
+}
+
+:deep(.sig-date) {
+  font-size: 10.5pt;
+  font-weight: 600;
+  color: #000;
+}
+
+:deep(.sig-line) {
+  display: none;
 }
 
 /* ─── PRINT ─────────────────────────────────────────── */
