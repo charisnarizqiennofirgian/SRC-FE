@@ -136,7 +136,7 @@
             <p class="sign-label">CONFIRMED BY BUYER</p>
             <div class="sign-space"></div>
             <div class="sign-line"></div>
-            <p class="sign-name">JACOPO</p>
+            <p class="sign-name">{{ so.buyer?.contact_person || so.buyer?.name || '-' }}</p>
           </div>
         </div>
 

@@ -67,6 +67,7 @@
             <tr>
               <th class="th-code">Kode</th>
               <th class="th-name">Nama Buyer</th>
+              <th class="th-contact">Contact Person</th>
               <th class="th-address">Alamat</th>
               <th class="th-phone">No. Telepon</th>
               <th class="th-coa">Akun Piutang</th>
@@ -76,7 +77,7 @@
           <tbody>
             <!-- Empty State -->
             <tr v-if="buyers.length === 0" class="empty-row">
-              <td colspan="6">
+              <td colspan="7">
                 <div class="empty-state">
                   <span class="empty-icon">📭</span>
                   <p class="empty-text">Belum ada data buyer</p>
@@ -91,6 +92,7 @@
                 <span class="code-badge">{{ item.code }}</span>
               </td>
               <td class="td-name">{{ item.name }}</td>
+              <td class="td-contact">{{ item.contact_person || '-' }}</td>
               <td class="td-address">{{ item.address || '-' }}</td>
               <td class="td-phone">{{ item.phone || '-' }}</td>
               <td class="td-coa">
@@ -171,6 +173,21 @@
                   required
                 />
               </div>
+            </div>
+
+            <div class="form-group">
+              <label for="buyerContactPerson" class="form-label">
+                <span class="label-icon">🖊️</span>
+                Contact Person
+              </label>
+              <input
+                type="text"
+                id="buyerContactPerson"
+                v-model="buyerForm.contact_person"
+                placeholder="Nama PIC/penanda tangan (mis. Jacopo, Jenny Wijaya)"
+                class="form-control"
+              />
+              <p class="form-hint">Dipakai sebagai nama penanda tangan pada Proforma Invoice</p>
             </div>
 
             <div class="form-group">
@@ -365,6 +382,7 @@ const buyerForm = ref({
   id: null,
   code: '',
   name: '',
+  contact_person: '',
   address: '',
   phone: '',
   receivable_account_id: null,
@@ -440,6 +458,7 @@ const openAddModal = () => {
     id: null,
     code: '',
     name: '',
+    contact_person: '',
     address: '',
     phone: '',
     receivable_account_id: null,
@@ -454,6 +473,7 @@ const openEditModal = (buyer) => {
     id: buyer.id,
     code: buyer.code,
     name: buyer.name,
+    contact_person: buyer.contact_person || '',
     address: buyer.address,
     phone: buyer.phone,
     receivable_account_id: buyer.receivable_account_id,
@@ -790,6 +810,10 @@ onMounted(() => {
   width: 150px;
 }
 
+.th-contact {
+  width: 180px;
+}
+
 .th-action {
   width: 120px;
   text-align: center;
@@ -1043,6 +1067,12 @@ onMounted(() => {
 textarea.form-control {
   resize: vertical;
   min-height: 90px;
+}
+
+.form-hint {
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  color: #9e9e9e;
 }
 
 .modal-footer {
