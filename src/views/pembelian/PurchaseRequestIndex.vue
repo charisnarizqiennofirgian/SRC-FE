@@ -26,7 +26,7 @@
           placeholder="Cari no. PR atau catatan..."
           @input="onSearch"
         />
-        <select v-model="filterStatus" class="input-filter" @change="fetchData">
+        <select v-model="filterStatus" class="input-filter" @change="onFilterStatusChange">
           <option value="">Semua Status</option>
           <option value="draft">Draft</option>
           <option value="submitted">Submitted</option>
@@ -81,13 +81,13 @@
                 </td>
                 <td class="td-action">
                   <router-link
-                    :to="{ name: 'PurchaseRequestDetail', params: { id: pr.id } }"
+                    :to="{ name: 'PurchaseRequestDetail', params: { id: pr.id }, query: { returnTo: route.fullPath } }"
                     class="btn-detail"
                     title="Lihat Detail"
                   >🔍</router-link>
                   <router-link
                     v-if="pr.status === 'draft' || pr.status === 'submitted'"
-                    :to="{ name: 'PurchaseRequestEdit', params: { id: pr.id } }"
+                    :to="{ name: 'PurchaseRequestEdit', params: { id: pr.id }, query: { returnTo: route.fullPath } }"
                     class="btn-edit"
                     title="Edit"
                   >✏️</router-link>
@@ -139,21 +139,33 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
 
-const toast = useToast()
+const route  = useRoute()
+const router = useRouter()
+const toast  = useToast()
 
 const rows         = ref([])
 const loading      = ref(false)
-const search       = ref('')
-const filterStatus = ref('')
-const page         = ref(1)
+const search       = ref(route.query.search || '')
+const filterStatus = ref(route.query.status || '')
+const page         = ref(parseInt(route.query.page) || 1)
 const perPage      = 15
 const total        = ref(0)
 const deleteTarget = ref(null)
 const isDeleting   = ref(false)
+
+// Sinkronkan state filter/pagination ke URL supaya tidak hilang saat kembali dari Detail/Edit.
+const syncQuery = () => {
+  const query = {}
+  if (page.value > 1)   query.page   = page.value
+  if (search.value)     query.search = search.value
+  if (filterStatus.value) query.status = filterStatus.value
+  router.replace({ query })
+}
 
 let searchTimer = null
 
@@ -187,12 +199,20 @@ const onSearch = () => {
   clearTimeout(searchTimer)
   searchTimer = setTimeout(() => {
     page.value = 1
+    syncQuery()
     fetchData()
   }, 400)
 }
 
+const onFilterStatusChange = () => {
+  page.value = 1
+  syncQuery()
+  fetchData()
+}
+
 const goPage = (p) => {
   page.value = p
+  syncQuery()
   fetchData()
 }
 

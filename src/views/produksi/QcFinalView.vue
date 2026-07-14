@@ -194,7 +194,7 @@
                         v-model.number="row.qty"
                         type="number"
                         min="1"
-                        :max="row.max_qty"
+                        :max="row.max_qty > 0 ? row.max_qty : undefined"
                         class="form-input-modern"
                         placeholder="0"
                       />
@@ -281,7 +281,7 @@
                       v-model.number="row.qty"
                       type="number"
                       min="1"
-                      :max="row.max_qty"
+                      :max="row.max_qty > 0 ? row.max_qty : undefined"
                       class="form-input-modern"
                       placeholder="0"
                     />
@@ -429,12 +429,25 @@ const fetchSourceItems = async () => {
       params: { warehouse_id: form.source_warehouse_id }
     })
     sourceItems.value = res.data.data || []
+    applyMaxQtyFromSource()
   } catch (error) {
     console.error('Error in fetchSourceItems:', error)
     showError('Gagal', 'Gagal mengambil stok gudang')
   } finally {
     loadingItems.value = false
   }
+}
+
+// Baris "Item Lolos QC" yang auto-terisi dari target PO tampil sebagai kotak read-only
+// (bukan dropdown), jadi onPassedItemSelected() tidak pernah terpanggil untuk baris itu —
+// max_qty perlu di-backfill manual dari stok gudang sumber begitu tersedia, baik gudang
+// dipilih setelah PO (di sini) maupun PO dipilih setelah gudang (dipanggil di handlePoChange).
+const applyMaxQtyFromSource = () => {
+  form.passed.forEach((row) => {
+    if (!row.item_id) return
+    const found = sourceItems.value.find((i) => i.item_id === row.item_id)
+    row.max_qty = found?.qty_available ?? 0
+  })
 }
 
 const poTargets = ref([])
@@ -462,6 +475,8 @@ const handlePoChange = async (opt) => {
         qty:       null,
         max_qty:   0,
       }))
+      // Kalau gudang sumber sudah dipilih duluan, langsung isi max_qty dari stok yang sudah di-fetch
+      if (form.source_warehouse_id) applyMaxQtyFromSource()
     }
   } catch (error) {
     console.error('Error in handlePoChange:', error)

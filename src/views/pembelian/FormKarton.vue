@@ -15,7 +15,7 @@
             </p>
           </div>
         </div>
-        <router-link :to="{ name: 'PembelianKarton' }" class="btn-back">
+        <router-link :to="backTarget" class="btn-back">
           <span class="btn-icon">←</span>
           <span>Kembali ke Daftar</span>
         </router-link>
@@ -433,6 +433,9 @@ const route = useRoute()
 const toast = useToast()
 
 const isEditMode = computed(() => !!route.params.id)
+// URL list (dengan ?page=) tempat user datang — dipakai tombol Kembali & redirect
+// setelah simpan, supaya balik ke halaman pagination yang sama, bukan reset ke halaman 1.
+const backTarget = computed(() => route.query.returnTo || { name: 'PembelianKarton' })
 const poId = route.params.id
 const poNumber = ref('')
 const loading = ref(true)
@@ -595,7 +598,7 @@ const saveOrder = async () => {
       await apiClient.post('/purchase-orders', payload)
       toast.success('PO Karton berhasil dibuat!')
     }
-    router.push({ name: 'PembelianKarton' })
+    router.push(backTarget.value)
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'Gagal menyimpan pesanan.'
     toast.error(errorMessage)

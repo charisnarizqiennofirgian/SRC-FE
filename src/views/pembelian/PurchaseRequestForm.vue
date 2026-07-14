@@ -10,7 +10,7 @@
             <p class="page-subtitle">Permintaan pembelian barang ke Tim Pembelian</p>
           </div>
         </div>
-        <router-link :to="{ name: 'PurchaseRequestIndex' }" class="btn-back">← Kembali</router-link>
+        <router-link :to="backTarget" class="btn-back">← Kembali</router-link>
       </div>
     </div>
 
@@ -127,7 +127,7 @@
 
       <!-- ACTIONS -->
       <div class="form-actions">
-        <button type="button" class="btn-cancel" @click="$router.back()">Batal</button>
+        <button type="button" class="btn-cancel" @click="router.push(backTarget)">Batal</button>
         <button type="submit" class="btn-save" :disabled="isSaving">
           {{ isSaving ? '⏳ Menyimpan...' : '💾 Simpan Draft' }}
         </button>
@@ -158,6 +158,9 @@ const route   = useRoute()
 const toast   = useToast()
 
 const isEditMode  = computed(() => !!route.params.id)
+// URL list (dengan ?page=) tempat user datang — dipakai tombol Kembali/Batal & redirect
+// setelah simpan, supaya balik ke halaman pagination yang sama, bukan reset ke halaman 1.
+const backTarget  = computed(() => route.query.returnTo || { name: 'PurchaseRequestIndex' })
 const loading     = ref(false)
 const loadingItem = ref(false)
 const isSaving    = ref(false)
@@ -223,7 +226,7 @@ const savePR = async (autoSubmit = false) => {
       toast.success('PR berhasil disubmit ke Tim Pembelian!')
     }
 
-    router.push({ name: 'PurchaseRequestIndex' })
+    router.push(backTarget.value)
   } catch (error) {
     const errData = error.response?.data
     const msg = errData?.errors

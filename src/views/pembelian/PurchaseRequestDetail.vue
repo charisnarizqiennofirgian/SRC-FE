@@ -9,7 +9,7 @@
             <p class="page-subtitle">{{ pr?.pr_number }}</p>
           </div>
         </div>
-        <router-link :to="{ name: 'PurchaseRequestIndex' }" class="btn-back">← Kembali</router-link>
+        <router-link :to="listReturnTo" class="btn-back">← Kembali</router-link>
       </div>
     </div>
 
@@ -65,7 +65,7 @@
         <div class="card-actions">
           <router-link
             v-if="pr.status === 'draft' || pr.status === 'submitted'"
-            :to="{ name: 'PurchaseRequestEdit', params: { id: pr.id } }"
+            :to="{ name: 'PurchaseRequestEdit', params: { id: pr.id }, query: { returnTo: route.query.returnTo } }"
             class="btn-edit-pr"
           >
             ✏️ Edit PR
@@ -203,7 +203,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import apiClient from '../../api/axios'
@@ -221,6 +221,10 @@ const isProcessing    = ref(false)
 const isConverting    = ref(false)
 const showConvertModal = ref(false)
 const daftarSupplier  = ref([])
+
+// URL list (dengan ?page=) yang mengantar user ke halaman ini — dipakai tombol Kembali
+// & diteruskan ke Edit PR, supaya balik ke halaman pagination yang sama, bukan reset ke 1.
+const listReturnTo = computed(() => route.query.returnTo || { name: 'PurchaseRequestIndex' })
 
 const convertForm = reactive({
   supplier_id:    '',
@@ -311,7 +315,7 @@ const convertToPO = async () => {
     const res = await apiClient.post(`/purchase-requests/${route.params.id}/convert-to-po`, convertForm)
     toast.success(res.data.message)
     showConvertModal.value = false
-    router.push({ name: 'PurchaseRequestIndex' })
+    router.push(listReturnTo.value)
   } catch (error) {
     toast.error(error.response?.data?.message || 'Gagal convert ke PO')
   } finally {

@@ -106,7 +106,7 @@
               <td class="td-action">
                 <div class="action-buttons">
                   <router-link
-                    :to="{ name: 'detail-po', params: { id: pesanan.id } }"
+                    :to="{ name: 'detail-po', params: { id: pesanan.id }, query: { returnTo: route.fullPath } }"
                     class="btn-action btn-detail"
                     title="Lihat Detail"
                   >
@@ -115,7 +115,7 @@
 
                   <router-link
                     v-if="pesanan.status === 'Open' || pesanan.status === 'Terbuka'"
-                    :to="{ name: 'EditPembelianKarton', params: { id: pesanan.id } }"
+                    :to="{ name: 'EditPembelianKarton', params: { id: pesanan.id }, query: { returnTo: route.fullPath } }"
                     class="btn-action btn-edit"
                     title="Edit PO"
                   >
@@ -124,7 +124,7 @@
 
                   <router-link
                     v-if="pesanan.status === 'Open' || pesanan.status === 'Terbuka' || pesanan.status === 'Diterima Sebagian'"
-                    :to="{ name: 'tambah-penerimaan-barang', params: { po_id: pesanan.id } }"
+                    :to="{ name: 'tambah-penerimaan-barang', params: { po_id: pesanan.id }, query: { returnTo: route.fullPath } }"
                     class="btn-action btn-receive"
                     title="Terima Barang"
                   >
@@ -161,18 +161,31 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import PaginationComponent from '../../components/BasePagination.vue'
 
-const daftarPesanan = ref([])
-const searchQuery = ref('')
+const route = useRoute()
+const router = useRouter()
 
-const halamanSekarang = ref(1)
-const perHalaman = ref(15)
+const daftarPesanan = ref([])
+const searchQuery = ref(route.query.search || '')
+
+const halamanSekarang = ref(parseInt(route.query.page) || 1)
+const perHalaman = ref(parseInt(route.query.per_page) || 15)
 const totalHalaman = ref(1)
 const totalItem = ref(0)
+
+// Sinkronkan pagination/search/per-page ke URL supaya tidak reset ke halaman 1
+// saat kembali dari Detail/Edit/Terima Barang (lihat kasus serupa di menu PR).
+const syncQuery = () => {
+  const query = {}
+  if (halamanSekarang.value > 1) query.page = halamanSekarang.value
+  if (perHalaman.value !== 15)   query.per_page = perHalaman.value
+  if (searchQuery.value)         query.search = searchQuery.value
+  router.replace({ query })
+}
 
 const fetchDaftarPesanan = async () => {
   try {
@@ -194,16 +207,19 @@ const fetchDaftarPesanan = async () => {
 
 const gantiHalaman = (page) => {
   halamanSekarang.value = page
+  syncQuery()
   fetchDaftarPesanan()
 }
 
 const handlePerPageChange = () => {
   halamanSekarang.value = 1
+  syncQuery()
   fetchDaftarPesanan()
 }
 
 watch(searchQuery, () => {
   halamanSekarang.value = 1
+  syncQuery()
   fetchDaftarPesanan()
 })
 
