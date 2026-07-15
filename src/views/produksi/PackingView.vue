@@ -308,7 +308,7 @@ const fetchInitialData = async () => {
 
     const whData = whRes.data.data ?? whRes.data
     // Tampilkan hanya gudang produksi yang relevan sebagai sumber
-    const sourceCodes = ['FINISHING', 'SANDING', 'RUSTIK', 'ASSEMBLING', 'QC_FINAL', 'MESIN', 'RUSKOMP']
+    const sourceCodes = ['FINISHING', 'SANDING', 'RUSTIK', 'ASSEMBLING', 'QC_FINAL', 'MESIN', 'RUSKOMP', 'S4S']
     warehouses.value = whData.filter(w => sourceCodes.includes(w.code))
 
     // Default: pilih FINISHING
