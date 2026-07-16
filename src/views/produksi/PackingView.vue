@@ -202,6 +202,83 @@
                     </div>
                   </div>
                 </div>
+
+                <!-- Toggle: Rakit dari Komponen -->
+                <div class="use-components-toggle">
+                  <label class="toggle-label">
+                    <input type="checkbox" v-model="row.use_components" @change="onToggleComponents(row)" />
+                    <span>🔧 Rakit dari Komponen saat Packing <em>(skip input manual di menu Assembling)</em></span>
+                  </label>
+                </div>
+
+                <div v-if="row.use_components" class="components-subform">
+                  <p class="components-hint">
+                    Pilih komponen yang dipakai untuk merakit {{ row.qty || 0 }} pcs produk ini —
+                    otomatis dicatat sebagai proses Rakit sebelum di-packing.
+                  </p>
+
+                  <div
+                    v-for="(crow, cIndex) in row.components"
+                    :key="crow.local_id"
+                    class="component-row"
+                  >
+                    <div class="component-row-select">
+                      <vue-select
+                        v-model="crow.key"
+                        :options="componentSourceItemsForSelect"
+                        :filterBy="filterComponentItem"
+                        label="label"
+                        placeholder="🔍 Pilih komponen (bisa cari nama produk)..."
+                        class="vue-select-item"
+                        @option:selected="(opt) => onComponentItemSelected(row, cIndex, opt)"
+                      >
+                        <template #option="o">
+                          <div class="item-option">
+                            <span class="item-option-badge">{{ o.warehouse_code }}</span>
+                            <span class="item-option-code">{{ o.item_code }}</span>
+                            <span class="item-option-name">{{ o.item_name }}</span>
+                            <span v-if="o.nama_produk" class="item-option-produk">📦 {{ o.nama_produk }}</span>
+                            <span class="item-option-stock">Stok: {{ o.qty_available }} pcs</span>
+                          </div>
+                        </template>
+                      </vue-select>
+                      <div v-if="crow.warehouse_name" class="source-info">
+                        📦 Sumber: <strong>{{ crow.warehouse_name }}</strong>
+                        <span v-if="crow.max_qty > 0"> · Tersedia: {{ crow.max_qty }} pcs</span>
+                      </div>
+                    </div>
+
+                    <div class="component-row-qty">
+                      <input
+                        v-model.number="crow.qty"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        class="form-input-modern"
+                        placeholder="Qty komponen"
+                      />
+                      <button
+                        v-if="row.components.length > 1"
+                        type="button"
+                        class="btn-remove-row"
+                        @click="removeComponentRow(row, cIndex)"
+                      >✕</button>
+                    </div>
+
+                    <div v-if="crow.item_type === 'component'" class="finishing-toggle-mini">
+                      <label>
+                        <input type="radio" v-model="crow.finishing" value="natural" /> 🌳 Natural
+                      </label>
+                      <label>
+                        <input type="radio" v-model="crow.finishing" value="warna" /> 🎨 Warna
+                      </label>
+                    </div>
+                  </div>
+
+                  <button type="button" class="btn-add-row btn-add-component" @click="addComponentRow(row)">
+                    ➕ Tambah Komponen
+                  </button>
+                </div>
               </div>
 
               <!-- Tambah item manual -->
@@ -273,10 +350,23 @@ const { showSuccess, showError } = useNotification()
 const isSubmitting  = ref(false)
 const isMarkingDone = ref(false)
 
-const productionOrders = ref([])
-const allProdukJadi    = ref([])
-const warehouses       = ref([])
+const productionOrders     = ref([])
+const allProdukJadi        = ref([])
+const warehouses           = ref([])
+const componentSourceItems = ref([])
 const poInfo = ref({ buyer_name: null, so_number: null })
+
+const newComponentRow = () => ({
+  local_id:       Date.now() + Math.random(),
+  key:            null,
+  item_id:        null,
+  warehouse_id:   null,
+  warehouse_name: '',
+  item_type:      null,
+  qty:            null,
+  max_qty:        0,
+  finishing:      'natural',
+})
 
 const form = reactive({
   date:                new Date().toISOString().slice(0, 10),
@@ -295,16 +385,43 @@ const allProdukJadiForSelect = computed(() =>
   }))
 )
 
+const componentSourceItemsForSelect = computed(() =>
+  componentSourceItems.value.map((i) => ({
+    key:            `${i.item_id}-${i.warehouse_id}`,
+    item_id:        i.item_id,
+    item_code:      i.item_code,
+    item_name:      i.item_name,
+    nama_produk:    i.nama_produk ?? null,
+    item_type:      i.item_type ?? null,
+    qty_available:  i.qty_available,
+    warehouse_id:   i.warehouse_id,
+    warehouse_code: i.warehouse_code,
+    warehouse_name: i.warehouse_name,
+    label:          `${i.item_code} - ${i.item_name}`,
+  }))
+)
+
+const filterComponentItem = (option, label, search) => {
+  const s = search.toLowerCase()
+  return (
+    option.item_code?.toLowerCase().includes(s) ||
+    option.item_name?.toLowerCase().includes(s) ||
+    option.nama_produk?.toLowerCase().includes(s)
+  )
+}
+
 const fetchInitialData = async () => {
   try {
-    const [poRes, itemRes, whRes] = await Promise.all([
+    const [poRes, itemRes, whRes, compRes] = await Promise.all([
       apiClient.get('/packing/available-pos'),
       apiClient.get('/materials', { params: { category_name: 'Produk Jadi', per_page: 200 } }),
       apiClient.get('/warehouses'),
+      apiClient.get('/packing/component-source-items'),
     ])
     productionOrders.value = poRes.data.data || []
     const raw = itemRes.data.data?.data || itemRes.data.data || []
     allProdukJadi.value = raw
+    componentSourceItems.value = compRes.data.data || []
 
     const whData = whRes.data.data ?? whRes.data
     // Tampilkan hanya gudang produksi yang relevan sebagai sumber
@@ -332,33 +449,55 @@ const handlePoChange = (opt) => {
   // Auto-fill item dari detail PO
   if (opt.details && opt.details.length > 0) {
     form.items = opt.details.map((d) => ({
-      local_id:    Date.now() + Math.random(),
-      from_po:     true,
-      item_id:     d.item_id,
-      item_code:   d.item_code,
-      item_name:   d.item_name,
-      qty_planned: d.qty_planned,
-      qty:         null,
+      local_id:       Date.now() + Math.random(),
+      from_po:        true,
+      item_id:        d.item_id,
+      item_code:      d.item_code,
+      item_name:      d.item_name,
+      qty_planned:    d.qty_planned,
+      qty:            null,
+      use_components: false,
+      components:     [],
     }))
   } else {
     // Tidak ada detail PO → manual
-    form.items = [{ local_id: Date.now(), from_po: false, item_id: null, qty: null, qty_planned: 0 }]
+    form.items = [{ local_id: Date.now(), from_po: false, item_id: null, qty: null, qty_planned: 0, use_components: false, components: [] }]
   }
 }
 
 const handlePoDeselect = () => {
   poInfo.value    = { buyer_name: null, so_number: null }
-  form.items      = [{ local_id: Date.now(), from_po: false, item_id: null, qty: null, qty_planned: 0 }]
+  form.items      = [{ local_id: Date.now(), from_po: false, item_id: null, qty: null, qty_planned: 0, use_components: false, components: [] }]
 }
 
 const addItem = () => form.items.push({
-  local_id:    Date.now() + Math.random(),
-  from_po:     false,
-  item_id:     null,
-  qty:         null,
-  qty_planned: 0,
+  local_id:       Date.now() + Math.random(),
+  from_po:        false,
+  item_id:        null,
+  qty:            null,
+  qty_planned:    0,
+  use_components: false,
+  components:     [],
 })
 const removeItem = (i) => form.items.splice(i, 1)
+
+// === RAKIT DARI KOMPONEN (per item) ===
+const onToggleComponents = (row) => {
+  if (row.use_components && row.components.length === 0) {
+    row.components.push(newComponentRow())
+  }
+}
+const addComponentRow = (row) => row.components.push(newComponentRow())
+const removeComponentRow = (row, index) => row.components.splice(index, 1)
+
+const onComponentItemSelected = (row, index, opt) => {
+  row.components[index].item_id        = opt?.item_id        ?? null
+  row.components[index].warehouse_id   = opt?.warehouse_id   ?? null
+  row.components[index].warehouse_name = opt?.warehouse_name ?? ''
+  row.components[index].max_qty        = opt?.qty_available  ?? 0
+  row.components[index].item_type      = opt?.item_type      ?? null
+  row.components[index].finishing      = 'natural'
+}
 
 // === SIMPAN PACKING ===
 const handleSubmit = async () => {
@@ -366,6 +505,21 @@ const handleSubmit = async () => {
 
   const validItems = form.items.filter((i) => (i.from_po ? i.item_id : i.item_id) && i.qty > 0)
   if (validItems.length === 0) { showError('Validasi', 'Minimal satu item dengan qty wajib diisi'); return }
+
+  // Validasi komponen untuk item yang pakai mode "Rakit dari Komponen"
+  for (const i of validItems) {
+    if (!i.use_components) continue
+    const comps = (i.components || []).filter((c) => c.item_id && c.qty > 0)
+    if (comps.length === 0) {
+      showError('Validasi', `Item "${i.item_name || 'ini'}" — pilih minimal 1 komponen dengan qty untuk mode Rakit dari Komponen`)
+      return
+    }
+    const missingFinishing = comps.find((c) => c.item_type === 'component' && !c.finishing)
+    if (missingFinishing) {
+      showError('Validasi', 'Jenis finishing (Natural/Warna) wajib dipilih untuk tiap komponen')
+      return
+    }
+  }
 
   isSubmitting.value = true
   try {
@@ -376,17 +530,37 @@ const handleSubmit = async () => {
       ref_po_id:           Number(form.ref_po_id),
       source_warehouse_id: Number(form.source_warehouse_id),
       notes:               form.notes || null,
-      items: validItems.map((i) => ({
-        item_id: Number(i.item_id),
-        qty:     Number(i.qty),
-      })),
+      items: validItems.map((i) => {
+        const payload = { item_id: Number(i.item_id), qty: Number(i.qty) }
+        if (i.use_components) {
+          payload.components = (i.components || [])
+            .filter((c) => c.item_id && c.qty > 0)
+            .map((c) => ({
+              item_id:      Number(c.item_id),
+              warehouse_id: Number(c.warehouse_id),
+              qty:          Number(c.qty),
+              finishing:    c.finishing || null,
+            }))
+        }
+        return payload
+      }),
     })
 
     showSuccess('Sukses', 'Packing berhasil dicatat — stok produk jadi bertambah')
 
-    // Reset qty tapi pertahankan item dari PO
-    form.items.forEach((i) => { i.qty = null })
+    // Reset qty & komponen tapi pertahankan item dari PO
+    form.items.forEach((i) => {
+      i.qty            = null
+      i.use_components = false
+      i.components     = []
+    })
     form.notes = ''
+
+    // Refresh stok komponen (sudah berkurang kalau ada yang pakai mode Rakit)
+    try {
+      const compRes = await apiClient.get('/packing/component-source-items')
+      componentSourceItems.value = compRes.data.data || []
+    } catch { /* non-critical */ }
 
   } catch (error) {
     const message = error.response?.data?.message || 'Gagal menyimpan packing'
@@ -539,6 +713,26 @@ onMounted(fetchInitialData)
 .item-option { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; }
 .item-option-code { font-size: 0.82rem; font-weight: 700; color: #1e40af; }
 .item-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
+.item-option-badge { display: inline-block; padding: 1px 6px; background: #7c3aed; color: white; border-radius: 4px; font-size: 0.72rem; font-weight: 700; width: fit-content; }
+.item-option-produk { font-size: 0.78rem; color: #2563eb; font-weight: 600; }
+.item-option-stock { font-size: 0.78rem; color: #6b7280; }
+
+.use-components-toggle { margin-top: 1rem; }
+.toggle-label { display: flex; align-items: center; gap: 0.6rem; font-size: 0.88rem; font-weight: 600; color: #374151; cursor: pointer; }
+.toggle-label input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+.toggle-label em { color: #6b7280; font-style: normal; font-weight: 500; font-size: 0.8rem; }
+
+.components-subform { margin-top: 1rem; padding: 1.25rem; background: #fdf4ff; border: 1.5px dashed #c084fc; border-radius: 12px; }
+.components-hint { font-size: 0.82rem; color: #7e22ce; margin: 0 0 1rem; font-weight: 500; }
+.component-row { background: white; border: 1px solid #e9d5ff; border-radius: 10px; padding: 1rem; margin-bottom: 0.75rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
+.component-row-select { flex: 2; min-width: 240px; }
+.component-row-qty { flex: 1; min-width: 140px; display: flex; align-items: center; gap: 0.5rem; }
+.component-row-qty .form-input-modern { padding-left: 1rem; }
+.finishing-toggle-mini { display: flex; gap: 1rem; align-items: center; font-size: 0.85rem; font-weight: 600; color: #374151; }
+.finishing-toggle-mini label { display: flex; align-items: center; gap: 0.35rem; cursor: pointer; }
+.source-info { margin-top: 0.4rem; font-size: 0.78rem; color: #6b7280; }
+.btn-add-component { background: #fdf4ff; border-color: #a855f7; color: #7e22ce; }
+.btn-add-component:hover { background: #fae8ff; }
 
 .vue-select-po :deep(.vs__dropdown-toggle),
 .vue-select-item :deep(.vs__dropdown-toggle) { padding: 0.875rem 1.25rem; border: 2.5px solid #e5e7eb; border-radius: 12px; min-height: 54px; }

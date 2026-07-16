@@ -130,6 +130,25 @@
               </p>
             </div>
 
+            <!-- QTY PRODUK JADI -->
+            <div class="form-group-modern" v-if="form.production_order_detail_id" style="margin-bottom:1.25rem;">
+              <label class="form-label-modern">
+                Qty Produk Jadi
+                <span class="field-hint-inline">(berapa unit produk jadi setara dari batch ini)</span>
+              </label>
+              <div class="input-wrapper-icon">
+                <span class="input-icon">📦</span>
+                <input
+                  v-model.number="form.qty_produk_jadi"
+                  type="number"
+                  min="0"
+                  step="any"
+                  class="form-input-modern"
+                  placeholder="Contoh: 20"
+                />
+              </div>
+            </div>
+
             <!-- Info PO -->
             <div v-if="poInfo.buyer_name" class="po-selected-info">
               <span class="po-info-icon">👤</span>
@@ -411,6 +430,7 @@ const form = reactive({
   estimated_finish_date:       '',
   ref_po_id:                   null,
   production_order_detail_id:  null,
+  qty_produk_jadi:             null,
   notes:                       '',
   lines: [newLine()],
 })
@@ -468,6 +488,7 @@ const handlePoChange = async (opt) => {
   poTargets.value                   = []
   poDetailItems.value               = []
   form.production_order_detail_id   = null
+  form.qty_produk_jadi              = null
   if (!opt) return
   try {
     const [poRes, detailRes] = await Promise.all([
@@ -491,6 +512,7 @@ const handlePoDeselect = () => {
   poTargets.value                 = []
   poDetailItems.value             = []
   form.production_order_detail_id = null
+  form.qty_produk_jadi            = null
 }
 
 const onS4sItemSelected = (lineIdx, opt) => {
@@ -570,6 +592,7 @@ const handleSubmit = async () => {
       date:                       form.date,
       ref_po_id:                  Number(form.ref_po_id),
       production_order_detail_id: Number(form.production_order_detail_id),
+      qty_produk_jadi:            form.qty_produk_jadi !== null && form.qty_produk_jadi !== '' ? Number(form.qty_produk_jadi) : null,
       notes:                      form.notes || null,
       lines: validLines.map((l) => ({
         machine_id:     Number(l.machine_id),
@@ -648,6 +671,7 @@ onMounted(fetchInitialData)
 .form-grid-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
 .form-group-modern { display: flex; flex-direction: column; }
 .form-label-modern { font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem; }
+.field-hint-inline { font-size: 0.78rem; font-weight: 400; color: #9ca3af; margin-left: 4px; }
 .required-star { color: #ef4444; }
 .input-wrapper-icon { position: relative; display: flex; align-items: center; }
 .input-icon { position: absolute; left: 1.125rem; font-size: 1rem; z-index: 1; pointer-events: none; }
