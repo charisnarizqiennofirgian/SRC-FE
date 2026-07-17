@@ -164,6 +164,22 @@
               </div>
             </div>
 
+            <!-- INFO BOM -->
+            <div v-if="form.ref_po_id" class="form-group-modern" style="margin-bottom:1.25rem;">
+              <div v-if="bomComponents.length > 0 && !showAllSourceItems" class="bom-info-bar bom-info-ok">
+                <span>✓ Menampilkan {{ bomComponents.length }} komponen sesuai resep BOM produk target PO ini</span>
+                <button type="button" class="btn-link-small" @click="showAllSourceItems = true">Tampilkan semua item</button>
+              </div>
+              <div v-else-if="bomComponents.length > 0 && showAllSourceItems" class="bom-info-bar bom-info-all">
+                <span>Menampilkan semua item komponen (di luar resep BOM)</span>
+                <button type="button" class="btn-link-small" @click="showAllSourceItems = false">Kembali ke resep BOM</button>
+              </div>
+              <div v-else class="bom-info-bar bom-info-empty">
+                ℹ️ Produk target PO ini belum punya resep BOM — semua komponen ditampilkan.
+                <router-link :to="{ name: 'MasterBom' }" class="btn-link-small">Isi resep di Master BOM</router-link>
+              </div>
+            </div>
+
             <div v-if="sourceItems.length === 0 && !loadingItems" class="empty-hint">
               📭 Tidak ada stok komponen di Gudang Mesin
             </div>
@@ -190,7 +206,7 @@
                     </label>
                     <vue-select
                       v-model="row.key"
-                      :options="sourceItemsForSelect"
+                      :options="inputSourceOptions"
                       :filterBy="filterSourceItem"
                       label="label"
                       placeholder="🔍 Pilih komponen (bisa cari nama produk)..."
@@ -207,6 +223,9 @@
                         </div>
                       </template>
                     </vue-select>
+                    <p v-if="isInputOutsideBom(row)" class="bom-warning-text">
+                      ⚠️ Item ini di luar resep BOM produk ini
+                    </p>
                   </div>
                   <div class="form-group-modern">
                     <label class="form-label-modern">
@@ -273,10 +292,10 @@
 
             <!-- Belum pilih PO -->
             <div v-if="!form.ref_po_id" class="empty-hint">
-              🔍 Pilih Production Order terlebih dahulu — output akan otomatis muncul dari PO
+              🔍 Pilih Production Order terlebih dahulu — output akan otomatis terisi dari target PO (tetap bisa diganti/dicari produk lain)
             </div>
 
-            <!-- Output dari PO targets -->
+            <!-- Output — default dari target PO, tapi bisa diganti/cari produk lain -->
             <template v-else>
               <div
                 v-for="(row, index) in form.outputs"
@@ -285,16 +304,32 @@
               >
                 <div class="item-row-header">
                   <span class="item-row-number">Output #{{ index + 1 }}</span>
-                  <span class="item-readonly-badge">🎯 Dari PO</span>
+                  <button v-if="form.outputs.length > 1" type="button" class="btn-remove-row" @click="removeOutput(index)">✕</button>
                 </div>
 
                 <div class="form-grid-2col">
                   <div class="form-group-modern">
-                    <label class="form-label-modern">Produk</label>
-                    <div class="item-readonly-box">
-                      <span class="item-readonly-code">{{ row.item_code }}</span>
-                      <span class="item-readonly-name">{{ row.item_name }}</span>
-                    </div>
+                    <label class="form-label-modern">Produk <span class="required-star">*</span></label>
+                    <vue-select
+                      v-model="row.item_id"
+                      :options="outputOptionsFor(row)"
+                      :reduce="(o) => o.item_id"
+                      label="label"
+                      placeholder="🔍 Cari produk jadi/setengah jadi..."
+                      :filterable="false"
+                      @search="(s, loading) => onSearchOutput(s, loading, row.local_id)"
+                      @option:selected="(opt) => onOutputSelected(row.local_id, opt)"
+                      class="vue-select-item"
+                    >
+                      <template #no-options>Ketik nama/kode produk...</template>
+                      <template #option="o">
+                        <div class="item-option">
+                          <span class="item-option-code">{{ o.item_code }}</span>
+                          <span class="item-option-name">{{ o.item_name }}</span>
+                          <span v-if="o.from_po" class="item-option-po-badge">🎯 Target PO</span>
+                        </div>
+                      </template>
+                    </vue-select>
                   </div>
 
                   <div class="form-group-modern">
@@ -318,6 +353,10 @@
                   📦 → Gudang Assembling (setengah jadi)
                 </div>
               </div>
+
+              <button type="button" class="btn-add-row btn-add-output" @click="addOutput">
+                ➕ Tambah Output Lainnya
+              </button>
             </template>
           </div>
 
@@ -423,13 +462,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import { useNotification } from '../../composables/useNotification.js'
 import VueSelect from 'vue-select'
 import 'vue-select/dist/vue-select.css'
+import { debounce } from 'lodash-es'
 
 const router = useRouter()
 const { showSuccess, showError } = useNotification()
@@ -440,6 +480,66 @@ const productionOrders = ref([])
 const sourceItems      = ref([])
 const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
+
+// === BOM (resep) — filter dropdown Item Komponen sesuai produk-produk output yang dipilih ===
+const bomComponents      = ref([]) // union komponen dari BOM semua produk di form.outputs
+const showAllSourceItems = ref(false)
+
+// === OUTPUT: bisa cari/pilih produk jadi/setengah jadi, tidak cuma terkunci ke target PO ===
+const outputSearchOptionsByRow = ref({}) // keyed by row.local_id — hasil search terakhir
+const selectedOutputByRow      = ref({}) // keyed by row.local_id — object lengkap yang dipilih (fix label vue-select)
+
+const poTargetOptions = computed(() =>
+  poTargets.value.map((t) => ({
+    item_id:   t.item_id,
+    item_code: t.code,
+    item_name: t.name,
+    from_po:   true,
+    label:     `${t.code} - ${t.name}`,
+  }))
+)
+
+const outputOptionsFor = (row) => {
+  const searched = outputSearchOptionsByRow.value[row.local_id] || []
+  const base     = searched.length > 0 ? searched : poTargetOptions.value
+  const selected = selectedOutputByRow.value[row.local_id]
+  if (!selected) return base
+  const already = base.some((o) => o.item_id === selected.item_id)
+  return already ? base : [selected, ...base]
+}
+
+const onOutputSelected = (localId, opt) => {
+  selectedOutputByRow.value[localId] = opt || null
+}
+
+const onSearchOutput = debounce(async (search, loading, localId) => {
+  if (!search) { outputSearchOptionsByRow.value[localId] = []; return }
+  loading(true)
+  try {
+    const res = await apiClient.get('/production/bom/search-items', { params: { role: 'parent', search } })
+    outputSearchOptionsByRow.value[localId] = (res.data.data || []).map((i) => ({
+      item_id:   i.item_id,
+      item_code: i.item_code,
+      item_name: i.item_name,
+      from_po:   false,
+      label:     `${i.item_code} - ${i.item_name}`,
+    }))
+  } catch (error) {
+    console.error(error)
+  } finally {
+    loading(false)
+  }
+}, 300)
+
+const addOutput = () => form.outputs.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null })
+const removeOutput = (index) => {
+  const row = form.outputs[index]
+  if (row) {
+    delete outputSearchOptionsByRow.value[row.local_id]
+    delete selectedOutputByRow.value[row.local_id]
+  }
+  form.outputs.splice(index, 1)
+}
 
 const form = reactive({
   date:         new Date().toISOString().slice(0, 10),
@@ -477,6 +577,52 @@ const filterSourceItem = (option, label, search) => {
   )
 }
 
+const bomComponentIds = computed(() => new Set(bomComponents.value.map((c) => c.item_id)))
+
+// Dropdown "Item Komponen" (Input) — sesuai gabungan resep BOM semua produk target PO ini kalau ada,
+// fallback ke semua item kalau BOM belum diisi atau operator klik "Tampilkan semua item"
+const inputSourceOptions = computed(() => {
+  if (showAllSourceItems.value || bomComponents.value.length === 0) return sourceItemsForSelect.value
+  return sourceItemsForSelect.value.filter((o) => bomComponentIds.value.has(o.item_id))
+})
+
+const isInputOutsideBom = (row) => {
+  if (bomComponents.value.length === 0 || !row.item_id) return false
+  return !bomComponentIds.value.has(row.item_id)
+}
+
+// Gabungkan (union) BOM dari semua produk target PO
+const fetchBomForTargets = async (targets) => {
+  bomComponents.value      = []
+  showAllSourceItems.value = false
+  if (!targets || targets.length === 0) return
+
+  try {
+    const results = await Promise.all(
+      targets.map((t) => apiClient.get(`/production/bom/${t.item_id}`).catch(() => null))
+    )
+    const merged = new Map()
+    results.forEach((res) => {
+      const comps = res?.data?.data?.components || []
+      comps.forEach((c) => merged.set(c.item_id, c))
+    })
+    bomComponents.value = Array.from(merged.values())
+  } catch (error) {
+    console.error('Gagal memuat BOM produk:', error)
+    bomComponents.value = []
+  }
+}
+
+// BOM buat filter Input selalu ikuti produk yang SEDANG dipilih di Output (bukan cuma target PO awal) —
+// supaya kalau operator ganti/tambah output ke produk lain, filter komponennya ikut update.
+watch(
+  () => form.outputs.map((o) => o.item_id),
+  (ids) => {
+    const uniqueIds = [...new Set(ids.filter(Boolean))]
+    fetchBomForTargets(uniqueIds.map((id) => ({ item_id: id })))
+  }
+)
+
 // === FETCH ===
 const fetchInitialData = async () => {
   loadingItems.value = true
@@ -496,9 +642,11 @@ const fetchInitialData = async () => {
 }
 
 const handlePoChange = async (opt) => {
-  poInfo.value    = { buyer_name: null, so_number: null }
-  poTargets.value = []
-  form.outputs    = [{ local_id: Date.now(), item_id: null, qty: null }]
+  poInfo.value                    = { buyer_name: null, so_number: null }
+  poTargets.value                 = []
+  form.outputs                    = [{ local_id: Date.now(), item_id: null, qty: null }]
+  outputSearchOptionsByRow.value   = {}
+  selectedOutputByRow.value        = {}
   if (!opt) return
   try {
     const res  = await apiClient.get(`/production-orders/${opt.id}`)
@@ -509,23 +657,35 @@ const handlePoChange = async (opt) => {
     }
     poTargets.value = data.targets || []
 
-    // Auto-fill output dari detail PO
+    // Auto-fill output dari detail PO — tetap jadi titik awal yang praktis, tapi tiap baris
+    // sekarang bisa diganti/dicari ke produk lain lewat dropdown (lihat outputOptionsFor)
     if (data.targets?.length > 0) {
-      form.outputs = data.targets.map((t, i) => ({
-        local_id: Date.now() + i,
-        item_id:  t.item_id,
-        item_name: t.name,
-        item_code: t.code,
-        qty:      null, // operator isi sendiri
-      }))
+      form.outputs = data.targets.map((t, i) => {
+        const localId = Date.now() + i
+        selectedOutputByRow.value[localId] = {
+          item_id: t.item_id, item_code: t.code, item_name: t.name, from_po: true,
+          label: `${t.code} - ${t.name}`,
+        }
+        return {
+          local_id: localId,
+          item_id:  t.item_id,
+          item_name: t.name,
+          item_code: t.code,
+          qty:      null, // operator isi sendiri
+        }
+      })
     }
   } catch (e) { console.error(e) }
 }
 
 const handlePoDeselect = () => {
-  poInfo.value    = { buyer_name: null, so_number: null }
-  poTargets.value = []
-  form.outputs    = [{ local_id: Date.now(), item_id: null, qty: null }]
+  poInfo.value                    = { buyer_name: null, so_number: null }
+  poTargets.value                 = []
+  form.outputs                    = [{ local_id: Date.now(), item_id: null, qty: null }]
+  bomComponents.value             = []
+  showAllSourceItems.value        = false
+  outputSearchOptionsByRow.value  = {}
+  selectedOutputByRow.value       = {}
 }
 
 const onItemSelected = (index, opt) => {
@@ -606,6 +766,8 @@ const handleSubmit = async () => {
     form.rejects       = []
     poInfo.value       = { buyer_name: null, so_number: null }
     poTargets.value    = []
+    outputSearchOptionsByRow.value = {}
+    selectedOutputByRow.value      = {}
 
     // Refresh source items
     const res = await apiClient.get('/assembling-produksi/source-items')
@@ -714,11 +876,19 @@ onMounted(fetchInitialData)
 .loading-inline { font-size: 0.82rem; color: #6b7280; margin-left: 8px; }
 .source-info { margin-top: 6px; font-size: 0.82rem; color: #6b7280; padding: 4px 8px; background: #f3f4f6; border-radius: 6px; display: inline-block; }
 
+.bom-info-bar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; padding: 0.6rem 1rem; border-radius: 10px; font-size: 0.82rem; font-weight: 600; }
+.bom-info-ok { background: #f5f3ff; border: 1px solid #ddd6fe; color: #6d28d9; }
+.bom-info-all { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+.bom-info-empty { background: #f9fafb; border: 1px dashed #d1d5db; color: #6b7280; }
+.btn-link-small { background: none; border: none; padding: 0; color: inherit; text-decoration: underline; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
+.bom-warning-text { margin: 4px 0 0; font-size: 0.78rem; color: #b45309; font-weight: 600; }
+
 .item-option { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; }
 .item-option-badge { display: inline-block; padding: 1px 6px; background: #7c3aed; color: white; border-radius: 4px; font-size: 0.72rem; font-weight: 700; width: fit-content; }
 .item-option-code { font-size: 0.82rem; font-weight: 700; color: #374151; }
 .item-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
 .item-option-produk { font-size: 0.78rem; color: #2563eb; font-weight: 600; }
+.item-option-po-badge { font-size: 0.7rem; font-weight: 700; color: #15803d; background: #dcfce7; padding: 1px 8px; border-radius: 999px; width: fit-content; }
 .item-option-stock { font-size: 0.78rem; color: #6b7280; }
 
 .btn-add-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; margin-top: 0.5rem; border: 2px dashed; }
@@ -753,30 +923,6 @@ onMounted(fetchInitialData)
   .card-body-assembling { padding: 1.25rem; }
 }
 
-.item-readonly-box {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 0.9rem 1.25rem;
-  border: 2.5px solid #bbf7d0;
-  border-radius: 12px;
-  background: #f0fdf4;
-}
-.item-readonly-code {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #16a34a;
-}
-.item-readonly-name {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #111827;
-}
-.item-readonly-badge {
-  font-size: 0.72rem;
-  color: #15803d;
-  font-weight: 600;
-}
 .output-dest-hint {
   margin-top: 8px;
   font-size: 0.82rem;
