@@ -206,6 +206,19 @@
                     </p>
                   </div>
                 </div>
+                <div class="form-group-modern">
+                  <label class="form-label-modern">Jenis Finishing <span class="required-star">*</span></label>
+                  <div class="finishing-toggle">
+                    <label class="finishing-option">
+                      <input type="radio" v-model="row.finishing" value="natural" />
+                      <span>🌳 Natural</span>
+                    </label>
+                    <label class="finishing-option">
+                      <input type="radio" v-model="row.finishing" value="warna" />
+                      <span>🎨 Warna</span>
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <button type="button" class="btn-add-row btn-add-input" @click="addInput">
@@ -274,6 +287,19 @@
                       placeholder="0"
                     />
                   </div>
+                </div>
+              </div>
+              <div class="form-group-modern">
+                <label class="form-label-modern">Jenis Finishing <span class="required-star">*</span></label>
+                <div class="finishing-toggle">
+                  <label class="finishing-option">
+                    <input type="radio" v-model="row.finishing" value="natural" />
+                    <span>🌳 Natural</span>
+                  </label>
+                  <label class="finishing-option">
+                    <input type="radio" v-model="row.finishing" value="warna" />
+                    <span>🎨 Warna</span>
+                  </label>
                 </div>
               </div>
             </div>
@@ -404,8 +430,8 @@ const form = reactive({
   date:      new Date().toISOString().slice(0, 10),
   ref_po_id: null,
   notes:     '',
-  inputs:  [{ local_id: Date.now(),     item_id: null, qty: null, max_qty: 0 }],
-  outputs: [{ local_id: Date.now() + 1, item_id: null, qty: null }],
+  inputs:  [{ local_id: Date.now(),     item_id: null, qty: null, max_qty: 0, finishing: 'natural' }],
+  outputs: [{ local_id: Date.now() + 1, item_id: null, qty: null, finishing: 'natural' }],
   rejects: [],
 })
 
@@ -462,6 +488,7 @@ const onItemSelected = (index, opt) => {
   // Auto sync output
   if (form.outputs[index]) {
     form.outputs[index].item_id = opt?.item_id ?? null
+    form.outputs[index].finishing = form.inputs[index].finishing
   }
 }
 
@@ -471,10 +498,10 @@ const syncOutput = (index) => {
   }
 }
 
-const addInput    = () => form.inputs.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, max_qty: 0 })
+const addInput    = () => form.inputs.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, max_qty: 0, finishing: 'natural' })
 const removeInput = (i) => form.inputs.splice(i, 1)
 
-const addOutput    = () => form.outputs.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null })
+const addOutput    = () => form.outputs.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, finishing: 'natural' })
 const removeOutput = (i) => form.outputs.splice(i, 1)
 
 const addReject    = () => form.rejects.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, keterangan: '' })
@@ -504,8 +531,8 @@ const handleSubmit = async () => {
       date:      form.date,
       ref_po_id: Number(form.ref_po_id),
       notes:     form.notes || null,
-      inputs:    validInputs.map((i)  => ({ item_id: Number(i.item_id), qty: Number(i.qty) })),
-      outputs:   validOutputs.map((o) => ({ item_id: Number(o.item_id), qty: Number(o.qty) })),
+      inputs:    validInputs.map((i)  => ({ item_id: Number(i.item_id), qty: Number(i.qty), finishing: i.finishing || 'natural' })),
+      outputs:   validOutputs.map((o) => ({ item_id: Number(o.item_id), qty: Number(o.qty), finishing: o.finishing || 'natural' })),
       rejects:   validRejects.map((r) => ({
         item_id:    Number(r.item_id),
         qty:        Number(r.qty),
@@ -519,8 +546,8 @@ const handleSubmit = async () => {
     // Reset form
     form.ref_po_id = null
     form.notes     = ''
-    form.inputs    = [{ local_id: Date.now(), item_id: null, qty: null, max_qty: 0 }]
-    form.outputs   = [{ local_id: Date.now() + 1, item_id: null, qty: null }]
+    form.inputs    = [{ local_id: Date.now(), item_id: null, qty: null, max_qty: 0, finishing: 'natural' }]
+    form.outputs   = [{ local_id: Date.now() + 1, item_id: null, qty: null, finishing: 'natural' }]
     form.rejects   = []
     poInfo.value   = { buyer_name: null, so_number: null }
     poTargets.value = []
@@ -607,6 +634,18 @@ onMounted(fetchInitialData)
 .stock-hint { margin-left: 8px; font-size: 0.78rem; color: #92400e; font-weight: 600; }
 .qty-warning { margin-top: 4px; font-size: 0.82rem; color: #ef4444; }
 .loading-inline { font-size: 0.82rem; color: #6b7280; margin-left: 8px; }
+
+.finishing-toggle { display: flex; gap: 0.75rem; margin-top: 0.25rem; }
+.finishing-option {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.6rem 1.1rem; border: 2px solid #d1d5db; border-radius: 10px;
+  cursor: pointer; font-weight: 600; font-size: 0.9rem; color: #374151;
+  transition: all 0.15s;
+}
+.finishing-option:has(input:checked) {
+  border-color: #92400e; background: #fef3c7; color: #78350f;
+}
+.finishing-option input { accent-color: #92400e; }
 
 .btn-add-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; margin-top: 0.5rem; border: 2px dashed; }
 .btn-add-input  { background: #ecfeff; border-color: #0891b2; color: #0e7490; }

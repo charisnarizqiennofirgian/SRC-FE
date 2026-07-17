@@ -141,30 +141,38 @@
               <tbody>
                 <tr v-for="(item, index) in form.details" :key="`row-${index}`" class="data-row-so">
                   <td>
-                    <VueSelect
-                      :key="`select-${index}-${item.item_id}`"
-                      v-model="item.item_id"
-                      :options="masterData.items"
-                      :reduce="(opt) => opt.id"
-                      label="name"
-                      placeholder="Ketik nama / kode produk..."
-                      :clearable="false"
-                      :filter-by="filterByNameOrCode"
-                      @update:model-value="onItemSelect(index)"
-                      class="vue-select-table"
-                    >
-                      <template #option="{ name, code, stock }">
-                        <span class="option-item">
-                          <strong>{{ code || '-' }}</strong> | {{ name }} (Stok:
-                          {{ formatStock(stock) }})
-                        </span>
-                      </template>
-                      <template #selected-option="{ name, code }">
-                        <span class="selected-item">
-                          <strong>{{ code || '-' }}</strong> | {{ name }}
-                        </span>
-                      </template>
-                    </VueSelect>
+                    <div class="item-select-with-add">
+                      <VueSelect
+                        :key="`select-${index}-${item.item_id}`"
+                        v-model="item.item_id"
+                        :options="masterData.items"
+                        :reduce="(opt) => opt.id"
+                        label="name"
+                        placeholder="Ketik nama / kode produk..."
+                        :clearable="false"
+                        :filter-by="filterByNameOrCode"
+                        @update:model-value="onItemSelect(index)"
+                        class="vue-select-table"
+                      >
+                        <template #option="{ name, code, stock }">
+                          <span class="option-item">
+                            <strong>{{ code || '-' }}</strong> | {{ name }} (Stok:
+                            {{ formatStock(stock) }})
+                          </span>
+                        </template>
+                        <template #selected-option="{ name, code }">
+                          <span class="selected-item">
+                            <strong>{{ code || '-' }}</strong> | {{ name }}
+                          </span>
+                        </template>
+                      </VueSelect>
+                      <button
+                        type="button"
+                        class="btn-add-produk-baru"
+                        title="Produk belum ada? Tambah produk jadi baru"
+                        @click="bukaModalProdukBaru(index)"
+                      >➕</button>
+                    </div>
                   </td>
                   <td>
                     <input
@@ -320,6 +328,51 @@
         </button>
       </div>
     </form>
+
+    <!-- MODAL TAMBAH PRODUK JADI BARU -->
+    <div v-if="showModalProdukBaru" class="modal-overlay-so" @click.self="tutupModalProdukBaru">
+      <div class="modal-card-so">
+        <div class="modal-header-so">
+          <h3>➕ Tambah Produk Jadi Baru</h3>
+          <button type="button" class="btn-tutup-modal-so" @click="tutupModalProdukBaru">✕</button>
+        </div>
+        <div class="modal-body-so">
+          <p class="modal-hint-so">Produk baru otomatis masuk ke Master Data & Stock Index (tab Produk Jadi).</p>
+          <div class="form-group-so">
+            <label class="form-label-so">Nama Produk <span class="req-so">*</span></label>
+            <input v-model="formProdukBaru.name" type="text" class="form-input-so" placeholder="Contoh: Bella Modular Chair" />
+          </div>
+          <div class="form-grid-2-gap">
+            <div class="form-group-so">
+              <label class="form-label-so">Kode</label>
+              <input v-model="formProdukBaru.code" type="text" class="form-input-so" placeholder="Auto generate jika kosong" />
+            </div>
+            <div class="form-group-so">
+              <label class="form-label-so">Satuan <span class="req-so">*</span></label>
+              <select v-model="formProdukBaru.unit_id" class="form-input-so form-select-so">
+                <option :value="null">Pilih satuan</option>
+                <option v-for="u in units" :key="u.id" :value="u.id">{{ u.name }} ({{ u.short_name }})</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group-so">
+            <label class="form-label-so">Harga (opsional)</label>
+            <input v-model.number="formProdukBaru.price" type="number" min="0" class="form-input-so" placeholder="0" />
+          </div>
+        </div>
+        <div class="modal-footer-so">
+          <button type="button" class="btn-cancel-so" @click="tutupModalProdukBaru">Batal</button>
+          <button
+            type="button"
+            class="btn-submit-so"
+            :disabled="isSavingProdukBaru || !formProdukBaru.name || !formProdukBaru.unit_id"
+            @click="simpanProdukBaru"
+          >
+            {{ isSavingProdukBaru ? '⏳ Menyimpan...' : '💾 Simpan & Pilih' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </DashboardLayout>
 </template>
 
@@ -365,6 +418,63 @@ const masterData = reactive({
   items: [],
 })
 
+// === MODAL TAMBAH PRODUK JADI BARU (dari Rincian Barang) ===
+const units = ref([])
+const showModalProdukBaru = ref(false)
+const isSavingProdukBaru = ref(false)
+const activeRowIndexProdukBaru = ref(null)
+const formProdukBaru = reactive({ name: '', code: '', unit_id: null, price: null })
+
+const fetchUnits = async () => {
+  try {
+    const response = await apiClient.get('/units', { params: { per_page: 100 } })
+    units.value = response.data.data?.data || []
+  } catch (error) {
+    console.error('Error fetch units:', error)
+  }
+}
+
+const bukaModalProdukBaru = (index) => {
+  activeRowIndexProdukBaru.value = index
+  formProdukBaru.name = ''
+  formProdukBaru.code = ''
+  formProdukBaru.unit_id = null
+  formProdukBaru.price = null
+  showModalProdukBaru.value = true
+}
+
+const tutupModalProdukBaru = () => {
+  showModalProdukBaru.value = false
+  activeRowIndexProdukBaru.value = null
+}
+
+const simpanProdukBaru = async () => {
+  if (!formProdukBaru.name || !formProdukBaru.unit_id) return
+  isSavingProdukBaru.value = true
+  try {
+    const response = await apiClient.post('/materials/quick-store-produk', {
+      name: formProdukBaru.name,
+      code: formProdukBaru.code || null,
+      unit_id: formProdukBaru.unit_id,
+      price: formProdukBaru.price || null,
+    })
+    const itemBaru = response.data.data
+    masterData.items.push(itemBaru)
+
+    if (activeRowIndexProdukBaru.value !== null) {
+      form.details[activeRowIndexProdukBaru.value].item_id = itemBaru.id
+      onItemSelect(activeRowIndexProdukBaru.value)
+    }
+
+    toast.success(`Produk '${itemBaru.name}' berhasil ditambahkan.`)
+    tutupModalProdukBaru()
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Gagal menambah produk baru')
+  } finally {
+    isSavingProdukBaru.value = false
+  }
+}
+
 const ppnRate = ref(0.11)
 
 // ← TAMBAH INI! Watch ppnRate changes
@@ -383,7 +493,7 @@ const filterByNameOrCode = (option, label, search) => {
 onMounted(async () => {
   loading.value = true
   try {
-    await Promise.all([fetchBuyers(), fetchItems()])
+    await Promise.all([fetchBuyers(), fetchItems(), fetchUnits()])
 
     if (route.params.id) {
       isEditMode.value = true
@@ -1315,5 +1425,110 @@ const formatStock = (value) => {
     width: 100%;
     justify-content: center;
   }
+}
+
+/* === MODAL TAMBAH PRODUK JADI BARU === */
+.item-select-with-add {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.item-select-with-add .vue-select-table {
+  flex: 1;
+  min-width: 0;
+}
+.btn-add-produk-baru {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  background: #ecfdf5;
+  color: #16a34a;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-add-produk-baru:hover {
+  background: #16a34a;
+  color: white;
+}
+
+.modal-overlay-so {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+.modal-card-so {
+  background: white;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+.modal-header-so {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #667eea, #5a67d8);
+  color: white;
+}
+.modal-header-so h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.btn-tutup-modal-so {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-tutup-modal-so:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+.modal-body-so {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.modal-hint-so {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: 0;
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+}
+.modal-footer-so {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+.req-so {
+  color: #ef4444;
 }
 </style>

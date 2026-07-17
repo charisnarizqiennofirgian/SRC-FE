@@ -1,6 +1,10 @@
 <template>
   <div class="print-page-container">
     <div class="print-controls">
+      <label class="stamp-toggle">
+        <input type="checkbox" v-model="includeStamp" />
+        Sertakan Cap & TTD
+      </label>
       <button @click="goBack" class="btn-back">↩ Kembali</button>
       <button @click="handlePrint" class="btn-print">🖨 Cetak / PDF</button>
     </div>
@@ -142,7 +146,10 @@
 
         <!-- KANAN BAWAH: TTD SBC -->
         <div class="fc fc-bottom fc-right">
-          <SignatureCompany :date-line="`Semarang, ${formatSignDate(so.so_date)}`" />
+          <div class="signature-with-stamp">
+            <img v-if="includeStamp" :src="capTtdEllen" class="stamp-overlay" alt="Cap & TTD" />
+            <SignatureCompany :date-line="`Semarang, ${formatSignDate(so.so_date)}`" />
+          </div>
         </div>
 
       </div>
@@ -158,6 +165,7 @@ import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
 import PrintKopWrapper from '../../components/cetak/PrintKopWrapper.vue'
 import SignatureCompany from '../../components/cetak/SignatureCompany.vue'
+import capTtdEllen from '../../assets/BUUU.PNG'
 
 const route  = useRoute()
 const router = useRouter()
@@ -167,6 +175,11 @@ const loading      = ref(true)
 const so           = ref(null)
 const noPi         = ref('')
 const deliveryOrder = ref(null)
+
+// Toggle tampilkan cap & TTD asli (PNG dari klien) di footer — sebagian cetak butuh kosong
+// (ttd basah manual), sebagian sudah pakai cap. Cuma kontrol tampilan/print, disembunyikan
+// otomatis dari kertas cetak lewat .print-controls { display:none } di @media print.
+const includeStamp = ref(true)
 
 // Klaim sertifikasi FSC cuma ditampilkan untuk buyer Ethimo — lihat CetakPengiriman.vue.
 const isEthimoBuyer = computed(() => (so.value?.buyer?.name || '').toLowerCase().includes('ethimo'))
@@ -292,6 +305,26 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
 .btn-back:hover  { background: #5a6268; }
 .btn-print { background: #1d6fd8; color: #fff; }
 .btn-print:hover { background: #155db5; }
+
+.stamp-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  background: #fff;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.stamp-toggle input {
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+}
 
 /* ─── LOADING ───────────────────────────────────────── */
 .loading-container-print {
@@ -570,6 +603,21 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   font-size: 10pt;
   margin: 0;
   text-align: center;
+}
+
+/* Overlay cap & TTD (PNG asli dari klien) di ruang kosong antara nama perusahaan
+   dan nama "Ellen Apriliana" — ruang itu sebelumnya kosong (buat ttd basah manual). */
+.signature-with-stamp {
+  position: relative;
+}
+.stamp-overlay {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%) rotate(-4deg);
+  width: 150px;
+  height: auto;
+  pointer-events: none;
 }
 
 /* Selaraskan tampilan tanda tangan SBC (komponen SignatureCompany) dengan box

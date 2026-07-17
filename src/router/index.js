@@ -41,8 +41,6 @@ import InvoicePayment from '../views/penjualan/invoices/InvoicePayment.vue'
 import DownPaymentList from '../views/penjualan/downpayments/DownPaymentList.vue'
 import DownPaymentCreate from '../views/penjualan/downpayments/DownPaymentCreate.vue'
 import DownPaymentDetail from '../views/penjualan/downpayments/DownPaymentDetail.vue'
-import BomIndex from '../views/produksi/BomIndex.vue'
-import BomForm from '../views/produksi/BomForm.vue'
 import SawmilReport from '../views/produksi/SawmilReport.vue'
 import SandingView from '../views/produksi/SandingView.vue'
 import RustikView from '../views/produksi/RustikView.vue'
@@ -131,24 +129,6 @@ const router = createRouter({
           component: MasterBarangForm,
           meta: { title: 'Edit Master Barang' },
           props: true,
-        },
-        {
-          path: '/admin/boms',
-          name: 'BomIndex',
-          component: BomIndex,
-          meta: { title: 'Daftar BOM' },
-        },
-        {
-          path: '/admin/boms/tambah',
-          name: 'BomCreate',
-          component: BomForm,
-          meta: { title: 'Tambah BOM' },
-        },
-        {
-          path: '/admin/boms/edit/:id',
-          name: 'BomEdit',
-          component: BomForm,
-          meta: { title: 'Edit BOM' },
         },
         {
           path: '/admin/pembelian',
@@ -649,6 +629,12 @@ const router = createRouter({
       path: '/dokumen',
       name: 'Dokumen',
       component: () => import('../views/dokumen/DokumenView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/dokumen/file-buyer',
+      name: 'FileBuyer',
+      component: () => import('../views/dokumen/FileBuyerView.vue'),
       meta: { requiresAuth: true },
     },
 

@@ -182,8 +182,10 @@ const allMenuItems = [
   {
     name: 'Dokumen',
     icon: '📁',
-    route: { name: 'Dokumen' },
-    permission: 'dokumen-lihat',
+    children: [
+      { name: 'Manajemen Dokumen', route: { name: 'Dokumen' }, permission: 'dokumen-lihat' },
+      { name: 'File Buyer', route: { name: 'FileBuyer' }, permission: 'dokumen-lihat' },
+    ],
   },
   {
     name: 'Manajemen Stok',

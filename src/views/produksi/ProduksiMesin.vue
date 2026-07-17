@@ -130,6 +130,22 @@
               </p>
             </div>
 
+            <!-- INFO BOM -->
+            <div v-if="form.production_order_detail_id" class="form-group-modern" style="margin-bottom:1.25rem;">
+              <div v-if="bomComponents.length > 0 && !showAllInputItems" class="bom-info-bar bom-info-ok">
+                <span>✓ Menampilkan {{ bomComponents.length }} komponen sesuai resep BOM produk ini</span>
+                <button type="button" class="btn-link-small" @click="showAllInputItems = true">Tampilkan semua item</button>
+              </div>
+              <div v-else-if="bomComponents.length > 0 && showAllInputItems" class="bom-info-bar bom-info-all">
+                <span>Menampilkan semua item komponen (di luar resep BOM)</span>
+                <button type="button" class="btn-link-small" @click="showAllInputItems = false">Kembali ke resep BOM</button>
+              </div>
+              <div v-else class="bom-info-bar bom-info-empty">
+                ℹ️ Produk ini belum punya resep BOM — semua komponen ditampilkan.
+                <router-link :to="{ name: 'MasterBom' }" class="btn-link-small">Isi resep di Master BOM</router-link>
+              </div>
+            </div>
+
             <!-- QTY PRODUK JADI -->
             <div class="form-group-modern" v-if="form.production_order_detail_id" style="margin-bottom:1.25rem;">
               <label class="form-label-modern">
@@ -247,7 +263,7 @@
                     <label class="form-label-modern">Item Komponen <span class="required-star">*</span></label>
                     <vue-select
                       v-model="line.input_item_id"
-                      :options="s4sItemsForSelect"
+                      :options="inputS4sOptions"
                       :reduce="(o) => o.item_id"
                       :filterBy="filterS4sItem"
                       label="label"
@@ -269,6 +285,9 @@
                         </div>
                       </template>
                     </vue-select>
+                    <p v-if="isInputOutsideBom(line)" class="bom-warning-text">
+                      ⚠️ Item ini di luar resep BOM produk ini
+                    </p>
                   </div>
                   <div class="form-group-modern">
                     <label class="form-label-modern">
@@ -411,6 +430,10 @@ const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
 const poDetailItems    = ref([])
 
+// === BOM (resep) — filter dropdown Item Komponen sesuai produk yang dikerjakan ===
+const bomComponents     = ref([]) // [{item_id, item_code, item_name, qty}]
+const showAllInputItems = ref(false)
+
 const newLine = () => ({
   local_id:        Date.now() + Math.random(),
   machine_id:      null,
@@ -463,6 +486,44 @@ const filterS4sItem = (option, label, search) => {
   )
 }
 
+const bomComponentIds = computed(() => new Set(bomComponents.value.map((c) => c.item_id)))
+
+// Dropdown "Item Komponen" (Input) — sesuai resep BOM produk yang dikerjakan kalau ada,
+// fallback ke semua item S4S kalau BOM belum diisi atau operator klik "Tampilkan semua item"
+const inputS4sOptions = computed(() => {
+  if (showAllInputItems.value || bomComponents.value.length === 0) return s4sItemsForSelect.value
+  // Item yang sudah kepilih di baris manapun tetap dipertahankan di daftar opsi (walau di luar BOM) —
+  // vue-select pakai :reduce, kalau opsinya hilang dari :options, label jadi gak bisa ditampilkan (cuma nongol id).
+  const selectedIds = new Set(form.lines.map((l) => l.input_item_id).filter(Boolean))
+  return s4sItemsForSelect.value.filter((o) => bomComponentIds.value.has(o.item_id) || selectedIds.has(o.item_id))
+})
+
+const isInputOutsideBom = (line) => {
+  if (bomComponents.value.length === 0 || !line.input_item_id) return false
+  return !bomComponentIds.value.has(line.input_item_id)
+}
+
+const fetchBomForDetail = async (detailId) => {
+  bomComponents.value     = []
+  showAllInputItems.value = false
+  if (!detailId) return
+
+  const detail = poDetailItems.value.find((d) => d.id === detailId)
+  if (!detail) return
+
+  try {
+    const res = await apiClient.get(`/production/bom/${detail.item_id}`)
+    bomComponents.value = res.data.data?.components || []
+  } catch (error) {
+    console.error('Gagal memuat BOM produk:', error)
+    bomComponents.value = []
+  }
+}
+
+watch(() => form.production_order_detail_id, (val) => {
+  fetchBomForDetail(val)
+})
+
 // === FETCH DATA ===
 const fetchInitialData = async () => {
   loadingS4s.value = true
@@ -513,6 +574,8 @@ const handlePoDeselect = () => {
   poDetailItems.value             = []
   form.production_order_detail_id = null
   form.qty_produk_jadi            = null
+  bomComponents.value              = []
+  showAllInputItems.value          = false
 }
 
 const onS4sItemSelected = (lineIdx, opt) => {
@@ -767,6 +830,13 @@ onMounted(fetchInitialData)
 .badge-pending { background: #f3f4f6; color: #6b7280; }
 .badge-done-inline { font-size: 0.75rem; font-weight: 700; color: #15803d; margin-left: 4px; }
 .detail-hint { font-size: 0.78rem; color: #6b7280; margin: 4px 0 0; }
+
+.bom-info-bar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; padding: 0.6rem 1rem; border-radius: 10px; font-size: 0.82rem; font-weight: 600; }
+.bom-info-ok { background: #ecfeff; border: 1px solid #a5f3fc; color: #0e7490; }
+.bom-info-all { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+.bom-info-empty { background: #f9fafb; border: 1px dashed #d1d5db; color: #6b7280; }
+.btn-link-small { background: none; border: none; padding: 0; color: inherit; text-decoration: underline; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
+.bom-warning-text { margin: 4px 0 0; font-size: 0.78rem; color: #b45309; font-weight: 600; }
 
 .output-item-display { display: flex; align-items: center; min-height: 54px; padding: 0.9rem 1.25rem; border: 2.5px solid #bfdbfe; border-radius: 12px; background: #eff6ff; }
 .output-item-name { font-size: 0.95rem; font-weight: 600; color: #1e40af; }
