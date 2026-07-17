@@ -103,6 +103,22 @@
                 </p>
               </div>
 
+              <!-- INFO BOM -->
+              <div class="form-group-modern" v-if="form.production_order_detail_id" style="grid-column: 1 / -1;">
+                <div v-if="bomComponents.length > 0 && !showAllOutputItems" class="bom-info-bar bom-info-ok">
+                  <span>✓ Menampilkan {{ bomComponents.length }} komponen sesuai resep BOM produk ini</span>
+                  <button type="button" class="btn-link-small" @click="showAllOutputItems = true">Tampilkan semua item</button>
+                </div>
+                <div v-else-if="bomComponents.length > 0 && showAllOutputItems" class="bom-info-bar bom-info-all">
+                  <span>Menampilkan semua item komponen (di luar resep BOM)</span>
+                  <button type="button" class="btn-link-small" @click="showAllOutputItems = false">Kembali ke resep BOM</button>
+                </div>
+                <div v-else class="bom-info-bar bom-info-empty">
+                  ℹ️ Produk ini belum punya resep BOM — semua komponen ditampilkan.
+                  <router-link :to="{ name: 'MasterBom' }" class="btn-link-small">Isi resep di Master BOM</router-link>
+                </div>
+              </div>
+
               <div class="form-group-modern">
                 <label class="form-label-modern">Catatan</label>
                 <div class="input-wrapper-icon">
@@ -235,7 +251,7 @@
                     <label class="form-label-modern">Item Komponen <span class="required-star">*</span></label>
                     <vue-select
                       v-model="group.output_item_id"
-                      :options="komponenItemsForSelect"
+                      :options="outputKomponenOptions"
                       :reduce="(o) => o.id"
                       label="label"
                       placeholder="🔍 Cari komponen..."
@@ -249,6 +265,9 @@
                         </div>
                       </template>
                     </vue-select>
+                    <p v-if="isOutputOutsideBom(group)" class="bom-warning-text">
+                      ⚠️ Item ini di luar resep BOM produk ini
+                    </p>
                   </div>
                   <div class="form-group-modern">
                     <label class="form-label-modern">Qty Output (pcs) <span class="required-star">*</span></label>
@@ -391,7 +410,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
@@ -411,6 +430,10 @@ const komponenItems    = ref([])
 const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
 const poDetailItems    = ref([])
+
+// === BOM (resep) — filter dropdown Item Komponen sesuai produk yang dikerjakan ===
+const bomComponents      = ref([]) // [{item_id, item_code, item_name, qty}]
+const showAllOutputItems = ref(false)
 
 const newInput = () => ({
   local_id: Date.now() + Math.random(),
@@ -467,6 +490,23 @@ const komponenItemsForSelect = computed(() =>
   }))
 )
 
+const bomComponentIds = computed(() => new Set(bomComponents.value.map((c) => c.item_id)))
+
+// Dropdown "Item Komponen" (Output) — sesuai resep BOM produk yang dikerjakan kalau ada,
+// fallback ke semua item kalau BOM belum diisi atau operator klik "Tampilkan semua item"
+const outputKomponenOptions = computed(() => {
+  if (showAllOutputItems.value || bomComponents.value.length === 0) return komponenItemsForSelect.value
+  // Item yang sudah kepilih di grup manapun tetap dipertahankan di daftar opsi (walau di luar BOM) —
+  // vue-select pakai :reduce, kalau opsinya hilang dari :options, label jadi gak bisa ditampilkan (cuma nongol id).
+  const selectedIds = new Set(form.groups.map((g) => g.output_item_id).filter(Boolean))
+  return komponenItemsForSelect.value.filter((o) => bomComponentIds.value.has(o.id) || selectedIds.has(o.id))
+})
+
+const isOutputOutsideBom = (group) => {
+  if (bomComponents.value.length === 0 || !group.output_item_id) return false
+  return !bomComponentIds.value.has(group.output_item_id)
+}
+
 // === FETCH DATA ===
 const fetchInitialData = async () => {
   try {
@@ -511,7 +551,31 @@ const handlePoDeselect = () => {
   poTargets.value                 = []
   poDetailItems.value             = []
   form.production_order_detail_id = null
+  bomComponents.value              = []
+  showAllOutputItems.value         = false
 }
+
+// === BOM: ambil resep komponen produk yang dikerjakan ===
+const fetchBomForDetail = async (detailId) => {
+  bomComponents.value      = []
+  showAllOutputItems.value = false
+  if (!detailId) return
+
+  const detail = poDetailItems.value.find((d) => d.id === detailId)
+  if (!detail) return
+
+  try {
+    const res = await apiClient.get(`/production/bom/${detail.item_id}`)
+    bomComponents.value = res.data.data?.components || []
+  } catch (error) {
+    console.error('Gagal memuat BOM produk:', error)
+    bomComponents.value = []
+  }
+}
+
+watch(() => form.production_order_detail_id, (val) => {
+  fetchBomForDetail(val)
+})
 
 // === GRUP & INPUT MANAGEMENT ===
 const addGroup    = () => form.groups.push(newGroup())
@@ -779,6 +843,13 @@ onMounted(fetchInitialData)
 .badge-pending { background: #f3f4f6; color: #6b7280; }
 .badge-done-inline { font-size: 0.75rem; font-weight: 700; color: #15803d; margin-left: 4px; }
 .detail-hint { font-size: 0.78rem; color: #6b7280; margin: 4px 0 0; }
+
+.bom-info-bar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; padding: 0.6rem 1rem; border-radius: 10px; font-size: 0.82rem; font-weight: 600; }
+.bom-info-ok { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+.bom-info-all { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+.bom-info-empty { background: #f9fafb; border: 1px dashed #d1d5db; color: #6b7280; }
+.btn-link-small { background: none; border: none; padding: 0; color: inherit; text-decoration: underline; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
+.bom-warning-text { margin: 4px 0 0; font-size: 0.78rem; color: #b45309; font-weight: 600; }
 
 @media (max-width: 768px) {
   .form-grid-2col, .form-grid-4col { grid-template-columns: 1fr; }
