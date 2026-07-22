@@ -76,10 +76,24 @@
 
           <template v-else>
             <div class="form-section">
-              <div class="section-hd"><div class="s-badge amber"><span>📥</span></div><h3 class="s-title">Input Jeblosan — Otomatis dari Gudang SAWMILL</h3></div>
-              <div v-if="!loadingStock && !sawmillStock.length" class="empty-hint">📭 Tidak ada stok jeblosan di Gudang SAWMILL</div>
-              <div v-else-if="sawmillStock.length" class="stock-info">✅ {{ sawmillStock.length }} item jeblosan tersedia — akan diambil semua otomatis</div>
-              <div v-else class="stock-info">⏳ Memuat stok...</div>
+              <div class="section-hd"><div class="s-badge amber"><span>📥</span></div><h3 class="s-title">Input — Jeblosan dari Gudang SAWMILL *</h3></div>
+              <div v-if="!loadingStock && !sawmillStock.length" class="empty-hint">📭 Tidak ada stok jeblosan di Gudang SAWMILL — lakukan proses Log→Jeblosan terlebih dahulu</div>
+              <template v-else>
+                <div v-for="(r,i) in form.jeblosanInputs" :key="r.lid" class="row-card">
+                  <div class="row-hd"><span class="rn">Jeblosan #{{ i+1 }}</span><button v-if="form.jeblosanInputs.length>1" type="button" class="btn-rm" @click="form.jeblosanInputs.splice(i,1)">✕</button></div>
+                  <div class="g2">
+                    <div class="fg"><label class="fl">Item Jeblosan *</label>
+                      <vue-select v-model="r.item_id" :options="jeblosanStockForSelect" :reduce="o=>o.id" label="label" placeholder="Pilih jeblosan dari stok..." class="vs"
+                        @option:selected="(o)=>{ r.vpp = o.volume_m3 || 0 }" />
+                      <div v-if="r.item_id" class="stock-hint">Stok tersedia: {{ getAvailableStock(r.item_id) }} pcs</div>
+                    </div>
+                    <div class="fg"><label class="fl">Qty diproses (pcs) *</label>
+                      <input v-model.number="r.qty_pcs" type="number" min="1" :max="getAvailableStock(r.item_id) || undefined" class="fi" placeholder="0" />
+                    </div>
+                  </div>
+                </div>
+                <button type="button" class="btn-add a-amber" @click="form.jeblosanInputs.push({lid:Date.now(),item_id:null,qty_pcs:null,vpp:0})">➕ Tambah Baris</button>
+              </template>
             </div>
 
             <div class="form-section">
@@ -233,8 +247,9 @@ const form = reactive({
   process_type: 'log_jeblosan', date: new Date().toISOString().slice(0,10),
   estimated_finish_date: '', notes: '', ref_po_id: null,
   logs:      [{ lid: 1, item_log_id: null, qty_log_pcs: null }],
-  jeblosans: [{ lid: 2, item_id: null, qty_pcs: null, volume_m3: 0, vpp: 0 }],
-  rsts:      [{ lid: 3, item_rst_id: null, qty_rst_pcs: null, volume_rst_m3: 0, vpp: 0 }],
+  jeblosans:      [{ lid: 2, item_id: null, qty_pcs: null, volume_m3: 0, vpp: 0 }],
+  jeblosanInputs: [{ lid: 4, item_id: null, qty_pcs: null, vpp: 0 }],
+  rsts:           [{ lid: 3, item_rst_id: null, qty_rst_pcs: null, volume_rst_m3: 0, vpp: 0 }],
 })
 
 const parse = (res) => { const d = res.data.data; return Array.isArray(d) ? d : (d?.data && Array.isArray(d.data) ? d.data : []) }
@@ -242,6 +257,20 @@ const posOpts = computed(() => productionOrders.value.map(p => ({ id: p.id, labe
 const logOpts = computed(() => logItems.value.map(i => ({ id: i.id, label: `${i.code} - ${i.name}` })))
 const jebOpts = computed(() => jeblosanItems.value.map(i => ({ id: i.id, label: `${i.code} - ${i.name}`, volume_m3: i.volume_m3||0 })))
 const rstOpts = computed(() => rstItems.value.map(i => ({ id: i.id, label: `${i.code} - ${i.name}`, volume_m3: i.volume_m3||0 })))
+
+// Stok jeblosan di Gudang SAWMILL untuk dipilih sebagai input proses Jeblosan→RST (bukan
+// otomatis ambil semua — backend mewajibkan array `jeblosans` berisi pilihan eksplisit item+qty,
+// sama seperti pola di ProduksiSawmill.vue reguler)
+const jeblosanStockForSelect = computed(() =>
+  sawmillStock.value.map(s => ({
+    id: s.item_id, label: `${s.item_code} - ${s.item_name} (stok: ${s.qty_available} pcs)`,
+    qty_available: s.qty_available, volume_m3: s.volume_m3,
+  }))
+)
+const getAvailableStock = (itemId) => {
+  const s = sawmillStock.value.find(s => s.item_id === itemId)
+  return s ? s.qty_available : 0
+}
 
 const fetchBase = async () => {
   try {
@@ -278,6 +307,7 @@ const handleSubmit = async () => {
     if (!form.jeblosans.filter(j => j.item_id && j.qty_pcs > 0).length) { showError('Validasi', 'Minimal satu jeblosan wajib diisi'); return }
   } else {
     if (!sawmillStock.value.length) { showError('Validasi', 'Tidak ada stok jeblosan di Gudang SAWMILL'); return }
+    if (!form.jeblosanInputs.filter(j => j.item_id && j.qty_pcs > 0).length) { showError('Validasi', 'Minimal satu input jeblosan wajib diisi'); return }
     if (!form.rsts.filter(r => r.item_rst_id && r.qty_rst_pcs > 0).length) { showError('Validasi', 'Minimal satu RST wajib diisi'); return }
   }
   isSubmitting.value = true
@@ -287,11 +317,13 @@ const handleSubmit = async () => {
       payload.logs      = form.logs.filter(l => l.item_log_id && l.qty_log_pcs > 0).map(l => ({ item_log_id: Number(l.item_log_id), qty_log_pcs: Number(l.qty_log_pcs) }))
       payload.jeblosans = form.jeblosans.filter(j => j.item_id && j.qty_pcs > 0).map(j => ({ item_id: Number(j.item_id), qty_pcs: Number(j.qty_pcs), volume_m3: Number(j.volume_m3||0) }))
     } else {
+      payload.jeblosans = form.jeblosanInputs.filter(j => j.item_id && j.qty_pcs > 0).map(j => ({ item_id: Number(j.item_id), qty_pcs: Number(j.qty_pcs), volume_m3: Number((j.vpp||0) * (j.qty_pcs||0)) }))
       payload.rsts = form.rsts.filter(r => r.item_rst_id && r.qty_rst_pcs > 0).map(r => ({ item_rst_id: Number(r.item_rst_id), qty_rst_pcs: Number(r.qty_rst_pcs), volume_rst_m3: Number(r.volume_rst_m3||0) }))
     }
     await apiClient.post('/sawmill-productions', payload)
     showSuccess('Sukses', 'Sawmill sampel berhasil dicatat')
     form.logs = [{lid:Date.now(),item_log_id:null,qty_log_pcs:null}]; form.jeblosans = [{lid:Date.now()+1,item_id:null,qty_pcs:null,volume_m3:0,vpp:0}]; form.rsts = [{lid:Date.now()+2,item_rst_id:null,qty_rst_pcs:null,volume_rst_m3:0,vpp:0}]
+    form.jeblosanInputs = [{lid:Date.now()+3,item_id:null,qty_pcs:null,vpp:0}]
     form.ref_po_id = null; resetPo()
     if (form.process_type === 'jeblosan_rst') fetchSawmillStock()
   } catch (e) { showError('Gagal', e.response?.data?.message || 'Gagal menyimpan') }
@@ -483,7 +515,7 @@ onMounted(fetchBase)
 .vol-hint { font-size:.78rem;color:#6b7280;margin-top:3px; }
 .btn-add { display:flex;align-items:center;gap:.4rem;padding:.55rem .875rem;border-radius:7px;font-weight:600;font-size:.82rem;cursor:pointer;border:2px dashed;background:none;margin-top:.25rem; }
 .a-amber { border-color:#d97706;color:#92400e; } .a-green { border-color:#16a34a;color:#15803d; } .a-blue { border-color:#2563eb;color:#1d4ed8; }
-.stock-info { padding:.7rem 1rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:.875rem;color:#15803d;font-weight:500; }
+.stock-hint { font-size:.78rem;color:#0369a1;font-weight:600;margin-top:3px; }
 .empty-hint { padding:1.25rem;text-align:center;color:#9ca3af;background:#f9fafb;border-radius:8px;border:1px dashed #d1d5db; }
 .actions { display:flex;justify-content:flex-end;gap:.875rem;padding-top:1.25rem;border-top:2px solid #e5e7eb;margin-top:.25rem; }
 .btn-cancel { padding:.7rem 1.375rem;border-radius:8px;background:#f3f4f6;color:#374151;border:none;font-weight:600;cursor:pointer; }
