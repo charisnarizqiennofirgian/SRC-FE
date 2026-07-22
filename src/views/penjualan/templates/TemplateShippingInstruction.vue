@@ -90,6 +90,7 @@
       <div class="si-label"></div>
       <div class="si-content">
         <table class="weight-table">
+          <tbody>
           <tr>
             <td style="width: 30%; text-align: right"><strong>GROSS</strong></td>
             <td style="width: 25%; text-align: right">{{ formatNumber(totals.grossWeight) }}</td>
@@ -108,6 +109,7 @@
             <td style="text-align: left">M3</td>
             <td></td>
           </tr>
+          </tbody>
         </table>
       </div>
     </div>

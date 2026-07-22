@@ -53,6 +53,7 @@
         </div>
 
         <table class="header-table">
+          <tbody>
           <tr>
             <td class="header-label">Shipper</td>
             <td class="header-value" colspan="3">
@@ -136,6 +137,7 @@
               {{ deliveryOrder.goods_description || 'TEAK GARDEN FURNITURE AND ACCESSORIES' }}
             </td>
           </tr>
+          </tbody>
         </table>
 
         <hr style="border: 1px solid #000; margin: 15px 0" />

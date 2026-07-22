@@ -64,6 +64,7 @@
       <section class="invoice-summary">
         <div class="totals">
           <table>
+            <tbody>
             <tr>
               <td>{{ isUSD ? 'Sub Total' : 'Sub Total' }}</td>
               <td>{{ formatCurrency(faktur.subtotal) }}</td>
@@ -80,6 +81,7 @@
               <td>Exchange Rate</td>
               <td>1 {{ foreignCurrencyCode }} = {{ formatCurrency(faktur.exchange_rate) }}</td>
             </tr>
+            </tbody>
           </table>
         </div>
       </section>
