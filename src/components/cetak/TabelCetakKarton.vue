@@ -10,6 +10,7 @@
         <th>Qty</th>
         <th>Harga Satuan</th>
         <th>Jumlah</th>
+        <th>Tgl. Kirim</th>
       </tr>
     </thead>
     <tbody>
@@ -25,22 +26,26 @@
         <td class="right">{{ parseFloat(item.quantity_ordered) }}</td>
         <td class="right">{{ formatCurrency(item.price) }}</td>
         <td class="right">{{ formatCurrency(item.subtotal) }}</td>
+        <td class="center">{{ formatDate(item.delivery_date || po?.delivery_date) }}</td>
       </tr>
       <!-- Total Rows -->
       <tr class="total-row">
         <td></td>
         <td colspan="6" class="left bold">Sub Total</td>
         <td class="right bold">{{ formatCurrency(subTotal) }}</td>
+        <td></td>
       </tr>
       <tr v-if="ppnRate > 0" class="total-row">
         <td></td>
         <td colspan="6" class="left bold">PPN {{ ppnRate }}%</td>
         <td class="right bold">{{ formatCurrency(ppn) }}</td>
+        <td></td>
       </tr>
       <tr class="total-row">
         <td></td>
         <td colspan="6" class="left bold">Total</td>
         <td class="right bold">{{ formatCurrency(grandTotal) }}</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -49,6 +54,13 @@
 <script setup>
 import { computed } from 'vue'
 const props = defineProps(['details', 'po'])
+
+const formatDate = (value) => {
+  if (!value) return '-'
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return '-'
+  return d.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
 
 const subTotal = computed(() => {
   return props.details.reduce((acc, item) => acc + parseFloat(item.subtotal || 0), 0)
