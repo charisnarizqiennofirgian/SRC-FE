@@ -37,7 +37,7 @@
               <div class="g2" style="margin-bottom:.75rem;">
                 <div class="fg"><label class="fl">RST Basah (sumber) *</label>
                   <vue-select v-model="r.item_id" :options="rstBasahOpts" :reduce="o=>o.id" label="label" placeholder="Pilih RST basah..." class="vs"
-                    @option:selected="(o)=>{ r.warehouse_id=o.warehouse_id; r.max_qty=o.qty_available; r.item_code=o.code }" />
+                    @option:selected="(o)=>onRstBasahSelected(r,o)" />
                   <div v-if="r.max_qty>0" class="stock-hint">Tersedia: {{ r.max_qty }} pcs</div>
                 </div>
                 <div class="fg"><label class="fl">Qty (pcs) *</label>
@@ -47,7 +47,8 @@
               </div>
               <div class="fg"><label class="fl">RST Kering (hasil) *</label>
                 <vue-select v-model="r.target_item_id" :options="rstKeringOpts" :reduce="o=>o.id" label="label" placeholder="Pilih RST kering..." class="vs" />
-                <p class="hint-txt">📦 Hasil masuk Gudang RSTK</p>
+                <p v-if="r.target_item_id" class="hint-txt">✓ Terisi otomatis sesuai RST basah yang dipilih — cek/ganti kalau perlu. Hasil masuk Gudang RSTK</p>
+                <p v-else class="hint-txt">📦 Hasil masuk Gudang RSTK</p>
               </div>
             </div>
 
@@ -75,9 +76,14 @@ import VueSelect from 'vue-select'; import 'vue-select/dist/vue-select.css'
 const router = useRouter()
 const { showSuccess, showError } = useNotification()
 const isSubmitting = ref(false)
-const productionOrders = ref([]); const rstItems = ref([])
+const productionOrders = ref([]); const rstItems = ref([]); const warehouses = ref([])
 const rstInventories = ref([]) // stok RST basah dengan warehouse info
 const poInfo = reactive({ buyer_name: null, so_number: null })
+
+const getWarehouseIdByName = (name) => {
+  const wh = warehouses.value.find((w) => w.name.includes(name))
+  return wh ? wh.id : null
+}
 
 const form = reactive({
   date: new Date().toISOString().slice(0,10), estimated_finish_date: '', notes: '', ref_po_id: null,
@@ -90,7 +96,7 @@ const posOpts = computed(() => productionOrders.value.map(p => ({ id: p.id, labe
 const rstBasahOpts = computed(() =>
   rstInventories.value.map(inv => ({
     id: inv.item_id, label: `${inv.item_code} - ${inv.item_name}`,
-    warehouse_id: inv.warehouse_id, qty_available: inv.qty_available, code: inv.item_code,
+    warehouse_id: inv.warehouse_id, qty_available: inv.qty_available, code: inv.item_code, name: inv.item_name,
   }))
 )
 
@@ -99,21 +105,45 @@ const rstKeringOpts = computed(() =>
   rstItems.value.map(i => ({ id: i.id, label: `${i.code} - ${i.name}` }))
 )
 
+// Auto-fill "RST Kering (hasil)" saat RST basah dipilih — cari item kering dengan kode sama,
+// fallback ke nama sama kalau kode tidak match. Pola sama seperti selectProduct() di
+// ProduksiCandy.vue (KD reguler). Kalau tidak ketemu, biarkan kosong untuk diisi manual.
+const onRstBasahSelected = (row, opt) => {
+  row.warehouse_id = opt.warehouse_id
+  row.max_qty       = opt.qty_available
+  row.item_code     = opt.code
+
+  const matched = rstItems.value.find(i => i.code === opt.code)
+    || rstItems.value.find(i => i.name?.toLowerCase() === (opt.name || '').toLowerCase())
+  row.target_item_id = matched ? matched.id : null
+}
+
 const fetchBase = async () => {
   try {
-    const [poRes, rstRes, rstbStockRes] = await Promise.all([
+    const [poRes, rstRes, whRes] = await Promise.all([
       apiClient.get('/produksi/prototype/available-pos'),
       apiClient.get('/materials', { params: { category_name: 'Kayu RST', per_page: 500 } }),
-      apiClient.get('/stock-report', { params: { categories: 'Kayu RST', per_page: 9999 } }),
+      apiClient.get('/warehouses'),
     ])
     productionOrders.value = poRes.data.data || []
     const d = rstRes.data.data; rstItems.value = Array.isArray(d) ? d : (d?.data||[])
+    warehouses.value = whRes.data.data || whRes.data || []
 
-    // Ambil stok RST dari RSTB warehouse
-    const stockData = rstbStockRes.data.data?.data ?? rstbStockRes.data.data ?? []
-    rstInventories.value = (Array.isArray(stockData) ? stockData : []).map(i => ({
-      item_id: i.id || i.item_id, item_code: i.code || i.item_code, item_name: i.name || i.item_name,
-      warehouse_id: i.warehouse_id, qty_available: parseFloat(i.qty_pcs || i.qty || 0),
+    // RST basah (input KD) = output dari proses Sawmill "Jeblosan → RST Basah", disimpan di
+    // Gudang Sanwil (RSTB) — sama seperti sumber KD reguler (ProduksiCandy.vue). Pakai
+    // /inventories?warehouse_id= (bukan /stock-report yang mengembalikan struktur nested
+    // inventories[] per gudang, bukan warehouse_id/qty_pcs flat di top-level — sebelumnya
+    // salah dibaca di sini sehingga dropdown selalu kosong).
+    const sanwilId = getWarehouseIdByName('Gudang Sanwil')
+    if (!sanwilId) {
+      showError('Konfigurasi', 'Gudang Sanwil tidak ditemukan di master')
+      return
+    }
+    const invRes = await apiClient.get('/inventories', { params: { warehouse_id: sanwilId, per_page: 9999 } })
+    const raw = invRes.data.data?.data ?? invRes.data.data ?? []
+    rstInventories.value = raw.map(inv => ({
+      item_id: inv.item_id, item_code: inv.item?.code || '', item_name: inv.item?.name || '',
+      warehouse_id: inv.warehouse_id, qty_available: parseFloat(inv.qty || 0),
     })).filter(i => i.qty_available > 0)
   } catch (e) { showError('Gagal', 'Gagal mengambil data') }
 }

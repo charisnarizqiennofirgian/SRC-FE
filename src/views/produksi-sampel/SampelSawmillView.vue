@@ -83,7 +83,7 @@
             </div>
 
             <div class="form-section">
-              <div class="section-hd"><div class="s-badge blue"><span>📤</span></div><h3 class="s-title">Output — RST Basah *</h3></div>
+              <div class="section-hd"><div class="s-badge blue"><span>📤</span></div><h3 class="s-title">Output — RST Basah *</h3><button type="button" class="btn-quick-add btn-quick-add-rst" @click="openModalRst">➕ RST Baru</button></div>
               <div v-for="(r,i) in form.rsts" :key="r.lid" class="row-card blue">
                 <div class="row-hd"><span class="rn">RST #{{ i+1 }}</span><button v-if="form.rsts.length>1" type="button" class="btn-rm" @click="form.rsts.splice(i,1)">✕</button></div>
                 <div class="g3">
@@ -144,6 +144,70 @@
           <button type="button" class="btn-cancel" @click="closeModalJeblosan">Batal</button>
           <button type="button" class="btn-submit" :disabled="isSavingJeblosan" @click="simpanJeblosanBaru">
             {{ isSavingJeblosan ? '⏳ Menyimpan...' : '💾 Simpan & Pilih' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL TAMBAH RST BARU -->
+    <div v-if="showModalRst" class="modal-overlay" @click.self="closeModalRst">
+      <div class="modal-card modal-card-wide">
+        <div class="modal-header modal-header-rst">
+          <h3>➕ Tambah Item Kayu RST Baru</h3>
+          <button type="button" class="modal-close" @click="closeModalRst">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-hint">Item baru akan masuk ke master data Kayu RST sesuai kolom Stok Index.</p>
+          <div class="g2" style="margin-bottom:0.75rem;">
+            <div class="fg"><label class="fl">Nama Dasar *</label>
+              <input v-model="formRst.nama_dasar" type="text" class="fi" placeholder="Contoh: RST Meranti" />
+            </div>
+            <div class="fg"><label class="fl">Kode Barang</label>
+              <input v-model="formRst.kode_barang" type="text" class="fi" placeholder="Auto generate jika kosong" />
+            </div>
+          </div>
+          <div class="modal-dims-label">Dimensi (mm) — T wajib</div>
+          <div class="g3" style="margin-bottom:0.75rem;">
+            <div class="fg"><label class="fl">Tebal / T *</label>
+              <input v-model.number="formRst.tebal_mm" type="number" min="0" step="0.1" class="fi" placeholder="0" />
+            </div>
+            <div class="fg"><label class="fl">Lebar / L</label>
+              <input v-model.number="formRst.lebar_mm" type="number" min="0" step="0.1" class="fi" placeholder="0" />
+            </div>
+            <div class="fg"><label class="fl">Panjang / P</label>
+              <input v-model.number="formRst.panjang_mm" type="number" min="0" step="0.1" class="fi" placeholder="0" />
+            </div>
+          </div>
+          <div class="modal-dims-label">Cutting (mm) — opsional</div>
+          <div class="g3" style="margin-bottom:0.75rem;">
+            <div class="fg"><label class="fl">C.T</label>
+              <input v-model.number="formRst.cutting_tebal_mm" type="number" min="0" step="0.1" class="fi" placeholder="0" />
+            </div>
+            <div class="fg"><label class="fl">C.L</label>
+              <input v-model.number="formRst.cutting_lebar_mm" type="number" min="0" step="0.1" class="fi" placeholder="0" />
+            </div>
+            <div class="fg"><label class="fl">C.P</label>
+              <input v-model.number="formRst.cutting_panjang_mm" type="number" min="0" step="0.1" class="fi" placeholder="0" />
+            </div>
+          </div>
+          <div class="g2" style="margin-bottom:0;">
+            <div class="fg"><label class="fl">Kualitas</label>
+              <input v-model="formRst.kualitas" type="text" class="fi" placeholder="Contoh: A, B, C" />
+            </div>
+            <div class="fg"><label class="fl">No Rak</label>
+              <input v-model="formRst.no_rak" type="text" class="fi" placeholder="Contoh: R-01" />
+            </div>
+          </div>
+          <div v-if="previewNamaRst" class="modal-preview">
+            <div class="preview-label">Preview nama:</div>
+            <div class="preview-name">{{ previewNamaRst }}</div>
+            <div v-if="previewVolumeRst > 0" class="preview-vol">Volume: {{ previewVolumeRst.toFixed(6) }} m³/pcs</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" @click="closeModalRst">Batal</button>
+          <button type="button" class="btn-submit" :disabled="isSavingRst" @click="simpanRstBaru">
+            {{ isSavingRst ? '⏳ Menyimpan...' : '💾 Simpan & Pilih' }}
           </button>
         </div>
       </div>
@@ -297,6 +361,83 @@ const simpanJeblosanBaru = async () => {
   }
 }
 
+// === MODAL TAMBAH RST BARU ===
+const showModalRst  = ref(false)
+const isSavingRst   = ref(false)
+const formRst = reactive({
+  nama_dasar: '', kode_barang: '',
+  tebal_mm: null, lebar_mm: null, panjang_mm: null,
+  cutting_tebal_mm: null, cutting_lebar_mm: null, cutting_panjang_mm: null,
+  kualitas: '', no_rak: '',
+})
+
+const previewNamaRst = computed(() => {
+  if (!formRst.nama_dasar) return ''
+  const t = formRst.tebal_mm || 0
+  const l = formRst.lebar_mm || 0
+  const p = formRst.panjang_mm || 0
+  return `${formRst.nama_dasar} ${t}x${l}x${p}`
+})
+
+const previewVolumeRst = computed(() => {
+  const t = formRst.tebal_mm || 0
+  const l = formRst.lebar_mm || 0
+  const p = formRst.panjang_mm || 0
+  return (t && l && p) ? (t * l * p) / 1_000_000_000 : 0
+})
+
+const openModalRst = () => {
+  Object.assign(formRst, {
+    nama_dasar: '', kode_barang: '',
+    tebal_mm: null, lebar_mm: null, panjang_mm: null,
+    cutting_tebal_mm: null, cutting_lebar_mm: null, cutting_panjang_mm: null,
+    kualitas: '', no_rak: '',
+  })
+  showModalRst.value = true
+}
+
+const closeModalRst = () => { showModalRst.value = false }
+
+const simpanRstBaru = async () => {
+  if (!formRst.nama_dasar.trim()) { showError('Validasi', 'Nama dasar wajib diisi'); return }
+  if (!formRst.tebal_mm) { showError('Validasi', 'Tebal (T) wajib diisi'); return }
+  isSavingRst.value = true
+  try {
+    const res = await apiClient.post('/materials/quick-store-rst', {
+      nama_dasar:         formRst.nama_dasar.trim(),
+      kode_barang:        formRst.kode_barang.trim() || null,
+      tebal_mm:           formRst.tebal_mm,
+      lebar_mm:           formRst.lebar_mm    || null,
+      panjang_mm:         formRst.panjang_mm  || null,
+      cutting_tebal_mm:   formRst.cutting_tebal_mm  || null,
+      cutting_lebar_mm:   formRst.cutting_lebar_mm  || null,
+      cutting_panjang_mm: formRst.cutting_panjang_mm || null,
+      kualitas:           formRst.kualitas.trim() || null,
+      no_rak:             formRst.no_rak.trim()   || null,
+    })
+    const itemBaru = res.data.data
+
+    rstItems.value.push({ id: itemBaru.id, code: itemBaru.code, name: itemBaru.name, volume_m3: itemBaru.volume_m3 || 0 })
+
+    const lastEmpty = form.rsts.find(r => !r.item_rst_id)
+    if (lastEmpty) {
+      lastEmpty.item_rst_id  = itemBaru.id
+      lastEmpty.vpp          = itemBaru.volume_m3 || 0
+      lastEmpty.volume_rst_m3 = (lastEmpty.vpp || 0) * (lastEmpty.qty_rst_pcs || 0)
+    }
+
+    showSuccess('Berhasil', `RST "${itemBaru.name}" berhasil ditambahkan`)
+    closeModalRst()
+  } catch (error) {
+    const msg = error.response?.data?.message
+      || (error.response?.data?.errors && JSON.stringify(error.response.data.errors))
+      || 'Gagal menyimpan'
+    showError('Gagal', msg)
+  } finally {
+    isSavingRst.value = false
+  }
+}
+
 onMounted(fetchBase)
 </script>
 
@@ -352,9 +493,13 @@ onMounted(fetchBase)
 
 .btn-quick-add { margin-left:auto; padding:2px 10px; background:#16a34a; color:white; border:none; border-radius:999px; font-size:0.75rem; font-weight:600; cursor:pointer; transition:all .15s; }
 .btn-quick-add:hover { background:#15803d; }
+.btn-quick-add-rst { background:#2563eb; }
+.btn-quick-add-rst:hover { background:#1d4ed8; }
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9999; display:flex; align-items:center; justify-content:center; }
 .modal-card { background:white; border-radius:20px; width:100%; max-width:480px; box-shadow:0 20px 60px rgba(0,0,0,.2); overflow:hidden; }
+.modal-card-wide { max-width:560px; }
 .modal-header { display:flex; justify-content:space-between; align-items:center; padding:1.25rem 1.5rem; border-bottom:2px solid #e5e7eb; background:linear-gradient(135deg,#f0fdf4,#dcfce7); }
+.modal-header-rst { background:linear-gradient(135deg,#eff6ff,#dbeafe) !important; }
 .modal-header h3 { font-size:1.05rem; font-weight:700; color:#111827; margin:0; }
 .modal-close { background:#fee2e2; color:#ef4444; border:none; border-radius:8px; padding:4px 10px; cursor:pointer; font-weight:700; }
 .modal-body { padding:1.5rem; display:flex; flex-direction:column; gap:.75rem; }
