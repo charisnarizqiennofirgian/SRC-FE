@@ -9,15 +9,15 @@
             Dashboard
           </router-link>
           <span class="breadcrumb-separator">→</span>
-          <span class="breadcrumb-current">Monitoring Produksi</span>
+          <span class="breadcrumb-current">Monitoring Produksi Sampel</span>
         </div>
         <div class="header-content">
           <div class="header-text">
             <h1 class="page-title">
-              <span class="title-icon">📊</span>
-              Monitoring Progress Produksi
+              <span class="title-icon">🧪</span>
+              Monitoring Produksi Sampel
             </h1>
-            <p class="page-subtitle">Semua Sales Order aktif dan progress di setiap gudang</p>
+            <p class="page-subtitle">Semua Production Order Sampel aktif dan progress di setiap tahap</p>
           </div>
         </div>
       </div>
@@ -43,6 +43,11 @@
             <span class="status-badge badge-done">✅</span>
             <span class="legend-text"> <strong>Done</strong> - Semua sudah keluar </span>
           </div>
+          <div class="legend-divider"></div>
+          <div class="legend-item">
+            <span class="status-badge badge-skip">⏭️</span>
+            <span class="legend-text"> <strong>Skip</strong> - Tahap dilewati </span>
+          </div>
         </div>
       </div>
 
@@ -50,7 +55,7 @@
       <div class="filter-card">
         <div class="filter-header">
           <span class="filter-icon">🔍</span>
-          <span class="filter-title">Pencarian & Filter</span>
+          <span class="filter-title">Pencarian &amp; Filter</span>
         </div>
         <div class="filter-content">
           <div class="search-group">
@@ -86,7 +91,7 @@
       <!-- Loading State -->
       <div v-if="isLoading" class="loading-container">
         <div class="loading-spinner"></div>
-        <p class="loading-text">Memuat data monitoring...</p>
+        <p class="loading-text">Memuat data monitoring sampel...</p>
       </div>
 
       <!-- Table Container -->
@@ -102,10 +107,10 @@
           </div>
           <div class="stat-divider"></div>
           <div class="stat-item stat-orders">
-            <span class="stat-icon">📋</span>
+            <span class="stat-icon">🧪</span>
             <div class="stat-content">
-              <span class="stat-value">{{ uniqueSOCount }}</span>
-              <span class="stat-label">Sales Orders</span>
+              <span class="stat-value">{{ data.length }}</span>
+              <span class="stat-label">PO Sampel</span>
             </div>
           </div>
           <div class="stat-divider"></div>
@@ -136,16 +141,15 @@
                 <th class="th-num" rowspan="2">Target</th>
                 <th class="th-num" rowspan="2">Tgl. Kirim</th>
                 <!-- Zona Hulu -->
-                <th colspan="5" class="zone-header zone-hulu">
+                <th colspan="3" class="zone-header zone-hulu">
                   <span class="zone-icon">🌲</span>
                   <span class="zone-text">Persiapan Bahan</span>
                 </th>
-                <!-- Zona Hilir -->
-                <th colspan="7" class="zone-header zone-hilir">
-                  <span class="zone-icon">⚙️</span>
-                  <span class="zone-text">Produksi</span>
+                <!-- Zona Produksi Sampel -->
+                <th colspan="4" class="zone-header zone-sampel">
+                  <span class="zone-icon">🧪</span>
+                  <span class="zone-text">Produksi Sampel</span>
                 </th>
-                <th class="th-num" rowspan="2" style="background:#fee2e2;color:#dc2626;">⚠️ Reject</th>
                 <th class="th-num" rowspan="2">Sisa</th>
               </tr>
               <tr class="header-row-sub">
@@ -153,53 +157,48 @@
                 <th class="th-stage stage-hulu">Sawmill</th>
                 <th class="th-stage stage-hulu">KD</th>
                 <th class="th-stage stage-hulu">Pembahanan</th>
+                <!-- Sampel -->
                 <th class="th-stage stage-moulding">Moulding</th>
-                <th class="th-stage stage-mesin">Mesin</th>
-                <!-- Hilir -->
-                <th class="th-stage stage-ruskomp">Rustik Komp</th>
-                <th class="th-stage stage-assembling">Assembling</th>
+                <th class="th-stage stage-proto">Prototype</th>
                 <th class="th-stage stage-sanding">Sanding</th>
-                <th class="th-stage stage-rustik">Rustik</th>
-                <th class="th-stage stage-finishing">Finishing</th>
-                <th class="th-stage stage-qcfinal">QC Final</th>
                 <th class="th-stage stage-packing">Packing</th>
               </tr>
             </thead>
             <tbody class="table-body">
               <!-- Empty State -->
               <tr v-if="data.length === 0" class="empty-row">
-                <td colspan="18" class="empty-cell">
+                <td colspan="12" class="empty-cell">
                   <div class="empty-state">
-                    <span class="empty-icon">📭</span>
-                    <p class="empty-text">Tidak ada data Sales Order aktif.</p>
-                    <p class="empty-subtext">Coba ubah filter atau tambahkan SO baru</p>
+                    <span class="empty-icon">🧪</span>
+                    <p class="empty-text">Tidak ada data Production Order Sampel aktif.</p>
+                    <p class="empty-subtext">Coba ubah filter atau buat PO Sampel baru</p>
                   </div>
                 </td>
               </tr>
-              <!-- Data Rows — grouped per SO -->
-              <template v-for="(so, soIndex) in paginatedData" :key="so.so_id">
+              <!-- Data Rows — grouped per PO Sampel -->
+              <template v-for="(po, poIndex) in paginatedData" :key="po.po_id">
                 <tr
-                  v-for="(item, itemIndex) in so.items"
-                  :key="item.detail_id ?? `${so.so_id}-${item.item_id}-${itemIndex}`"
+                  v-for="(item, itemIndex) in po.items"
+                  :key="item.detail_id ?? `${po.po_id}-${item.item_id}-${itemIndex}`"
                   class="data-row"
                   :class="{
                     'row-done': item.is_done,
-                    'row-even': soIndex % 2 === 0,
+                    'row-even': poIndex % 2 === 0,
                     'row-first-item': itemIndex === 0,
                   }"
                 >
-                  <!-- SO + Buyer — rowspan ke semua item SO ini -->
+                  <!-- SO + Buyer — rowspan ke semua item PO ini -->
                   <td
                     v-if="itemIndex === 0"
-                    :rowspan="so.items.length"
+                    :rowspan="po.items.length"
                     class="td-so td-so-group"
                   >
                     <div class="so-wrapper">
-                      <span class="so-number">{{ so.so_number }}</span>
-                      <span class="so-buyer">{{ so.buyer_name }}</span>
-                      <span v-if="so.customer_po_number" class="so-po">PO: {{ so.customer_po_number }}</span>
-                      <span class="so-date">{{ so.so_date }}</span>
-                      <span v-if="so.is_done" class="so-done-badge">✓ DONE</span>
+                      <span class="so-number">{{ po.so_number }}</span>
+                      <span class="so-buyer">{{ po.buyer_name }}</span>
+                      <span class="po-badge">{{ po.po_number }}</span>
+                      <span class="so-date">{{ po.so_date }}</span>
+                      <span v-if="po.is_done" class="so-done-badge">✓ DONE</span>
                     </div>
                   </td>
 
@@ -237,6 +236,8 @@
                       {{ getStatusIcon(item.status_pembahanan) }}
                     </span>
                   </td>
+
+                  <!-- Moulding (qty + tooltip breakdown/checklist BOM) -->
                   <td class="td-qty stage-moulding">
                     <span
                       :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value', (item.moulding_bom_checklist?.length || item.moulding_components?.length) ? 'has-tooltip' : '']"
@@ -261,79 +262,22 @@
                       </div>
                     </span>
                   </td>
-                  <td class="td-qty stage-mesin">
-                    <span
-                      :class="['qty-value', item.qty_mesin > 0 ? 'has-value' : 'no-value', (item.mesin_bom_checklist?.length || item.mesin_components?.length) ? 'has-tooltip' : '']"
-                    >
-                      {{ item.qty_mesin > 0 ? formatNumber(item.qty_mesin) : '-' }}
-                      <div v-if="item.mesin_bom_checklist?.length" class="moulding-tooltip">
-                        <div class="moulding-tooltip-title">Checklist Komponen (BOM)</div>
-                        <div v-for="c in item.mesin_bom_checklist" :key="c.item_id" class="moulding-tooltip-row">
-                          <span class="moulding-tooltip-name">
-                            <span :class="c.done ? 'bom-check-ok' : 'bom-check-missing'">{{ c.done ? '✓' : '✗' }}</span>
-                            {{ c.item_name }}
-                          </span>
-                          <span class="moulding-tooltip-qty">{{ c.done ? formatNumber(c.qty_actual) : 'belum ada' }}</span>
-                        </div>
-                      </div>
-                      <div v-else-if="item.mesin_components?.length" class="moulding-tooltip">
-                        <div class="moulding-tooltip-title">Komponen Mesin</div>
-                        <div v-for="c in item.mesin_components" :key="c.item_id" class="moulding-tooltip-row">
-                          <span class="moulding-tooltip-name">{{ c.item_name }}</span>
-                          <span class="moulding-tooltip-qty">{{ formatNumber(c.qty) }}</span>
-                        </div>
-                      </div>
-                    </span>
-                  </td>
 
-                  <!-- Zona Hilir (Qty) -->
-                  <td class="td-qty stage-ruskomp">
-                    <span :class="['qty-value', item.qty_ruskomp > 0 ? 'has-value' : 'no-value']">
-                      {{ formatNumber(item.qty_ruskomp) }}
-                    </span>
-                  </td>
-                  <td class="td-qty stage-assembling">
-                    <span :class="['qty-value', item.qty_assembling > 0 ? 'has-value' : 'no-value']">
-                      {{ formatNumber(item.qty_assembling) }}
+                  <!-- Prototype / Sanding / Packing -->
+                  <td class="td-qty stage-proto">
+                    <span :class="['qty-value', item.qty_prototype > 0 ? 'has-value' : 'no-value']">
+                      {{ item.qty_prototype > 0 ? formatNumber(item.qty_prototype) : '-' }}
                     </span>
                   </td>
                   <td class="td-qty stage-sanding">
                     <span :class="['qty-value', item.qty_sanding > 0 ? 'has-value' : 'no-value']">
-                      {{ formatNumber(item.qty_sanding) }}
-                    </span>
-                  </td>
-                  <td class="td-qty stage-rustik">
-                    <span :class="['qty-value', item.qty_rustik > 0 ? 'has-value' : 'no-value']">
-                      {{ formatNumber(item.qty_rustik) }}
-                    </span>
-                  </td>
-                  <td class="td-qty stage-finishing">
-                    <span :class="['qty-value', item.qty_finishing > 0 ? 'has-value' : 'no-value']">
-                      {{ formatNumber(item.qty_finishing) }}
-                    </span>
-                  </td>
-                  <td class="td-qty stage-qcfinal">
-                    <span :class="['qty-value', item.qty_qc_final > 0 ? 'has-value' : 'no-value']">
-                      {{ formatNumber(item.qty_qc_final) }}
+                      {{ item.qty_sanding > 0 ? formatNumber(item.qty_sanding) : '-' }}
                     </span>
                   </td>
                   <td class="td-qty stage-packing">
                     <span :class="['qty-value', item.qty_packing > 0 ? 'has-value' : 'no-value']">
-                      {{ formatNumber(item.qty_packing) }}
+                      {{ item.qty_packing > 0 ? formatNumber(item.qty_packing) : '-' }}
                     </span>
-                  </td>
-
-                  <!-- Reject -->
-                  <td class="td-qty">
-                    <span
-                      v-if="item.has_reject"
-                      class="reject-badge-table"
-                      @click="openRejectDetail(so, item)"
-                      title="Klik untuk lihat detail reject"
-                    >
-                      ⚠️ {{ formatNumber(item.qty_reject) }} pcs
-                    </span>
-                    <span v-else class="no-reject">-</span>
                   </td>
 
                   <!-- Sisa -->
@@ -346,16 +290,16 @@
                       <button
                         v-if="itemIndex === 0"
                         class="btn-detail"
-                        @click="openDetail(so, item)"
+                        @click="openDetail(po, item)"
                         title="Lihat Detail"
                       >🔍</button>
                     </div>
                   </td>
                 </tr>
 
-                <!-- Separator antar SO -->
+                <!-- Separator antar PO -->
                 <tr class="so-separator">
-                  <td colspan="18"></td>
+                  <td colspan="12"></td>
                 </tr>
               </template>
             </tbody>
@@ -367,8 +311,8 @@
           <div class="pagination-info">
             <span class="info-icon">📄</span>
             <span class="info-text">
-              Menampilkan SO <strong>{{ paginationStart }} - {{ paginationEnd }}</strong> dari
-              <strong>{{ uniqueSOCount }}</strong> SO
+              Menampilkan PO <strong>{{ paginationStart }} - {{ paginationEnd }}</strong> dari
+              <strong>{{ data.length }}</strong> PO Sampel
               <span class="info-separator">•</span>
               <span class="info-detail">
                 <strong>{{ allItems.length }}</strong> item
@@ -425,7 +369,7 @@
           <div class="modal-header-left">
             <span class="modal-icon">🔍</span>
             <div>
-              <h3 class="modal-title">Detail Produksi</h3>
+              <h3 class="modal-title">Detail Produksi Sampel</h3>
               <p class="modal-subtitle">
                 {{ selectedRow?.so_number }} — {{ selectedRow?.item_name }}
                 <span class="modal-buyer">{{ selectedRow?.buyer_name }}</span>
@@ -608,7 +552,7 @@ const fetchData = async () => {
     const params = {}
     if (search.value) params.search = search.value
 
-    const response = await axios.get('/production-monitoring', { params })
+    const response = await axios.get('/production-monitoring/sample', { params })
 
     if (response.data.success) {
       data.value = response.data.data
@@ -620,7 +564,7 @@ const fetchData = async () => {
   }
 }
 
-const allItems = computed(() => data.value.flatMap(so => so.items ?? []))
+const allItems = computed(() => data.value.flatMap(po => po.items ?? []))
 
 const resetFilter = () => {
   search.value = ''
@@ -676,8 +620,6 @@ const paginationEnd = computed(() => {
   return end > data.value.length ? data.value.length : end
 })
 
-const uniqueSOCount = computed(() => data.value.length)
-
 const doneCount = computed(() => allItems.value.filter(item => item.is_done).length)
 
 const pendingCount = computed(() => allItems.value.filter(item => !item.is_done).length)
@@ -692,8 +634,8 @@ const loadingDetail = ref(false)
 const detailData    = ref(null)
 const selectedRow   = ref(null)
 
-const openDetail = async (so, item) => {
-  selectedRow.value  = { ...item, so_id: so.so_id, so_number: so.so_number, buyer_name: so.buyer_name }
+const openDetail = async (po, item) => {
+  selectedRow.value  = { ...item, so_id: po.so_id, so_number: po.so_number, buyer_name: po.buyer_name }
   showModal.value    = true
   loadingDetail.value = true
   detailData.value   = null
@@ -701,7 +643,7 @@ const openDetail = async (so, item) => {
   try {
     const res = await axios.get('/production-monitoring/detail', {
       params: {
-        so_id:   so.so_id,
+        so_id:   po.so_id,
         item_id: item.item_id,
       }
     })
@@ -721,30 +663,6 @@ const closeModal = () => {
   selectedRow.value = null
 }
 
-const openRejectDetail = async (so, item) => {
-  selectedRow.value  = { ...item, so_id: so.so_id, so_number: so.so_number, buyer_name: so.buyer_name }
-  showModal.value    = true
-  loadingDetail.value = true
-  detailData.value   = null
-
-  try {
-    const res = await axios.get('/production-monitoring/detail', {
-      params: { so_id: so.so_id, item_id: item.item_id }
-    })
-    if (res.data.success) {
-      detailData.value = res.data
-      setTimeout(() => {
-        const rejectEl = document.querySelector('.reject-block')
-        if (rejectEl) rejectEl.scrollIntoView({ behavior: 'smooth' })
-      }, 300)
-    }
-  } catch (error) {
-    console.error(error)
-  } finally {
-    loadingDetail.value = false
-  }
-}
-
 const exportExcel = async () => {
   if (!selectedRow.value) return
   try {
@@ -755,7 +673,7 @@ const exportExcel = async () => {
     const url = window.URL.createObjectURL(new Blob([res.data]))
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', `Laporan_Produksi_${selectedRow.value.so_number}.xlsx`)
+    link.setAttribute('download', `Laporan_Produksi_Sampel_${selectedRow.value.so_number}.xlsx`)
     document.body.appendChild(link)
     link.click()
     link.remove()
@@ -833,7 +751,7 @@ const getStageClass = (type) => {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #3b82f6;
+  color: #7c3aed;
   text-decoration: none;
   font-weight: 500;
   padding: 6px 12px;
@@ -842,8 +760,8 @@ const getStageClass = (type) => {
 }
 
 .breadcrumb-item:hover {
-  background: #eff6ff;
-  color: #2563eb;
+  background: #f5f3ff;
+  color: #6d28d9;
 }
 
 .breadcrumb-icon {
@@ -861,10 +779,10 @@ const getStageClass = (type) => {
 }
 
 .header-content {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
   padding: 24px 28px;
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.25);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.25);
 }
 
 .page-title {
@@ -894,12 +812,12 @@ const getStageClass = (type) => {
    LEGEND CARD
    ============================================ */
 .legend-card {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border: 2px solid #fbbf24;
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  border: 2px solid #a78bfa;
   border-radius: 12px;
   padding: 16px 20px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.15);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
 }
 
 .legend-header {
@@ -915,7 +833,7 @@ const getStageClass = (type) => {
 
 .legend-title {
   font-weight: 700;
-  color: #92400e;
+  color: #4c1d95;
   text-transform: uppercase;
   font-size: 12px;
   letter-spacing: 0.5px;
@@ -965,6 +883,10 @@ const getStageClass = (type) => {
 
 .badge-done {
   background: #d1fae5;
+}
+
+.badge-skip {
+  background: #f3f4f6;
 }
 
 .legend-text {
@@ -1077,8 +999,8 @@ const getStageClass = (type) => {
 
 .search-input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .search-input::placeholder {
@@ -1131,13 +1053,13 @@ const getStageClass = (type) => {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
   color: white;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
 .btn-secondary {
@@ -1165,7 +1087,7 @@ const getStageClass = (type) => {
   width: 48px;
   height: 48px;
   border: 4px solid #e5e7eb;
-  border-top-color: #3b82f6;
+  border-top-color: #8b5cf6;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin: 0 auto 16px;
@@ -1245,11 +1167,11 @@ const getStageClass = (type) => {
 }
 
 .stat-total .stat-value {
-  color: #3b82f6;
+  color: #8b5cf6;
 }
 
 .stat-orders .stat-value {
-  color: #8b5cf6;
+  color: #7c3aed;
 }
 
 .stat-done .stat-value {
@@ -1276,7 +1198,7 @@ const getStageClass = (type) => {
 
 .data-table {
   width: 100%;
-  min-width: 1600px;
+  min-width: 1300px;
   border-collapse: separate;
   border-spacing: 0;
 }
@@ -1310,7 +1232,6 @@ const getStageClass = (type) => {
   background: linear-gradient(180deg, #1f2937 0%, #111827 100%) !important;
 }
 
-
 .th-num {
   text-align: right !important;
 }
@@ -1332,9 +1253,9 @@ const getStageClass = (type) => {
   border-bottom-color: #4338ca !important;
 }
 
-.zone-hilir {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
-  border-bottom-color: #1d4ed8 !important;
+.zone-sampel {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+  border-bottom-color: #6d28d9 !important;
 }
 
 .header-row-sub th {
@@ -1353,24 +1274,19 @@ const getStageClass = (type) => {
   color: #3730a3 !important;
 }
 
-.stage-assembling {
-  background: linear-gradient(180deg, #dbeafe 0%, #bfdbfe 100%) !important;
-  color: #1e40af !important;
+.stage-moulding {
+  background: linear-gradient(180deg, #f5f3ff 0%, #ede9fe 100%) !important;
+  color: #5b21b6 !important;
 }
 
-.stage-rustik {
-  background: linear-gradient(180deg, #ffedd5 0%, #fed7aa 100%) !important;
-  color: #9a3412 !important;
+.stage-proto {
+  background: linear-gradient(180deg, #ede9fe 0%, #ddd6fe 100%) !important;
+  color: #5b21b6 !important;
 }
 
 .stage-sanding {
   background: linear-gradient(180deg, #fef9c3 0%, #fef08a 100%) !important;
   color: #854d0e !important;
-}
-
-.stage-finishing {
-  background: linear-gradient(180deg, #f3e8ff 0%, #e9d5ff 100%) !important;
-  color: #6b21a8 !important;
 }
 
 .stage-packing {
@@ -1393,7 +1309,7 @@ const getStageClass = (type) => {
 }
 
 .data-row:hover {
-  background: #f9fafb;
+  background: #faf5ff;
   transform: scale(1.001);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
@@ -1440,7 +1356,7 @@ const getStageClass = (type) => {
 
 /* Cell Styles */
 .td-so {
-  min-width: 160px;
+  min-width: 170px;
 }
 
 .td-so-group {
@@ -1466,13 +1382,21 @@ const getStageClass = (type) => {
 
 .so-buyer {
   font-weight: 600;
-  color: #3b82f6;
+  color: #7c3aed;
   font-size: 12px;
 }
 
-.so-po {
+.po-badge {
+  display: inline-block;
+  margin-top: 2px;
   font-size: 11px;
-  color: #9ca3af;
+  font-weight: 600;
+  color: #6d28d9;
+  background: #ede9fe;
+  border: 1px solid #c4b5fd;
+  padding: 2px 7px;
+  border-radius: 999px;
+  width: fit-content;
 }
 
 .so-date {
@@ -1539,7 +1463,7 @@ const getStageClass = (type) => {
 
 .target-value {
   font-weight: 700;
-  color: #1e40af;
+  color: #6d28d9;
   font-size: 14px;
 }
 
@@ -1760,7 +1684,7 @@ const getStageClass = (type) => {
 }
 
 .info-detail {
-  color: #8b5cf6;
+  color: #7c3aed;
   font-weight: 600;
 }
 
@@ -1787,11 +1711,11 @@ const getStageClass = (type) => {
 }
 
 .page-btn:hover:not(:disabled) {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: #8b5cf6;
+  border-color: #8b5cf6;
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
 }
 
 .page-btn:disabled {
@@ -1805,12 +1729,12 @@ const getStageClass = (type) => {
   gap: 6px;
   padding: 0 12px;
   height: 36px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
   border-radius: 8px;
   color: white;
   font-weight: 700;
   font-size: 14px;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
 }
 
 .current-page {
@@ -1892,12 +1816,6 @@ const getStageClass = (type) => {
   }
 }
 
-/* ===== QC FINAL COLUMN ===== */
-.stage-qcfinal {
-  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%) !important;
-  color: #065f46 !important;
-}
-
 /* ===== SISA CELL ===== */
 .sisa-cell {
   display: flex;
@@ -1907,8 +1825,8 @@ const getStageClass = (type) => {
 }
 
 .btn-detail {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
   border-radius: 6px;
   padding: 3px 8px;
   cursor: pointer;
@@ -1916,31 +1834,8 @@ const getStageClass = (type) => {
   transition: all 0.2s;
 }
 .btn-detail:hover {
-  background: #dbeafe;
+  background: #ede9fe;
   transform: scale(1.1);
-}
-
-.reject-badge-table {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-weight: 700;
-  font-size: 0.82rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.reject-badge-table:hover {
-  background: #fecaca;
-  transform: scale(1.05);
-}
-.no-reject {
-  color: #d1d5db;
-  font-size: 0.82rem;
 }
 
 /* ===== MODAL ===== */
@@ -1970,7 +1865,7 @@ const getStageClass = (type) => {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 2rem;
-  background: linear-gradient(135deg, #1e3a5f, #1e40af);
+  background: linear-gradient(135deg, #6d28d9, #5b21b6);
   color: white;
 }
 
@@ -2125,7 +2020,7 @@ const getStageClass = (type) => {
 
 .stage-sawmill-block .stage-block-header    { background: #f0fdf4; border-bottom: 2px solid #bbf7d0; }
 .stage-pembahanan-block .stage-block-header { background: #f0fdf4; border-bottom: 2px solid #bbf7d0; }
-.stage-moulding-block .stage-block-header   { background: #eff6ff; border-bottom: 2px solid #bfdbfe; }
+.stage-moulding-block .stage-block-header   { background: #f5f3ff; border-bottom: 2px solid #ddd6fe; }
 .stage-mesin-block .stage-block-header      { background: #ecfeff; border-bottom: 2px solid #a5f3fc; }
 .stage-ruskomp-block .stage-block-header    { background: #fff7ed; border-bottom: 2px solid #fed7aa; }
 .stage-assembling-block .stage-block-header { background: #f5f3ff; border-bottom: 2px solid #ddd6fe; }
@@ -2173,7 +2068,7 @@ const getStageClass = (type) => {
 .tx-item-code {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #1e40af;
+  color: #6d28d9;
 }
 
 .tx-item-name {
@@ -2213,20 +2108,5 @@ const getStageClass = (type) => {
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 700;
-}
-
-.stage-moulding {
-  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%) !important;
-  color: #1e40af !important;
-}
-
-.stage-mesin {
-  background: linear-gradient(180deg, #ecfeff 0%, #cffafe 100%) !important;
-  color: #0e7490 !important;
-}
-
-.stage-ruskomp {
-  background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%) !important;
-  color: #9a3412 !important;
 }
 </style>

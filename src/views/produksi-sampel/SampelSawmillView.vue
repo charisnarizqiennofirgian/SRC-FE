@@ -58,7 +58,7 @@
             </div>
 
             <div class="form-section">
-              <div class="section-hd"><div class="s-badge green"><span>📤</span></div><h3 class="s-title">Output — Jeblosan *</h3></div>
+              <div class="section-hd"><div class="s-badge green"><span>📤</span></div><h3 class="s-title">Output — Jeblosan *</h3><button type="button" class="btn-quick-add" @click="openModalJeblosan">➕ Jeblosan Baru</button></div>
               <div v-for="(r,i) in form.jeblosans" :key="r.lid" class="row-card green">
                 <div class="row-hd"><span class="rn">Jeblosan #{{ i+1 }}</span><button v-if="form.jeblosans.length>1" type="button" class="btn-rm" @click="form.jeblosans.splice(i,1)">✕</button></div>
                 <div class="g2">
@@ -104,6 +104,48 @@
             <button type="submit" class="btn-submit" :disabled="isSubmitting">💾 {{ isSubmitting?'Menyimpan...':(form.process_type==='log_jeblosan'?'Simpan Log→Jeblosan':'Simpan Jeblosan→RST') }}</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- MODAL TAMBAH JEBLOSAN BARU -->
+    <div v-if="showModalJeblosan" class="modal-overlay" @click.self="closeModalJeblosan">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>➕ Tambah Item Jeblosan Baru</h3>
+          <button type="button" class="modal-close" @click="closeModalJeblosan">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-hint">Item baru akan otomatis masuk ke master data Jeblosan.</p>
+          <div class="fg"><label class="fl">Nama Dasar *</label>
+            <input v-model="formJeblosan.nama_dasar" type="text" class="fi" placeholder="Contoh: Jeblosan Meranti" />
+          </div>
+          <div class="fg" style="margin-top:0.875rem;"><label class="fl">Kode Barang</label>
+            <input v-model="formJeblosan.kode_barang" type="text" class="fi" placeholder="Auto generate jika kosong" />
+          </div>
+          <div class="modal-dims-label">Dimensi (mm)</div>
+          <div class="g3" style="margin-bottom:0;">
+            <div class="fg"><label class="fl">Tebal (T)</label>
+              <input v-model.number="formJeblosan.tebal_mm" type="number" min="0" step="0.1" class="fi" placeholder="0" />
+            </div>
+            <div class="fg"><label class="fl">Lebar (L)</label>
+              <input v-model.number="formJeblosan.lebar_mm" type="number" min="0" step="0.1" class="fi" placeholder="0" />
+            </div>
+            <div class="fg"><label class="fl">Panjang (P)</label>
+              <input v-model.number="formJeblosan.panjang_mm" type="number" min="0" step="0.1" class="fi" placeholder="0" />
+            </div>
+          </div>
+          <div v-if="previewNamaJeblosan" class="modal-preview">
+            <div class="preview-label">Preview nama:</div>
+            <div class="preview-name">{{ previewNamaJeblosan }}</div>
+            <div v-if="previewVolumeJeblosan > 0" class="preview-vol">Volume: {{ previewVolumeJeblosan.toFixed(6) }} m³/pcs</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" @click="closeModalJeblosan">Batal</button>
+          <button type="button" class="btn-submit" :disabled="isSavingJeblosan" @click="simpanJeblosanBaru">
+            {{ isSavingJeblosan ? '⏳ Menyimpan...' : '💾 Simpan & Pilih' }}
+          </button>
+        </div>
       </div>
     </div>
   </DashboardLayout>
@@ -192,6 +234,69 @@ const handleSubmit = async () => {
   finally { isSubmitting.value = false }
 }
 
+// === MODAL TAMBAH JEBLOSAN BARU ===
+const showModalJeblosan  = ref(false)
+const isSavingJeblosan   = ref(false)
+const formJeblosan = reactive({ nama_dasar: '', kode_barang: '', tebal_mm: null, lebar_mm: null, panjang_mm: null })
+
+const previewNamaJeblosan = computed(() => {
+  if (!formJeblosan.nama_dasar) return ''
+  const t = formJeblosan.tebal_mm, l = formJeblosan.lebar_mm, p = formJeblosan.panjang_mm
+  return (t && l && p) ? `${formJeblosan.nama_dasar} ${t}x${l}x${p}` : formJeblosan.nama_dasar
+})
+
+const previewVolumeJeblosan = computed(() => {
+  const t = formJeblosan.tebal_mm || 0
+  const l = formJeblosan.lebar_mm || 0
+  const p = formJeblosan.panjang_mm || 0
+  return (t && l && p) ? (t * l * p) / 1_000_000_000 : 0
+})
+
+const openModalJeblosan = () => {
+  formJeblosan.nama_dasar  = ''
+  formJeblosan.kode_barang = ''
+  formJeblosan.tebal_mm    = null
+  formJeblosan.lebar_mm    = null
+  formJeblosan.panjang_mm  = null
+  showModalJeblosan.value  = true
+}
+
+const closeModalJeblosan = () => { showModalJeblosan.value = false }
+
+const simpanJeblosanBaru = async () => {
+  if (!formJeblosan.nama_dasar.trim()) { showError('Validasi', 'Nama dasar wajib diisi'); return }
+  isSavingJeblosan.value = true
+  try {
+    const res = await apiClient.post('/materials/quick-store-jeblosan', {
+      nama_dasar:  formJeblosan.nama_dasar.trim(),
+      kode_barang: formJeblosan.kode_barang.trim() || null,
+      tebal_mm:    formJeblosan.tebal_mm   || null,
+      lebar_mm:    formJeblosan.lebar_mm   || null,
+      panjang_mm:  formJeblosan.panjang_mm || null,
+    })
+    const itemBaru = res.data.data
+
+    jeblosanItems.value.push({ id: itemBaru.id, code: itemBaru.code, name: itemBaru.name, volume_m3: itemBaru.volume_m3 || 0 })
+
+    const lastEmpty = form.jeblosans.find(j => !j.item_id)
+    if (lastEmpty) {
+      lastEmpty.item_id   = itemBaru.id
+      lastEmpty.vpp       = itemBaru.volume_m3 || 0
+      lastEmpty.volume_m3 = (lastEmpty.vpp || 0) * (lastEmpty.qty_pcs || 0)
+    }
+
+    showSuccess('Berhasil', `Jeblosan "${itemBaru.name}" berhasil ditambahkan`)
+    closeModalJeblosan()
+  } catch (error) {
+    const msg = error.response?.data?.message
+      || (error.response?.data?.errors && JSON.stringify(error.response.data.errors))
+      || 'Gagal menyimpan'
+    showError('Gagal', msg)
+  } finally {
+    isSavingJeblosan.value = false
+  }
+}
+
 onMounted(fetchBase)
 </script>
 
@@ -244,4 +349,20 @@ onMounted(fetchBase)
 .btn-submit { padding:.7rem 1.625rem;border-radius:8px;background:linear-gradient(135deg,#92400e,#78350f);color:white;border:none;font-weight:700;cursor:pointer; }
 .btn-submit:disabled { opacity:.6;cursor:not-allowed; }
 @media(max-width:768px) { .g2,.g3 { grid-template-columns:1fr; } .process-toggle { flex-direction:column; } }
+
+.btn-quick-add { margin-left:auto; padding:2px 10px; background:#16a34a; color:white; border:none; border-radius:999px; font-size:0.75rem; font-weight:600; cursor:pointer; transition:all .15s; }
+.btn-quick-add:hover { background:#15803d; }
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9999; display:flex; align-items:center; justify-content:center; }
+.modal-card { background:white; border-radius:20px; width:100%; max-width:480px; box-shadow:0 20px 60px rgba(0,0,0,.2); overflow:hidden; }
+.modal-header { display:flex; justify-content:space-between; align-items:center; padding:1.25rem 1.5rem; border-bottom:2px solid #e5e7eb; background:linear-gradient(135deg,#f0fdf4,#dcfce7); }
+.modal-header h3 { font-size:1.05rem; font-weight:700; color:#111827; margin:0; }
+.modal-close { background:#fee2e2; color:#ef4444; border:none; border-radius:8px; padding:4px 10px; cursor:pointer; font-weight:700; }
+.modal-body { padding:1.5rem; display:flex; flex-direction:column; gap:.75rem; }
+.modal-hint { font-size:.85rem; color:#6b7280; margin:0; }
+.modal-dims-label { font-size:.875rem; font-weight:600; color:#374151; margin-top:.5rem; }
+.modal-preview { margin-top:.75rem; padding:.75rem 1rem; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; }
+.preview-label { font-size:.75rem; color:#6b7280; font-weight:600; text-transform:uppercase; }
+.preview-name { font-size:.95rem; font-weight:700; color:#111827; margin-top:2px; }
+.preview-vol { font-size:.82rem; color:#15803d; margin-top:4px; }
+.modal-footer { display:flex; justify-content:flex-end; gap:1rem; padding:1.25rem 1.5rem; border-top:2px solid #e5e7eb; }
 </style>

@@ -196,6 +196,7 @@ const allMenuItems = [
       { name: 'Stock Adjustment', route: '/stock-adjustment', permission: 'stok-adjustment' },
       { name: 'Laporan Mutasi', route: { name: 'LaporanMutasi' }, permission: 'stok-laporan-mutasi' },
       { name: 'Monitoring Produksi', route: { name: 'ProductionMonitoring' }, permission: 'stok-monitoring-produksi' },
+      { name: 'Monitoring Produksi Sampel', route: { name: 'ProductionMonitoringSample' }, permission: 'stok-monitoring-produksi' },
     ],
   },
   {

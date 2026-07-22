@@ -557,6 +557,12 @@ const router = createRouter({
       component: () => import('../views/produksi/ProductionMonitoringView.vue'),
       meta: { title: 'Monitoring Produksi', requiresAuth: true },
     },
+    {
+      path: '/admin/produksi/monitoring-sampel',
+      name: 'ProductionMonitoringSample',
+      component: () => import('../views/produksi/ProductionMonitoringSampleView.vue'),
+      meta: { title: 'Monitoring Produksi Sampel', requiresAuth: true },
+    },
 
     {
       path: '/reports/sawmill',

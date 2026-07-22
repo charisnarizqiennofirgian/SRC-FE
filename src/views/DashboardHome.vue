@@ -172,13 +172,51 @@
                     </span>
                   </td>
                   <td class="col-num stage-moulding">
-                    <span :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value']">
+                    <span
+                      :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value', (item.moulding_bom_checklist?.length || item.moulding_components?.length) ? 'has-tooltip' : '']"
+                    >
                       {{ item.qty_moulding > 0 ? formatNumber(item.qty_moulding) : '-' }}
+                      <div v-if="item.moulding_bom_checklist?.length" class="moulding-tooltip">
+                        <div class="moulding-tooltip-title">Checklist Komponen (BOM)</div>
+                        <div v-for="c in item.moulding_bom_checklist" :key="c.item_id" class="moulding-tooltip-row">
+                          <span class="moulding-tooltip-name">
+                            <span :class="c.done ? 'bom-check-ok' : 'bom-check-missing'">{{ c.done ? '✓' : '✗' }}</span>
+                            {{ c.item_name }}
+                          </span>
+                          <span class="moulding-tooltip-qty">{{ c.done ? formatNumber(c.qty_actual) : 'belum ada' }}</span>
+                        </div>
+                      </div>
+                      <div v-else-if="item.moulding_components?.length" class="moulding-tooltip">
+                        <div class="moulding-tooltip-title">Komponen Moulding</div>
+                        <div v-for="c in item.moulding_components" :key="c.item_id" class="moulding-tooltip-row">
+                          <span class="moulding-tooltip-name">{{ c.item_name }}</span>
+                          <span class="moulding-tooltip-qty">{{ formatNumber(c.qty) }}</span>
+                        </div>
+                      </div>
                     </span>
                   </td>
                   <td class="col-num stage-mesin">
-                    <span :class="['qty-value', item.qty_mesin > 0 ? 'has-value' : 'no-value']">
+                    <span
+                      :class="['qty-value', item.qty_mesin > 0 ? 'has-value' : 'no-value', (item.mesin_bom_checklist?.length || item.mesin_components?.length) ? 'has-tooltip' : '']"
+                    >
                       {{ item.qty_mesin > 0 ? formatNumber(item.qty_mesin) : '-' }}
+                      <div v-if="item.mesin_bom_checklist?.length" class="moulding-tooltip">
+                        <div class="moulding-tooltip-title">Checklist Komponen (BOM)</div>
+                        <div v-for="c in item.mesin_bom_checklist" :key="c.item_id" class="moulding-tooltip-row">
+                          <span class="moulding-tooltip-name">
+                            <span :class="c.done ? 'bom-check-ok' : 'bom-check-missing'">{{ c.done ? '✓' : '✗' }}</span>
+                            {{ c.item_name }}
+                          </span>
+                          <span class="moulding-tooltip-qty">{{ c.done ? formatNumber(c.qty_actual) : 'belum ada' }}</span>
+                        </div>
+                      </div>
+                      <div v-else-if="item.mesin_components?.length" class="moulding-tooltip">
+                        <div class="moulding-tooltip-title">Komponen Mesin</div>
+                        <div v-for="c in item.mesin_components" :key="c.item_id" class="moulding-tooltip-row">
+                          <span class="moulding-tooltip-name">{{ c.item_name }}</span>
+                          <span class="moulding-tooltip-qty">{{ formatNumber(c.qty) }}</span>
+                        </div>
+                      </div>
                     </span>
                   </td>
 
@@ -404,8 +442,27 @@
                 </td>
                 <!-- Produksi Sampel -->
                 <td class="col-num stage-moulding">
-                  <span :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value']">
+                  <span
+                    :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value', (item.moulding_bom_checklist?.length || item.moulding_components?.length) ? 'has-tooltip' : '']"
+                  >
                     {{ item.qty_moulding > 0 ? formatNumber(item.qty_moulding) : '-' }}
+                    <div v-if="item.moulding_bom_checklist?.length" class="moulding-tooltip">
+                      <div class="moulding-tooltip-title">Checklist Komponen (BOM)</div>
+                      <div v-for="c in item.moulding_bom_checklist" :key="c.item_id" class="moulding-tooltip-row">
+                        <span class="moulding-tooltip-name">
+                          <span :class="c.done ? 'bom-check-ok' : 'bom-check-missing'">{{ c.done ? '✓' : '✗' }}</span>
+                          {{ c.item_name }}
+                        </span>
+                        <span class="moulding-tooltip-qty">{{ c.done ? formatNumber(c.qty_actual) : 'belum ada' }}</span>
+                      </div>
+                    </div>
+                    <div v-else-if="item.moulding_components?.length" class="moulding-tooltip">
+                      <div class="moulding-tooltip-title">Komponen Moulding</div>
+                      <div v-for="c in item.moulding_components" :key="c.item_id" class="moulding-tooltip-row">
+                        <span class="moulding-tooltip-name">{{ c.item_name }}</span>
+                        <span class="moulding-tooltip-qty">{{ formatNumber(c.qty) }}</span>
+                      </div>
+                    </div>
                   </span>
                 </td>
                 <td class="col-num sampel-stage-proto">
@@ -1348,6 +1405,69 @@ onMounted(() => {
 .no-value {
   color: #d1d5db;
   font-weight: 400;
+}
+
+.has-tooltip {
+  position: relative;
+  cursor: help;
+}
+
+.moulding-tooltip {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  background: #1f2937;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  text-align: left;
+  z-index: 50;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.has-tooltip:hover .moulding-tooltip {
+  display: block;
+}
+
+.moulding-tooltip-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.moulding-tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 2px 0;
+}
+
+.moulding-tooltip-name {
+  color: #e5e7eb;
+}
+
+.moulding-tooltip-qty {
+  color: #6ee7b7;
+  font-weight: 700;
+}
+
+.bom-check-ok {
+  color: #34d399;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.bom-check-missing {
+  color: #f87171;
+  font-weight: 700;
+  margin-right: 4px;
 }
 
 .sisa-value {
