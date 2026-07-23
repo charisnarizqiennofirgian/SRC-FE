@@ -241,16 +241,18 @@
               <div class="section-header section-header-jeblosan">
                 <div class="section-icon-badge section-badge-jeblosan"><span class="section-icon">📥</span></div>
                 <div class="section-title-group">
-                  <h3 class="section-title">Input — Jeblosan dari Gudang SAWMILL <span class="required-star">*</span></h3>
+                  <h3 class="section-title">Input — Jeblosan dari Gudang SAWMILL (opsional)</h3>
                   <p class="section-subtitle">
-                    Pilih item dan jumlah jeblosan yang diproses hari ini
+                    Isi kalau tau SKU jeblosan spesifik yang dipakai hari ini. Boleh dikosongkan kalau
+                    di lapangan tidak ada rincian jeblosan mana jadi RST mana — cukup catat Output RST
+                    di bawah, stok jeblosan tetap perlu dicek/disesuaikan berkala lewat Stock Adjustment.
                     <span v-if="loadingStock" class="loading-inline">⏳ memuat stok...</span>
                   </p>
                 </div>
               </div>
 
               <div v-if="!loadingStock && sawmillStock.length === 0" class="empty-hint">
-                📭 Tidak ada stok jeblosan di Gudang SAWMILL — lakukan proses Log→Jeblosan terlebih dahulu
+                📭 Tidak ada stok jeblosan di Gudang SAWMILL — boleh dilewati, langsung isi Output RST di bawah
               </div>
 
               <template v-else>
@@ -261,13 +263,13 @@
                   </div>
                   <div class="form-grid-2col">
                     <div class="form-group-modern">
-                      <label class="form-label-modern">Item Jeblosan <span class="required-star">*</span></label>
+                      <label class="form-label-modern">Item Jeblosan</label>
                       <vue-select
                         v-model="row.item_id"
                         :options="jeblosanStockForSelect"
                         :reduce="o => o.id"
                         label="label"
-                        placeholder="Pilih jeblosan dari stok..."
+                        placeholder="Pilih jeblosan dari stok (opsional)..."
                         class="vue-select-item"
                         @option:selected="(opt) => onJeblosanInputSelected(idx, opt)"
                       />
@@ -276,7 +278,7 @@
                       </div>
                     </div>
                     <div class="form-group-modern">
-                      <label class="form-label-modern">Qty diproses (pcs) <span class="required-star">*</span></label>
+                      <label class="form-label-modern">Qty diproses (pcs)</label>
                       <div class="input-wrapper-icon">
                         <span class="input-icon">🔢</span>
                         <input
@@ -702,11 +704,9 @@ const handleSubmit = async () => {
       return
     }
   } else {
-    const validJebInput = form.jeblosanInputs.filter(j => j.item_id && j.qty_pcs > 0)
-    if (validJebInput.length === 0) {
-      showError('Validasi', 'Minimal satu input jeblosan wajib diisi')
-      return
-    }
+    // Input jeblosan sengaja TIDAK wajib -- di lapangan admin sering tidak tau jeblosan SKU mana
+    // yang jadi RST mana (tidak ada pakem 1:1), cuma tau RST apa yang keluar. Kalau kebetulan tau,
+    // boleh diisi (opsional) supaya stok jeblosan ikut berkurang; kalau tidak, dikosongkan saja.
     const validRst = form.rsts.filter(r => r.item_rst_id && r.qty_rst_pcs > 0)
     if (validRst.length === 0) {
       showError('Validasi', 'Minimal satu output RST wajib diisi')

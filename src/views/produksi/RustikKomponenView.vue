@@ -94,6 +94,49 @@
               </div>
             </div>
 
+            <!-- PRODUK YANG DIKERJAKAN -->
+            <div class="form-grid-3col" v-if="form.ref_po_id" style="margin-top:1rem;">
+              <div class="form-group-modern">
+                <label class="form-label-modern">
+                  Produk yang Dikerjakan <span class="required-star">*</span>
+                </label>
+                <vue-select
+                  v-model="form.production_order_detail_id"
+                  :options="poDetailItems"
+                  :reduce="(d) => d.id"
+                  label="label"
+                  placeholder="🔍 Pilih produk..."
+                  :clearable="true"
+                  class="vue-select-po"
+                >
+                  <template #option="d">
+                    <div class="detail-option">
+                      <span class="detail-option-name">{{ d.item_name }}</span>
+                      <span class="detail-option-code">{{ d.item_code }}</span>
+                    </div>
+                  </template>
+                </vue-select>
+              </div>
+
+              <div class="form-group-modern" v-if="form.production_order_detail_id">
+                <label class="form-label-modern">
+                  Qty Produk Jadi
+                  <span class="field-hint-inline">(berapa unit produk jadi setara dari batch ini)</span>
+                </label>
+                <div class="input-wrapper-icon">
+                  <span class="input-icon">📦</span>
+                  <input
+                    v-model.number="form.qty_produk_jadi"
+                    type="number"
+                    min="0"
+                    step="any"
+                    class="form-input-modern"
+                    placeholder="Contoh: 20"
+                  />
+                </div>
+              </div>
+            </div>
+
             <!-- Target PO -->
             <div v-if="poTargets.length" class="po-hint-box">
               <div class="po-hint-header">
@@ -425,10 +468,13 @@ const productionOrders = ref([])
 const mesinItems       = ref([])
 const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
+const poDetailItems    = ref([])
 
 const form = reactive({
   date:      new Date().toISOString().slice(0, 10),
   ref_po_id: null,
+  production_order_detail_id: null,
+  qty_produk_jadi:            null,
   notes:     '',
   inputs:  [{ local_id: Date.now(),     item_id: null, qty: null, max_qty: 0, finishing: 'natural' }],
   outputs: [{ local_id: Date.now() + 1, item_id: null, qty: null, finishing: 'natural' }],
@@ -466,21 +512,40 @@ const fetchInitialData = async () => {
 const handlePoChange = async (opt) => {
   poInfo.value    = { buyer_name: null, so_number: null }
   poTargets.value = []
+  poDetailItems.value             = []
+  form.production_order_detail_id = null
+  form.qty_produk_jadi            = null
   if (!opt) return
-  try {
-    const res  = await apiClient.get(`/production-orders/${opt.id}`)
-    const data = res.data.data || {}
-    poInfo.value = {
-      buyer_name: data.sales_order?.buyer_name || opt.buyer_name || null,
-      so_number:  data.sales_order?.so_number  || opt.so_number  || null,
-    }
-    poTargets.value = data.targets || []
-  } catch (e) { console.error(e) }
+
+  const [poResult, detailResult] = await Promise.allSettled([
+    apiClient.get(`/production-orders/${opt.id}`),
+    apiClient.get(`/rustik-komponen/po-detail-items/${opt.id}`),
+  ])
+
+  const data = poResult.status === 'fulfilled' ? (poResult.value.data.data || {}) : {}
+  if (poResult.status === 'rejected') console.error('PO info gagal dimuat:', poResult.reason)
+
+  poInfo.value = {
+    buyer_name: data.sales_order?.buyer_name || opt.buyer_name || null,
+    so_number:  data.sales_order?.so_number  || opt.so_number  || null,
+  }
+  poTargets.value = data.targets || []
+
+  if (detailResult.status === 'fulfilled') {
+    const details = detailResult.value.data.data || []
+    poDetailItems.value = details.map((d) => ({ ...d, label: d.item_name }))
+  } else {
+    console.error('Detail produk gagal dimuat:', detailResult.reason)
+    showError('Error', 'Gagal memuat daftar produk untuk PO ini')
+  }
 }
 
 const handlePoDeselect = () => {
   poInfo.value    = { buyer_name: null, so_number: null }
   poTargets.value = []
+  poDetailItems.value             = []
+  form.production_order_detail_id = null
+  form.qty_produk_jadi            = null
 }
 
 const onItemSelected = (index, opt) => {
@@ -509,6 +574,7 @@ const removeReject = (i) => form.rejects.splice(i, 1)
 
 const handleSubmit = async () => {
   if (!form.ref_po_id) { showError('Validasi', 'Production Order wajib dipilih'); return }
+  if (!form.production_order_detail_id) { showError('Validasi', 'Produk yang dikerjakan wajib dipilih'); return }
 
   const validInputs = form.inputs.filter((i) => i.item_id && i.qty > 0)
   if (validInputs.length === 0) { showError('Validasi', 'Minimal satu input komponen wajib diisi'); return }
@@ -530,6 +596,8 @@ const handleSubmit = async () => {
     const payload = {
       date:      form.date,
       ref_po_id: Number(form.ref_po_id),
+      production_order_detail_id: Number(form.production_order_detail_id),
+      qty_produk_jadi: form.qty_produk_jadi !== null && form.qty_produk_jadi !== '' ? Number(form.qty_produk_jadi) : null,
       notes:     form.notes || null,
       inputs:    validInputs.map((i)  => ({ item_id: Number(i.item_id), qty: Number(i.qty), finishing: i.finishing || 'natural' })),
       outputs:   validOutputs.map((o) => ({ item_id: Number(o.item_id), qty: Number(o.qty), finishing: o.finishing || 'natural' })),
@@ -545,12 +613,15 @@ const handleSubmit = async () => {
 
     // Reset form
     form.ref_po_id = null
+    form.production_order_detail_id = null
+    form.qty_produk_jadi            = null
     form.notes     = ''
     form.inputs    = [{ local_id: Date.now(), item_id: null, qty: null, max_qty: 0, finishing: 'natural' }]
     form.outputs   = [{ local_id: Date.now() + 1, item_id: null, qty: null, finishing: 'natural' }]
     form.rejects   = []
     poInfo.value   = { buyer_name: null, so_number: null }
     poTargets.value = []
+    poDetailItems.value = []
 
   } catch (error) {
     const message =
@@ -677,6 +748,11 @@ onMounted(fetchInitialData)
 .item-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
 .item-option-produk { font-size: 0.78rem; color: #7c3aed; font-style: italic; }
 .item-option-stock { font-size: 0.78rem; color: #6b7280; }
+
+.field-hint-inline { font-size: 0.78rem; font-weight: 400; color: #9ca3af; margin-left: 4px; }
+.detail-option { display: flex; align-items: center; gap: 0.5rem; padding: 6px 12px; flex-wrap: wrap; }
+.detail-option-name { font-size: 0.9rem; font-weight: 600; color: #111827; flex: 1; }
+.detail-option-code { font-size: 0.78rem; color: #6b7280; }
 
 @media (max-width: 768px) {
   .form-grid-2col, .form-grid-3col { grid-template-columns: 1fr; }

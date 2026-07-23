@@ -76,18 +76,19 @@
 
           <template v-else>
             <div class="form-section">
-              <div class="section-hd"><div class="s-badge amber"><span>📥</span></div><h3 class="s-title">Input — Jeblosan dari Gudang SAWMILL *</h3></div>
-              <div v-if="!loadingStock && !sawmillStock.length" class="empty-hint">📭 Tidak ada stok jeblosan di Gudang SAWMILL — lakukan proses Log→Jeblosan terlebih dahulu</div>
+              <div class="section-hd"><div class="s-badge amber"><span>📥</span></div><h3 class="s-title">Input — Jeblosan dari Gudang SAWMILL (opsional)</h3></div>
+              <p class="section-hint-opsional">Isi kalau tau SKU jeblosan spesifik yang dipakai. Boleh dikosongkan kalau di lapangan tidak ada rincian jeblosan mana jadi RST mana — cukup catat Output RST di bawah, stok jeblosan tetap perlu dicek/disesuaikan berkala lewat Stock Adjustment.</p>
+              <div v-if="!loadingStock && !sawmillStock.length" class="empty-hint">📭 Tidak ada stok jeblosan di Gudang SAWMILL — boleh dilewati, langsung isi Output RST di bawah</div>
               <template v-else>
                 <div v-for="(r,i) in form.jeblosanInputs" :key="r.lid" class="row-card">
                   <div class="row-hd"><span class="rn">Jeblosan #{{ i+1 }}</span><button v-if="form.jeblosanInputs.length>1" type="button" class="btn-rm" @click="form.jeblosanInputs.splice(i,1)">✕</button></div>
                   <div class="g2">
-                    <div class="fg"><label class="fl">Item Jeblosan *</label>
-                      <vue-select v-model="r.item_id" :options="jeblosanStockForSelect" :reduce="o=>o.id" label="label" placeholder="Pilih jeblosan dari stok..." class="vs"
+                    <div class="fg"><label class="fl">Item Jeblosan</label>
+                      <vue-select v-model="r.item_id" :options="jeblosanStockForSelect" :reduce="o=>o.id" label="label" placeholder="Pilih jeblosan dari stok (opsional)..." class="vs"
                         @option:selected="(o)=>{ r.vpp = o.volume_m3 || 0 }" />
                       <div v-if="r.item_id" class="stock-hint">Stok tersedia: {{ getAvailableStock(r.item_id) }} pcs</div>
                     </div>
-                    <div class="fg"><label class="fl">Qty diproses (pcs) *</label>
+                    <div class="fg"><label class="fl">Qty diproses (pcs)</label>
                       <input v-model.number="r.qty_pcs" type="number" min="1" :max="getAvailableStock(r.item_id) || undefined" class="fi" placeholder="0" />
                     </div>
                   </div>
@@ -306,8 +307,8 @@ const handleSubmit = async () => {
   if (form.process_type === 'log_jeblosan') {
     if (!form.jeblosans.filter(j => j.item_id && j.qty_pcs > 0).length) { showError('Validasi', 'Minimal satu jeblosan wajib diisi'); return }
   } else {
-    if (!sawmillStock.value.length) { showError('Validasi', 'Tidak ada stok jeblosan di Gudang SAWMILL'); return }
-    if (!form.jeblosanInputs.filter(j => j.item_id && j.qty_pcs > 0).length) { showError('Validasi', 'Minimal satu input jeblosan wajib diisi'); return }
+    // Input jeblosan sengaja TIDAK wajib -- di lapangan admin sering tidak tau jeblosan SKU mana
+    // yang jadi RST mana (tidak ada pakem 1:1), cuma tau RST apa yang keluar.
     if (!form.rsts.filter(r => r.item_rst_id && r.qty_rst_pcs > 0).length) { showError('Validasi', 'Minimal satu RST wajib diisi'); return }
   }
   isSubmitting.value = true
@@ -517,6 +518,7 @@ onMounted(fetchBase)
 .a-amber { border-color:#d97706;color:#92400e; } .a-green { border-color:#16a34a;color:#15803d; } .a-blue { border-color:#2563eb;color:#1d4ed8; }
 .stock-hint { font-size:.78rem;color:#0369a1;font-weight:600;margin-top:3px; }
 .empty-hint { padding:1.25rem;text-align:center;color:#9ca3af;background:#f9fafb;border-radius:8px;border:1px dashed #d1d5db; }
+.section-hint-opsional { font-size:.8rem;color:#6b7280;margin:-.25rem 0 .75rem; }
 .actions { display:flex;justify-content:flex-end;gap:.875rem;padding-top:1.25rem;border-top:2px solid #e5e7eb;margin-top:.25rem; }
 .btn-cancel { padding:.7rem 1.375rem;border-radius:8px;background:#f3f4f6;color:#374151;border:none;font-weight:600;cursor:pointer; }
 .btn-submit { padding:.7rem 1.625rem;border-radius:8px;background:linear-gradient(135deg,#92400e,#78350f);color:white;border:none;font-weight:700;cursor:pointer; }
