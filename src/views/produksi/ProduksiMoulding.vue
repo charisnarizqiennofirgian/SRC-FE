@@ -233,7 +233,8 @@
 
               <!-- INPUT KAYU RST (bisa banyak) -->
               <div class="line-block line-block--input">
-                <span class="line-label">📥 INPUT KAYU RST ({{ group.inputs.length }} ukuran)</span>
+                <span class="line-label">📥 INPUT KAYU RST ({{ group.inputs.length }} ukuran, opsional)</span>
+                <p class="input-optional-hint">Boleh dikosongkan kalau grup ini cuma pakai komponen (tanpa potong RST baru).</p>
 
                 <div
                   v-for="(inp, ii) in group.inputs"
@@ -242,7 +243,7 @@
                 >
                   <div class="form-grid-2col" style="margin-bottom:0;">
                     <div class="form-group-modern">
-                      <label v-if="ii === 0" class="form-label-modern">Item RST <span class="required-star">*</span></label>
+                      <label v-if="ii === 0" class="form-label-modern">Item RST (opsional)</label>
                       <vue-select
                         v-model="inp.item_id"
                         :options="rstItemsForSelect"
@@ -261,7 +262,7 @@
                     </div>
                     <div class="form-group-modern" style="flex-direction:row;align-items:flex-end;gap:0.5rem;">
                       <div style="flex:1;">
-                        <label v-if="ii === 0" class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
+                        <label v-if="ii === 0" class="form-label-modern">Qty (pcs)</label>
                         <div class="input-wrapper-icon">
                           <span class="input-icon">🔢</span>
                           <input v-model.number="inp.qty" type="number" min="0.01" step="0.01" class="form-input-modern" placeholder="0" />
@@ -677,13 +678,9 @@ const handleSubmit = async () => {
   if (!form.ref_po_id) { showError('Validasi', 'Production Order wajib dipilih'); return }
   if (!form.production_order_detail_id) { showError('Validasi', 'Produk yang dikerjakan wajib dipilih'); return }
 
-  const validGroups = form.groups.filter((g) => {
-    const hasOutput = g.output_item_id && g.output_qty > 0
-    const hasInputs = g.inputs.some((i) => i.item_id && i.qty > 0)
-    return hasOutput && hasInputs
-  })
+  const validGroups = form.groups.filter((g) => g.output_item_id && g.output_qty > 0)
   if (validGroups.length === 0) {
-    showError('Validasi', 'Minimal satu grup dengan output komponen dan input kayu wajib diisi')
+    showError('Validasi', 'Minimal satu grup dengan output komponen wajib diisi')
     return
   }
 
@@ -886,6 +883,7 @@ onMounted(fetchInitialData)
 .line-block--output { background: #eff6ff; border: 1px solid #bfdbfe; }
 .line-block--reject { background: #fff7ed; border: 1px solid #fed7aa; }
 .line-label { display: inline-block; font-size: 0.75rem; font-weight: 800; color: #374151; margin-bottom: 0.5rem; letter-spacing: 0.05em; }
+.input-optional-hint { margin: -0.25rem 0 0.5rem; font-size: 0.78rem; color: #6b7280; font-style: italic; }
 .line-reject-toggle { margin-bottom: 0.5rem; }
 .btn-toggle-reject { background: none; border: 1px dashed #d1d5db; color: #6b7280; border-radius: 8px; padding: 5px 14px; font-size: 0.8rem; cursor: pointer; transition: all 0.15s; }
 .btn-toggle-reject:hover { border-color: #f97316; color: #f97316; }

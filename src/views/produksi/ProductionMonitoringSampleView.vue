@@ -242,7 +242,7 @@
                     <span
                       :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value', (item.moulding_bom_checklist?.length || item.moulding_components?.length) ? 'has-tooltip' : '']"
                     >
-                      {{ item.qty_moulding > 0 ? formatNumber(item.qty_moulding) : '-' }}
+                      {{ formatNumber(item.qty_moulding) }} <span class="stage-pct">({{ stagePercent(item.qty_moulding, item.target) }}%)</span>
                       <div v-if="item.moulding_bom_checklist?.length" class="moulding-tooltip">
                         <div class="moulding-tooltip-title">Checklist Komponen (BOM)</div>
                         <div v-for="c in item.moulding_bom_checklist" :key="c.item_id" class="moulding-tooltip-row">
@@ -266,17 +266,17 @@
                   <!-- Prototype / Sanding / Packing -->
                   <td class="td-qty stage-proto">
                     <span :class="['qty-value', item.qty_prototype > 0 ? 'has-value' : 'no-value']">
-                      {{ item.qty_prototype > 0 ? formatNumber(item.qty_prototype) : '-' }}
+                      {{ formatNumber(item.qty_prototype) }} <span class="stage-pct">({{ stagePercent(item.qty_prototype, item.target) }}%)</span>
                     </span>
                   </td>
                   <td class="td-qty stage-sanding">
                     <span :class="['qty-value', item.qty_sanding > 0 ? 'has-value' : 'no-value']">
-                      {{ item.qty_sanding > 0 ? formatNumber(item.qty_sanding) : '-' }}
+                      {{ formatNumber(item.qty_sanding) }} <span class="stage-pct">({{ stagePercent(item.qty_sanding, item.target) }}%)</span>
                     </span>
                   </td>
                   <td class="td-qty stage-packing">
                     <span :class="['qty-value', item.qty_packing > 0 ? 'has-value' : 'no-value']">
-                      {{ item.qty_packing > 0 ? formatNumber(item.qty_packing) : '-' }}
+                      {{ formatNumber(item.qty_packing) }} <span class="stage-pct">({{ stagePercent(item.qty_packing, item.target) }}%)</span>
                     </span>
                   </td>
 
@@ -578,6 +578,14 @@ const formatNumber = (num) => {
     return number.toLocaleString('id-ID')
   }
   return number.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+}
+
+// Persentase qty stage terhadap target SO — live, dihitung ulang tiap render, berlaku
+// merata untuk data lama maupun baru (bukan kolom tersimpan di database).
+const stagePercent = (qty, target) => {
+  const t = parseFloat(target)
+  if (!t || t <= 0) return 0
+  return Math.round((parseFloat(qty || 0) / t) * 100)
 }
 
 const getStatusIcon = (status) => {
@@ -1608,6 +1616,12 @@ const getStageClass = (type) => {
 .no-value {
   color: #d1d5db;
   font-weight: 400;
+}
+
+.stage-pct {
+  font-size: 10.5px;
+  font-weight: 500;
+  opacity: 0.7;
 }
 
 .sisa-value {

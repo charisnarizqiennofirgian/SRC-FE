@@ -175,7 +175,7 @@
                     <span
                       :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value', (item.moulding_bom_checklist?.length || item.moulding_components?.length) ? 'has-tooltip' : '']"
                     >
-                      {{ item.qty_moulding > 0 ? formatNumber(item.qty_moulding) : '-' }}
+                      {{ formatNumber(item.qty_moulding) }}
                       <div v-if="item.moulding_bom_checklist?.length" class="moulding-tooltip">
                         <div class="moulding-tooltip-title">Checklist Komponen (BOM)</div>
                         <div v-for="c in item.moulding_bom_checklist" :key="c.item_id" class="moulding-tooltip-row">
@@ -199,7 +199,7 @@
                     <span
                       :class="['qty-value', item.qty_mesin > 0 ? 'has-value' : 'no-value', (item.mesin_bom_checklist?.length || item.mesin_components?.length) ? 'has-tooltip' : '']"
                     >
-                      {{ item.qty_mesin > 0 ? formatNumber(item.qty_mesin) : '-' }}
+                      {{ formatNumber(item.qty_mesin) }}
                       <div v-if="item.mesin_bom_checklist?.length" class="moulding-tooltip">
                         <div class="moulding-tooltip-title">Checklist Komponen (BOM)</div>
                         <div v-for="c in item.mesin_bom_checklist" :key="c.item_id" class="moulding-tooltip-row">
@@ -223,37 +223,37 @@
                   <!-- Zona Hilir -->
                   <td class="col-num stage-ruskomp">
                     <span :class="['qty-value', item.qty_ruskomp > 0 ? 'has-value' : 'no-value']">
-                      {{ formatNumber(item.qty_ruskomp) }}
+                      {{ formatNumber(item.qty_ruskomp) }} <span class="stage-pct">({{ stagePercent(item.qty_ruskomp, item.target) }}%)</span>
                     </span>
                   </td>
                   <td class="col-num stage-assembling">
                     <span :class="['qty-value', item.qty_assembling > 0 ? 'has-value' : 'no-value']">
-                      {{ formatNumber(item.qty_assembling) }}
+                      {{ formatNumber(item.qty_assembling) }} <span class="stage-pct">({{ stagePercent(item.qty_assembling, item.target) }}%)</span>
                     </span>
                   </td>
                   <td class="col-num stage-sanding">
                     <span :class="['qty-value', item.qty_sanding > 0 ? 'has-value' : 'no-value']">
-                      {{ formatNumber(item.qty_sanding) }}
+                      {{ formatNumber(item.qty_sanding) }} <span class="stage-pct">({{ stagePercent(item.qty_sanding, item.target) }}%)</span>
                     </span>
                   </td>
                   <td class="col-num stage-rustik">
                     <span :class="['qty-value', item.qty_rustik > 0 ? 'has-value' : 'no-value']">
-                      {{ formatNumber(item.qty_rustik) }}
+                      {{ formatNumber(item.qty_rustik) }} <span class="stage-pct">({{ stagePercent(item.qty_rustik, item.target) }}%)</span>
                     </span>
                   </td>
                   <td class="col-num stage-finishing">
                     <span :class="['qty-value', item.qty_finishing > 0 ? 'has-value' : 'no-value']">
-                      {{ formatNumber(item.qty_finishing) }}
+                      {{ formatNumber(item.qty_finishing) }} <span class="stage-pct">({{ stagePercent(item.qty_finishing, item.target) }}%)</span>
                     </span>
                   </td>
                   <td class="col-num stage-qcfinal">
                     <span :class="['qty-value', item.qty_qc_final > 0 ? 'has-value' : 'no-value']">
-                      {{ formatNumber(item.qty_qc_final) }}
+                      {{ formatNumber(item.qty_qc_final) }} <span class="stage-pct">({{ stagePercent(item.qty_qc_final, item.target) }}%)</span>
                     </span>
                   </td>
                   <td class="col-num stage-packing">
                     <span :class="['qty-value', item.qty_packing > 0 ? 'has-value' : 'no-value']">
-                      {{ formatNumber(item.qty_packing) }}
+                      {{ formatNumber(item.qty_packing) }} <span class="stage-pct">({{ stagePercent(item.qty_packing, item.target) }}%)</span>
                     </span>
                   </td>
 
@@ -445,7 +445,7 @@
                   <span
                     :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value', (item.moulding_bom_checklist?.length || item.moulding_components?.length) ? 'has-tooltip' : '']"
                   >
-                    {{ item.qty_moulding > 0 ? formatNumber(item.qty_moulding) : '-' }}
+                    {{ formatNumber(item.qty_moulding) }} <span class="stage-pct">({{ stagePercent(item.qty_moulding, item.target) }}%)</span>
                     <div v-if="item.moulding_bom_checklist?.length" class="moulding-tooltip">
                       <div class="moulding-tooltip-title">Checklist Komponen (BOM)</div>
                       <div v-for="c in item.moulding_bom_checklist" :key="c.item_id" class="moulding-tooltip-row">
@@ -467,17 +467,17 @@
                 </td>
                 <td class="col-num sampel-stage-proto">
                   <span :class="['qty-value', item.qty_prototype > 0 ? 'has-value' : 'no-value']">
-                    {{ item.qty_prototype > 0 ? formatNumber(item.qty_prototype) : '-' }}
+                    {{ formatNumber(item.qty_prototype) }} <span class="stage-pct">({{ stagePercent(item.qty_prototype, item.target) }}%)</span>
                   </span>
                 </td>
                 <td class="col-num sampel-stage-sanding">
                   <span :class="['qty-value', item.qty_sanding > 0 ? 'has-value' : 'no-value']">
-                    {{ item.qty_sanding > 0 ? formatNumber(item.qty_sanding) : '-' }}
+                    {{ formatNumber(item.qty_sanding) }} <span class="stage-pct">({{ stagePercent(item.qty_sanding, item.target) }}%)</span>
                   </span>
                 </td>
                 <td class="col-num sampel-stage-packing">
                   <span :class="['qty-value', item.qty_packing > 0 ? 'has-value' : 'no-value']">
-                    {{ item.qty_packing > 0 ? formatNumber(item.qty_packing) : '-' }}
+                    {{ formatNumber(item.qty_packing) }} <span class="stage-pct">({{ stagePercent(item.qty_packing, item.target) }}%)</span>
                   </span>
                 </td>
                 <!-- Sisa -->
@@ -830,6 +830,14 @@ const formatNumber = (num) => {
     return number.toLocaleString('id-ID')
   }
   return number.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+}
+
+// Persentase qty stage terhadap target SO — live, dihitung ulang tiap render, berlaku
+// merata untuk data lama maupun baru (bukan kolom tersimpan di database).
+const stagePercent = (qty, target) => {
+  const t = parseFloat(target)
+  if (!t || t <= 0) return 0
+  return Math.round((parseFloat(qty || 0) / t) * 100)
 }
 
 const getStatusIcon = (status) => {
@@ -1405,6 +1413,12 @@ onMounted(() => {
 .no-value {
   color: #d1d5db;
   font-weight: 400;
+}
+
+.stage-pct {
+  font-size: 10.5px;
+  font-weight: 500;
+  opacity: 0.7;
 }
 
 .has-tooltip {
