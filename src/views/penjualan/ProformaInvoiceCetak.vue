@@ -613,9 +613,9 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
 .stamp-overlay {
   position: absolute;
   left: 50%;
-  bottom: 26px;
-  transform: translateX(-50%) rotate(-4deg);
-  width: 150px;
+  bottom: 24px;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 215px;
   height: auto;
   pointer-events: none;
 }
@@ -630,6 +630,16 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   font-size: 10.5pt;
   font-weight: 600;
   color: #000;
+}
+
+/* Nama "PT. SURYA BANGKIT CEMERLANG" disembunyikan khusus di halaman ini (cap & TTD
+   sudah menampilkan identitas perusahaan) — beri jarak pengganti untuk ruang cap & TTD. */
+:deep(.sig-company) {
+  display: none;
+}
+
+:deep(.sig-name) {
+  margin-top: 48px;
 }
 
 :deep(.sig-line) {

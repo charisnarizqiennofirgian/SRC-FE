@@ -105,6 +105,7 @@
               </td>
               <td class="td-total">
                 <span class="total-amount">{{ formatRupiah(pesanan.grand_total) }}</span>
+                <span v-if="pesanan.currency && pesanan.currency !== 'IDR'" class="currency-chip">{{ pesanan.currency }}</span>
               </td>
               <td class="td-status">
                 <span :class="['status-badge', `status-${pesanan.status.toLowerCase().replace(/\s+/g, '-')}`]">
@@ -147,6 +148,15 @@
                     <span>📦</span>
                   </router-link>
 
+                  <button
+                    v-if="pesanan.status === 'Diterima Sebagian' || pesanan.status === 'Selesai'"
+                    class="btn-action btn-history"
+                    title="Riwayat Penerimaan"
+                    @click="bukaRiwayat(pesanan)"
+                  >
+                    <span>📋</span>
+                  </button>
+
                   <router-link
                     :to="{ name: 'CetakPesananPembelian', params: { id: pesanan.id } }"
                     class="btn-action btn-print"
@@ -172,6 +182,76 @@
         />
       </div>
     </div>
+
+    <!-- MODAL RIWAYAT PENERIMAAN -->
+    <div v-if="modalRiwayat.show" class="modal-overlay" @click.self="modalRiwayat.show = false">
+      <div class="modal-riwayat">
+        <div class="modal-head">
+          <div>
+            <h3 class="modal-judul">📋 Riwayat Penerimaan</h3>
+            <p class="modal-sub">{{ modalRiwayat.po?.po_number }}</p>
+          </div>
+          <button class="modal-close" @click="modalRiwayat.show = false">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div v-if="modalRiwayat.loading" class="modal-loading">
+            <div class="mini-spinner"></div>
+            <span>Memuat...</span>
+          </div>
+
+          <div v-else-if="modalRiwayat.receipts.length === 0" class="modal-empty">
+            Belum ada penerimaan untuk PO ini.
+          </div>
+
+          <template v-else>
+            <div
+              v-for="gr in modalRiwayat.receipts"
+              :key="gr.id"
+              class="gr-card"
+              :class="{ 'gr-billed': gr.is_billed }"
+            >
+              <div class="gr-head">
+                <div>
+                  <span class="gr-number">{{ gr.receipt_number }}</span>
+                  <span class="gr-date">{{ formatTanggal(gr.receipt_date) }}</span>
+                  <span v-if="gr.supplier_document_number" class="gr-sj">SJ: {{ gr.supplier_document_number }}</span>
+                </div>
+                <div class="gr-actions">
+                  <span v-if="gr.is_billed" class="badge-billed">Sudah Difakturkan</span>
+                  <button
+                    v-else
+                    class="btn-batal-gr"
+                    :disabled="batalLoading === gr.id"
+                    @click="batalkanGR(gr)"
+                  >
+                    {{ batalLoading === gr.id ? '⏳...' : '↩ Batalkan' }}
+                  </button>
+                </div>
+              </div>
+              <table class="gr-table">
+                <thead>
+                  <tr>
+                    <th>Barang</th>
+                    <th class="text-right">Qty Diterima</th>
+                    <th class="text-right">Harga</th>
+                    <th class="text-right">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="d in gr.details" :key="d.id">
+                    <td>{{ d.item_code }} — {{ d.item_name }}</td>
+                    <td class="text-right">{{ d.quantity_received }}</td>
+                    <td class="text-right">{{ d.price ? formatRupiah(d.price) : '-' }}</td>
+                    <td class="text-right">{{ d.subtotal ? formatRupiah(d.subtotal) : '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
   </DashboardLayout>
 </template>
 
@@ -181,12 +261,44 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import PaginationComponent from '../../components/BasePagination.vue'
+import { useToast } from 'vue-toastification'
 
 const route  = useRoute()
 const router = useRouter()
+const toast  = useToast()
+
+const modalRiwayat = ref({ show: false, po: null, receipts: [], loading: false })
+const batalLoading = ref(null)
+
+const bukaRiwayat = async (pesanan) => {
+  modalRiwayat.value = { show: true, po: pesanan, receipts: [], loading: true }
+  try {
+    const res = await apiClient.get('/goods-receipts', { params: { purchase_order_id: pesanan.id } })
+    modalRiwayat.value.receipts = res.data.data
+  } catch {
+    toast.error('Gagal memuat riwayat penerimaan')
+  } finally {
+    modalRiwayat.value.loading = false
+  }
+}
+
+const batalkanGR = async (gr) => {
+  if (!confirm(`Batalkan penerimaan ${gr.receipt_number}? Stok akan dikembalikan.`)) return
+  batalLoading.value = gr.id
+  try {
+    const res = await apiClient.delete(`/goods-receipts/${gr.id}`)
+    toast.success(res.data.message)
+    await bukaRiwayat(modalRiwayat.value.po)
+    fetchDaftarPesanan()
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Gagal membatalkan penerimaan')
+  } finally {
+    batalLoading.value = null
+  }
+}
 
 const daftarPesanan = ref([])
-const searchQuery   = ref('')
+const searchQuery   = ref(route.query.search || '')
 const sourceFilter  = ref(route.query.source || '')
 
 const halamanSekarang = ref(Number(route.query.page) || 1)
@@ -197,6 +309,7 @@ const totalItem       = ref(0)
 const syncQuery = () => {
   router.replace({
     query: {
+      ...(searchQuery.value    ? { search: searchQuery.value }              : {}),
       ...(sourceFilter.value   ? { source: sourceFilter.value }             : {}),
       ...(halamanSekarang.value > 1 ? { page: halamanSekarang.value }       : {}),
       ...(perHalaman.value !== 15   ? { per_page: perHalaman.value }        : {}),
@@ -243,6 +356,7 @@ const handleFilterChange = () => {
 
 watch(searchQuery, () => {
   halamanSekarang.value = 1
+  syncQuery()
   fetchDaftarPesanan()
 })
 
@@ -670,6 +784,20 @@ const formatRupiah = (angka) => {
   font-family: 'Courier New', monospace;
 }
 
+.currency-chip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: initial;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  vertical-align: middle;
+}
+
 .status-badge {
   display: inline-flex;
   padding: 8px 16px;
@@ -893,4 +1021,84 @@ const formatRupiah = (angka) => {
     font-size: 14px;
   }
 }
+
+/* ===== RIWAYAT PENERIMAAN ===== */
+.btn-history {
+  background: linear-gradient(135deg, #0369a1, #0284c7);
+  color: white;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(3, 105, 161, 0.3);
+}
+.btn-history:hover {
+  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+  transform: translateY(-3px) scale(1.05);
+}
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; backdrop-filter: blur(3px);
+}
+.modal-riwayat {
+  background: white; border-radius: 16px; width: 90%; max-width: 700px;
+  max-height: 85vh; display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden;
+}
+.modal-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 20px 24px; background: linear-gradient(135deg, #0369a1, #0284c7);
+  color: white; flex-shrink: 0;
+}
+.modal-judul { font-size: 17px; font-weight: 800; margin: 0 0 3px; }
+.modal-sub   { font-size: 13px; opacity: 0.85; margin: 0; }
+.modal-close {
+  background: rgba(255,255,255,0.2); border: none; color: white;
+  width: 30px; height: 30px; border-radius: 50%; font-size: 16px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+.modal-loading { display: flex; align-items: center; gap: 10px; color: #6b7280; padding: 20px 0; }
+.mini-spinner {
+  width: 20px; height: 20px; border: 3px solid #e5e7eb;
+  border-top-color: #0369a1; border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.modal-empty { text-align: center; color: #9ca3af; padding: 30px 0; font-size: 14px; }
+
+.gr-card {
+  border: 1.5px solid #e5e7eb; border-radius: 10px;
+  margin-bottom: 14px; overflow: hidden;
+}
+.gr-card.gr-billed { border-color: #d1d5db; opacity: 0.75; }
+.gr-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 16px; background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb; gap: 12px; flex-wrap: wrap;
+}
+.gr-number { font-weight: 800; color: #0369a1; font-family: monospace; font-size: 14px; margin-right: 10px; }
+.gr-date   { font-size: 13px; color: #6b7280; margin-right: 8px; }
+.gr-sj     { font-size: 12px; color: #9ca3af; }
+.gr-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.badge-billed {
+  background: #f1f5f9; color: #64748b;
+  padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 700;
+}
+.btn-batal-gr {
+  background: #fee2e2; color: #dc2626; border: 1.5px solid #fca5a5;
+  padding: 6px 14px; border-radius: 7px; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-batal-gr:hover:not(:disabled) { background: #fecaca; }
+.btn-batal-gr:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.gr-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.gr-table th {
+  padding: 8px 14px; background: #1e293b; color: white;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; font-weight: 700;
+}
+.gr-table td { padding: 9px 14px; border-bottom: 1px solid #f1f5f9; }
+.gr-table tr:last-child td { border-bottom: none; }
+.text-right { text-align: right; }
 </style>

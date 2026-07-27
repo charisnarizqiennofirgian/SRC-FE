@@ -87,6 +87,7 @@
               </td>
               <td class="td-total">
                 <span class="total-amount">{{ formatRupiah(pesanan.grand_total) }}</span>
+                <span v-if="pesanan.currency && pesanan.currency !== 'IDR'" class="currency-chip">{{ pesanan.currency }}</span>
               </td>
               <td class="td-status">
                 <span :class="['status-badge', `status-${pesanan.status.toLowerCase().replace(/\s+/g, '-')}`]">
@@ -96,7 +97,7 @@
               <td class="td-action">
                 <div class="action-buttons">
                   <router-link
-                    :to="{ name: 'detail-po', params: { id: pesanan.id } }"
+                    :to="{ name: 'detail-po', params: { id: pesanan.id }, query: { returnTo: route.fullPath } }"
                     class="btn-action btn-detail"
                     title="Lihat Detail"
                   >
@@ -105,7 +106,7 @@
 
                   <router-link
                     v-if="pesanan.status === 'Open' || pesanan.status === 'Terbuka'"
-                    :to="{ name: 'EditPesananPembelian', params: { id: pesanan.id } }"
+                    :to="{ name: 'EditPesananPembelian', params: { id: pesanan.id }, query: { returnTo: route.fullPath } }"
                     class="btn-action btn-edit"
                     title="Edit PO"
                   >
@@ -114,7 +115,7 @@
 
                   <router-link
                     v-if="pesanan.status === 'Open' || pesanan.status === 'Terbuka' || pesanan.status === 'Diterima Sebagian'"
-                    :to="{ name: 'tambah-penerimaan-barang', params: { po_id: pesanan.id } }"
+                    :to="{ name: 'tambah-penerimaan-barang', params: { po_id: pesanan.id }, query: { returnTo: route.fullPath } }"
                     class="btn-action btn-receive"
                     title="Terima Barang"
                   >
@@ -151,18 +152,31 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import PaginationComponent from '../../components/BasePagination.vue'
 
-const daftarPesanan = ref([])
-const searchQuery = ref('')
+const route  = useRoute()
+const router = useRouter()
 
-const halamanSekarang = ref(1)
-const perHalaman = ref(15)
+const daftarPesanan = ref([])
+const searchQuery = ref(route.query.search || '')
+
+const halamanSekarang = ref(Number(route.query.page) || 1)
+const perHalaman = ref(Number(route.query.per_page) || 15)
 const totalHalaman = ref(1)
 const totalItem = ref(0)
+
+const syncQuery = () => {
+  router.replace({
+    query: {
+      ...(searchQuery.value        ? { search: searchQuery.value }    : {}),
+      ...(halamanSekarang.value > 1 ? { page: halamanSekarang.value } : {}),
+      ...(perHalaman.value !== 15   ? { per_page: perHalaman.value }  : {}),
+    },
+  })
+}
 
 const fetchDaftarPesanan = async () => {
   try {
@@ -183,11 +197,13 @@ const fetchDaftarPesanan = async () => {
 
 const gantiHalaman = (page) => {
   halamanSekarang.value = page
+  syncQuery()
   fetchDaftarPesanan()
 }
 
 watch(searchQuery, () => {
   halamanSekarang.value = 1
+  syncQuery()
   fetchDaftarPesanan()
 })
 
@@ -498,6 +514,19 @@ const formatRupiah = (angka) => {
   font-weight: 800;
   font-size: 15px;
   color: #059669;
+}
+
+.currency-chip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  vertical-align: middle;
 }
 
 /* ===== STATUS BADGE ===== */

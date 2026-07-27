@@ -74,6 +74,16 @@
               </div>
             </div>
 
+            <div class="info-item" v-if="isForeign">
+              <div class="info-label">
+                <span class="label-icon">💱</span>
+                <span>Mata Uang</span>
+              </div>
+              <div class="info-value">
+                <span class="status-badge status-foreign">{{ form.currency }} · Kurs {{ formatRupiah(form.exchange_rate) }}</span>
+              </div>
+            </div>
+
             <div class="info-item full-width">
               <div class="info-label">
                 <span class="label-icon">📄</span>
@@ -154,12 +164,13 @@
                         <span class="qty-badge">{{ item.quantity_ordered }}</span>
                       </td>
                       <td class="td-price">
-                        {{ formatRupiah(item.price) }}
+                        <span v-if="isForeign">{{ foreignSymbol }} {{ formatForeign(item.price) }}</span>
+                        <span v-else>{{ formatRupiah(item.price) }}</span>
                       </td>
                       <td class="td-subtotal">
                         <div class="subtotal-wrapper">
                           <span class="subtotal-value">
-                            {{ formatRupiah((item.quantity_ordered || 0) * (item.price || 0)) }}
+                            {{ formatRupiah(item.subtotal) }}
                           </span>
                         </div>
                       </td>
@@ -385,6 +396,8 @@ const form = reactive({
   notes: '',
   ppn_percentage: 12,
   status: '',
+  currency: 'IDR',
+  exchange_rate: 1,
   detail: [],
 })
 
@@ -392,10 +405,23 @@ const selectedSupplier = computed(() => {
   return daftarSupplier.value.find((supplier) => supplier.id === form.supplier_id)
 })
 
+const isUSD = computed(() => form.currency === 'USD')
+const isEUR = computed(() => form.currency === 'EUR')
+const isForeign = computed(() => isUSD.value || isEUR.value)
+const foreignSymbol = computed(() => (isEUR.value ? '€' : '$'))
+
+const formatForeign = (value) => {
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
+  }).format(value || 0)
+}
+
+// Subtotal per baris (item.subtotal) sudah dihitung backend dalam IDR (qty × price × exchange_rate)
+// — jangan hitung ulang dari qty × price mentah di sini, karena untuk PO USD/EUR itu masih
+// dalam mata uang asing, bukan IDR (lihat catatan Foreign Currency Purchase di CLAUDE.md).
 const subtotal = computed(() => {
-  return form.detail.reduce((acc, item) => {
-    return acc + (parseFloat(item.quantity_ordered) || 0) * (parseFloat(item.price) || 0)
-  }, 0)
+  return form.detail.reduce((acc, item) => acc + (parseFloat(item.subtotal) || 0), 0)
 })
 
 const ppnAmount = computed(() => {
@@ -461,6 +487,8 @@ const fetchPOData = async () => {
     form.notes = data.notes || ''
     form.ppn_percentage = parseFloat(data.ppn_percentage || 0)
     form.status = data.status || 'Draft'
+    form.currency = data.currency || 'IDR'
+    form.exchange_rate = parseFloat(data.exchange_rate || 1)
 
     // ✅ PERBAIKAN: Ambil specifications dari database
     form.detail = data.details.map((detail) => ({
@@ -468,6 +496,12 @@ const fetchPOData = async () => {
       item_id: detail.item_id,
       quantity_ordered: parseFloat(detail.quantity_ordered),
       price: parseFloat(detail.price),
+      // subtotal sudah dihitung backend dalam IDR (qty × price × exchange_rate) — fallback
+      // dihitung manual cuma untuk data lama yang kebetulan belum punya nilai subtotal tersimpan.
+      subtotal:
+        detail.subtotal != null
+          ? parseFloat(detail.subtotal)
+          : parseFloat(detail.quantity_ordered) * parseFloat(detail.price) * form.exchange_rate,
       specifications: detail.specifications || null, // ✅ TAMBAH INI
     }))
 
@@ -794,6 +828,14 @@ onMounted(async () => {
   background: linear-gradient(135deg, #dcfce7, #bbf7d0);
   color: #15803d;
   border: 2px solid #86efac;
+}
+
+.status-foreign {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border: 2px solid #fcd34d;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 /* ===== TABLE ===== */
