@@ -51,6 +51,15 @@
         </td>
         <td></td>
       </tr>
+      <tr v-if="otherCost > 0" class="total-row">
+        <td></td>
+        <td colspan="4" class="left bold">
+          {{ isForeign ? 'Other Cost (IDR)' : 'Biaya Lain-lain' }}
+          <template v-if="po?.other_cost_description"> — {{ po.other_cost_description }}</template>
+        </td>
+        <td class="right bold">{{ formatCurrency(otherCost) }}</td>
+        <td></td>
+      </tr>
       <tr class="total-row">
         <td></td>
         <td colspan="4" class="left bold">{{ isUSD ? 'Grand Total (USD)' : isEUR ? 'Grand Total (EUR)' : 'Total' }}</td>
@@ -88,7 +97,10 @@ const ppnRate = computed(() => {
 })
 
 const ppn = computed(() => subTotal.value * (ppnRate.value / 100))
-const grandTotal = computed(() => subTotal.value + ppn.value)
+// other_cost selalu IDR — cuma ditambahkan ke grand total IDR, tidak dikonversi ke foreign total
+// karena tidak ada exchange rate yang berlaku untuknya (lihat catatan di FormOperasional.vue).
+const otherCost = computed(() => parseFloat(props.po?.other_cost || 0))
+const grandTotal = computed(() => subTotal.value + ppn.value + otherCost.value)
 const ppnForeign = computed(() => subTotalForeign.value * (ppnRate.value / 100))
 const grandTotalForeign = computed(() => subTotalForeign.value + ppnForeign.value)
 

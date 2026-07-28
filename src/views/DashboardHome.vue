@@ -175,7 +175,7 @@
                     <span
                       :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value', (item.moulding_bom_checklist?.length || item.moulding_components?.length) ? 'has-tooltip' : '']"
                     >
-                      {{ formatNumber(item.qty_moulding) }}
+                      {{ formatNumber(item.qty_moulding) }} <span class="stage-pct">({{ stagePercent(item.qty_moulding, item.target) }}%)</span>
                       <div v-if="item.moulding_bom_checklist?.length" class="moulding-tooltip">
                         <div class="moulding-tooltip-title">Checklist Komponen (BOM)</div>
                         <div v-for="c in item.moulding_bom_checklist" :key="c.item_id" class="moulding-tooltip-row">
@@ -199,7 +199,7 @@
                     <span
                       :class="['qty-value', item.qty_mesin > 0 ? 'has-value' : 'no-value', (item.mesin_bom_checklist?.length || item.mesin_components?.length) ? 'has-tooltip' : '']"
                     >
-                      {{ formatNumber(item.qty_mesin) }}
+                      {{ formatNumber(item.qty_mesin) }} <span class="stage-pct">({{ stagePercent(item.qty_mesin, item.target) }}%)</span>
                       <div v-if="item.mesin_bom_checklist?.length" class="moulding-tooltip">
                         <div class="moulding-tooltip-title">Checklist Komponen (BOM)</div>
                         <div v-for="c in item.mesin_bom_checklist" :key="c.item_id" class="moulding-tooltip-row">

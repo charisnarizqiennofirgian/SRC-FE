@@ -317,6 +317,14 @@
                 <span class="sum-value">{{ formatCurrency(ppnAmount) }}</span>
               </div>
 
+              <div class="summary-row" v-if="form.other_cost > 0">
+                <span class="sum-label">
+                  Biaya Lain-lain
+                  <span v-if="form.other_cost_description" class="other-cost-desc">({{ form.other_cost_description }})</span>
+                </span>
+                <span class="sum-value">{{ formatCurrency(form.other_cost) }}</span>
+              </div>
+
               <div class="summary-divider"></div>
 
               <div class="summary-row summary-total">
@@ -398,6 +406,8 @@ const form = reactive({
   status: '',
   currency: 'IDR',
   exchange_rate: 1,
+  other_cost: 0,
+  other_cost_description: '',
   detail: [],
 })
 
@@ -429,7 +439,7 @@ const ppnAmount = computed(() => {
 })
 
 const grandTotal = computed(() => {
-  return subtotal.value + ppnAmount.value
+  return subtotal.value + ppnAmount.value + (parseFloat(form.other_cost) || 0)
 })
 
 const formatTanggal = (tanggal) => {
@@ -488,6 +498,8 @@ const fetchPOData = async () => {
     form.ppn_percentage = parseFloat(data.ppn_percentage || 0)
     form.status = data.status || 'Draft'
     form.currency = data.currency || 'IDR'
+    form.other_cost = parseFloat(data.other_cost || 0)
+    form.other_cost_description = data.other_cost_description || ''
     form.exchange_rate = parseFloat(data.exchange_rate || 1)
 
     // ✅ PERBAIKAN: Ambil specifications dari database
@@ -1186,6 +1198,13 @@ onMounted(async () => {
   justify-content: flex-end;
   align-items: flex-start;
   gap: 20px;
+}
+
+.other-cost-desc {
+  font-size: 11px;
+  font-weight: 500;
+  color: #9ca3af;
+  margin-left: 4px;
 }
 
 .ppn-info-box {

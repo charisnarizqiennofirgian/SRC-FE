@@ -283,10 +283,41 @@
                 <span class="label">PPN ({{ formatPPNDisplay(form.ppn_percentage) }}):</span>
                 <span class="value ppn">{{ formatCurrency(totalPPN) }}</span>
               </div>
+              <div class="summary-item-compact" v-if="form.other_cost > 0">
+                <span class="label">Biaya Lain-lain:</span>
+                <span class="value other-cost">{{ formatCurrency(form.other_cost) }}</span>
+              </div>
               <div class="summary-item-compact total">
                 <span class="label">Grand Total (IDR):</span>
                 <span class="value">{{ formatCurrency(grandTotal) }}</span>
               </div>
+            </div>
+          </div>
+
+          <div class="other-cost-section">
+            <div class="form-group">
+              <label class="form-label">Biaya Lain-lain (Opsional)</label>
+              <div class="input-kurs-wrapper">
+                <span class="kurs-prefix">Rp</span>
+                <input
+                  type="number"
+                  v-model.number="form.other_cost"
+                  class="form-control has-prefix"
+                  placeholder="Contoh: 150000"
+                  min="0"
+                  step="any"
+                />
+              </div>
+              <small class="form-hint-kurs">Selalu dalam IDR — ditambahkan setelah PPN ke Grand Total.</small>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Deskripsi Biaya Lain-lain</label>
+              <input
+                type="text"
+                v-model="form.other_cost_description"
+                class="form-control"
+                placeholder="Contoh: Ongkos kirim, biaya bongkar muat, dll."
+              />
             </div>
           </div>
         </div>
@@ -430,6 +461,8 @@ const form = reactive({
   ppn_percentage: 12,
   currency: 'IDR',
   exchange_rate: 16000,
+  other_cost: 0,
+  other_cost_description: '',
   details: [],
 })
 
@@ -452,7 +485,7 @@ const totalPPN = computed(() => {
 })
 
 const grandTotal = computed(() => {
-  return totalSubtotal.value + totalPPN.value
+  return totalSubtotal.value + totalPPN.value + (form.other_cost || 0)
 })
 
 const initializeChoices = async () => {
@@ -588,6 +621,8 @@ const fetchPOData = async () => {
     form.ppn_percentage = parseFloat(data.ppn_percentage ?? 12)
     form.currency      = data.currency || 'IDR'
     form.exchange_rate = parseFloat(data.exchange_rate ?? 16000)
+    form.other_cost     = parseFloat(data.other_cost ?? 0)
+    form.other_cost_description = data.other_cost_description || ''
 
     form.details = data.details.map((d) => ({
       item_id:       d.item_id,
@@ -1817,4 +1852,17 @@ textarea.form-control {
 
 /* ===== SUMMARY IDR SMALL ===== */
 .idr-small { font-size: 11px; color: rgba(255,255,255,0.8); margin-left: 4px; }
+
+/* ===== BIAYA LAIN-LAIN ===== */
+.other-cost-section {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 24px;
+  padding: 24px 36px 0 36px;
+  align-items: start;
+}
+.summary-item-compact .value.other-cost { color: #d97706; }
+@media (max-width: 768px) {
+  .other-cost-section { grid-template-columns: 1fr; padding: 20px 24px 0 24px; }
+}
 </style>

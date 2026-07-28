@@ -58,7 +58,7 @@
                 📭 {{ tableSearch ? 'Tidak ada hasil pencarian.' : 'Belum ada resep BOM.' }}
               </td>
             </tr>
-            <tr v-for="row in filteredRows" :key="row.item_id">
+            <tr v-for="row in paginatedRows" :key="row.item_id">
               <td><span class="code-badge">{{ row.item_code || '-' }}</span></td>
               <td>{{ row.item_name }}</td>
               <td class="text-center">{{ row.components_count }}</td>
@@ -71,6 +71,30 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div v-if="filteredRows.length > 0" class="pagination-bar">
+        <span class="pagination-info">
+          Menampilkan {{ paginationStart }}–{{ paginationEnd }} dari {{ filteredRows.length }} resep
+        </span>
+        <div class="pagination-controls">
+          <button
+            class="btn-page"
+            :disabled="currentPage === 1"
+            @click="currentPage--"
+          >‹ Sebelumnya</button>
+          <button
+            v-for="p in pageNumbers"
+            :key="p"
+            :class="['btn-page', 'btn-page-num', { active: p === currentPage }]"
+            @click="currentPage = p"
+          >{{ p }}</button>
+          <button
+            class="btn-page"
+            :disabled="currentPage === totalPages"
+            @click="currentPage++"
+          >Berikutnya ›</button>
+        </div>
       </div>
     </div>
 
@@ -197,7 +221,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import apiClient from '../../api/axios'
 import { useNotification } from '../../composables/useNotification.js'
@@ -219,6 +243,34 @@ const filteredRows = computed(() => {
     (r) => r.item_name?.toLowerCase().includes(s) || r.item_code?.toLowerCase().includes(s)
   )
 })
+
+// === PAGINATION (client-side — endpoint /production/bom tidak paginate) ===
+const currentPage = ref(1)
+const perPage = 20
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / perPage)))
+
+const paginatedRows = computed(() => {
+  const start = (currentPage.value - 1) * perPage
+  return filteredRows.value.slice(start, start + perPage)
+})
+
+const paginationStart = computed(() => filteredRows.value.length === 0 ? 0 : (currentPage.value - 1) * perPage + 1)
+const paginationEnd = computed(() => Math.min(currentPage.value * perPage, filteredRows.value.length))
+
+const pageNumbers = computed(() => {
+  const total = totalPages.value
+  const current = currentPage.value
+  const range = 2
+  const pages = []
+  for (let p = Math.max(1, current - range); p <= Math.min(total, current + range); p++) {
+    pages.push(p)
+  }
+  return pages
+})
+
+watch(tableSearch, () => { currentPage.value = 1 })
+watch(totalPages, (t) => { if (currentPage.value > t) currentPage.value = t })
 
 const fetchList = async () => {
   loadingList.value = true
@@ -504,6 +556,14 @@ onMounted(fetchList)
 .data-table tbody tr:hover { background: #f9fafb; }
 .text-center { text-align: center; }
 .empty-cell { text-align: center; padding: 2.5rem; color: #9ca3af; }
+
+.pagination-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid #e5e7eb; }
+.pagination-info { font-size: 0.82rem; color: #6b7280; }
+.pagination-controls { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.btn-page { padding: 0.45rem 0.8rem; border-radius: 8px; border: 1px solid #e5e7eb; background: white; color: #374151; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.btn-page:hover:not(:disabled) { background: #f3f4f6; border-color: #d1d5db; }
+.btn-page:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-page-num.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-color: transparent; }
 
 .code-badge { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 0.3rem 0.7rem; border-radius: 6px; font-weight: 700; font-size: 0.78rem; }
 
