@@ -28,13 +28,13 @@
           </div>
 
           <div class="form-section">
-            <div class="section-hd"><div class="s-badge blue"><span>🔄</span></div><h3 class="s-title">Item RST — Basah → Kering *</h3><p class="s-sub">Tiap baris: RST basah (sumber) → RST kering (hasil)</p></div>
+            <div class="section-hd"><div class="s-badge blue"><span>🔄</span></div><h3 class="s-title">Item RST Basah *</h3><p class="s-sub">Item & ukuran kering sama persis dengan basahnya — cuma pindah ke Gudang RSTK</p></div>
 
-            <div v-if="rstItems.length === 0" class="empty-hint">⏳ Memuat data RST...</div>
+            <div v-if="rstInventories.length === 0" class="empty-hint">⏳ Memuat stok RST basah...</div>
 
             <div v-for="(r,i) in form.items" :key="r.lid" class="row-card">
               <div class="row-hd"><span class="rn">Item #{{ i+1 }}</span><button v-if="form.items.length>1" type="button" class="btn-rm" @click="form.items.splice(i,1)">✕</button></div>
-              <div class="g2" style="margin-bottom:.75rem;">
+              <div class="g2">
                 <div class="fg"><label class="fl">RST Basah (sumber) *</label>
                   <vue-select v-model="r.item_id" :options="rstBasahOpts" :reduce="o=>o.id" label="label" placeholder="Pilih RST basah..." class="vs"
                     @option:selected="(o)=>onRstBasahSelected(r,o)" />
@@ -43,16 +43,12 @@
                 <div class="fg"><label class="fl">Qty (pcs) *</label>
                   <input v-model.number="r.qty" type="number" min="1" :max="r.max_qty||undefined" class="fi" placeholder="0" />
                   <p v-if="r.qty>r.max_qty&&r.max_qty>0" class="qty-warn">⚠️ Melebihi stok</p>
+                  <p class="hint-txt">📦 Hasil kering (item & ukuran sama) masuk Gudang RSTK</p>
                 </div>
-              </div>
-              <div class="fg"><label class="fl">RST Kering (hasil) *</label>
-                <vue-select v-model="r.target_item_id" :options="rstKeringOpts" :reduce="o=>o.id" label="label" placeholder="Pilih RST kering..." class="vs" />
-                <p v-if="r.target_item_id" class="hint-txt">✓ Terisi otomatis sesuai RST basah yang dipilih — cek/ganti kalau perlu. Hasil masuk Gudang RSTK</p>
-                <p v-else class="hint-txt">📦 Hasil masuk Gudang RSTK</p>
               </div>
             </div>
 
-            <button type="button" class="btn-add a-blue" @click="form.items.push({lid:Date.now(),item_id:null,warehouse_id:null,target_item_id:null,qty:null,max_qty:0})">➕ Tambah Item</button>
+            <button type="button" class="btn-add a-blue" @click="form.items.push({lid:Date.now(),item_id:null,warehouse_id:null,qty:null,max_qty:0})">➕ Tambah Item</button>
           </div>
 
           <div class="actions">
@@ -76,7 +72,7 @@ import VueSelect from 'vue-select'; import 'vue-select/dist/vue-select.css'
 const router = useRouter()
 const { showSuccess, showError } = useNotification()
 const isSubmitting = ref(false)
-const productionOrders = ref([]); const rstItems = ref([]); const warehouses = ref([])
+const productionOrders = ref([]); const warehouses = ref([])
 const rstInventories = ref([]) // stok RST basah dengan warehouse info
 const poInfo = reactive({ buyer_name: null, so_number: null })
 
@@ -87,7 +83,7 @@ const getWarehouseIdByName = (name) => {
 
 const form = reactive({
   date: new Date().toISOString().slice(0,10), estimated_finish_date: '', notes: '', ref_po_id: null,
-  items: [{ lid: 1, item_id: null, warehouse_id: null, target_item_id: null, qty: null, max_qty: 0 }],
+  items: [{ lid: 1, item_id: null, warehouse_id: null, qty: null, max_qty: 0 }],
 })
 
 const posOpts = computed(() => productionOrders.value.map(p => ({ id: p.id, label: p.po_number })))
@@ -100,33 +96,22 @@ const rstBasahOpts = computed(() =>
   }))
 )
 
-// RST kering — semua item RST untuk dipilih sebagai target
-const rstKeringOpts = computed(() =>
-  rstItems.value.map(i => ({ id: i.id, label: `${i.code} - ${i.name}` }))
-)
-
-// Auto-fill "RST Kering (hasil)" saat RST basah dipilih — cari item kering dengan kode sama,
-// fallback ke nama sama kalau kode tidak match. Pola sama seperti selectProduct() di
-// ProduksiCandy.vue (KD reguler). Kalau tidak ketemu, biarkan kosong untuk diisi manual.
+// KD cuma memindahkan RST dari Gudang Sanwil (basah) ke Gudang KD (kering) — item & ukurannya
+// SAMA PERSIS, gak ada transformasi ke item lain (pola sama seperti Mesin S4S->MESIN), jadi
+// gak perlu pilih "barang kering" terpisah.
 const onRstBasahSelected = (row, opt) => {
   row.warehouse_id = opt.warehouse_id
   row.max_qty       = opt.qty_available
   row.item_code     = opt.code
-
-  const matched = rstItems.value.find(i => i.code === opt.code)
-    || rstItems.value.find(i => i.name?.toLowerCase() === (opt.name || '').toLowerCase())
-  row.target_item_id = matched ? matched.id : null
 }
 
 const fetchBase = async () => {
   try {
-    const [poRes, rstRes, whRes] = await Promise.all([
+    const [poRes, whRes] = await Promise.all([
       apiClient.get('/produksi/prototype/available-pos'),
-      apiClient.get('/materials', { params: { category_name: 'Kayu RST', per_page: 500 } }),
       apiClient.get('/warehouses'),
     ])
     productionOrders.value = poRes.data.data || []
-    const d = rstRes.data.data; rstItems.value = Array.isArray(d) ? d : (d?.data||[])
     warehouses.value = whRes.data.data || whRes.data || []
 
     // RST basah (input KD) = output dari proses Sawmill "Jeblosan → RST Basah", disimpan di
@@ -159,7 +144,7 @@ const resetPo = () => { poInfo.buyer_name = null; poInfo.so_number = null }
 
 const handleSubmit = async () => {
   if (!form.ref_po_id) { showError('Validasi', 'Production Order wajib dipilih'); return }
-  const valid = form.items.filter(i => i.item_id && i.warehouse_id && i.target_item_id && i.qty > 0)
+  const valid = form.items.filter(i => i.item_id && i.warehouse_id && i.qty > 0)
   if (!valid.length) { showError('Validasi', 'Minimal satu item wajib diisi lengkap'); return }
   for (let i=0; i<valid.length; i++) {
     if (valid[i].qty > valid[i].max_qty && valid[i].max_qty > 0) { showError('Validasi', `Item #${i+1}: qty melebihi stok`); return }
@@ -169,10 +154,10 @@ const handleSubmit = async () => {
     await apiClient.post('/candy-productions', {
       date: form.date, estimated_finish_date: form.estimated_finish_date || null,
       notes: form.notes || null, ref_po_id: Number(form.ref_po_id),
-      items: valid.map(i => ({ warehouse_id: Number(i.warehouse_id), item_id: Number(i.item_id), target_item_id: Number(i.target_item_id), qty: Number(i.qty) })),
+      items: valid.map(i => ({ warehouse_id: Number(i.warehouse_id), item_id: Number(i.item_id), qty: Number(i.qty) })),
     })
     showSuccess('Sukses', 'KD Sampel berhasil dicatat')
-    form.items = [{ lid: Date.now(), item_id: null, warehouse_id: null, target_item_id: null, qty: null, max_qty: 0 }]
+    form.items = [{ lid: Date.now(), item_id: null, warehouse_id: null, qty: null, max_qty: 0 }]
     form.ref_po_id = null; resetPo(); await fetchBase()
   } catch (e) { showError('Gagal', e.response?.data?.message || 'Gagal menyimpan') }
   finally { isSubmitting.value = false }

@@ -344,7 +344,7 @@
         </router-link>
         <router-link
           v-if="form.status === 'Open' || form.status === 'Terbuka'"
-          :to="{ name: 'EditPesananPembelian', params: { id: poId } }"
+          :to="{ name: editRouteName, params: { id: poId } }"
           class="btn-action btn-edit"
         >
           <span class="action-icon">✏️</span>
@@ -408,7 +408,20 @@ const form = reactive({
   exchange_rate: 1,
   other_cost: 0,
   other_cost_description: '',
+  type: '',
   detail: [],
+})
+
+// Setiap tipe PO punya form edit sendiri (FormOperasional/FormKarton/FormKayu) yang lebih
+// lengkap (currency, biaya lain-lain, dll) dibanding form generik lama (EditPesananPembelian).
+// Route Edit dari halaman Detail harus ikut tipe PO-nya, bukan selalu ke form generik.
+const editRouteName = computed(() => {
+  switch (form.type) {
+    case 'operasional': return 'EditPembelianOperasional'
+    case 'karton': return 'EditPembelianKarton'
+    case 'kayu': return 'EditPembelianKayu'
+    default: return 'EditPesananPembelian'
+  }
 })
 
 const selectedSupplier = computed(() => {
@@ -500,6 +513,7 @@ const fetchPOData = async () => {
     form.currency = data.currency || 'IDR'
     form.other_cost = parseFloat(data.other_cost || 0)
     form.other_cost_description = data.other_cost_description || ''
+    form.type = data.type || ''
     form.exchange_rate = parseFloat(data.exchange_rate || 1)
 
     // ✅ PERBAIKAN: Ambil specifications dari database

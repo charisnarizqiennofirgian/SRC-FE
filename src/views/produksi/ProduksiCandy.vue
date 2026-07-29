@@ -250,86 +250,30 @@
                 </p>
               </div>
 
-              <div v-if="getSelectedInventory(index)" class="form-grid-2col">
-                <div class="form-group-modern">
-                  <label class="form-label-modern">
-                    Qty yang Dioven (pcs) <span class="required-star">*</span>
-                  </label>
-                  <div class="input-wrapper-icon">
-                    <span class="input-icon">🔢</span>
-                    <input
-                      v-model.number="item.qty"
-                      type="number"
-                      min="1"
-                      :max="getSelectedInventory(index).qty_pcs"
-                      step="1"
-                      class="form-input-modern"
-                      placeholder="Jumlah pcs"
-                      required
-                    />
-                    <span class="input-suffix">pcs</span>
-                  </div>
-                  <p class="help-text">
-                    Stok tersedia: <strong>{{ getSelectedInventory(index).qty_pcs }}</strong> pcs
-                  </p>
+              <div v-if="getSelectedInventory(index)" class="form-group-modern">
+                <label class="form-label-modern">
+                  Qty yang Dioven (pcs) <span class="required-star">*</span>
+                </label>
+                <div class="input-wrapper-icon">
+                  <span class="input-icon">🔢</span>
+                  <input
+                    v-model.number="item.qty"
+                    type="number"
+                    min="1"
+                    :max="getSelectedInventory(index).qty_pcs"
+                    step="1"
+                    class="form-input-modern"
+                    placeholder="Jumlah pcs"
+                    required
+                  />
+                  <span class="input-suffix">pcs</span>
                 </div>
-
-                <div class="form-group-modern">
-                  <label class="form-label-modern">
-                    Jadikan Barang Kering <span class="required-star">*</span>
-                  </label>
-                  <div class="search-wrapper-product">
-                    <span class="search-icon-product">🎯</span>
-                    <input
-                      v-model="item.searchTargetQuery"
-                      @input="onTargetSearch(index)"
-                      @focus="onTargetSearch(index)"
-                      type="text"
-                      class="search-input-product"
-                      placeholder="Cari item RST Kering..."
-                    />
-                    <div class="search-actions-product">
-                      <button
-                        v-if="item.target_item_id"
-                        @click="clearTargetSelection(index)"
-                        class="btn-clear-product"
-                        type="button"
-                        title="Hapus pilihan"
-                      >
-                        ✕
-                      </button>
-                      <button
-                        @click="toggleTargetDropdown(index)"
-                        class="btn-toggle-dropdown"
-                        type="button"
-                        :class="{ active: item.showTargetDropdown }"
-                      >
-                        <span class="chevron-icon">▼</span>
-                      </button>
-                    </div>
-
-                    <!-- DROPDOWN TARGET RESULTS -->
-                    <div
-                      v-if="item.showTargetDropdown && item.targetSearchResults.length > 0"
-                      class="product-dropdown"
-                    >
-                      <div
-                        v-for="dryItem in item.targetSearchResults"
-                        :key="dryItem.id"
-                        class="product-option"
-                        @click="selectTargetItem(index, dryItem)"
-                      >
-                        <div class="product-option-main">
-                          <span class="product-code">[{{ dryItem.code }}]</span>
-                          <span class="product-name">{{ dryItem.name }}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <p v-if="item.target_item_id" class="help-text">
-                    Item tujuan akan menerima stok kering di Gudang KD.
-                  </p>
-                </div>
+                <p class="help-text">
+                  Stok tersedia: <strong>{{ getSelectedInventory(index).qty_pcs }}</strong> pcs
+                </p>
+                <p class="help-text">
+                  📦 Hasil kering (item & ukuran sama) masuk ke Gudang KD.
+                </p>
               </div>
             </div>
           </div>
@@ -373,21 +317,16 @@ const form = reactive({
     {
       item_id: '',
       warehouse_id: '',
-      target_item_id: '',
       qty: null,
-      searchQuery: '', 
-      showDropdown: false, 
+      searchQuery: '',
+      showDropdown: false,
       searchResults: [],
-      searchTargetQuery: '', // ✅ NEW
-      showTargetDropdown: false, // ✅ NEW
-      targetSearchResults: [], // ✅ NEW
     },
   ],
 })
 
 const warehouses = ref([])
 const sanwilInventories = ref([])
-const dryItems = ref([])
 const productionOrders = ref([])
 const isSubmitting = ref(false)
 const isSearching = ref(false)
@@ -475,28 +414,6 @@ const selectProduct = (index, inv) => {
   item.searchQuery = `[${inv.item?.code}] ${inv.item?.name}`
   item.showDropdown = false
   item.searchResults = []
-
-  // ✅ AUTO-FILL: cari item kering yang cocok berdasarkan code yang sama
-  const sourceCode = inv.item?.code || ''
-  const matchedDryItem = dryItems.value.find(
-    (di) => di.code === sourceCode
-  )
-
-  if (matchedDryItem) {
-    item.target_item_id = matchedDryItem.id
-    item.searchTargetQuery = `[${matchedDryItem.code}] ${matchedDryItem.name}`
-  } else {
-    // Tidak ada match persis — coba cocokkan berdasarkan nama yang mirip
-    const sourceName = inv.item?.name?.toLowerCase() || ''
-    const loosematch = dryItems.value.find(
-      (di) => di.name?.toLowerCase() === sourceName
-    )
-    if (loosematch) {
-      item.target_item_id = loosematch.id
-      item.searchTargetQuery = `[${loosematch.code}] ${loosematch.name}`
-    }
-    // Jika benar-benar tidak ditemukan, biarkan kosong untuk diisi manual
-  }
 }
 
 // ✅ NEW: Clear product selection
@@ -538,65 +455,15 @@ const onPoChange = async () => {
   showSuccess('Berhasil', 'PO dipilih. Silakan pilih produk yang sesuai dengan PO ini.')
 }
 
-// ✅ NEW: Search target (Barang Kering)
-const onTargetSearch = (index) => {
-  const item = form.items[index]
-  item.showTargetDropdown = true
-
-  const query = item.searchTargetQuery.toLowerCase()
-
-  if (!query) {
-    item.targetSearchResults = dryItems.value.slice(0, 15)
-    return
-  }
-
-  item.targetSearchResults = dryItems.value.filter((di) => {
-    const name = di.name?.toLowerCase() || ''
-    const code = di.code?.toLowerCase() || ''
-    return name.includes(query) || code.includes(query)
-  })
-}
-
-// ✅ NEW: Toggle target dropdown manual
-const toggleTargetDropdown = (index) => {
-  const item = form.items[index]
-  if (item.showTargetDropdown) {
-    item.showTargetDropdown = false
-  } else {
-    onTargetSearch(index)
-  }
-}
-
-// ✅ NEW: Select target item
-const selectTargetItem = (index, dryItem) => {
-  const item = form.items[index]
-  item.target_item_id = dryItem.id
-  item.searchTargetQuery = `[${dryItem.code}] ${dryItem.name}`
-  item.showTargetDropdown = false
-}
-
-// ✅ NEW: Clear target selection
-const clearTargetSelection = (index) => {
-  const item = form.items[index]
-  item.target_item_id = ''
-  item.searchTargetQuery = ''
-  item.targetSearchResults = []
-  item.showTargetDropdown = false
-}
-
 const addItem = () => {
   const sanwilId = getWarehouseIdByName('Gudang Sanwil')
   form.items.push({
     item_id: '',
     warehouse_id: sanwilId || '',
-    target_item_id: '',
     qty: null,
     searchQuery: '',
     showDropdown: false,
     searchResults: [],
-    searchTargetQuery: '',
-    showTargetDropdown: false,
-    targetSearchResults: [],
   })
   showSuccess('Berhasil', 'Item baru ditambahkan')
 }
@@ -668,13 +535,6 @@ const fetchData = async () => {
     if (form.items.length > 0 && !form.items[0].warehouse_id) {
       form.items[0].warehouse_id = sanwilId
     }
-
-    const dryRes = await apiClient.get('/materials', {
-      params: { category_name: 'Kayu RST', per_page: 200 },
-    })
-    dryItems.value = dryRes.data.data?.data || dryRes.data.data || []
-
-    console.log('✅ DRY ITEMS:', dryItems.value.length, 'items')
   } catch (error) {
     console.error('❌ ERROR fetchData:', error)
     showError('Gagal', 'Gagal mengambil data gudang / inventory')
@@ -694,10 +554,6 @@ const handleSubmit = async () => {
 
       if (!item.item_id) {
         showError('Validasi', `Item #${i + 1}: Stok sumber wajib dipilih`)
-        return
-      }
-      if (!item.target_item_id) {
-        showError('Validasi', `Item #${i + 1}: Barang kering tujuan wajib dipilih`)
         return
       }
       if (!item.qty || item.qty <= 0) {
@@ -723,7 +579,6 @@ const handleSubmit = async () => {
       items: form.items.map((item) => ({
         warehouse_id: item.warehouse_id,
         item_id: item.item_id,
-        target_item_id: item.target_item_id,
         qty: item.qty,
       })),
     }
@@ -753,7 +608,6 @@ const handleClickOutside = (event) => {
   form.items.forEach((item) => {
     if (!event.target.closest(`.search-wrapper-product`)) {
       item.showDropdown = false
-      item.showTargetDropdown = false
     }
   })
 }

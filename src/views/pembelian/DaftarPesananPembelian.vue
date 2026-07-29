@@ -106,7 +106,7 @@
 
                   <router-link
                     v-if="pesanan.status === 'Open' || pesanan.status === 'Terbuka'"
-                    :to="{ name: 'EditPesananPembelian', params: { id: pesanan.id }, query: { returnTo: route.fullPath } }"
+                    :to="{ name: editRouteNameFor(pesanan.type), params: { id: pesanan.id }, query: { returnTo: route.fullPath } }"
                     class="btn-action btn-edit"
                     title="Edit PO"
                   >
@@ -192,6 +192,17 @@ const fetchDaftarPesanan = async () => {
     totalItem.value = data.total
   } catch (error) {
     console.error('Gagal mengambil daftar pesanan pembelian:', error)
+  }
+}
+
+// Setiap tipe PO punya form edit sendiri (FormOperasional/FormKarton/FormKayu) yang lebih
+// lengkap (currency, biaya lain-lain, dll) dibanding form generik lama (EditPesananPembelian).
+const editRouteNameFor = (type) => {
+  switch (type) {
+    case 'operasional': return 'EditPembelianOperasional'
+    case 'karton': return 'EditPembelianKarton'
+    case 'kayu': return 'EditPembelianKayu'
+    default: return 'EditPesananPembelian'
   }
 }
 
