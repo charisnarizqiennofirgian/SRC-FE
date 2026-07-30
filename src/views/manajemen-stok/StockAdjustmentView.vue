@@ -152,6 +152,7 @@
           <table class="data-table">
             <thead>
               <tr>
+                <th v-if="isJeblosan" class="th-kode">Kode</th>
                 <th class="th-nama">Nama Barang</th>
                 <th v-if="isKomponen" class="th-nama">Nama Produk</th>
                 <th class="th-kategori">Kategori</th>
@@ -170,12 +171,15 @@
             </thead>
             <tbody>
               <tr v-if="paginatedStok.length === 0">
-                <td :colspan="isKomponen ? 12 : 6" class="no-data">
+                <td :colspan="noDataColspan" class="no-data">
                   <span class="no-data-icon">🔍</span>
                   <p>Tidak ada barang yang sesuai dengan pencarian "{{ searchQuery }}"</p>
                 </td>
               </tr>
               <tr v-for="item in paginatedStok" :key="item.id" class="data-row">
+                <td v-if="isJeblosan" class="td-kode">
+                  <span class="item-code">{{ item.code || '—' }}</span>
+                </td>
                 <td class="td-nama">
                   <div class="item-wrapper">
                     <span class="item-icon">📦</span>
@@ -952,6 +956,14 @@ const isKomponen = computed(() => {
   const cat = daftarKategori.value.find((k) => k.id === selectedCategory.value)
   return cat?.name?.toLowerCase().includes('komponen') ?? false
 })
+
+const isJeblosan = computed(() => {
+  if (!selectedCategory.value) return false
+  const cat = daftarKategori.value.find((k) => k.id === selectedCategory.value)
+  return cat?.name?.toLowerCase().includes('jeblosan') ?? false
+})
+
+const noDataColspan = computed(() => (isKomponen.value ? 12 : (isJeblosan.value ? 7 : 6)))
 
 const searchQuery = ref('')
 const currentPage = ref(1)
@@ -2296,6 +2308,21 @@ const downloadTemplateBom = async () => {
   letter-spacing: 1px;
 }
 
+.th-kode {
+  width: 12%;
+}
+.td-kode {
+  vertical-align: middle;
+}
+.item-code {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #374151;
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 2px 8px;
+}
 .th-nama {
   width: 30%;
 }
