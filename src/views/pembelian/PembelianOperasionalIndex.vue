@@ -127,10 +127,10 @@
                   </router-link>
 
                   <router-link
-                    v-if="pesanan.status === 'Open' || pesanan.status === 'Terbuka'"
+                    v-if="pesanan.status === 'Open' || pesanan.status === 'Terbuka' || pesanan.status === 'Diterima Sebagian'"
                     :to="{ name: 'EditPembelianOperasional', params: { id: pesanan.id } }"
                     class="btn-action btn-edit"
-                    title="Edit PO"
+                    :title="pesanan.status === 'Diterima Sebagian' ? 'Edit Harga PO' : 'Edit PO'"
                   >
                     <span>✏️</span>
                   </router-link>

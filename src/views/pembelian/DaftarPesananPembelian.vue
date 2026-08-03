@@ -105,10 +105,10 @@
                   </router-link>
 
                   <router-link
-                    v-if="pesanan.status === 'Open' || pesanan.status === 'Terbuka'"
+                    v-if="pesanan.status === 'Open' || pesanan.status === 'Terbuka' || (pesanan.status === 'Diterima Sebagian' && (pesanan.type === 'operasional' || pesanan.type === 'kayu'))"
                     :to="{ name: editRouteNameFor(pesanan.type), params: { id: pesanan.id }, query: { returnTo: route.fullPath } }"
                     class="btn-action btn-edit"
-                    title="Edit PO"
+                    :title="pesanan.status === 'Diterima Sebagian' ? (pesanan.type === 'kayu' ? 'Edit Jumlah PO' : 'Edit Harga PO') : 'Edit PO'"
                   >
                     <span>✏️</span>
                   </router-link>

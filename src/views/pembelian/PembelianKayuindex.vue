@@ -105,10 +105,10 @@
                   </router-link>
 
                   <router-link
-                    v-if="pesanan.status === 'Open' || pesanan.status === 'Terbuka'"
+                    v-if="pesanan.status === 'Open' || pesanan.status === 'Terbuka' || pesanan.status === 'Diterima Sebagian'"
                     :to="{ name: 'EditPembelianKayu', params: { id: pesanan.id } }"
                     class="btn-action btn-edit"
-                    title="Edit PO"
+                    :title="pesanan.status === 'Diterima Sebagian' ? 'Edit Jumlah PO' : 'Edit PO'"
                   >
                     <span>✏️</span>
                   </router-link>

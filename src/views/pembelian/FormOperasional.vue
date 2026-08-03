@@ -28,6 +28,10 @@
     </div>
 
     <form v-else @submit.prevent="saveOrder">
+      <div v-if="isPriceOnlyMode" class="price-only-banner">
+        ⚠️ PO ini sudah <strong>Diterima Sebagian</strong> — untuk sementara cuma <strong>Harga Satuan</strong> yang bisa diubah. Barang, jumlah, dan tanggal terkunci.
+      </div>
+
       <div class="content-card">
         <div class="card-header-section">
           <div class="section-icon-wrapper">
@@ -49,32 +53,33 @@
                 label="name"
                 placeholder="Cari atau pilih supplier..."
                 class="vue-select-supplier"
+                :disabled="isPriceOnlyMode"
               />
             </div>
 
             <div class="form-group">
               <label class="form-label">Tanggal Pesan</label>
-              <input type="date" v-model="form.order_date" class="form-control" required />
+              <input type="date" v-model="form.order_date" class="form-control" required :disabled="isPriceOnlyMode" />
             </div>
 
             <div class="form-group">
               <label class="form-label">Tanggal Kirim</label>
-              <input type="date" v-model="form.delivery_date" class="form-control" required />
+              <input type="date" v-model="form.delivery_date" class="form-control" required :disabled="isPriceOnlyMode" />
             </div>
 
             <div class="form-group">
               <label class="form-label">Mata Uang</label>
               <div class="currency-toggle">
                 <label class="currency-option" :class="{ active: form.currency === 'IDR' }">
-                  <input type="radio" v-model="form.currency" value="IDR" />
+                  <input type="radio" v-model="form.currency" value="IDR" :disabled="isPriceOnlyMode" />
                   <span>IDR (Rupiah)</span>
                 </label>
                 <label class="currency-option" :class="{ active: form.currency === 'USD' }">
-                  <input type="radio" v-model="form.currency" value="USD" />
+                  <input type="radio" v-model="form.currency" value="USD" :disabled="isPriceOnlyMode" />
                   <span>USD (Dollar)</span>
                 </label>
                 <label class="currency-option" :class="{ active: form.currency === 'EUR' }">
-                  <input type="radio" v-model="form.currency" value="EUR" />
+                  <input type="radio" v-model="form.currency" value="EUR" :disabled="isPriceOnlyMode" />
                   <span>EUR (Euro)</span>
                 </label>
               </div>
@@ -92,6 +97,7 @@
                   min="1"
                   step="any"
                   required
+                  :disabled="isPriceOnlyMode"
                 />
               </div>
               <small class="form-hint-kurs">1 USD = Rp {{ formatRibuan(form.exchange_rate) }}</small>
@@ -109,6 +115,7 @@
                   min="1"
                   step="any"
                   required
+                  :disabled="isPriceOnlyMode"
                 />
               </div>
               <small class="form-hint-kurs">1 EUR = Rp {{ formatRibuan(form.exchange_rate) }}</small>
@@ -121,6 +128,7 @@
                 class="form-control"
                 rows="3"
                 placeholder="Catatan untuk supplier..."
+                :disabled="isPriceOnlyMode"
               ></textarea>
             </div>
           </div>
@@ -165,10 +173,12 @@
                         v-model="item.item_id"
                         class="choices-select"
                         required
+                        :disabled="isPriceOnlyMode"
                       >
                         <option value="">Pilih Barang</option>
                       </select>
                       <button
+                        v-if="!isPriceOnlyMode"
                         type="button"
                         class="btn-quick-add"
                         @click="openModalTambahBarang"
@@ -187,6 +197,7 @@
                       required
                       min="0.01"
                       step="any"
+                      :disabled="isPriceOnlyMode"
                     />
                   </td>
                   <td class="td-price">
@@ -218,6 +229,7 @@
                       type="date"
                       v-model="item.delivery_date"
                       class="form-control"
+                      :disabled="isPriceOnlyMode"
                     />
                   </td>
                   <td class="td-action">
@@ -225,7 +237,7 @@
                       @click="hapusBarang(index)"
                       type="button"
                       class="btn-delete"
-                      :disabled="form.details.length === 1"
+                      :disabled="isPriceOnlyMode || form.details.length === 1"
                     >
                       Hapus
                     </button>
@@ -234,7 +246,7 @@
               </tbody>
             </table>
           </div>
-          <div class="table-actions">
+          <div v-if="!isPriceOnlyMode" class="table-actions">
             <button @click="tambahBarang" type="button" class="btn-add-row">
               ➕ Tambah Barang
             </button>
@@ -247,19 +259,19 @@
               <label class="ppn-label-compact">PPN:</label>
               <div class="ppn-options-compact">
                 <label class="ppn-radio">
-                  <input type="radio" v-model.number="form.ppn_percentage" :value="0" />
+                  <input type="radio" v-model.number="form.ppn_percentage" :value="0" :disabled="isPriceOnlyMode" />
                   <span>0%</span>
                 </label>
                 <label class="ppn-radio">
-                  <input type="radio" v-model.number="form.ppn_percentage" :value="11" />
+                  <input type="radio" v-model.number="form.ppn_percentage" :value="11" :disabled="isPriceOnlyMode" />
                   <span>11%</span>
                 </label>
                 <label class="ppn-radio">
-                  <input type="radio" v-model.number="form.ppn_percentage" :value="12" />
+                  <input type="radio" v-model.number="form.ppn_percentage" :value="12" :disabled="isPriceOnlyMode" />
                   <span>12%</span>
                 </label>
                 <label class="ppn-radio ppn-special">
-                  <input type="radio" v-model.number="form.ppn_percentage" :value="11.12" />
+                  <input type="radio" v-model.number="form.ppn_percentage" :value="11.12" :disabled="isPriceOnlyMode" />
                   <span>12% ⚡</span>
                   <small class="ppn-note">Hitung 11%</small>
                 </label>
@@ -306,6 +318,7 @@
                   placeholder="Contoh: 150000"
                   min="0"
                   step="any"
+                  :disabled="isPriceOnlyMode"
                 />
               </div>
               <small class="form-hint-kurs">Selalu dalam IDR — ditambahkan setelah PPN ke Grand Total.</small>
@@ -317,6 +330,7 @@
                 v-model="form.other_cost_description"
                 class="form-control"
                 placeholder="Contoh: Ongkos kirim, biaya bongkar muat, dll."
+                :disabled="isPriceOnlyMode"
               />
             </div>
           </div>
@@ -325,7 +339,7 @@
 
       <div class="form-actions">
         <button type="submit" class="btn-submit-action" :disabled="isSaving">
-          {{ isSaving ? 'Menyimpan...' : 'Simpan PO Operasional' }}
+          {{ isSaving ? 'Menyimpan...' : (isPriceOnlyMode ? 'Simpan Harga Baru' : 'Simpan PO Operasional') }}
         </button>
       </div>
     </form>
@@ -434,8 +448,13 @@ const toast = useToast()
 const isEditMode = computed(() => !!route.params.id)
 const poId = route.params.id
 const poNumber = ref('')
+const poStatus = ref('')
 const loading = ref(true)
 const isSaving = ref(false)
+
+// PO Operasional yang sudah "Diterima Sebagian" cuma boleh diedit harganya
+// (permintaan klien: harga kadang berubah setelah sebagian barang datang)
+const isPriceOnlyMode = computed(() => isEditMode.value && poStatus.value === 'Diterima Sebagian')
 
 const daftarSupplier = ref([])
 const daftarBarang = ref([])
@@ -572,6 +591,22 @@ const hapusBarang = (index) => {
 const saveOrder = async () => {
   isSaving.value = true
   try {
+    if (isPriceOnlyMode.value) {
+      const payload = {
+        details: form.details.map((d) => ({ id: d.id, price: d.price })),
+      }
+      const response = await apiClient.put(`/purchase-orders/${poId}/update-price`, payload)
+      const lockedItems = response.data.locked_items || []
+      if (lockedItems.length > 0) {
+        const names = lockedItems.map((i) => i.item_name || i.item_code || `Item #${i.item_id}`).join(', ')
+        toast.warning(`Harga berhasil diupdate. Item berikut TIDAK ikut diubah karena sudah difakturkan: ${names}`)
+      } else {
+        toast.success('Harga PO berhasil diupdate!')
+      }
+      router.push({ name: 'PembelianOperasional' })
+      return
+    }
+
     const payload = {
       ...form,
       type: 'operasional',
@@ -614,6 +649,7 @@ const fetchPOData = async () => {
     const data = response.data.data
 
     poNumber.value = data.po_number
+    poStatus.value = data.status || ''
     form.supplier_id   = data.supplier_id
     form.order_date    = data.order_date
     form.delivery_date = data.delivery_date || ''
@@ -625,6 +661,7 @@ const fetchPOData = async () => {
     form.other_cost_description = data.other_cost_description || ''
 
     form.details = data.details.map((d) => ({
+      id:            d.id,
       item_id:       d.item_id,
       quantity:      parseFloat(d.quantity_ordered),
       price:         parseFloat(d.price),
@@ -1832,6 +1869,17 @@ textarea.form-control {
 .kurs-prefix { padding: 0 14px; font-weight: 700; color: #64748b; font-size: 14px; white-space: nowrap; }
 .form-control.has-prefix { border: none; background: transparent; box-shadow: none; border-radius: 0; }
 .form-hint-kurs { font-size: 12px; color: #6d28d9; font-weight: 600; margin-top: 6px; display: block; }
+
+.price-only-banner {
+  background: linear-gradient(135deg, #fef9c3, #fef08a);
+  border: 2px solid #facc15;
+  color: #854d0e;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
 
 /* ===== FOREIGN CURRENCY SUBTOTAL IN TABLE ===== */
 .usd-price { display: block; font-weight: 700; color: #1d4ed8; font-size: 13px; }

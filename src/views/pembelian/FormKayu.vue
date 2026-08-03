@@ -31,6 +31,10 @@
 
     <!-- FORM -->
     <form v-else @submit.prevent="saveOrder">
+      <div v-if="isQtyOnlyMode" class="qty-only-banner">
+        ⚠️ PO ini sudah <strong>Diterima Sebagian</strong> — untuk sementara cuma <strong>Jumlah (Batang)</strong> yang bisa diubah. Barang, harga, dan detail lain terkunci.
+      </div>
+
       <!-- INFORMASI UTAMA -->
       <div class="content-card">
         <div class="card-head">
@@ -49,6 +53,7 @@
                 v-model="form.supplier_id"
                 class="form-control choices-select"
                 required
+                :disabled="isQtyOnlyMode"
               >
                 <option disabled value="">Pilih Supplier</option>
                 <option v-for="supplier in daftarSupplier" :key="supplier.id" :value="supplier.id">
@@ -58,7 +63,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">Tanggal Pesan</label>
-              <input type="date" v-model="form.order_date" class="form-control" required />
+              <input type="date" v-model="form.order_date" class="form-control" required :disabled="isQtyOnlyMode" />
             </div>
             <div class="form-group full-width">
               <label class="form-label">Catatan (Opsional)</label>
@@ -67,6 +72,7 @@
                 class="form-control"
                 rows="3"
                 placeholder="Catatan untuk supplier..."
+                :disabled="isQtyOnlyMode"
               ></textarea>
             </div>
           </div>
@@ -108,10 +114,12 @@
                           v-model="item.item_id"
                           class="form-control choices-select"
                           required
+                          :disabled="isQtyOnlyMode"
                         >
                           <option value="">Pilih Barang</option>
                         </select>
                         <button
+                          v-if="!isQtyOnlyMode"
                           type="button"
                           class="btn-quick-add"
                           @click="openModalTambahBarang(index)"
@@ -140,6 +148,7 @@
                         class="form-control"
                         placeholder="Harga Manual"
                         min="0"
+                        :disabled="isQtyOnlyMode"
                       />
                       <input
                         v-else
@@ -158,7 +167,7 @@
                         @click="hapusBarang(index)"
                         type="button"
                         class="btn-delete"
-                        :disabled="form.details.length === 1"
+                        :disabled="isQtyOnlyMode || form.details.length === 1"
                       >
                         Hapus
                       </button>
@@ -177,6 +186,7 @@
                               v-model="item.specifications.is_manual_price"
                               :id="`manual-switch-${index}`"
                               class="manual-checkbox"
+                              :disabled="isQtyOnlyMode"
                             />
                             <label :for="`manual-switch-${index}`" class="manual-label">
                               <span class="checkbox-icon"></span>
@@ -191,18 +201,21 @@
                             v-model="item.specifications.invoice_p"
                             placeholder="P"
                             class="form-control-spec"
+                            :disabled="isQtyOnlyMode"
                           />
                           <input
                             type="number"
                             v-model="item.specifications.invoice_l"
                             placeholder="L"
                             class="form-control-spec"
+                            :disabled="isQtyOnlyMode"
                           />
                           <input
                             type="number"
                             v-model="item.specifications.invoice_t"
                             placeholder="T"
                             class="form-control-spec"
+                            :disabled="isQtyOnlyMode"
                           />
 
                           <label class="spec-label">Cutting Size (mm)</label>
@@ -212,6 +225,7 @@
                             placeholder="P"
                             class="form-control-spec"
                             step="1"
+                            :disabled="isQtyOnlyMode"
                           />
                           <input
                             type="number"
@@ -219,6 +233,7 @@
                             placeholder="L"
                             class="form-control-spec"
                             step="1"
+                            :disabled="isQtyOnlyMode"
                           />
                           <input
                             type="number"
@@ -226,6 +241,7 @@
                             placeholder="T"
                             class="form-control-spec"
                             step="1"
+                            :disabled="isQtyOnlyMode"
                           />
 
                           <template v-if="!item.specifications.is_manual_price">
@@ -235,6 +251,7 @@
                               v-model="item.specifications.harga_kubikasi"
                               placeholder="Harga per Kubik"
                               class="form-control-spec"
+                              :disabled="isQtyOnlyMode"
                             />
                             <label class="spec-label">Total Kubikasi (m³)</label>
                             <input
@@ -259,6 +276,7 @@
                             v-model="item.specifications.keterangan"
                             placeholder="Contoh: Kayu kering, grade A, dll..."
                             class="form-control-spec spec-keterangan"
+                            :disabled="isQtyOnlyMode"
                           />
 
                           <label class="spec-label spec-label-full">Peruntukan</label>
@@ -267,6 +285,7 @@
                             v-model="item.specifications.peruntukan"
                             placeholder="Contoh: KILT LOUNGE ARMCHAIR XL - Kaki Depan"
                             class="form-control-spec spec-keterangan"
+                            :disabled="isQtyOnlyMode"
                           />
                         </div>
                       </div>
@@ -277,7 +296,7 @@
             </table>
           </div>
 
-          <div class="table-actions">
+          <div v-if="!isQtyOnlyMode" class="table-actions">
             <button @click="tambahBarang" type="button" class="btn-add-row">
               ➕ Tambah Barang
             </button>
@@ -291,19 +310,19 @@
               <span class="ppn-label">PPN:</span>
               <div class="ppn-options">
                 <label class="ppn-radio">
-                  <input type="radio" v-model.number="form.ppn_percentage" :value="0" />
+                  <input type="radio" v-model.number="form.ppn_percentage" :value="0" :disabled="isQtyOnlyMode" />
                   <span>0%</span>
                 </label>
                 <label class="ppn-radio">
-                  <input type="radio" v-model.number="form.ppn_percentage" :value="11" />
+                  <input type="radio" v-model.number="form.ppn_percentage" :value="11" :disabled="isQtyOnlyMode" />
                   <span>11%</span>
                 </label>
                 <label class="ppn-radio">
-                  <input type="radio" v-model.number="form.ppn_percentage" :value="12" />
+                  <input type="radio" v-model.number="form.ppn_percentage" :value="12" :disabled="isQtyOnlyMode" />
                   <span>12%</span>
                 </label>
                 <label class="ppn-radio ppn-special">
-                  <input type="radio" v-model.number="form.ppn_percentage" :value="11.12" />
+                  <input type="radio" v-model.number="form.ppn_percentage" :value="11.12" :disabled="isQtyOnlyMode" />
                   <span>12% ⚡</span>
                   <small class="ppn-note">Hitung 11%</small>
                 </label>
@@ -332,7 +351,7 @@
       <div class="form-actions">
         <router-link :to="{ name: 'PembelianKayu' }" class="btn-cancel">Batal</router-link>
         <button type="submit" class="btn-submit" :disabled="isSaving">
-          <span v-if="!isSaving">💾 {{ isEditMode ? 'Update' : 'Simpan' }} PO Kayu</span>
+          <span v-if="!isSaving">💾 {{ isQtyOnlyMode ? 'Simpan Jumlah Baru' : (isEditMode ? 'Update' : 'Simpan') + ' PO Kayu' }}</span>
           <span v-else>⏳ Menyimpan...</span>
         </button>
       </div>
@@ -500,8 +519,13 @@ const toast = useToast()
 const isEditMode = computed(() => !!route.params.id)
 const poId = route.params.id
 const poNumber = ref('')
+const poStatus = ref('')
 const loading = ref(true)
 const isSaving = ref(false)
+
+// PO Kayu yang sudah "Diterima Sebagian" cuma boleh diedit jumlah pesanannya
+// (permintaan klien: kayu yang datang di lapangan sering beda dari qty yang dipesan)
+const isQtyOnlyMode = computed(() => isEditMode.value && poStatus.value === 'Diterima Sebagian')
 
 const daftarSupplier = ref([])
 const daftarBarang = ref([])
@@ -798,6 +822,16 @@ const simpanBarangBaru = async () => {
 const saveOrder = async () => {
   isSaving.value = true
   try {
+    if (isQtyOnlyMode.value) {
+      const payload = {
+        details: form.details.map((d) => ({ id: d.id, quantity: d.quantity })),
+      }
+      await apiClient.put(`/purchase-orders/${poId}/update-quantity`, payload)
+      toast.success('Jumlah pesanan PO berhasil diupdate!')
+      router.push({ name: 'PembelianKayu' })
+      return
+    }
+
     const payload = {
       ...form,
       type: 'kayu',
@@ -833,6 +867,7 @@ const fetchPOData = async () => {
     const response = await apiClient.get(`/purchase-orders/${poId}`)
     const data = response.data.data
     poNumber.value = data.po_number
+    poStatus.value = data.status || ''
     form.supplier_id = data.supplier_id
     form.order_date = data.order_date
     form.notes = data.notes || ''
@@ -840,6 +875,7 @@ const fetchPOData = async () => {
     form.details = data.details.map((d) => {
       const spec = d.specifications || {}
       return {
+        id: d.id,
         item_id: d.item_id,
         quantity: parseFloat(d.quantity_ordered),
         price: parseFloat(d.price),
@@ -1493,6 +1529,17 @@ textarea.form-control {
 .td-material :deep(.choices__inner) {
   min-height: 40px;
   font-size: 13px;
+}
+
+.qty-only-banner {
+  background: linear-gradient(135deg, #fef9c3, #fef08a);
+  border: 2px solid #facc15;
+  color: #854d0e;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin-bottom: 20px;
 }
 
 /* ===== SUMMARY ===== */

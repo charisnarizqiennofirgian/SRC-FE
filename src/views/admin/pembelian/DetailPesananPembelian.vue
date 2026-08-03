@@ -343,12 +343,12 @@
           <span>Kembali</span>
         </router-link>
         <router-link
-          v-if="form.status === 'Open' || form.status === 'Terbuka'"
+          v-if="form.status === 'Open' || form.status === 'Terbuka' || (form.status === 'Diterima Sebagian' && (form.type === 'operasional' || form.type === 'kayu'))"
           :to="{ name: editRouteName, params: { id: poId } }"
           class="btn-action btn-edit"
         >
           <span class="action-icon">✏️</span>
-          <span>Edit Pesanan</span>
+          <span>{{ form.status === 'Diterima Sebagian' ? (form.type === 'kayu' ? 'Edit Jumlah' : 'Edit Harga') : 'Edit Pesanan' }}</span>
         </router-link>
         <router-link
           v-if="form.status === 'Open' || form.status === 'Terbuka'"
