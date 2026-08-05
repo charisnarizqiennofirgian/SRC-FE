@@ -10,9 +10,14 @@
             <p class="page-subtitle">Daftar permintaan pembelian barang</p>
           </div>
         </div>
-        <router-link :to="{ name: 'PurchaseRequestCreate' }" class="btn-create">
-          ➕ Buat PR Baru
-        </router-link>
+        <div class="header-actions">
+          <button class="btn-rekap" @click="openRekapModal">
+            📊 Export Rekap
+          </button>
+          <router-link :to="{ name: 'PurchaseRequestCreate' }" class="btn-create">
+            ➕ Buat PR Baru
+          </router-link>
+        </div>
       </div>
     </div>
 
@@ -134,6 +139,55 @@
         </div>
       </div>
     </div>
+
+    <!-- MODAL EXPORT REKAP -->
+    <div v-if="showRekapModal" class="modal-overlay" @click.self="closeRekapModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h3>📊 Export Rekap PR</h3>
+          <button class="modal-close" @click="closeRekapModal">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="rekap-hint">Pilih rentang No. PR — hasilnya berupa Excel berisi No. PR, Supplier, Item, QTY, dan Harga (sesuai PO hasil convert), lengkap dengan baris Total Keseluruhan.</p>
+
+          <div class="rekap-field">
+            <label>PR Awal <span class="required-star">*</span></label>
+            <input
+              v-model="rekapForm.prStart"
+              type="text"
+              class="rekap-input"
+              placeholder="Contoh: PR-202607-091"
+              list="pr-number-datalist"
+              @input="rekapError = ''"
+            />
+          </div>
+
+          <div class="rekap-field">
+            <label>PR Akhir <span class="required-star">*</span></label>
+            <input
+              v-model="rekapForm.prEnd"
+              type="text"
+              class="rekap-input"
+              placeholder="Contoh: PR-202608-002"
+              list="pr-number-datalist"
+              @input="rekapError = ''"
+            />
+          </div>
+
+          <datalist id="pr-number-datalist">
+            <option v-for="pr in prNumberOptions" :key="pr.id" :value="pr.pr_number" />
+          </datalist>
+
+          <p v-if="rekapError" class="rekap-error">⚠️ {{ rekapError }}</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" @click="closeRekapModal">Batal</button>
+          <button class="btn-confirm-rekap" :disabled="isExportingRekap" @click="doExportRekap">
+            {{ isExportingRekap ? '⏳ Membuat Excel...' : '⬇️ Download Excel' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </DashboardLayout>
 </template>
 
@@ -157,6 +211,12 @@ const perPage      = 15
 const total        = ref(0)
 const deleteTarget = ref(null)
 const isDeleting   = ref(false)
+
+const showRekapModal   = ref(false)
+const isExportingRekap = ref(false)
+const rekapError       = ref('')
+const prNumberOptions  = ref([])
+const rekapForm = ref({ prStart: '', prEnd: '' })
 
 // Sinkronkan state filter/pagination ke URL supaya tidak hilang saat kembali dari Detail/Edit.
 const syncQuery = () => {
@@ -253,6 +313,64 @@ const formatDate = (date) => {
 
 const isOverdue = (deadline) => deadline && new Date(deadline) < new Date()
 
+const PR_NUMBER_PATTERN = /^PR-\d{6}-\d{3}$/
+
+const openRekapModal = async () => {
+  showRekapModal.value = true
+  rekapError.value = ''
+  rekapForm.value = { prStart: '', prEnd: '' }
+  if (prNumberOptions.value.length === 0) {
+    try {
+      const res = await apiClient.get('/purchase-requests/list-for-rekap')
+      prNumberOptions.value = res.data.data || []
+    } catch (error) {
+      // Datalist cuma bantuan autocomplete — kalau gagal diambil, user tetap bisa ketik manual
+      console.error('Gagal memuat daftar No. PR', error)
+    }
+  }
+}
+
+const closeRekapModal = () => {
+  showRekapModal.value = false
+}
+
+const doExportRekap = async () => {
+  const { prStart, prEnd } = rekapForm.value
+  if (!prStart || !prEnd) {
+    rekapError.value = 'PR Awal dan PR Akhir wajib diisi'
+    return
+  }
+  if (!PR_NUMBER_PATTERN.test(prStart) || !PR_NUMBER_PATTERN.test(prEnd)) {
+    rekapError.value = 'Format No. PR tidak valid (contoh: PR-202607-091)'
+    return
+  }
+
+  isExportingRekap.value = true
+  rekapError.value = ''
+  try {
+    const response = await apiClient.get('/purchase-requests/export-rekap', {
+      params: { pr_start: prStart, pr_end: prEnd },
+      responseType: 'blob',
+    })
+
+    const url  = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `Rekap_${prStart}_${prEnd}.xlsx`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+
+    toast.success('Rekap Excel berhasil didownload')
+    closeRekapModal()
+  } catch (error) {
+    rekapError.value = error.response?.data?.message || 'Gagal membuat rekap Excel'
+  } finally {
+    isExportingRekap.value = false
+  }
+}
+
 onMounted(fetchData)
 </script>
 
@@ -270,6 +388,9 @@ onMounted(fetchData)
 .page-title     { font-size: 24px; font-weight: 800; margin: 0 0 4px; }
 .page-subtitle  { font-size: 13px; opacity: 0.9; margin: 0; }
 .btn-create     { background: white; color: #0369a1; padding: 10px 18px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 14px; white-space: nowrap; }
+.header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-rekap      { background: rgba(255,255,255,0.15); color: white; border: 2px solid rgba(255,255,255,0.5); padding: 9px 16px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; white-space: nowrap; }
+.btn-rekap:hover { background: rgba(255,255,255,0.25); }
 
 .filter-card {
   background: white;
@@ -351,4 +472,15 @@ onMounted(fetchData)
 .btn-cancel         { padding: 9px 18px; background: #e5e7eb; color: #374151; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; }
 .btn-confirm-delete { padding: 9px 18px; background: #dc2626; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; }
 .btn-confirm-delete:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.rekap-hint  { font-size: 13px; color: #6b7280; margin: 0 0 16px; line-height: 1.6; }
+.rekap-field { margin-bottom: 14px; }
+.rekap-field label { display: block; font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 6px; }
+.required-star { color: #dc2626; }
+.rekap-input { width: 100%; padding: 10px 14px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; font-family: 'Courier New', monospace; box-sizing: border-box; }
+.rekap-input:focus { outline: none; border-color: #0369a1; }
+.rekap-error { color: #dc2626; font-size: 13px; margin: 8px 0 0; font-weight: 600; }
+.btn-confirm-rekap { padding: 9px 18px; background: #0369a1; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; }
+.btn-confirm-rekap:hover:not(:disabled) { background: #0284c7; }
+.btn-confirm-rekap:disabled { opacity: 0.6; cursor: not-allowed; }
 </style>

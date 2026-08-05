@@ -10,7 +10,7 @@
           <div class="header-text-content">
             <h1 class="page-title-anyam">Produksi Anyam</h1>
             <p class="page-subtitle-anyam">
-              Pindahkan produk dari Gudang Assembling ke Gudang Anyam sesuai PO.
+              Pindahkan produk dari Gudang Assembling, Sanding, atau Finishing ke Gudang Anyam sesuai PO.
             </p>
           </div>
         </div>
@@ -22,7 +22,7 @@
             <span class="process-arrow">→</span>
             <span class="process-icon">✨</span>
           </div>
-          <div class="flow-label-anyam">Assembling → Anyam → Sanding</div>
+          <div class="flow-label-anyam">Assembling / Sanding / Finishing → Anyam</div>
         </div>
       </div>
     </div>
@@ -96,7 +96,7 @@
               <div class="section-title-group">
                 <h3 class="section-title">Item yang Diproses</h3>
                 <p class="section-subtitle">
-                  Pilih produk dari <strong>Gudang Assembling</strong> — akan dipindah ke Gudang Anyam
+                  Pilih produk dari <strong>Gudang Assembling, Sanding, atau Finishing</strong> — akan dipindah ke Gudang Anyam
                 </p>
               </div>
             </div>
@@ -104,7 +104,7 @@
             <div v-if="loadingInventory" class="loading-hint">⏳ Memuat stok...</div>
 
             <div v-else-if="sourceInventories.length === 0" class="empty-hint">
-              📭 Tidak ada stok tersedia di Gudang Assembling
+              📭 Tidak ada stok tersedia di Gudang Assembling, Sanding, maupun Finishing
             </div>
 
             <template v-else>
@@ -123,9 +123,8 @@
                   <div class="form-group-modern">
                     <label class="form-label-modern">Item <span class="required-star">*</span></label>
                     <vue-select
-                      v-model="row.item_id"
+                      v-model="row.key"
                       :options="sourceInventoriesForSelect"
-                      :reduce="(o) => o.item_id"
                       label="label"
                       placeholder="🔍 Pilih item..."
                       class="vue-select-item"
@@ -133,12 +132,16 @@
                     >
                       <template #option="o">
                         <div class="item-option">
+                          <span class="item-option-badge">{{ o.warehouse_code }}</span>
                           <span class="item-option-code">{{ o.item_code }}</span>
                           <span class="item-option-name">{{ o.item_name }}</span>
                           <span class="item-option-stock">Stok: {{ o.qty_pcs }} pcs</span>
                         </div>
                       </template>
                     </vue-select>
+                    <div v-if="row.warehouse_name" class="source-info-anyam">
+                      📦 Sumber: <strong>{{ row.warehouse_name }}</strong>
+                    </div>
                   </div>
 
                   <div class="form-group-modern">
@@ -210,43 +213,39 @@ const form = reactive({
   date:      new Date().toISOString().slice(0, 10),
   ref_po_id: null,
   notes:     '',
-  items: [{ local_id: Date.now(), item_id: null, qty: null, max_qty: 0 }],
+  items: [{ local_id: Date.now(), key: null, item_id: null, warehouse_id: null, warehouse_name: '', qty: null, max_qty: 0 }],
 })
 
 const sourceInventoriesForSelect = computed(() =>
   sourceInventories.value.map((inv) => ({
-    item_id:   inv.item_id,
-    item_code: inv.item_code,
-    item_name: inv.item_name,
-    qty_pcs:   inv.qty_pcs,
-    label:     `${inv.item_code} - ${inv.item_name}`,
+    key:            `${inv.item_id}-${inv.warehouse_id}`,
+    item_id:        inv.item_id,
+    item_code:      inv.item_code,
+    item_name:      inv.item_name,
+    qty_pcs:        inv.qty_pcs,
+    warehouse_id:   inv.warehouse_id,
+    warehouse_code: inv.warehouse_code,
+    warehouse_name: inv.warehouse_name,
+    label:          `${inv.item_code} - ${inv.item_name}`,
   }))
 )
 
 const canSubmit = computed(() => {
   if (!form.ref_po_id) return false
-  return form.items.some((i) => i.item_id && i.qty > 0)
+  return form.items.some((i) => i.item_id && i.warehouse_id && i.qty > 0)
 })
 
 const fetchInitialData = async () => {
   try {
     const [poRes, invRes] = await Promise.all([
       apiClient.get('/produksi/anyam/available-pos'),
-      apiClient.get('/produksi/anyam/source-inventories', {
-        params: { warehouse_id: await getAssemblingWarehouseId() }
-      }),
+      apiClient.get('/produksi/anyam/source-inventories'),
     ])
     productionOrders.value  = poRes.data.data  || []
     sourceInventories.value = invRes.data.data || []
   } catch (error) {
     showError('Gagal', 'Gagal mengambil data awal')
   }
-}
-
-const getAssemblingWarehouseId = async () => {
-  const res = await apiClient.get('/warehouses')
-  const warehouses = res.data.data || res.data || []
-  return warehouses.find(w => w.code === 'ASSEMBLING')?.id ?? null
 }
 
 const handlePoChange = (opt) => {
@@ -258,11 +257,14 @@ const handlePoDeselect = () => {
 }
 
 const onItemSelected = (index, opt) => {
-  form.items[index].max_qty = opt?.qty_pcs ?? 0
+  form.items[index].item_id        = opt?.item_id       ?? null
+  form.items[index].warehouse_id   = opt?.warehouse_id  ?? null
+  form.items[index].warehouse_name = opt?.warehouse_name ?? ''
+  form.items[index].max_qty        = opt?.qty_pcs ?? 0
 }
 
 const addItem = () => {
-  form.items.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, max_qty: 0 })
+  form.items.push({ local_id: Date.now() + Math.random(), key: null, item_id: null, warehouse_id: null, warehouse_name: '', qty: null, max_qty: 0 })
 }
 
 const removeItem = (index) => {
@@ -272,7 +274,7 @@ const removeItem = (index) => {
 const handleSubmit = async () => {
   if (!form.ref_po_id) { showError('Validasi', 'Production Order wajib dipilih'); return }
 
-  const validItems = form.items.filter((i) => i.item_id && i.qty > 0)
+  const validItems = form.items.filter((i) => i.item_id && i.warehouse_id && i.qty > 0)
   if (validItems.length === 0) { showError('Validasi', 'Minimal satu item harus diisi'); return }
 
   for (let i = 0; i < validItems.length; i++) {
@@ -289,8 +291,9 @@ const handleSubmit = async () => {
       ref_po_id: Number(form.ref_po_id),
       notes:     form.notes || null,
       items:     validItems.map((i) => ({
-        item_id: Number(i.item_id),
-        qty:     Number(i.qty),
+        item_id:      Number(i.item_id),
+        warehouse_id: Number(i.warehouse_id),
+        qty:          Number(i.qty),
       })),
     }
 
@@ -380,9 +383,12 @@ onMounted(fetchInitialData)
 .vue-select-item.vs--open :deep(.vs__dropdown-toggle) { border-color:#d97706; box-shadow:0 0 0 4px rgba(217,119,6,0.15); }
 
 .item-option { display:flex; flex-direction:column; gap:2px; padding:8px 12px; }
+.item-option-badge { display:inline-block; padding:1px 6px; background:#d97706; color:white; border-radius:4px; font-size:0.72rem; font-weight:700; width:fit-content; }
 .item-option-code { font-size:0.82rem; font-weight:700; color:#d97706; }
 .item-option-name { font-size:0.9rem; color:#111827; font-weight:500; }
 .item-option-stock { font-size:0.78rem; color:#6b7280; }
+
+.source-info-anyam { margin-top:6px; font-size:0.82rem; color:#92400e; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:6px 10px; }
 
 @media (max-width:768px) {
   .form-grid-2col, .form-grid-3col { grid-template-columns:1fr; }
