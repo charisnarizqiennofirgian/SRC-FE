@@ -141,7 +141,7 @@
                   <span class="zone-text">Persiapan Bahan</span>
                 </th>
                 <!-- Zona Hilir -->
-                <th colspan="7" class="zone-header zone-hilir">
+                <th colspan="8" class="zone-header zone-hilir">
                   <span class="zone-icon">⚙️</span>
                   <span class="zone-text">Produksi</span>
                 </th>
@@ -161,6 +161,7 @@
                 <th class="th-stage stage-sanding">Sanding</th>
                 <th class="th-stage stage-rustik">Rustik</th>
                 <th class="th-stage stage-finishing">Finishing</th>
+                <th class="th-stage stage-anyam">Anyam</th>
                 <th class="th-stage stage-qcfinal">QC Final</th>
                 <th class="th-stage stage-packing">Packing</th>
               </tr>
@@ -168,7 +169,7 @@
             <tbody class="table-body">
               <!-- Empty State -->
               <tr v-if="data.length === 0" class="empty-row">
-                <td colspan="18" class="empty-cell">
+                <td colspan="19" class="empty-cell">
                   <div class="empty-state">
                     <span class="empty-icon">📭</span>
                     <p class="empty-text">Tidak ada data Sales Order aktif.</p>
@@ -312,6 +313,11 @@
                       {{ formatNumber(item.qty_finishing) }} <span class="stage-pct">({{ stagePercent(item.qty_finishing, item.target) }}%)</span>
                     </span>
                   </td>
+                  <td class="td-qty stage-anyam">
+                    <span :class="['qty-value', item.qty_anyam > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_anyam) }} <span class="stage-pct">({{ stagePercent(item.qty_anyam, item.target) }}%)</span>
+                    </span>
+                  </td>
                   <td class="td-qty stage-qcfinal">
                     <span :class="['qty-value', item.qty_qc_final > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_qc_final) }} <span class="stage-pct">({{ stagePercent(item.qty_qc_final, item.target) }}%)</span>
@@ -355,7 +361,7 @@
 
                 <!-- Separator antar SO -->
                 <tr class="so-separator">
-                  <td colspan="18"></td>
+                  <td colspan="19"></td>
                 </tr>
               </template>
             </tbody>
@@ -1364,6 +1370,11 @@ const getStageClass = (type) => {
 .stage-assembling {
   background: linear-gradient(180deg, #dbeafe 0%, #bfdbfe 100%) !important;
   color: #1e40af !important;
+}
+
+.stage-anyam {
+  background: linear-gradient(180deg, #fae8ff 0%, #f5d0fe 100%) !important;
+  color: #86198f !important;
 }
 
 .stage-rustik {

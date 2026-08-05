@@ -85,7 +85,7 @@
                   <span class="zone-icon">🌲</span> Persiapan Bahan
                 </th>
                 <!-- Zona Hilir -->
-                <th colspan="7" class="zone-header zone-hilir">
+                <th colspan="8" class="zone-header zone-hilir">
                   <span class="zone-icon">⚙️</span> Produksi
                 </th>
                 <th class="col-num" rowspan="2" style="background:#fee2e2;color:#dc2626;">⚠️ Reject</th>
@@ -104,6 +104,7 @@
                 <th class="col-num stage-sanding">Sanding</th>
                 <th class="col-num stage-rustik">Rustik</th>
                 <th class="col-num stage-finishing">Finishing</th>
+                <th class="col-num stage-anyam">Anyam</th>
                 <th class="col-num stage-qcfinal">QC Final</th>
                 <th class="col-num stage-packing">Packing</th>
               </tr>
@@ -246,6 +247,11 @@
                       {{ formatNumber(item.qty_finishing) }} <span class="stage-pct">({{ stagePercent(item.qty_finishing, item.target) }}%)</span>
                     </span>
                   </td>
+                  <td class="col-num stage-anyam">
+                    <span :class="['qty-value', item.qty_anyam > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_anyam) }} <span class="stage-pct">({{ stagePercent(item.qty_anyam, item.target) }}%)</span>
+                    </span>
+                  </td>
                   <td class="col-num stage-qcfinal">
                     <span :class="['qty-value', item.qty_qc_final > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_qc_final) }} <span class="stage-pct">({{ stagePercent(item.qty_qc_final, item.target) }}%)</span>
@@ -291,7 +297,7 @@
 
                 <!-- Separator antar SO -->
                 <tr class="so-separator">
-                  <td colspan="18"></td>
+                  <td colspan="19"></td>
                 </tr>
               </template>
             </tbody>
@@ -1225,6 +1231,11 @@ onMounted(() => {
 
 .stage-assembling {
   background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%) !important;
+}
+
+.stage-anyam {
+  background: linear-gradient(180deg, #fdf4ff 0%, #fae8ff 100%) !important;
+  color: #86198f !important;
 }
 
 .stage-ruskomp {
