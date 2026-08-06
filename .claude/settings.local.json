@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/ERP/SRC-FE/src/composables -type f -name *.js)",
+      "Bash(find /c/ERP/SRC-FE/src/views -name \"*.vue\" -exec wc -l {} +)",
+      "Bash(grep:*)",
+      "Bash(ls -la /c/ERP/SRC-FE/src/views/produksi/*.vue)",
+      "Read(//tmp/**)",
+      "Bash(wc -l C:/ERP/SRC-FE/src/views/pembelian/*.vue)"
+    ]
+  }
+}

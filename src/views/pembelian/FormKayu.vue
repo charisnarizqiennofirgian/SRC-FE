@@ -528,7 +528,7 @@ const isSaving = ref(false)
 const isQtyOnlyMode = computed(() => isEditMode.value && poStatus.value === 'Diterima Sebagian')
 
 const daftarSupplier = ref([])
-const daftarBarang = ref([])
+const barangCache = new Map()
 const showModalTambahBarang = ref(false)
 const isSavingBarang = ref(false)
 const clickedRowIndex = ref(null)
@@ -599,6 +599,22 @@ const initSupplierChoice = async () => {
   })
 }
 
+const buildBarangLabel = (barang) => (barang.code ? `${barang.code} - ${barang.name}` : barang.name)
+
+const searchBarang = async (term) => {
+  if (!term || term.trim().length < 2) return []
+  try {
+    const res = await apiClient.get('/materials', {
+      params: { category_name: 'Kayu RST', search: term.trim(), limit: 30 },
+    })
+    const results = res.data.data || []
+    results.forEach((b) => barangCache.set(b.id, b))
+    return results
+  } catch {
+    return []
+  }
+}
+
 const initChoicesForIndex = async (index, item) => {
   await nextTick()
   if (choicesMap.value.has(index)) {
@@ -610,31 +626,52 @@ const initChoicesForIndex = async (index, item) => {
   const selectElement = document.getElementById(`select-barang-${index}`)
   if (!selectElement) return
 
-  // Populate options imperiatif (v-for sudah dihapus dari template)
   const placeholder = document.createElement('option')
   placeholder.value = ''
-  placeholder.textContent = 'Pilih Barang'
+  placeholder.textContent = 'Ketik untuk mencari barang...'
   selectElement.replaceChildren(placeholder)
 
-  daftarBarang.value.forEach((barang) => {
-    const opt = document.createElement('option')
-    opt.value = String(barang.id)
-    opt.textContent = barang.code ? `${barang.code} - ${barang.name}` : barang.name
-    if (item.item_id && String(barang.id) === String(item.item_id)) {
-      opt.selected = true // tandai sebelum Choices.js init
+  if (item.item_id) {
+    let barang = barangCache.get(item.item_id)
+    if (!barang) {
+      try {
+        const res = await apiClient.get(`/materials/${item.item_id}`)
+        barang = res.data.data
+        barangCache.set(barang.id, barang)
+      } catch {}
     }
-    selectElement.appendChild(opt)
-  })
+    if (barang) {
+      const opt = document.createElement('option')
+      opt.value = String(barang.id)
+      opt.textContent = buildBarangLabel(barang)
+      opt.selected = true
+      selectElement.appendChild(opt)
+    }
+  }
 
   const choices = new Choices(selectElement, {
     searchEnabled: true,
-    searchPlaceholderValue: 'Ketik untuk mencari barang...',
+    searchPlaceholderValue: 'Ketik min. 2 huruf untuk mencari barang...',
     noResultsText: 'Tidak ditemukan',
-    noChoicesText: 'Tidak ada pilihan',
+    noChoicesText: 'Ketik untuk mencari barang',
     itemSelectText: 'Klik untuk pilih',
     shouldSort: false,
     removeItemButton: false,
   })
+
+  const doSearch = debounce(async (term) => {
+    const results = await searchBarang(term)
+    try {
+      choices.setChoices(
+        results.map((b) => ({ value: String(b.id), label: buildBarangLabel(b) })),
+        'value',
+        'label',
+        true,
+      )
+    } catch {}
+  }, 300)
+
+  selectElement.addEventListener('search', (event) => doSearch(event.detail.value))
   selectElement.addEventListener('change', (event) => {
     item.item_id = parseInt(event.target.value) || ''
   })
@@ -655,7 +692,7 @@ watch(
     newDetails.forEach((item) => {
       // Auto-fill saat user pilih barang
       if (item.item_id) {
-        const barang = daftarBarang.value.find((b) => b.id === item.item_id)
+        const barang = barangCache.get(item.item_id)
         if (barang) {
           const spec = item.specifications
           // Invoice Size dari specifications barang
@@ -765,7 +802,7 @@ const simpanBarangBaru = async () => {
     const barangBaru = res.data?.data ?? res.data
     if (barangBaru?.id) {
       // Simpan data lengkap agar watch bisa auto-fill spec
-      daftarBarang.value.push({
+      barangCache.set(barangBaru.id, {
         id: barangBaru.id,
         code: barangBaru.code,
         name: barangBaru.name,
@@ -775,9 +812,7 @@ const simpanBarangBaru = async () => {
         cutting_p: barangBaru.cutting_p,
       })
 
-      const label = barangBaru.code
-        ? `${barangBaru.code} - ${barangBaru.name}`
-        : barangBaru.name
+      const label = buildBarangLabel(barangBaru)
 
       // Tambahkan pilihan ke semua dropdown
       choicesMap.value.forEach((instance) => {
@@ -902,14 +937,10 @@ const fetchPOData = async () => {
 
 const fetchDataDropdown = async () => {
   try {
-    const [supplierRes, barangRes] = await Promise.all([
-      apiClient.get('/suppliers?all=true'),
-      apiClient.get('/materials?all=true&category_name=Kayu RST'),
-    ])
+    const supplierRes = await apiClient.get('/suppliers?all=true')
     daftarSupplier.value = supplierRes.data.data
-    daftarBarang.value = barangRes.data.data
   } catch {
-    toast.error('Gagal memuat data supplier atau barang.')
+    toast.error('Gagal memuat data supplier.')
   }
 }
 

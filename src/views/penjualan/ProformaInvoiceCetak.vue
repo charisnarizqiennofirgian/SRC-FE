@@ -57,9 +57,6 @@
       <div class="pi-table-wrap">
         <table class="pi-table">
           <thead>
-            <tr class="thead-spacer">
-              <td colspan="8"></td>
-            </tr>
             <tr>
               <th class="col-no"     rowspan="2">NO</th>
               <th class="col-prod"   colspan="2">PRODUCT</th>
@@ -502,8 +499,7 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
 .td-ship   { font-size: 8.5pt; white-space: nowrap; }
 .td-empty  { text-align: center; font-style: italic; color: #888; padding: 6pt; }
 
-/* Sembunyikan spacer di layar, hanya muncul saat print */
-.thead-spacer { display: none; }
+
 
 /* ─── FOOTER 2×2 ────────────────────────────────────── */
 .pi-footer-grid {
@@ -661,10 +657,10 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   }
 
   .print-sheet-a4 {
-    width: 100% !important;
+    width: 210mm !important;
     min-height: auto !important;
-    margin: 0 !important;
-    padding: 14mm 18mm !important;
+    margin: 0 auto !important;
+    padding: 14mm 18mm 16mm !important;
     box-shadow: none !important;
     overflow: visible !important;
     position: static !important;
@@ -675,17 +671,7 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
     display: table-header-group;
   }
 
-  /* Spacer: beri jarak antara tepi kertas dan tabel di halaman 2+ */
-  .thead-spacer {
-    display: table-row !important;
-    height: 20mm;
-  }
 
-  .thead-spacer td {
-    border: none !important;
-    background: transparent !important;
-    padding: 0 !important;
-  }
 
   /* Total hanya muncul sekali di halaman terakhir, tidak repeat */
   tfoot {
@@ -718,7 +704,7 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
     print-color-adjust: exact !important;
   }
 
-  @page { size: A4 portrait; margin: 0; }
+  @page { size: A4 portrait; margin: 0mm; }
 }
 </style>
 

@@ -221,7 +221,7 @@
                     v-for="(item, index) in form.details"
                     :key="item.item_id"
                     class="data-row"
-                    :class="{ 'row-complete': item.quantity_remaining === 0 }"
+                    :class="{ 'row-complete': item.quantity_remaining === 0, 'row-over': isOverReceiving(item) }"
                   >
                     <td class="td-no"><span class="row-number">{{ index + 1 }}</span></td>
                     <td class="td-item">
@@ -239,15 +239,16 @@
                     </td>
                     <td class="td-received">
                       <input
-                        v-if="item.quantity_remaining > 0"
                         type="number"
                         v-model="item.quantity_received"
                         class="qty-input"
                         min="0"
-                        :max="item.quantity_remaining"
                         step="0.01"
                       />
-                      <span v-else class="done-label">Lunas ✓</span>
+                      <span v-if="isOverReceiving(item)" class="over-warning">
+                        ⚠️ Lebih {{ overReceivingAmount(item) }}
+                      </span>
+                      <span v-else-if="item.quantity_remaining === 0" class="done-label">Lunas ✓</span>
                     </td>
                   </tr>
                 </tbody>
@@ -377,6 +378,10 @@ onMounted(async () => {
   }
 })
 
+const isOverReceiving = (item) => parseFloat(item.quantity_received || 0) > item.quantity_remaining
+const overReceivingAmount = (item) =>
+  (parseFloat(item.quantity_received || 0) - item.quantity_remaining).toFixed(2)
+
 const addGradeRow = (itemIdx) => {
   form.value.details[itemIdx].grade_rows.push({ grade: '', quantity_received: 0, price: null })
 }
@@ -413,13 +418,6 @@ const submitForm = async () => {
       return
     }
   } else {
-    // Non-kayu: qty tidak boleh melebihi sisa
-    for (const item of details) {
-      if (parseFloat(item.quantity_received) > item.quantity_remaining) {
-        toast.error(`Jumlah terima "${item.item_name}" melebihi sisa (${item.quantity_remaining}).`)
-        return
-      }
-    }
     const hasAny = details.some(d => parseFloat(d.quantity_received) > 0)
     if (!hasAny) {
       toast.error('Masukkan jumlah penerimaan untuk minimal 1 item.')
@@ -907,6 +905,19 @@ textarea.form-control {
 .row-complete {
   background: #f0fdf4;
   opacity: 0.75;
+}
+
+.row-over {
+  background: #fffbeb;
+  opacity: 1;
+}
+
+.over-warning {
+  display: block;
+  margin-top: 4px;
+  color: #b45309;
+  font-weight: 700;
+  font-size: 12px;
 }
 
 .td-already,

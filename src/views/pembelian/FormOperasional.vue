@@ -189,7 +189,30 @@
                     </div>
                   </td>
                   <td class="td-qty">
+                    <div v-if="item.specifications?.use_kemasan" class="kemasan-inputs">
+                      <input
+                        type="number"
+                        v-model.number="item.specifications.jumlah_kemasan"
+                        class="form-control form-control-sm"
+                        placeholder="Jml kemasan"
+                        min="0"
+                        step="any"
+                        :disabled="isPriceOnlyMode"
+                      />
+                      <span class="kemasan-sep">×</span>
+                      <input
+                        type="number"
+                        v-model.number="item.specifications.isi_per_kemasan"
+                        class="form-control form-control-sm"
+                        placeholder="Isi/kemasan (kg)"
+                        min="0"
+                        step="any"
+                        :disabled="isPriceOnlyMode"
+                      />
+                      <span class="kemasan-total">= {{ item.quantity || 0 }}</span>
+                    </div>
                     <input
+                      v-else
                       type="number"
                       v-model.number="item.quantity"
                       class="form-control"
@@ -199,6 +222,15 @@
                       step="any"
                       :disabled="isPriceOnlyMode"
                     />
+                    <button
+                      v-if="!isPriceOnlyMode"
+                      type="button"
+                      class="btn-kemasan-toggle"
+                      @click="toggleKemasan(item)"
+                      :title="item.specifications?.use_kemasan ? 'Kembali ke input jumlah biasa' : 'Pakai kemasan (pail/drum/dll)'"
+                    >
+                      📦
+                    </button>
                   </td>
                   <td class="td-price">
                     <input
@@ -570,11 +602,34 @@ const tambahBarang = async () => {
     quantity: 1,
     price: 0,
     delivery_date: '',
-    specifications: {},
+    specifications: { use_kemasan: false, jumlah_kemasan: null, isi_per_kemasan: null },
   })
   await nextTick()
   initializeChoices()
 }
+
+const toggleKemasan = (item) => {
+  if (!item.specifications) item.specifications = {}
+  item.specifications.use_kemasan = !item.specifications.use_kemasan
+  if (!item.specifications.use_kemasan) {
+    item.specifications.jumlah_kemasan = null
+    item.specifications.isi_per_kemasan = null
+  }
+}
+
+watch(
+  () => form.details,
+  (details) => {
+    details.forEach((item) => {
+      if (item.specifications?.use_kemasan) {
+        const jml = parseFloat(item.specifications.jumlah_kemasan) || 0
+        const isi = parseFloat(item.specifications.isi_per_kemasan) || 0
+        item.quantity = jml * isi
+      }
+    })
+  },
+  { deep: true },
+)
 
 const hapusBarang = (index) => {
   if (form.details.length <= 1) return
@@ -1250,6 +1305,54 @@ textarea.form-control {
   font-size: 13px;
   border-radius: 8px;
   min-width: 0;
+}
+
+.td-qty {
+  position: relative;
+  padding-right: 40px !important;
+}
+
+.kemasan-inputs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.form-control-sm {
+  padding: 8px 8px !important;
+  font-size: 12px !important;
+  width: 72px;
+}
+
+.kemasan-sep {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.kemasan-total {
+  font-size: 12px;
+  font-weight: 700;
+  color: #059669;
+  white-space: nowrap;
+}
+
+.btn-kemasan-toggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  opacity: 0.85;
+  padding: 4px 6px;
+}
+
+.btn-kemasan-toggle:hover {
+  opacity: 1;
 }
 
 .td-subtotal {

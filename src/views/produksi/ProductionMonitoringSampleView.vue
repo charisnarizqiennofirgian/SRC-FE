@@ -137,9 +137,9 @@
             <thead class="table-header">
               <tr class="header-row-main">
                 <th class="th-sticky" rowspan="2">No. SO &amp; Buyer</th>
-                <th rowspan="2">Item</th>
-                <th class="th-num" rowspan="2">Target</th>
-                <th class="th-num" rowspan="2">Tgl. Kirim</th>
+                <th class="th-item" rowspan="2">Item</th>
+                <th class="th-num th-target" rowspan="2">Target</th>
+                <th class="th-num th-tglkirim" rowspan="2">Tgl. Kirim</th>
                 <!-- Zona Hulu -->
                 <th colspan="3" class="zone-header zone-hulu">
                   <span class="zone-icon">🌲</span>
@@ -211,12 +211,12 @@
                   </td>
 
                   <!-- Target -->
-                  <td class="td-num">
+                  <td class="td-num td-target">
                     <span class="target-value">{{ formatNumber(item.target) }}</span>
                   </td>
 
                   <!-- Tgl. Kirim -->
-                  <td class="td-num">
+                  <td class="td-num td-tglkirim">
                     <span class="tgl-kirim-value">{{ item.delivery_date || '-' }}</span>
                   </td>
 
@@ -1201,7 +1201,8 @@ const getStageClass = (type) => {
    ============================================ */
 .table-scroll-wrapper {
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: auto;
+  max-height: 65vh;
 }
 
 .data-table {
@@ -1233,11 +1234,22 @@ const getStageClass = (type) => {
   color: white;
 }
 
-.th-sticky {
+.th-sticky,
+.th-item,
+.th-target,
+.th-tglkirim {
   position: sticky;
-  left: 0;
   z-index: 15;
   background: linear-gradient(180deg, #1f2937 0%, #111827 100%) !important;
+  box-sizing: border-box;
+}
+
+.th-sticky { left: 0; width: 170px; min-width: 170px; max-width: 170px; }
+.th-item { left: 170px; width: 200px; min-width: 200px; max-width: 200px; }
+.th-target { left: 370px; width: 90px; min-width: 90px; max-width: 90px; }
+.th-tglkirim {
+  left: 460px;
+  box-shadow: 4px 0 6px -4px rgba(0, 0, 0, 0.35);
 }
 
 .th-num {
@@ -1367,13 +1379,31 @@ const getStageClass = (type) => {
   min-width: 170px;
 }
 
-.td-so-group {
+.td-so-group,
+.td-item,
+.td-target,
+.td-tglkirim {
   position: sticky;
-  left: 0;
   z-index: 5;
+  background: white;
+  box-sizing: border-box;
+}
+
+.td-so-group {
+  left: 0;
+  width: 170px;
+  min-width: 170px;
+  max-width: 170px;
   background: #f9fafb;
   border-right: 2px solid #e5e7eb;
   vertical-align: top;
+}
+
+.td-item { left: 170px; width: 200px; min-width: 200px; max-width: 200px; }
+.td-target { left: 370px; width: 90px; min-width: 90px; max-width: 90px; }
+.td-tglkirim {
+  left: 460px;
+  box-shadow: 4px 0 6px -4px rgba(0, 0, 0, 0.15);
 }
 
 .so-wrapper {
@@ -1446,6 +1476,7 @@ const getStageClass = (type) => {
   font-weight: 600;
   color: #1f2937;
   line-height: 1.3;
+  overflow-wrap: break-word;
 }
 
 .item-code {

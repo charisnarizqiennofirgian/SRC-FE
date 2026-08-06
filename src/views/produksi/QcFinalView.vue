@@ -373,8 +373,8 @@ const sourceWarehouseOptions = ref([])
 const poInfo = ref({ buyer_name: null, so_number: null })
 
 // Urutan tahap hilir sebelum QC — item bisa datang dari salah satu gudang ini
-// tergantung rute produk (tidak semua produk lewat Sanding/Rustik/Finishing)
-const SOURCE_WAREHOUSE_CODES = ['ASSEMBLING', 'RUSKOMP', 'SANDING', 'RUSTIK', 'FINISHING']
+// tergantung rute produk (tidak semua produk lewat Sanding/Rustik/Finishing/Anyam)
+const SOURCE_WAREHOUSE_CODES = ['ASSEMBLING', 'RUSKOMP', 'SANDING', 'RUSTIK', 'FINISHING', 'AYAM']
 
 const form = reactive({
   date:                new Date().toISOString().slice(0, 10),

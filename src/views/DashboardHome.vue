@@ -72,13 +72,13 @@
         </div>
 
         <!-- Table -->
-        <div v-else class="table-wrapper">
+        <div v-else class="table-wrapper table-wrapper-frozen">
           <table class="monitoring-table">
             <thead>
               <tr>
                 <th class="col-so" rowspan="2">No. SO & Buyer</th>
                 <th class="col-item" rowspan="2">Item</th>
-                <th class="col-num" rowspan="2">Target</th>
+                <th class="col-num col-target" rowspan="2">Target</th>
                 <th class="col-tgl-kirim" rowspan="2">Tgl. Kirim</th>
                 <!-- Zona Hulu -->
                 <th colspan="5" class="zone-header zone-hulu">
@@ -147,7 +147,7 @@
                   </td>
 
                   <!-- Target -->
-                  <td class="col-num">
+                  <td class="col-num col-target">
                     <span class="target-value">{{ formatNumber(item.target) }}</span>
                   </td>
 
@@ -1119,6 +1119,11 @@ onMounted(() => {
   overflow-y: visible;
 }
 
+.table-wrapper-frozen {
+  overflow-y: auto;
+  max-height: 65vh;
+}
+
 .monitoring-table {
   width: 100%;
   min-width: 1500px;
@@ -1281,6 +1286,31 @@ onMounted(() => {
   min-width: 90px;
 }
 
+.col-so,
+.col-item,
+.col-target,
+.col-tgl-kirim {
+  position: sticky;
+  z-index: 3;
+  background: white;
+  box-sizing: border-box;
+}
+
+.monitoring-table thead .col-so,
+.monitoring-table thead .col-item,
+.monitoring-table thead .col-target,
+.monitoring-table thead .col-tgl-kirim {
+  z-index: 12;
+}
+
+.col-so { left: 0; width: 170px; min-width: 170px; max-width: 170px; }
+.col-item { left: 170px; width: 220px; min-width: 220px; max-width: 220px; }
+.col-target { left: 390px; width: 70px; min-width: 70px; max-width: 70px; }
+.col-tgl-kirim {
+  left: 460px;
+  box-shadow: 4px 0 6px -4px rgba(0, 0, 0, 0.2);
+}
+
 .tgl-kirim-value {
   font-size: 12px;
   font-weight: 600;
@@ -1324,6 +1354,7 @@ onMounted(() => {
   font-size: 13px;
   color: #1f2937;
   line-height: 1.3;
+  overflow-wrap: break-word;
 }
 
 .item-code {

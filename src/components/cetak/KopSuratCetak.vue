@@ -124,7 +124,7 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
   }
 
   .company-name {
-    font-size: 13pt;
+    font-size: 16pt;
     white-space: normal;
     word-break: break-word;
   }
