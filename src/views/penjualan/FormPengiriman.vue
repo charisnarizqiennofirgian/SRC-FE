@@ -418,9 +418,9 @@ INDONESIA</textarea
                 <thead>
                   <tr>
                     <th v-if="selectedSalesOrders.length > 1">Asal SO</th>
-                    <th>Nama Barang</th>
-                    <th class="text-center">HS Code</th>
-                    <th class="text-center">Qty Dipesan</th>
+                    <th class="col-frozen col-frozen-1">Nama Barang</th>
+                    <th class="text-center col-frozen col-frozen-2">HS Code</th>
+                    <th class="text-center col-frozen col-frozen-3">Qty Dipesan</th>
                     <th class="text-center">Qty Terkirim</th>
                     <th class="text-center">Stok Tersedia</th>
                     <th v-if="form.shipment_mode === 'AIR'" class="text-center">Kirim (Crate)</th>
@@ -447,13 +447,13 @@ INDONESIA</textarea
                       >
                         <span class="so-origin-badge">{{ item.so_number }}</span>
                       </td>
-                      <td v-if="rowIdx === 0" :rowspan="item.packing_rows.length" class="item-name">
+                      <td v-if="rowIdx === 0" :rowspan="item.packing_rows.length" class="item-name col-frozen col-frozen-1">
                         {{ item.item_name }}
                       </td>
-                      <td v-if="rowIdx === 0" :rowspan="item.packing_rows.length" class="text-center">
+                      <td v-if="rowIdx === 0" :rowspan="item.packing_rows.length" class="text-center col-frozen col-frozen-2">
                         <span class="hs-code-badge">{{ item.hs_code || '-' }}</span>
                       </td>
-                      <td v-if="rowIdx === 0" :rowspan="item.packing_rows.length" class="text-center">
+                      <td v-if="rowIdx === 0" :rowspan="item.packing_rows.length" class="text-center col-frozen col-frozen-3">
                         {{ item.quantity_ordered }}
                       </td>
                       <td v-if="rowIdx === 0" :rowspan="item.packing_rows.length" class="text-center">
@@ -1696,6 +1696,44 @@ const goBack = () => {
 .item-name {
   font-weight: 700;
   color: #1f2937;
+}
+
+.col-frozen {
+  position: sticky;
+  z-index: 2;
+  background: white;
+}
+
+.col-frozen-1 {
+  left: 0;
+  width: 240px;
+  min-width: 240px;
+  max-width: 240px;
+  white-space: normal;
+}
+
+.col-frozen-2 {
+  left: 240px;
+  width: 110px;
+  min-width: 110px;
+  max-width: 110px;
+}
+
+.col-frozen-3 {
+  left: 350px;
+  width: 130px;
+  min-width: 130px;
+  max-width: 130px;
+  box-shadow: 4px 0 6px -4px rgba(0, 0, 0, 0.15);
+}
+
+.table-modern thead .col-frozen {
+  z-index: 3;
+  background: #eef0f2;
+}
+
+.table-modern tbody tr:hover .col-frozen {
+  background: #f9fafb;
 }
 
 .text-center {

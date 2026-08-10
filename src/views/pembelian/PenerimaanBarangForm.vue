@@ -348,17 +348,18 @@ onMounted(async () => {
       const remaining       = Math.max(0, ordered - alreadyReceived)
       if (isKayu.value) {
         return {
+          purchase_order_detail_id: detail.id,
           item_id:                 detail.item_id,
           item_name:               detail.item.name,
           item_unit:               detail.item.unit.name,
           quantity_ordered:        ordered,
           quantity_received_total: alreadyReceived,
           quantity_remaining:      remaining,
-          // Grade rows: each row = { grade, quantity_received, price }
           grade_rows: [{ grade: '', quantity_received: 0, price: null }],
         }
       }
       return {
+        purchase_order_detail_id: detail.id,
         item_id:                 detail.item_id,
         item_name:               detail.item.name,
         item_unit:               detail.item.unit.name,
@@ -405,6 +406,7 @@ const submitForm = async () => {
             return
           }
           detailsPayload.push({
+            purchase_order_detail_id: item.purchase_order_detail_id,
             item_id:           item.item_id,
             quantity_received: qty,
             price:             gr.price,
@@ -424,6 +426,7 @@ const submitForm = async () => {
       return
     }
     detailsPayload = details.map(d => ({
+      purchase_order_detail_id: d.purchase_order_detail_id,
       item_id:           d.item_id,
       quantity_received: d.quantity_received,
       price:             null,
