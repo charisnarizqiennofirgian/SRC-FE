@@ -58,6 +58,7 @@
             <tr>
               <th class="th-po">Nomor PO</th>
               <th class="th-supplier">Supplier</th>
+              <th class="th-barang">Barang</th>
               <th class="th-date">Tanggal Pesan</th>
               <th class="th-date">Tanggal Kirim</th> <!-- ✅ TAMBAH INI -->
               <th class="th-total">Total</th>
@@ -67,7 +68,7 @@
           </thead>
           <tbody>
             <tr v-if="daftarPesanan.length === 0" class="empty-row">
-              <td colspan="7"> <!-- ✅ GANTI DARI 6 JADI 7 -->
+              <td colspan="8">
                 <div class="empty-state">
                   <span class="empty-icon">📭</span>
                   <p class="empty-text">Belum ada Pesanan Pembelian</p>
@@ -85,6 +86,20 @@
                   <span class="supplier-icon">🏭</span>
                   <span>{{ pesanan.supplier ? pesanan.supplier.name : 'N/A' }}</span>
                 </div>
+              </td>
+              <td class="td-barang">
+                <span
+                  v-if="itemSummary(pesanan).full.length"
+                  :class="['item-summary-wrap', itemSummary(pesanan).full.length > 1 ? 'has-tooltip' : '']"
+                >
+                  <span class="item-summary-text">{{ itemSummary(pesanan).text }}</span>
+                  <div v-if="itemSummary(pesanan).full.length > 1" class="item-tooltip">
+                    <div v-for="(nama, idx) in itemSummary(pesanan).full" :key="idx" class="item-tooltip-row">
+                      • {{ nama }}
+                    </div>
+                  </div>
+                </span>
+                <span v-else class="item-summary-empty">—</span>
               </td>
               <td class="td-date">
                 <span class="date-text">{{ formatTanggal(pesanan.order_date) }}</span>
@@ -335,6 +350,20 @@ watch(searchQuery, () => {
 })
 
 onMounted(fetchDaftarPesanan)
+
+const itemSummary = (pesanan) => {
+  const full = (pesanan.details || [])
+    .map((d) => d.item?.name)
+    .filter(Boolean)
+
+  if (full.length === 0) return { text: '', full: [] }
+
+  const shown = full.slice(0, 2).join(', ')
+  const sisa = full.length - 2
+  const text = sisa > 0 ? `${shown} +${sisa} lainnya` : shown
+
+  return { text, full }
+}
 
 const formatTanggal = (tanggal) => {
   return new Date(tanggal).toLocaleDateString('id-ID', {
@@ -663,6 +692,9 @@ const formatRupiah = (angka) => {
 .th-supplier {
   width: auto;
 }
+.th-barang {
+  width: 220px;
+}
 .th-date {
   width: 200px;
 }
@@ -725,6 +757,63 @@ const formatRupiah = (angka) => {
   color: #475569;
   font-size: 14px;
   font-weight: 600;
+}
+
+.item-summary-wrap {
+  position: relative;
+  display: block;
+  max-width: 220px;
+}
+
+.item-summary-wrap.has-tooltip {
+  cursor: help;
+}
+
+.item-summary-text {
+  display: block;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-summary-wrap.has-tooltip .item-summary-text {
+  border-bottom: 1px dashed #cbd5e1;
+}
+
+.item-summary-empty {
+  color: #cbd5e1;
+}
+
+.item-tooltip {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background: #1f2937;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: normal;
+  width: max-content;
+  max-width: 280px;
+  text-align: left;
+  z-index: 50;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.item-summary-wrap.has-tooltip:hover .item-tooltip {
+  display: block;
+}
+
+.item-tooltip-row {
+  color: #e5e7eb;
+  padding: 2px 0;
 }
 
 .total-amount {
