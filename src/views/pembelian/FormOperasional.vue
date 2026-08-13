@@ -29,7 +29,7 @@
 
     <form v-else @submit.prevent="saveOrder">
       <div v-if="isPriceOnlyMode" class="price-only-banner">
-        ⚠️ PO ini sudah <strong>Diterima Sebagian</strong> — untuk sementara cuma <strong>Harga Satuan</strong> yang bisa diubah. Barang, jumlah, dan tanggal terkunci.
+        ⚠️ PO ini sudah <strong>Diterima Sebagian</strong> — untuk sementara cuma <strong>Harga Satuan</strong> dan <strong>Biaya Lain-lain (Ongkir)</strong> yang bisa diubah. Barang, jumlah, dan tanggal terkunci.
       </div>
 
       <div class="content-card">
@@ -350,10 +350,12 @@
                   placeholder="Contoh: 150000"
                   min="0"
                   step="any"
-                  :disabled="isPriceOnlyMode"
                 />
               </div>
-              <small class="form-hint-kurs">Selalu dalam IDR — ditambahkan setelah PPN ke Grand Total.</small>
+              <small class="form-hint-kurs">
+                Selalu dalam IDR — ditambahkan setelah PPN ke Grand Total.
+                <span v-if="isPriceOnlyMode"> Boleh diisi/diedit meski PO sudah Diterima Sebagian — ongkir sering baru diketahui belakangan.</span>
+              </small>
             </div>
             <div class="form-group">
               <label class="form-label">Deskripsi Biaya Lain-lain</label>
@@ -362,7 +364,6 @@
                 v-model="form.other_cost_description"
                 class="form-control"
                 placeholder="Contoh: Ongkos kirim, biaya bongkar muat, dll."
-                :disabled="isPriceOnlyMode"
               />
             </div>
           </div>
@@ -649,6 +650,8 @@ const saveOrder = async () => {
     if (isPriceOnlyMode.value) {
       const payload = {
         details: form.details.map((d) => ({ id: d.id, price: d.price })),
+        other_cost: form.other_cost || 0,
+        other_cost_description: form.other_cost_description || '',
       }
       const response = await apiClient.put(`/purchase-orders/${poId}/update-price`, payload)
       const lockedItems = response.data.locked_items || []
