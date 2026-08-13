@@ -163,6 +163,7 @@
                 <th v-if="!isKomponen" class="th-stok-saat-ini">Stok Saat Ini</th>
                 <th v-if="isKomponen" class="th-stok-saat-ini">Qty Natural</th>
                 <th v-if="isKomponen" class="th-stok-saat-ini">Qty Warna</th>
+                <th v-if="isProdukJadi" class="th-gudang">Gudang</th>
                 <th v-if="!isKomponen" class="th-stok-baru">Jml Penyesuaian (+/-)</th>
                 <th v-if="isKomponen" class="th-stok-baru">Adj Natural (+/-)</th>
                 <th v-if="isKomponen" class="th-stok-baru">Adj Warna (+/-)</th>
@@ -216,6 +217,18 @@
                   <span class="stock-value qty-warna-val">{{ parseFloat(item.qty_warna || 0) }}</span>
                 </td>
 
+                <!-- Gudang tujuan penyesuaian: khusus Produk Jadi (wajib dipilih, produk lama tersebar di banyak gudang) -->
+                <td v-if="isProdukJadi" class="td-gudang">
+                  <div class="input-wrapper">
+                    <select v-model="item.warehouse_id" class="form-control-table select-gudang-row">
+                      <option :value="null" disabled>Pilih gudang...</option>
+                      <option v-for="wh in daftarWarehouse" :key="wh.id" :value="wh.id">
+                        {{ wh.name }}
+                      </option>
+                    </select>
+                  </div>
+                </td>
+
                 <!-- Input adjustment: non-komponen -->
                 <td v-if="!isKomponen" class="td-stok-baru">
                   <div class="input-wrapper">
@@ -253,7 +266,7 @@
                   <button
                     @click="handleAdjusment(item)"
                     class="btn-action-save"
-                    :disabled="isKomponen ? (!item.adj_natural && !item.adj_warna) : !item.new_stock"
+                    :disabled="isKomponen ? (!item.adj_natural && !item.adj_warna) : (isProdukJadi ? (!item.new_stock || !item.warehouse_id) : !item.new_stock)"
                   >
                     <span class="save-icon">💾</span>
                     <span class="save-text">Simpan</span>
@@ -963,7 +976,13 @@ const isJeblosan = computed(() => {
   return cat?.name?.toLowerCase().includes('jeblosan') ?? false
 })
 
-const noDataColspan = computed(() => (isKomponen.value ? 12 : (isJeblosan.value ? 7 : 6)))
+const isProdukJadi = computed(() => {
+  if (!selectedCategory.value) return false
+  const cat = daftarKategori.value.find((k) => k.id === selectedCategory.value)
+  return cat?.name?.toLowerCase().includes('produk jadi') ?? false
+})
+
+const noDataColspan = computed(() => (isKomponen.value ? 12 : (isJeblosan.value ? 7 : (isProdukJadi.value ? 7 : 6))))
 
 const searchQuery = ref('')
 const currentPage = ref(1)
@@ -1117,9 +1136,10 @@ const fetchStokBarang = async () => {
 
     daftarStok.value = items.map((item) => ({
       ...item,
-      new_stock:   null,
-      adj_natural: null,
-      adj_warna:   null,
+      new_stock:    null,
+      adj_natural:  null,
+      adj_warna:    null,
+      warehouse_id: null,
     }))
   } catch (error) {
     console.error('Error:', error)
@@ -1164,6 +1184,11 @@ const handleAdjusment = async (item) => {
     }
 
     // ── NON-KOMPONEN: behaviour lama ────────────────────────────────────────
+    if (isProdukJadi.value && !item.warehouse_id) {
+      toast.error('Pilih gudang tujuan terlebih dahulu sebelum menyimpan penyesuaian.')
+      return
+    }
+
     const adjustmentAmount = item.new_stock
 
     if (adjustmentAmount == null || adjustmentAmount === 0) {
@@ -1186,12 +1211,13 @@ const handleAdjusment = async (item) => {
       item_id:      item.id,
       type:         type,
       quantity:     quantity,
-      warehouse_id: selectedWarehouse.value || null,
+      warehouse_id: isProdukJadi.value ? item.warehouse_id : (selectedWarehouse.value || null),
       notes:        `Penyesuaian manual: ${adjustmentAmount > 0 ? '+' : ''}${adjustmentAmount}. Dari ${currentStock} menjadi ${newStock}.`,
     })
 
     item.stock     = response.data.new_stock
     item.new_stock = null
+    if (isProdukJadi.value) item.warehouse_id = null
 
     toast.success(`${item.name} berhasil disesuaikan.`)
   } catch (error) {
@@ -2350,6 +2376,16 @@ const downloadTemplateBom = async () => {
   padding: 2px 8px;
   min-width: 36px;
 }
+.th-gudang {
+  width: 16%;
+}
+.td-gudang {
+  vertical-align: middle;
+}
+.select-gudang-row {
+  cursor: pointer;
+}
+
 .th-stok-saat-ini {
   width: 12%;
   text-align: center;
