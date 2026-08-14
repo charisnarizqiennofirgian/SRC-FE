@@ -73,6 +73,15 @@
         </div>
         <div class="filter-right">
           <div class="per-page-selector">
+            <label class="per-page-label">Gudang:</label>
+            <select v-model="warehouseId" @change="handleWarehouseChange" class="per-page-select">
+              <option :value="''">Semua Gudang</option>
+              <option v-for="wh in daftarGudang" :key="wh.id" :value="wh.id">
+                {{ wh.name }}
+              </option>
+            </select>
+          </div>
+          <div class="per-page-selector">
             <label class="per-page-label">Tampilkan:</label>
             <select v-model="perPage" @change="handlePerPageChange" class="per-page-select">
               <option :value="10">10</option>
@@ -206,13 +215,24 @@ import { useToast } from 'vue-toastification'
 
 const loading = ref(true)
 const daftarBarang = ref([])
+const daftarGudang = ref([])
 const pagination = ref(null)
 const searchQuery = ref('')
+const warehouseId = ref('')
 const perPage = ref(50)
 const currentPage = ref(1)
 let searchTimeout = null
 const router = useRouter()
 const toast = useToast()
+
+const fetchGudang = async () => {
+  try {
+    const response = await apiClient.get('/warehouses')
+    daftarGudang.value = response.data.data || response.data || []
+  } catch (error) {
+    console.error('❌ Error fetch gudang:', error)
+  }
+}
 
 const fetchBarang = async () => {
   loading.value = true
@@ -226,6 +246,10 @@ const fetchBarang = async () => {
 
     if (searchQuery.value) {
       params.search = searchQuery.value
+    }
+
+    if (warehouseId.value) {
+      params.warehouse_id = warehouseId.value
     }
 
     const response = await apiClient.get('/materials', { params })
@@ -262,6 +286,11 @@ const clearSearch = () => {
 }
 
 const handlePerPageChange = () => {
+  currentPage.value = 1
+  fetchBarang()
+}
+
+const handleWarehouseChange = () => {
   currentPage.value = 1
   fetchBarang()
 }
@@ -322,7 +351,10 @@ const deleteBarang = async (id) => {
   }
 }
 
-onMounted(fetchBarang)
+onMounted(() => {
+  fetchGudang()
+  fetchBarang()
+})
 </script>
 
 <style scoped>
