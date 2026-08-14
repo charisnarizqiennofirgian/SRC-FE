@@ -10,13 +10,23 @@
             <p class="page-subtitle">Upload dan kelola dokumen gambar produk, daftar bahan, dan gambar teknik</p>
           </div>
         </div>
-        <button
-          v-if="hasPermission('dokumen-upload')"
-          class="btn-upload-header"
-          @click="showModalUpload = true"
-        >
-          📤 Upload Dokumen
-        </button>
+        <div class="header-actions">
+          <button
+            v-if="hasPermission('dokumen-upload')"
+            class="btn-select-mode"
+            :class="{ active: selectionMode }"
+            @click="toggleSelectionMode"
+          >
+            {{ selectionMode ? '✕ Batal Pilih' : '🏷️ Tandai Buyer' }}
+          </button>
+          <button
+            v-if="hasPermission('dokumen-upload')"
+            class="btn-upload-header"
+            @click="showModalUpload = true"
+          >
+            📤 Upload Dokumen
+          </button>
+        </div>
       </div>
     </div>
 
@@ -34,6 +44,11 @@
           />
           <button v-if="filter.search" class="btn-clear-search" @click="clearSearch">✕</button>
         </div>
+        <select v-model="filter.buyer_id" class="buyer-filter-select" @change="onBuyerFilterChange">
+          <option value="">👥 Semua Buyer</option>
+          <option value="none">🚫 Tanpa Buyer</option>
+          <option v-for="b in buyers" :key="b.id" :value="b.id">{{ b.name }}</option>
+        </select>
         <div class="kategori-tabs">
           <button
             v-for="kat in kategoriList"
@@ -45,6 +60,26 @@
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- BULK ASSIGN TOOLBAR -->
+    <div v-if="selectionMode" class="bulk-toolbar">
+      <span class="bulk-info">{{ selectedIds.length }} dokumen dipilih</span>
+      <button class="btn-select-all" @click="toggleSelectAll">
+        {{ selectedIds.length === daftarDokumen.length ? 'Batal Pilih Semua' : 'Pilih Semua di Halaman Ini' }}
+      </button>
+      <select v-model="bulkBuyerId" class="buyer-filter-select">
+        <option value="">Pilih Buyer...</option>
+        <option value="clear">🚫 Hapus Tanda Buyer</option>
+        <option v-for="b in buyers" :key="b.id" :value="b.id">{{ b.name }}</option>
+      </select>
+      <button
+        class="btn-terapkan-bulk"
+        :disabled="selectedIds.length === 0 || bulkBuyerId === '' || isBulkSaving"
+        @click="terapkanBulkBuyer"
+      >
+        {{ isBulkSaving ? '⏳ Menyimpan...' : '✔️ Terapkan' }}
+      </button>
     </div>
 
     <!-- LOADING -->
@@ -66,7 +101,14 @@
         v-for="dok in daftarDokumen"
         :key="dok.id"
         class="dokumen-card"
+        :class="{ 'card-selection-mode': selectionMode, 'card-selected': selectedIds.includes(dok.id) }"
+        @click="selectionMode && toggleSelect(dok.id)"
       >
+        <!-- CHECKBOX (mode pilih) -->
+        <label v-if="selectionMode" class="dok-checkbox" @click.stop>
+          <input type="checkbox" :checked="selectedIds.includes(dok.id)" @change="toggleSelect(dok.id)" />
+        </label>
+
         <!-- PREVIEW ICON -->
         <div class="dok-preview" :class="getPreviewClass(dok.tipe_file)">
           <span class="dok-icon">{{ getFileIcon(dok.tipe_file) }}</span>
@@ -80,6 +122,7 @@
             <span class="badge-kategori" :class="getBadgeKat(dok.kategori)">
               {{ dok.kategori }}
             </span>
+            <span v-if="dok.buyer?.name" class="badge-buyer">👥 {{ dok.buyer.name }}</span>
           </div>
           <div class="dok-keterangan" v-if="dok.keterangan">{{ dok.keterangan }}</div>
           <div class="dok-footer">
@@ -90,7 +133,7 @@
         </div>
 
         <!-- ACTIONS -->
-        <div class="dok-actions">
+        <div v-if="!selectionMode" class="dok-actions">
           <button class="btn-view" @click="bukaPreview(dok)" title="Lihat">
             👁️ Lihat
           </button>
@@ -244,6 +287,13 @@
               </select>
             </div>
             <div class="form-group-dok">
+              <label class="form-label-dok">Buyer <span class="hint-opt">(opsional)</span></label>
+              <select v-model="formUpload.buyer_id" class="form-input-dok">
+                <option value="">Tidak ditandai buyer</option>
+                <option v-for="b in buyers" :key="b.id" :value="b.id">{{ b.name }}</option>
+              </select>
+            </div>
+            <div class="form-group-dok">
               <label class="form-label-dok">Keterangan</label>
               <textarea
                 v-model="formUpload.keterangan"
@@ -361,6 +411,12 @@ const showModalUpload = ref(false)
 const isDragging      = ref(false)
 const inputFile       = ref(null)
 const daftarDokumen   = ref([])
+const buyers          = ref([])
+
+const selectionMode = ref(false)
+const selectedIds   = ref([])
+const bulkBuyerId   = ref('')
+const isBulkSaving  = ref(false)
 
 const modalPreview = ref({ show: false, dok: null, url: null, type: null, loading: false })
 
@@ -379,15 +435,17 @@ const pagination = reactive({
 })
 
 const filter = reactive({
-  search:   '',
-  kategori: '',
-  page:     1,
+  search:    '',
+  kategori:  '',
+  buyer_id:  '',
+  page:      1,
 })
 
 const formUpload = reactive({
   file:       null,
   nama_file:  '',
   kategori:   '',
+  buyer_id:   '',
   keterangan: '',
 })
 
@@ -399,21 +457,32 @@ const kategoriList = [
   { value: 'Lainnya',        label: 'Lainnya',        icon: '📄' },
 ]
 
+const fetchBuyers = async () => {
+  try {
+    const res = await apiClient.get('/buyers', { params: { per_page: 200 } })
+    buyers.value = res.data.data || []
+  } catch {
+    // Gagal memuat daftar buyer bukan blocker — filter/form tetap jalan tanpa opsi buyer
+  }
+}
+
 const fetchDokumen = async () => {
   loading.value = true
   try {
     const res = await apiClient.get('/dokumen', {
       params: {
-        search:   filter.search   || undefined,
-        kategori: filter.kategori || undefined,
-        page:     filter.page,
-        per_page: pagination.per_page,
+        search:    filter.search   || undefined,
+        kategori:  filter.kategori || undefined,
+        buyer_id:  filter.buyer_id || undefined,
+        page:      filter.page,
+        per_page:  pagination.per_page,
       }
     })
     daftarDokumen.value    = res.data.data.data || []
     pagination.current_page = res.data.data.current_page
     pagination.last_page    = res.data.data.last_page
     pagination.total        = res.data.data.total
+    selectedIds.value = []
   } catch {
     showError('Gagal', 'Gagal memuat dokumen')
   } finally {
@@ -425,6 +494,52 @@ const setKategori = (kat) => {
   filter.kategori = kat
   filter.page     = 1
   fetchDokumen()
+}
+
+const onBuyerFilterChange = () => {
+  filter.page = 1
+  fetchDokumen()
+}
+
+const toggleSelectionMode = () => {
+  selectionMode.value = !selectionMode.value
+  selectedIds.value   = []
+  bulkBuyerId.value   = ''
+}
+
+const toggleSelect = (id) => {
+  const idx = selectedIds.value.indexOf(id)
+  if (idx === -1) selectedIds.value.push(id)
+  else selectedIds.value.splice(idx, 1)
+}
+
+const toggleSelectAll = () => {
+  if (selectedIds.value.length === daftarDokumen.value.length) {
+    selectedIds.value = []
+  } else {
+    selectedIds.value = daftarDokumen.value.map((d) => d.id)
+  }
+}
+
+const terapkanBulkBuyer = async () => {
+  if (selectedIds.value.length === 0 || bulkBuyerId.value === '') return
+
+  isBulkSaving.value = true
+  try {
+    await apiClient.post('/dokumen/bulk-set-buyer', {
+      ids:      selectedIds.value,
+      buyer_id: bulkBuyerId.value === 'clear' ? null : bulkBuyerId.value,
+    })
+    showSuccess('Berhasil', 'Buyer berhasil ditandai ke dokumen terpilih.')
+    selectionMode.value = false
+    selectedIds.value   = []
+    bulkBuyerId.value   = ''
+    fetchDokumen()
+  } catch (error) {
+    showError('Gagal', error.response?.data?.message || 'Gagal menandai buyer.')
+  } finally {
+    isBulkSaving.value = false
+  }
 }
 
 const clearSearch = () => {
@@ -468,6 +583,7 @@ const uploadDokumen = async () => {
     fd.append('file',       formUpload.file)
     fd.append('nama_file',  formUpload.nama_file)
     fd.append('kategori',   formUpload.kategori)
+    if (formUpload.buyer_id) fd.append('buyer_id', formUpload.buyer_id)
     fd.append('keterangan', formUpload.keterangan || '')
 
     await apiClient.post('/dokumen/upload', fd, {
@@ -564,6 +680,7 @@ const tutupModal = () => {
   formUpload.file        = null
   formUpload.nama_file   = ''
   formUpload.kategori    = ''
+  formUpload.buyer_id    = ''
   formUpload.keterangan  = ''
   isDragging.value       = false
 }
@@ -666,7 +783,10 @@ const formatTanggal = (tgl) => {
   })
 }
 
-onMounted(fetchDokumen)
+onMounted(() => {
+  fetchBuyers()
+  fetchDokumen()
+})
 </script>
 
 <style scoped>
@@ -683,8 +803,26 @@ onMounted(fetchDokumen)
 .btn-upload-header { padding:14px 24px; background:white; color:#0891b2; border:none; border-radius:12px; font-weight:800; font-size:15px; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,0.15); transition:all 0.2s; }
 .btn-upload-header:hover { transform:translateY(-2px); }
 
+.header-actions { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.btn-select-mode { padding:12px 20px; background:rgba(255,255,255,0.15); color:white; border:2px solid rgba(255,255,255,0.4); border-radius:12px; font-weight:700; font-size:14px; cursor:pointer; transition:all 0.2s; }
+.btn-select-mode:hover { background:rgba(255,255,255,0.25); }
+.btn-select-mode.active { background:white; color:#0891b2; border-color:white; }
+
 .filter-card { background:white; border-radius:16px; padding:20px 24px; margin-bottom:24px; box-shadow:0 4px 16px rgba(0,0,0,0.06); }
 .filter-row { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+.buyer-filter-select { padding:11px 14px; border:2px solid #e5e7eb; border-radius:12px; font-size:14px; font-weight:600; color:#374151; background:white; cursor:pointer; }
+.buyer-filter-select:focus { outline:none; border-color:#0891b2; }
+
+.bulk-toolbar {
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  background:#ecfeff; border:2px solid #a5f3fc; border-radius:14px;
+  padding:14px 20px; margin-bottom:20px;
+}
+.bulk-info { font-weight:800; color:#0e7490; font-size:14px; }
+.btn-select-all { padding:8px 14px; background:white; border:1.5px solid #67e8f9; border-radius:8px; font-size:13px; font-weight:600; color:#0891b2; cursor:pointer; }
+.btn-select-all:hover { background:#cffafe; }
+.btn-terapkan-bulk { padding:10px 20px; background:#0891b2; color:white; border:none; border-radius:10px; font-weight:800; font-size:14px; cursor:pointer; }
+.btn-terapkan-bulk:disabled { opacity:0.5; cursor:not-allowed; }
 .search-box { position:relative; flex:1; min-width:250px; }
 .search-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:16px; }
 .search-input { width:100%; padding:12px 40px; border:2px solid #e5e7eb; border-radius:12px; font-size:14px; box-sizing:border-box; }
@@ -707,8 +845,13 @@ onMounted(fetchDokumen)
 /* GRID */
 .dokumen-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:20px; margin-bottom:24px; }
 
-.dokumen-card { background:white; border-radius:16px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.06); border:1px solid #f0f0f0; transition:all 0.2s; display:flex; flex-direction:column; }
+.dokumen-card { background:white; border-radius:16px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.06); border:1px solid #f0f0f0; transition:all 0.2s; display:flex; flex-direction:column; position:relative; }
 .dokumen-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,0.12); }
+.dokumen-card.card-selection-mode { cursor:pointer; }
+.dokumen-card.card-selected { border-color:#0891b2; box-shadow:0 0 0 3px rgba(8,145,178,0.2); }
+
+.dok-checkbox { position:absolute; top:10px; left:10px; z-index:2; background:white; border-radius:6px; padding:4px; box-shadow:0 2px 8px rgba(0,0,0,0.2); display:flex; }
+.dok-checkbox input { width:18px; height:18px; cursor:pointer; accent-color:#0891b2; }
 
 .dok-preview { height:120px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; }
 .preview-image  { background:linear-gradient(135deg,#dbeafe,#bfdbfe); }
@@ -721,7 +864,8 @@ onMounted(fetchDokumen)
 
 .dok-info { padding:16px; flex:1; }
 .dok-nama { font-size:14px; font-weight:800; color:#111827; margin-bottom:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.dok-meta { margin-bottom:6px; }
+.dok-meta { margin-bottom:6px; display:flex; gap:6px; flex-wrap:wrap; }
+.badge-buyer { display:inline-block; padding:3px 10px; border-radius:6px; font-size:11px; font-weight:700; background:#e0f2fe; color:#0369a1; }
 .dok-keterangan { font-size:12px; color:#6b7280; margin-bottom:8px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .dok-footer { display:flex; flex-wrap:wrap; gap:6px; font-size:11px; color:#9ca3af; }
 
