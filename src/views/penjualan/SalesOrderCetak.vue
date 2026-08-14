@@ -66,7 +66,7 @@
             <tr v-for="(item, index) in salesOrder.details" :key="item.id" class="data-row">
               <td class="text-center">{{ index + 1 }}</td>
               <td class="td-kode">{{ item.item_code || '-' }}</td>
-              <td class="td-nama">{{ item.item_name }}</td>
+              <td class="td-nama">{{ item.item?.name || item.item_name }}</td>
               <td class="text-center">{{ formatQuantity(item.quantity) }}</td>
               <td class="text-center">{{ item.item_unit }}</td>
               <td class="td-ket">{{ item.keterangan || '-' }}</td>
