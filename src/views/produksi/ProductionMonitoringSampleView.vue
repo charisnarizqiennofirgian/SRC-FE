@@ -1589,20 +1589,21 @@ const getStageClass = (type) => {
 .moulding-tooltip {
   display: none;
   position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-bottom: 8px;
+  top: 0;
+  left: 100%;
+  margin-left: 8px;
   background: #1f2937;
   color: #fff;
   padding: 8px 12px;
   border-radius: 8px;
   font-size: 0.75rem;
   font-weight: 500;
-  white-space: nowrap;
   text-align: left;
   z-index: 50;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  width: 240px;
+  max-height: 220px;
+  overflow-y: auto;
 }
 
 .has-tooltip:hover .moulding-tooltip {
@@ -1614,22 +1615,28 @@ const getStageClass = (type) => {
   margin-bottom: 4px;
   padding-bottom: 4px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  position: sticky;
+  top: 0;
+  background: #1f2937;
 }
 
 .moulding-tooltip-row {
   display: flex;
   justify-content: space-between;
-  gap: 14px;
+  gap: 10px;
   padding: 2px 0;
 }
 
 .moulding-tooltip-name {
   color: #e5e7eb;
+  word-break: break-word;
 }
 
 .moulding-tooltip-qty {
   color: #6ee7b7;
   font-weight: 700;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .bom-check-ok {
