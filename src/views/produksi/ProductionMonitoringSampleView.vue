@@ -238,7 +238,7 @@
                   </td>
 
                   <!-- Moulding (qty + tooltip breakdown/checklist BOM) -->
-                  <td class="td-qty stage-moulding">
+                  <td :class="['td-qty', 'stage-moulding', item.qty_moulding_is_remainder ? 'is-remainder' : '']">
                     <span
                       :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value', (item.moulding_bom_checklist?.length || item.moulding_components?.length) ? 'has-tooltip' : '']"
                     >
@@ -264,12 +264,12 @@
                   </td>
 
                   <!-- Prototype / Sanding / Packing -->
-                  <td class="td-qty stage-proto">
+                  <td :class="['td-qty', 'stage-proto', item.qty_prototype_is_remainder ? 'is-remainder' : '']">
                     <span :class="['qty-value', item.qty_prototype > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_prototype) }} <span class="stage-pct">({{ stagePercent(item.qty_prototype, item.target) }}%)</span>
                     </span>
                   </td>
-                  <td class="td-qty stage-sanding">
+                  <td :class="['td-qty', 'stage-sanding', item.qty_sanding_is_remainder ? 'is-remainder' : '']">
                     <span :class="['qty-value', item.qty_sanding > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_sanding) }} <span class="stage-pct">({{ stagePercent(item.qty_sanding, item.target) }}%)</span>
                     </span>
@@ -1312,6 +1312,21 @@ const getStageClass = (type) => {
 .stage-packing {
   background: linear-gradient(180deg, #dcfce7 0%, #bbf7d0 100%) !important;
   color: #166534 !important;
+}
+
+.td-qty.is-remainder {
+  background: linear-gradient(180deg, #fde68a 0%, #fbbf24 100%) !important;
+  color: #78350f !important;
+  position: relative;
+}
+
+.td-qty.is-remainder::after {
+  content: '↳ sisa';
+  display: block;
+  font-size: 9px;
+  color: #78350f;
+  font-weight: 600;
+  margin-top: 1px;
 }
 
 /* ============================================

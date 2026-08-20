@@ -238,7 +238,7 @@
                       {{ getStatusIcon(item.status_pembahanan) }}
                     </span>
                   </td>
-                  <td class="td-qty stage-moulding">
+                  <td :class="['td-qty', 'stage-moulding', item.qty_moulding_is_remainder ? 'is-remainder' : '']">
                     <span
                       :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value', (item.moulding_bom_checklist?.length || item.moulding_components?.length) ? 'has-tooltip' : '']"
                     >
@@ -262,7 +262,7 @@
                       </div>
                     </span>
                   </td>
-                  <td class="td-qty stage-mesin">
+                  <td :class="['td-qty', 'stage-mesin', item.qty_mesin_is_remainder ? 'is-remainder' : '']">
                     <span
                       :class="['qty-value', item.qty_mesin > 0 ? 'has-value' : 'no-value', (item.mesin_bom_checklist?.length || item.mesin_components?.length) ? 'has-tooltip' : '']"
                     >
@@ -288,37 +288,37 @@
                   </td>
 
                   <!-- Zona Hilir (Qty) -->
-                  <td class="td-qty stage-ruskomp">
+                  <td :class="['td-qty', 'stage-ruskomp', item.qty_ruskomp_is_remainder ? 'is-remainder' : '']">
                     <span :class="['qty-value', item.qty_ruskomp > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_ruskomp) }} <span class="stage-pct">({{ stagePercent(item.qty_ruskomp, item.target) }}%)</span>
                     </span>
                   </td>
-                  <td class="td-qty stage-assembling">
+                  <td :class="['td-qty', 'stage-assembling', item.qty_assembling_is_remainder ? 'is-remainder' : '']">
                     <span :class="['qty-value', item.qty_assembling > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_assembling) }} <span class="stage-pct">({{ stagePercent(item.qty_assembling, item.target) }}%)</span>
                     </span>
                   </td>
-                  <td class="td-qty stage-sanding">
+                  <td :class="['td-qty', 'stage-sanding', item.qty_sanding_is_remainder ? 'is-remainder' : '']">
                     <span :class="['qty-value', item.qty_sanding > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_sanding) }} <span class="stage-pct">({{ stagePercent(item.qty_sanding, item.target) }}%)</span>
                     </span>
                   </td>
-                  <td class="td-qty stage-rustik">
+                  <td :class="['td-qty', 'stage-rustik', item.qty_rustik_is_remainder ? 'is-remainder' : '']">
                     <span :class="['qty-value', item.qty_rustik > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_rustik) }} <span class="stage-pct">({{ stagePercent(item.qty_rustik, item.target) }}%)</span>
                     </span>
                   </td>
-                  <td class="td-qty stage-finishing">
+                  <td :class="['td-qty', 'stage-finishing', item.qty_finishing_is_remainder ? 'is-remainder' : '']">
                     <span :class="['qty-value', item.qty_finishing > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_finishing) }} <span class="stage-pct">({{ stagePercent(item.qty_finishing, item.target) }}%)</span>
                     </span>
                   </td>
-                  <td class="td-qty stage-anyam">
+                  <td :class="['td-qty', 'stage-anyam', item.qty_anyam_is_remainder ? 'is-remainder' : '']">
                     <span :class="['qty-value', item.qty_anyam > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_anyam) }} <span class="stage-pct">({{ stagePercent(item.qty_anyam, item.target) }}%)</span>
                     </span>
                   </td>
-                  <td class="td-qty stage-qcfinal">
+                  <td :class="['td-qty', 'stage-qcfinal', item.qty_qc_final_is_remainder ? 'is-remainder' : '']">
                     <span :class="['qty-value', item.qty_qc_final > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_qc_final) }} <span class="stage-pct">({{ stagePercent(item.qty_qc_final, item.target) }}%)</span>
                     </span>
@@ -2260,5 +2260,19 @@ const getStageClass = (type) => {
 .stage-ruskomp {
   background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%) !important;
   color: #9a3412 !important;
+}
+
+.td-qty.is-remainder {
+  background: linear-gradient(180deg, #fef9c3 0%, #fef08a 100%) !important;
+  position: relative;
+}
+
+.td-qty.is-remainder::after {
+  content: '↳ sisa';
+  display: block;
+  font-size: 9px;
+  color: #854d0e;
+  font-weight: 600;
+  margin-top: 1px;
 }
 </style>
