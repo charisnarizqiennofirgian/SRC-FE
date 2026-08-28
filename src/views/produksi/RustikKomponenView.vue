@@ -137,6 +137,22 @@
               </div>
             </div>
 
+            <!-- INFO BOM -->
+            <div v-if="form.production_order_detail_id" class="bom-info-wrap">
+              <div v-if="bomComponents.length > 0 && !showAllItems" class="bom-info-bar bom-info-ok">
+                <span>✓ Menampilkan {{ bomComponents.length }} komponen sesuai resep BOM produk ini</span>
+                <button type="button" class="btn-link-small" @click="showAllItems = true">Tampilkan semua item</button>
+              </div>
+              <div v-else-if="bomComponents.length > 0 && showAllItems" class="bom-info-bar bom-info-all">
+                <span>Menampilkan semua item komponen (di luar resep BOM)</span>
+                <button type="button" class="btn-link-small" @click="showAllItems = false">Kembali ke resep BOM</button>
+              </div>
+              <div v-else class="bom-info-bar bom-info-empty">
+                ℹ️ Produk ini belum punya resep BOM — semua komponen ditampilkan.
+                <router-link :to="{ name: 'MasterBom' }" class="btn-link-small">Isi resep di Master BOM</router-link>
+              </div>
+            </div>
+
             <!-- Target PO -->
             <div v-if="poTargets.length" class="po-hint-box">
               <div class="po-hint-header">
@@ -207,7 +223,7 @@
                     </label>
                     <vue-select
                       v-model="row.item_id"
-                      :options="mesinItemsForSelect"
+                      :options="komponenOptionsFiltered"
                       :reduce="(o) => o.item_id"
                       label="label"
                       placeholder="🔍 Pilih komponen dari Gudang Mesin..."
@@ -223,6 +239,9 @@
                         </div>
                       </template>
                     </vue-select>
+                    <p v-if="isItemOutsideBom(row.item_id)" class="bom-warning-text">
+                      ⚠️ Item ini di luar resep BOM produk ini
+                    </p>
                   </div>
                   <div class="form-group-modern">
                     <label class="form-label-modern">
@@ -303,7 +322,7 @@
                   </label>
                   <vue-select
                     v-model="row.item_id"
-                    :options="mesinItemsForSelect"
+                    :options="komponenOptionsFiltered"
                     :reduce="(o) => o.item_id"
                     label="label"
                     placeholder="🔍 Pilih komponen..."
@@ -317,6 +336,9 @@
                       </div>
                     </template>
                   </vue-select>
+                  <p v-if="isItemOutsideBom(row.item_id)" class="bom-warning-text">
+                    ⚠️ Item ini di luar resep BOM produk ini
+                  </p>
                 </div>
                 <div class="form-group-modern">
                   <label class="form-label-modern">Qty (pcs) <span class="required-star">*</span></label>
@@ -451,7 +473,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
@@ -469,6 +491,8 @@ const mesinItems       = ref([])
 const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
 const poDetailItems    = ref([])
+const bomComponents    = ref([])
+const showAllItems     = ref(false)
 
 const form = reactive({
   date:      new Date().toISOString().slice(0, 10),
@@ -491,6 +515,40 @@ const mesinItemsForSelect = computed(() =>
     label:         `${i.item_code} - ${i.item_name}`,
   }))
 )
+
+const bomComponentIds = computed(() => new Set(bomComponents.value.map((c) => c.item_id)))
+
+const komponenOptionsFiltered = computed(() => {
+  if (showAllItems.value || bomComponents.value.length === 0) return mesinItemsForSelect.value
+  const selectedIds = new Set(
+    [...form.inputs, ...form.outputs].map((r) => r.item_id).filter(Boolean)
+  )
+  return mesinItemsForSelect.value.filter(
+    (o) => bomComponentIds.value.has(o.item_id) || selectedIds.has(o.item_id)
+  )
+})
+
+const isItemOutsideBom = (itemId) => {
+  if (bomComponents.value.length === 0 || !itemId) return false
+  return !bomComponentIds.value.has(itemId)
+}
+
+const fetchBomForDetail = async (detailId) => {
+  bomComponents.value = []
+  showAllItems.value  = false
+  if (!detailId) return
+  const detail = poDetailItems.value.find((d) => d.id === detailId)
+  if (!detail) return
+  try {
+    const res = await apiClient.get(`/production/bom/${detail.item_id}`)
+    bomComponents.value = res.data.data?.components || []
+  } catch (error) {
+    console.error('Gagal memuat BOM produk:', error)
+    bomComponents.value = []
+  }
+}
+
+watch(() => form.production_order_detail_id, (val) => fetchBomForDetail(val))
 
 const fetchInitialData = async () => {
   loadingItems.value = true
@@ -753,6 +811,14 @@ onMounted(fetchInitialData)
 .detail-option { display: flex; align-items: center; gap: 0.5rem; padding: 6px 12px; flex-wrap: wrap; }
 .detail-option-name { font-size: 0.9rem; font-weight: 600; color: #111827; flex: 1; }
 .detail-option-code { font-size: 0.78rem; color: #6b7280; }
+
+.bom-info-wrap { margin-bottom: 1rem; }
+.bom-info-bar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; padding: 0.6rem 1rem; border-radius: 10px; font-size: 0.82rem; font-weight: 600; }
+.bom-info-ok { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+.bom-info-all { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+.bom-info-empty { background: #f9fafb; border: 1px dashed #d1d5db; color: #6b7280; }
+.btn-link-small { background: none; border: none; padding: 0; color: inherit; text-decoration: underline; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
+.bom-warning-text { margin: 4px 0 0; font-size: 0.78rem; color: #b45309; font-weight: 600; }
 
 @media (max-width: 768px) {
   .form-grid-2col, .form-grid-3col { grid-template-columns: 1fr; }

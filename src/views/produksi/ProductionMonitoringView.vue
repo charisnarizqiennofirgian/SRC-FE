@@ -239,52 +239,56 @@
                     </span>
                   </td>
                   <td class="td-qty stage-moulding">
-                    <span
-                      :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value', (item.moulding_bom_checklist?.length || item.moulding_components?.length) ? 'has-tooltip' : '']"
-                    >
-                      {{ formatNumber(item.qty_moulding) }} <span class="stage-pct">({{ stagePercent(item.qty_moulding, item.target) }}%)</span>
-                      <div v-if="item.moulding_bom_checklist?.length" class="moulding-tooltip">
-                        <div class="moulding-tooltip-title">Checklist Komponen (BOM)</div>
-                        <div v-for="c in item.moulding_bom_checklist" :key="c.item_id" class="moulding-tooltip-row">
-                          <span class="moulding-tooltip-name">
-                            <span :class="c.done ? 'bom-check-ok' : 'bom-check-missing'">{{ c.done ? '✓' : '✗' }}</span>
-                            {{ c.item_name }}
-                          </span>
-                          <span class="moulding-tooltip-qty">{{ c.done ? formatNumber(c.qty_actual) : 'belum ada' }}</span>
-                        </div>
-                      </div>
-                      <div v-else-if="item.moulding_components?.length" class="moulding-tooltip">
-                        <div class="moulding-tooltip-title">Komponen Moulding</div>
-                        <div v-for="c in item.moulding_components" :key="c.item_id" class="moulding-tooltip-row">
-                          <span class="moulding-tooltip-name">{{ c.item_name }}</span>
-                          <span class="moulding-tooltip-qty">{{ formatNumber(c.qty) }}</span>
-                        </div>
-                      </div>
-                    </span>
+                    <HoverPopover :enabled="!!(item.moulding_bom_checklist?.length || item.moulding_components?.length)">
+                      <span :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value']">
+                        {{ formatNumber(item.qty_moulding) }} <span class="stage-pct">({{ stagePercent(item.qty_moulding, item.target) }}%)</span>
+                      </span>
+                      <template #content>
+                        <template v-if="item.moulding_bom_checklist?.length">
+                          <div class="moulding-tooltip-title">Checklist Komponen (BOM)</div>
+                          <div v-for="c in item.moulding_bom_checklist" :key="c.item_id" class="moulding-tooltip-row">
+                            <span class="moulding-tooltip-name">
+                              <span :class="c.done ? 'bom-check-ok' : 'bom-check-missing'">{{ c.done ? '✓' : '✗' }}</span>
+                              {{ c.item_name }}
+                            </span>
+                            <span class="moulding-tooltip-qty">{{ c.done ? formatNumber(c.qty_actual) : 'belum ada' }}</span>
+                          </div>
+                        </template>
+                        <template v-else-if="item.moulding_components?.length">
+                          <div class="moulding-tooltip-title">Komponen Moulding</div>
+                          <div v-for="c in item.moulding_components" :key="c.item_id" class="moulding-tooltip-row">
+                            <span class="moulding-tooltip-name">{{ c.item_name }}</span>
+                            <span class="moulding-tooltip-qty">{{ formatNumber(c.qty) }}</span>
+                          </div>
+                        </template>
+                      </template>
+                    </HoverPopover>
                   </td>
                   <td class="td-qty stage-mesin">
-                    <span
-                      :class="['qty-value', item.qty_mesin > 0 ? 'has-value' : 'no-value', (item.mesin_bom_checklist?.length || item.mesin_components?.length) ? 'has-tooltip' : '']"
-                    >
-                      {{ formatNumber(item.qty_mesin) }} <span class="stage-pct">({{ stagePercent(item.qty_mesin, item.target) }}%)</span>
-                      <div v-if="item.mesin_bom_checklist?.length" class="moulding-tooltip">
-                        <div class="moulding-tooltip-title">Checklist Komponen (BOM)</div>
-                        <div v-for="c in item.mesin_bom_checklist" :key="c.item_id" class="moulding-tooltip-row">
-                          <span class="moulding-tooltip-name">
-                            <span :class="c.done ? 'bom-check-ok' : 'bom-check-missing'">{{ c.done ? '✓' : '✗' }}</span>
-                            {{ c.item_name }}
-                          </span>
-                          <span class="moulding-tooltip-qty">{{ c.done ? formatNumber(c.qty_actual) : 'belum ada' }}</span>
-                        </div>
-                      </div>
-                      <div v-else-if="item.mesin_components?.length" class="moulding-tooltip">
-                        <div class="moulding-tooltip-title">Komponen Mesin</div>
-                        <div v-for="c in item.mesin_components" :key="c.item_id" class="moulding-tooltip-row">
-                          <span class="moulding-tooltip-name">{{ c.item_name }}</span>
-                          <span class="moulding-tooltip-qty">{{ formatNumber(c.qty) }}</span>
-                        </div>
-                      </div>
-                    </span>
+                    <HoverPopover :enabled="!!(item.mesin_bom_checklist?.length || item.mesin_components?.length)">
+                      <span :class="['qty-value', item.qty_mesin > 0 ? 'has-value' : 'no-value']">
+                        {{ formatNumber(item.qty_mesin) }} <span class="stage-pct">({{ stagePercent(item.qty_mesin, item.target) }}%)</span>
+                      </span>
+                      <template #content>
+                        <template v-if="item.mesin_bom_checklist?.length">
+                          <div class="moulding-tooltip-title">Checklist Komponen (BOM)</div>
+                          <div v-for="c in item.mesin_bom_checklist" :key="c.item_id" class="moulding-tooltip-row">
+                            <span class="moulding-tooltip-name">
+                              <span :class="c.done ? 'bom-check-ok' : 'bom-check-missing'">{{ c.done ? '✓' : '✗' }}</span>
+                              {{ c.item_name }}
+                            </span>
+                            <span class="moulding-tooltip-qty">{{ c.done ? formatNumber(c.qty_actual) : 'belum ada' }}</span>
+                          </div>
+                        </template>
+                        <template v-else-if="item.mesin_components?.length">
+                          <div class="moulding-tooltip-title">Komponen Mesin</div>
+                          <div v-for="c in item.mesin_components" :key="c.item_id" class="moulding-tooltip-row">
+                            <span class="moulding-tooltip-name">{{ c.item_name }}</span>
+                            <span class="moulding-tooltip-qty">{{ formatNumber(c.qty) }}</span>
+                          </div>
+                        </template>
+                      </template>
+                    </HoverPopover>
                   </td>
 
                   <!-- Zona Hilir (Qty) -->
@@ -597,6 +601,7 @@
 
 <script setup>
 import DashboardLayout from '../../components/DashboardLayout.vue'
+import HoverPopover from '../../components/HoverPopover.vue'
 import { ref, computed, onMounted } from 'vue'
 import axios from '@/api/axios'
 
@@ -1635,35 +1640,6 @@ const getStageClass = (type) => {
 .has-value:hover {
   background: #a7f3d0;
   transform: scale(1.05);
-}
-
-.has-tooltip {
-  position: relative;
-  cursor: help;
-}
-
-.moulding-tooltip {
-  display: none;
-  position: absolute;
-  top: 0;
-  left: 100%;
-  margin-left: 8px;
-  background: #1f2937;
-  color: #fff;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-align: left;
-  z-index: 50;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
-  width: 240px;
-  max-height: 220px;
-  overflow-y: auto;
-}
-
-.has-tooltip:hover .moulding-tooltip {
-  display: block;
 }
 
 .moulding-tooltip-title {
