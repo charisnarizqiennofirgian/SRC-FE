@@ -229,6 +229,7 @@
 <script>
 import axios from 'axios'
 import DashboardLayout from '@/components/DashboardLayout.vue'
+import { escapeHtml } from '@/utils/escapeHtml'
 
 export default {
   name: 'IncomeStatementView',
@@ -272,7 +273,7 @@ export default {
       const period = this.formatDateRange(this.filters.start_date, this.filters.end_date)
       const printDate = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
       const accountRows = (accounts) => accounts.length
-        ? accounts.map(acc => `<tr><td class="acc-name">${acc.account_name}</td><td class="acc-amt">${fmtRupiah(acc.amount)}</td></tr>`).join('')
+        ? accounts.map(acc => `<tr><td class="acc-name">${escapeHtml(acc.account_name)}</td><td class="acc-amt">${fmtRupiah(acc.amount)}</td></tr>`).join('')
         : `<tr><td colspan="2" class="acc-empty">Belum ada transaksi</td></tr>`
       const isProfit = this.reportData.laba_bersih >= 0
       const labaBersihColor = isProfit ? '#059669' : '#dc2626'

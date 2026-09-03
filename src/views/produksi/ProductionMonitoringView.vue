@@ -1,7 +1,6 @@
 <template>
   <DashboardLayout>
     <div class="monitoring-page">
-      <!-- Breadcrumb & Header -->
       <div class="page-header">
         <div class="breadcrumb">
           <router-link to="/" class="breadcrumb-item">
@@ -22,7 +21,6 @@
         </div>
       </div>
 
-      <!-- Legend Card -->
       <div class="legend-card">
         <div class="legend-header">
           <span class="legend-icon">ℹ️</span>
@@ -46,7 +44,6 @@
         </div>
       </div>
 
-      <!-- Filter Section -->
       <div class="filter-card">
         <div class="filter-header">
           <span class="filter-icon">🔍</span>
@@ -83,15 +80,12 @@
         </div>
       </div>
 
-      <!-- Loading State -->
       <div v-if="isLoading" class="loading-container">
         <div class="loading-spinner"></div>
         <p class="loading-text">Memuat data monitoring...</p>
       </div>
 
-      <!-- Table Container -->
       <div v-else class="table-container">
-        <!-- Stats Summary Bar -->
         <div class="stats-bar">
           <div class="stat-item stat-total">
             <span class="stat-icon">📦</span>
@@ -126,7 +120,6 @@
           </div>
         </div>
 
-        <!-- Table Wrapper -->
         <div class="table-scroll-wrapper">
           <table class="data-table">
             <thead class="table-header">
@@ -134,13 +127,12 @@
                 <th class="th-sticky" rowspan="2">No. SO &amp; Buyer</th>
                 <th rowspan="2">Item</th>
                 <th class="th-num" rowspan="2">Target</th>
+                <th class="th-num" rowspan="2">Stok</th>
                 <th class="th-num" rowspan="2">Tgl. Kirim</th>
-                <!-- Zona Hulu -->
                 <th colspan="5" class="zone-header zone-hulu">
                   <span class="zone-icon">🌲</span>
                   <span class="zone-text">Persiapan Bahan</span>
                 </th>
-                <!-- Zona Hilir -->
                 <th colspan="8" class="zone-header zone-hilir">
                   <span class="zone-icon">⚙️</span>
                   <span class="zone-text">Produksi</span>
@@ -149,13 +141,11 @@
                 <th class="th-num" rowspan="2">Sisa</th>
               </tr>
               <tr class="header-row-sub">
-                <!-- Hulu -->
                 <th class="th-stage stage-hulu">Sawmill</th>
                 <th class="th-stage stage-hulu">KD</th>
                 <th class="th-stage stage-hulu">Pembahanan</th>
                 <th class="th-stage stage-moulding">Moulding</th>
                 <th class="th-stage stage-mesin">Mesin</th>
-                <!-- Hilir -->
                 <th class="th-stage stage-ruskomp">Rustik Komp</th>
                 <th class="th-stage stage-assembling">Assembling</th>
                 <th class="th-stage stage-sanding">Sanding</th>
@@ -167,9 +157,8 @@
               </tr>
             </thead>
             <tbody class="table-body">
-              <!-- Empty State -->
               <tr v-if="data.length === 0" class="empty-row">
-                <td colspan="19" class="empty-cell">
+                <td colspan="20" class="empty-cell">
                   <div class="empty-state">
                     <span class="empty-icon">📭</span>
                     <p class="empty-text">Tidak ada data Sales Order aktif.</p>
@@ -177,7 +166,6 @@
                   </div>
                 </td>
               </tr>
-              <!-- Data Rows — grouped per SO -->
               <template v-for="(so, soIndex) in paginatedData" :key="so.so_id">
                 <tr
                   v-for="(item, itemIndex) in so.items"
@@ -189,7 +177,6 @@
                     'row-first-item': itemIndex === 0,
                   }"
                 >
-                  <!-- SO + Buyer — rowspan ke semua item SO ini -->
                   <td
                     v-if="itemIndex === 0"
                     :rowspan="so.items.length"
@@ -204,7 +191,6 @@
                     </div>
                   </td>
 
-                  <!-- Item -->
                   <td class="td-item">
                     <div class="item-wrapper">
                       <div class="item-name">{{ item.item_name }}</div>
@@ -212,17 +198,41 @@
                     </div>
                   </td>
 
-                  <!-- Target -->
                   <td class="td-num">
                     <span class="target-value">{{ formatNumber(item.target) }}</span>
                   </td>
 
-                  <!-- Tgl. Kirim -->
+                  <td class="td-num">
+                    <template v-if="editingStokId === item.production_order_detail_id">
+                      <input
+                        type="number"
+                        min="0"
+                        class="input-stok-edit"
+                        v-model.number="editingStokValue"
+                        @keyup.enter="saveStokManual(item)"
+                        @keyup.esc="cancelEditStok()"
+                      />
+                      <button type="button" class="btn-stok-confirm" title="Simpan" @click="saveStokManual(item)">✓</button>
+                      <button type="button" class="btn-stok-cancel" title="Batal" @click="cancelEditStok()">✕</button>
+                    </template>
+                    <template v-else>
+                      <span class="stok-value">{{ formatNumber(item.stok) }}</span>
+                      <button type="button" class="btn-edit-stok" title="Edit Stok Awal" @click="startEditStok(item)">✏️</button>
+                      <button
+                        v-if="item.stok_updatable"
+                        type="button"
+                        class="btn-refresh-stok"
+                        title="Perbarui Stok Awal (otomatis dari stok gudang)"
+                        :disabled="refreshingStokId === item.production_order_detail_id"
+                        @click="refreshStok(item)"
+                      >🔄</button>
+                    </template>
+                  </td>
+
                   <td class="td-num">
                     <span class="tgl-kirim-value">{{ item.delivery_date || '-' }}</span>
                   </td>
 
-                  <!-- Zona Hulu (Status) -->
                   <td class="td-status stage-hulu">
                     <span :class="['status-indicator', getStatusClass(item.status_sanwil)]">
                       {{ getStatusIcon(item.status_sanwil) }}
@@ -291,7 +301,6 @@
                     </HoverPopover>
                   </td>
 
-                  <!-- Zona Hilir (Qty) -->
                   <td class="td-qty stage-ruskomp">
                     <span :class="['qty-value', item.qty_ruskomp > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_ruskomp) }} <span class="stage-pct">({{ stagePercent(item.qty_ruskomp, item.target) }}%)</span>
@@ -333,7 +342,6 @@
                     </span>
                   </td>
 
-                  <!-- Reject -->
                   <td class="td-qty">
                     <span
                       v-if="item.has_reject"
@@ -346,7 +354,6 @@
                     <span v-else class="no-reject">-</span>
                   </td>
 
-                  <!-- Sisa -->
                   <td class="td-num">
                     <div class="sisa-cell">
                       <span v-if="item.is_done" class="completion-badge">
@@ -363,16 +370,14 @@
                   </td>
                 </tr>
 
-                <!-- Separator antar SO -->
                 <tr class="so-separator">
-                  <td colspan="19"></td>
+                  <td colspan="20"></td>
                 </tr>
               </template>
             </tbody>
           </table>
         </div>
 
-        <!-- Pagination -->
         <div class="pagination-container">
           <div class="pagination-info">
             <span class="info-icon">📄</span>
@@ -428,7 +433,6 @@
       </div>
     </div>
 
-    <!-- MODAL DETAIL -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal-content">
         <div class="modal-header">
@@ -456,14 +460,12 @@
         </div>
 
         <div class="modal-body">
-          <!-- Loading -->
           <div v-if="loadingDetail" class="modal-loading">
             <div class="loading-spinner"></div>
             <p>Memuat detail...</p>
           </div>
 
           <template v-else-if="detailData">
-            <!-- Per Stage -->
             <div
               v-for="stage in detailData.stages"
               :key="stage.type"
@@ -481,7 +483,6 @@
                 </div>
               </div>
 
-              <!-- INPUT (yang diambil/dipakai) -->
               <div v-if="stage.outputs && stage.outputs.length > 0" class="sub-section">
                 <div class="sub-section-title input-title">📥 Bahan Masuk / Dipakai</div>
                 <table class="detail-table">
@@ -513,7 +514,6 @@
                 </table>
               </div>
 
-              <!-- OUTPUT (hasil produksi) -->
               <div v-if="stage.inputs && stage.inputs.length > 0" class="sub-section">
                 <div class="sub-section-title output-title">📤 Hasil / Keluar</div>
                 <table class="detail-table">
@@ -546,7 +546,6 @@
               </div>
             </div>
 
-            <!-- Reject Section -->
             <div v-if="detailData.rejects && detailData.rejects.length > 0" class="reject-block">
               <div class="stage-block-header reject-header">
                 <span class="stage-block-icon">⚠️</span>
@@ -587,7 +586,6 @@
               </table>
             </div>
 
-            <!-- Empty -->
             <div v-if="detailData.stages.length === 0 && (!detailData.rejects || detailData.rejects.length === 0)" class="modal-empty">
               <span class="empty-icon">📭</span>
               <p>Belum ada transaksi produksi untuk item ini</p>
@@ -603,13 +601,16 @@
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import HoverPopover from '../../components/HoverPopover.vue'
 import { ref, computed, onMounted } from 'vue'
+import { useToast } from 'vue-toastification'
 import axios from '@/api/axios'
 
+const toast = useToast()
 const data = ref([])
 const isLoading = ref(false)
 const search = ref('')
 const currentPage = ref(1)
 const perPage = 20
+const refreshingStokId = ref(null)
 
 const fetchData = async () => {
   isLoading.value = true
@@ -631,6 +632,58 @@ const fetchData = async () => {
   }
 }
 
+const refreshStok = async (item) => {
+  if (!item.production_order_detail_id || refreshingStokId.value) return
+  refreshingStokId.value = item.production_order_detail_id
+  try {
+    const response = await axios.post(`/production-monitoring/detail/${item.production_order_detail_id}/refresh-stock`)
+    if (response.data.success) {
+      toast.success(response.data.message)
+      await fetchData()
+    } else {
+      toast.error(response.data.message)
+    }
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Gagal memperbarui stok awal.')
+  } finally {
+    refreshingStokId.value = null
+  }
+}
+
+const editingStokId = ref(null)
+const editingStokValue = ref(0)
+
+const startEditStok = (item) => {
+  if (!item.production_order_detail_id) return
+  editingStokId.value = item.production_order_detail_id
+  editingStokValue.value = item.stok || 0
+}
+
+const cancelEditStok = () => {
+  editingStokId.value = null
+}
+
+const saveStokManual = async (item) => {
+  if (!item.production_order_detail_id) return
+  const value = Number(editingStokValue.value)
+  if (isNaN(value) || value < 0) {
+    toast.error('Angka tidak valid.')
+    return
+  }
+  try {
+    const response = await axios.post(`/production-monitoring/detail/${item.production_order_detail_id}/set-stock-manual`, { value })
+    if (response.data.success) {
+      toast.success(response.data.message)
+      editingStokId.value = null
+      await fetchData()
+    } else {
+      toast.error(response.data.message)
+    }
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Gagal menyimpan stok awal.')
+  }
+}
+
 const allItems = computed(() => data.value.flatMap(so => so.items ?? []))
 
 const resetFilter = () => {
@@ -647,8 +700,6 @@ const formatNumber = (num) => {
   return number.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 }
 
-// Persentase qty stage terhadap target SO — live, dihitung ulang tiap render, berlaku
-// merata untuk data lama maupun baru (bukan kolom tersimpan di database).
 const stagePercent = (qty, target) => {
   const t = parseFloat(target)
   if (!t || t <= 0) return 0
@@ -705,7 +756,6 @@ onMounted(() => {
   fetchData()
 })
 
-// === MODAL DETAIL ===
 const showModal     = ref(false)
 const loadingDetail = ref(false)
 const detailData    = ref(null)
@@ -822,9 +872,6 @@ const getStageClass = (type) => {
 </script>
 
 <style scoped>
-/* ============================================
-   VARIABLES & BASE
-   ============================================ */
 .monitoring-page {
   max-width: 1800px;
   margin: 0 auto;
@@ -833,9 +880,6 @@ const getStageClass = (type) => {
   min-height: 100vh;
 }
 
-/* ============================================
-   PAGE HEADER & BREADCRUMB
-   ============================================ */
 .page-header {
   margin-bottom: 24px;
 }
@@ -909,9 +953,6 @@ const getStageClass = (type) => {
   font-weight: 400;
 }
 
-/* ============================================
-   LEGEND CARD
-   ============================================ */
 .legend-card {
   background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
   border: 2px solid #fbbf24;
@@ -1002,9 +1043,6 @@ const getStageClass = (type) => {
   background: #e7e5e4;
 }
 
-/* ============================================
-   FILTER CARD
-   ============================================ */
 .filter-card {
   background: white;
   border-radius: 12px;
@@ -1169,9 +1207,6 @@ const getStageClass = (type) => {
   transform: translateY(-2px);
 }
 
-/* ============================================
-   LOADING STATE
-   ============================================ */
 .loading-container {
   background: white;
   border-radius: 12px;
@@ -1202,9 +1237,6 @@ const getStageClass = (type) => {
   font-weight: 500;
 }
 
-/* ============================================
-   TABLE CONTAINER & STATS
-   ============================================ */
 .table-container {
   background: white;
   border-radius: 12px;
@@ -1285,9 +1317,6 @@ const getStageClass = (type) => {
   background: #e5e7eb;
 }
 
-/* ============================================
-   DATA TABLE
-   ============================================ */
 .table-scroll-wrapper {
   overflow-x: auto;
   overflow-y: visible;
@@ -1402,9 +1431,6 @@ const getStageClass = (type) => {
   color: #166534 !important;
 }
 
-/* ============================================
-   TABLE BODY
-   ============================================ */
 .data-table td {
   padding: 14px 12px;
   border-bottom: 1px solid #f3f4f6;
@@ -1434,7 +1460,6 @@ const getStageClass = (type) => {
   background: linear-gradient(90deg, #d1fae5 0%, #a7f3d0 100%) !important;
 }
 
-/* Empty State */
 .empty-cell {
   padding: 80px 20px !important;
 }
@@ -1462,7 +1487,6 @@ const getStageClass = (type) => {
   color: #9ca3af;
 }
 
-/* Cell Styles */
 .td-so {
   min-width: 160px;
 }
@@ -1566,6 +1590,70 @@ const getStageClass = (type) => {
   color: #1e40af;
   font-size: 14px;
 }
+
+.stok-value {
+  font-weight: 700;
+  color: #0f766e;
+  font-size: 14px;
+}
+
+.btn-refresh-stok {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 4px;
+  padding: 0;
+  opacity: 0.7;
+}
+
+.btn-refresh-stok:hover:not(:disabled) {
+  opacity: 1;
+  transform: rotate(90deg);
+}
+
+.btn-refresh-stok:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.btn-edit-stok {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 11px;
+  margin-left: 4px;
+  padding: 0;
+  opacity: 0.6;
+}
+
+.btn-edit-stok:hover {
+  opacity: 1;
+}
+
+.input-stok-edit {
+  width: 44px;
+  padding: 2px 4px;
+  border: 1.5px solid #0f766e;
+  border-radius: 5px;
+  font-size: 12px;
+  text-align: right;
+  font-family: inherit;
+}
+
+.btn-stok-confirm,
+.btn-stok-cancel {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+  margin-left: 2px;
+  padding: 0;
+}
+
+.btn-stok-confirm { color: #059669; }
+.btn-stok-cancel { color: #dc2626; }
 
 .td-status {
   text-align: center !important;
@@ -1731,9 +1819,6 @@ const getStageClass = (type) => {
   font-size: 13px;
 }
 
-/* ============================================
-   PAGINATION
-   ============================================ */
 .pagination-container {
   display: flex;
   justify-content: space-between;
@@ -1833,9 +1918,6 @@ const getStageClass = (type) => {
   opacity: 0.9;
 }
 
-/* ============================================
-   RESPONSIVE
-   ============================================ */
 @media (max-width: 1024px) {
   .monitoring-page {
     padding: 16px;
@@ -1900,13 +1982,11 @@ const getStageClass = (type) => {
   }
 }
 
-/* ===== QC FINAL COLUMN ===== */
 .stage-qcfinal {
   background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%) !important;
   color: #065f46 !important;
 }
 
-/* ===== SISA CELL ===== */
 .sisa-cell {
   display: flex;
   align-items: center;
@@ -1951,7 +2031,6 @@ const getStageClass = (type) => {
   font-size: 0.82rem;
 }
 
-/* ===== MODAL ===== */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -2069,7 +2148,6 @@ const getStageClass = (type) => {
   color: #9ca3af;
 }
 
-/* ===== STAGE BLOCKS ===== */
 .stage-block {
   margin-bottom: 1.5rem;
   border-radius: 12px;
@@ -2143,7 +2221,6 @@ const getStageClass = (type) => {
 .stage-qc-block .stage-block-header         { background: #f0fdf4; border-bottom: 2px solid #bbf7d0; }
 .stage-packing-block .stage-block-header    { background: #eff6ff; border-bottom: 2px solid #bfdbfe; }
 
-/* ===== DETAIL TABLE ===== */
 .detail-table {
   width: 100%;
   border-collapse: collapse;
@@ -2195,7 +2272,6 @@ const getStageClass = (type) => {
   max-width: 200px;
 }
 
-/* ===== REJECT BLOCK ===== */
 .reject-block {
   margin-bottom: 1.5rem;
   border-radius: 12px;

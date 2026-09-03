@@ -1,7 +1,6 @@
 <template>
   <DashboardLayout>
     <div class="dashboard-home">
-      <!-- Welcome Section -->
       <div class="welcome-section-compact">
         <div class="welcome-content">
           <h1 class="welcome-title">Selamat Datang, {{ userName }} 👋</h1>
@@ -9,7 +8,6 @@
         </div>
       </div>
 
-      <!-- Widget: Top Priority Production -->
       <div class="widget-card">
         <div class="widget-header">
           <div class="widget-title">
@@ -44,7 +42,6 @@
           </div>
         </div>
 
-        <!-- Legend -->
         <div class="legend-bar">
           <span class="legend-title">Keterangan:</span>
           <span class="legend-item">
@@ -59,19 +56,16 @@
           </span>
         </div>
 
-        <!-- Loading -->
         <div v-if="isLoading" class="loading-state">
           <div class="spinner"></div>
           <p>Memuat data...</p>
         </div>
 
-        <!-- Empty State -->
         <div v-else-if="filteredMonitoringData.length === 0" class="empty-state">
           <span class="empty-icon">📦</span>
           <p>{{ monitorMonthFilter ? 'Tidak ada SO dengan Tgl. Kirim pada bulan tersebut.' : 'Tidak ada Sales Order aktif saat ini.' }}</p>
         </div>
 
-        <!-- Table -->
         <div v-else class="table-wrapper table-wrapper-frozen">
           <table class="monitoring-table">
             <thead>
@@ -79,12 +73,11 @@
                 <th class="col-so" rowspan="2">No. SO & Buyer</th>
                 <th class="col-item" rowspan="2">Item</th>
                 <th class="col-num col-target" rowspan="2">Target</th>
-                <th class="col-tgl-kirim" rowspan="2">Tgl. Kirim</th>
-                <!-- Zona Hulu -->
+                <th class="col-num col-stok" rowspan="2">Stok</th>
+                <th class="col-tgl-kirim col-tgl-kirim-shifted" rowspan="2">Tgl. Kirim</th>
                 <th colspan="5" class="zone-header zone-hulu">
                   <span class="zone-icon">🌲</span> Persiapan Bahan
                 </th>
-                <!-- Zona Hilir -->
                 <th colspan="8" class="zone-header zone-hilir">
                   <span class="zone-icon">⚙️</span> Produksi
                 </th>
@@ -92,13 +85,11 @@
                 <th class="col-num" rowspan="2">Sisa</th>
               </tr>
               <tr>
-                <!-- Hulu -->
                 <th class="col-status stage-sanwil">Sawmill</th>
                 <th class="col-status stage-kd">KD</th>
                 <th class="col-status stage-pembahanan">Pembahanan</th>
                 <th class="col-num stage-moulding">Moulding</th>
                 <th class="col-num stage-mesin">Mesin</th>
-                <!-- Hilir -->
                 <th class="col-num stage-ruskomp">Rustik Komp</th>
                 <th class="col-num stage-assembling">Assembling</th>
                 <th class="col-num stage-sanding">Sanding</th>
@@ -121,7 +112,6 @@
                     'row-last-item': itemIndex === so.items.length - 1,
                   }"
                 >
-                  <!-- SO Info — hanya tampil di baris pertama (rowspan) -->
                   <td
                     v-if="itemIndex === 0"
                     :rowspan="so.items.length"
@@ -138,7 +128,6 @@
                     </div>
                   </td>
 
-                  <!-- Item -->
                   <td class="col-item">
                     <div class="item-wrapper">
                       <div class="item-name">{{ item.item_name }}</div>
@@ -146,17 +135,41 @@
                     </div>
                   </td>
 
-                  <!-- Target -->
                   <td class="col-num col-target">
                     <span class="target-value">{{ formatNumber(item.target) }}</span>
                   </td>
 
-                  <!-- Tgl Kirim -->
-                  <td class="col-tgl-kirim">
+                  <td class="col-num col-stok">
+                    <template v-if="editingStokId === item.production_order_detail_id">
+                      <input
+                        type="number"
+                        min="0"
+                        class="input-stok-edit"
+                        v-model.number="editingStokValue"
+                        @keyup.enter="saveStokManual(item)"
+                        @keyup.esc="cancelEditStok()"
+                      />
+                      <button type="button" class="btn-stok-confirm" title="Simpan" @click="saveStokManual(item)">✓</button>
+                      <button type="button" class="btn-stok-cancel" title="Batal" @click="cancelEditStok()">✕</button>
+                    </template>
+                    <template v-else>
+                      <span class="stok-value">{{ formatNumber(item.stok) }}</span>
+                      <button type="button" class="btn-edit-stok" title="Edit Stok Awal" @click="startEditStok(item)">✏️</button>
+                      <button
+                        v-if="item.stok_updatable"
+                        type="button"
+                        class="btn-refresh-stok"
+                        title="Perbarui Stok Awal (otomatis dari stok gudang)"
+                        :disabled="refreshingStokId === item.production_order_detail_id"
+                        @click="refreshStok(item)"
+                      >🔄</button>
+                    </template>
+                  </td>
+
+                  <td class="col-tgl-kirim col-tgl-kirim-shifted">
                     <span class="tgl-kirim-value">{{ item.delivery_date || '-' }}</span>
                   </td>
 
-                  <!-- Zona Hulu -->
                   <td class="col-status stage-sanwil">
                     <span :class="['status-indicator', getStatusClass(item.status_sanwil)]">
                       {{ getStatusIcon(item.status_sanwil) }}
@@ -225,7 +238,6 @@
                     </HoverPopover>
                   </td>
 
-                  <!-- Zona Hilir -->
                   <td class="col-num stage-ruskomp">
                     <span :class="['qty-value', item.qty_ruskomp > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_ruskomp) }} <span class="stage-pct">({{ stagePercent(item.qty_ruskomp, item.target) }}%)</span>
@@ -267,7 +279,6 @@
                     </span>
                   </td>
 
-                  <!-- Reject -->
                   <td class="col-num">
                     <span
                       v-if="item.has_reject"
@@ -280,7 +291,6 @@
                     <span v-else class="no-reject">-</span>
                   </td>
 
-                  <!-- Sisa -->
                   <td class="col-num">
                     <div class="sisa-cell">
                       <span v-if="item.is_done" class="completion-badge">
@@ -299,16 +309,14 @@
                   </td>
                 </tr>
 
-                <!-- Separator antar SO -->
                 <tr class="so-separator">
-                  <td colspan="19"></td>
+                  <td colspan="20"></td>
                 </tr>
               </template>
             </tbody>
           </table>
         </div>
 
-        <!-- Footer Summary -->
         <div v-if="filteredMonitoringData.length > 0" class="widget-footer">
           <div class="summary-left">
             <span class="summary-icon">📊</span>
@@ -333,7 +341,6 @@
         </div>
       </div>
 
-    <!-- Widget: Produksi Sampel -->
     <div class="widget-card sampel-widget">
       <div class="widget-header">
         <div class="widget-title">
@@ -365,7 +372,6 @@
         </div>
       </div>
 
-      <!-- Legend -->
       <div class="legend-bar sampel-legend">
         <span class="legend-title">Keterangan:</span>
         <span class="legend-item"><span class="status-badge badge-waiting">🔴</span> Waiting</span>
@@ -392,6 +398,7 @@
               <th class="col-item" rowspan="2">Item</th>
               <th class="col-num" rowspan="2">Target</th>
               <th class="col-tgl-kirim" rowspan="2">Tgl. Kirim</th>
+              <th class="col-num" rowspan="2">Stok</th>
               <th colspan="3" class="zone-header zone-hulu"><span class="zone-icon">🌲</span> Persiapan Bahan</th>
               <th colspan="4" class="zone-header sampel-zone-hilir"><span class="zone-icon">⚙️</span> Produksi Sampel</th>
               <th class="col-num" rowspan="2">Sisa</th>
@@ -434,7 +441,32 @@
                 <td class="col-tgl-kirim">
                   <span class="tgl-kirim-value">{{ item.delivery_date || '-' }}</span>
                 </td>
-                <!-- Hulu -->
+                <td class="col-num">
+                  <template v-if="editingStokId === item.production_order_detail_id">
+                    <input
+                      type="number"
+                      min="0"
+                      class="input-stok-edit"
+                      v-model.number="editingStokValue"
+                      @keyup.enter="saveStokManual(item)"
+                      @keyup.esc="cancelEditStok()"
+                    />
+                    <button type="button" class="btn-stok-confirm" title="Simpan" @click="saveStokManual(item)">✓</button>
+                    <button type="button" class="btn-stok-cancel" title="Batal" @click="cancelEditStok()">✕</button>
+                  </template>
+                  <template v-else>
+                    <span class="stok-value">{{ formatNumber(item.stok) }}</span>
+                    <button type="button" class="btn-edit-stok" title="Edit Stok Awal" @click="startEditStok(item)">✏️</button>
+                    <button
+                      v-if="item.stok_updatable"
+                      type="button"
+                      class="btn-refresh-stok"
+                      title="Perbarui Stok Awal (otomatis dari stok gudang)"
+                      :disabled="refreshingStokId === item.production_order_detail_id"
+                      @click="refreshStok(item)"
+                    >🔄</button>
+                  </template>
+                </td>
                 <td class="col-status stage-sanwil">
                   <span :class="['status-indicator', getStatusClass(item.status_sanwil)]">
                     {{ getStatusIcon(item.status_sanwil) }}
@@ -450,7 +482,6 @@
                     {{ getStatusIcon(item.status_pembahanan) }}
                   </span>
                 </td>
-                <!-- Produksi Sampel -->
                 <td class="col-num stage-moulding">
                   <HoverPopover :enabled="!!(item.moulding_bom_checklist?.length || item.moulding_components?.length)">
                     <span :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value']">
@@ -492,7 +523,6 @@
                     {{ formatNumber(item.qty_packing) }} <span class="stage-pct">({{ stagePercent(item.qty_packing, item.target) }}%)</span>
                   </span>
                 </td>
-                <!-- Sisa -->
                 <td class="col-num">
                   <span v-if="item.is_done" class="completion-badge">
                     <span class="badge-icon">✓</span> DONE
@@ -500,7 +530,7 @@
                   <span v-else class="sisa-value">{{ formatNumber(item.sisa) }}</span>
                 </td>
               </tr>
-              <tr class="so-separator"><td colspan="12"></td></tr>
+              <tr class="so-separator"><td colspan="13"></td></tr>
             </template>
           </tbody>
         </table>
@@ -530,7 +560,6 @@
       </div>
     </div>
 
-    <!-- Widget: Sales Order Cetak (PPIC) -->
     <div class="widget-card so-print-widget">
       <div class="widget-header">
         <div class="widget-title">
@@ -640,21 +669,21 @@ import DashboardLayout from '../components/DashboardLayout.vue'
 import HoverPopover from '../components/HoverPopover.vue'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import axios from '@/api/axios'
 
 const router = useRouter()
+const toast = useToast()
 const userName = ref('User')
 const monitoringData = ref([])
 const isLoading = ref(false)
 const totalSO = ref(0)
 
-// Monitoring filter state
 const currentYear = new Date().getFullYear()
 const monitorMonthFilter = ref('')
 const monitorYearFilter  = ref(String(currentYear))
 const monitorYearOptions = [currentYear - 1, currentYear, currentYear + 1]
 
-// Backend returns delivery_date as "dd/mm/yyyy" — parse accordingly
 const parseDeliveryDate = (str) => {
   if (!str || str === '-') return null
   const parts = str.split('/')
@@ -682,7 +711,6 @@ const filteredMonitoringData = computed(() => {
 const MONTH_NAMES = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
 const monthName = (m) => MONTH_NAMES[parseInt(m)] || ''
 
-// Produksi Sampel widget state
 const sampelData = ref([])
 const isLoadingSampel = ref(false)
 const sampelMonthFilter = ref('')
@@ -720,7 +748,6 @@ const fetchSampelData = async () => {
   }
 }
 
-// Sales Order widget state
 const allSalesOrders = ref([])
 const isLoadingSO = ref(false)
 const soSearchQuery = ref('')
@@ -836,6 +863,60 @@ const fetchMonitoringData = async () => {
   }
 }
 
+const refreshingStokId = ref(null)
+
+const refreshStok = async (item) => {
+  if (!item.production_order_detail_id || refreshingStokId.value) return
+  refreshingStokId.value = item.production_order_detail_id
+  try {
+    const response = await axios.post(`/production-monitoring/detail/${item.production_order_detail_id}/refresh-stock`)
+    if (response.data.success) {
+      toast.success(response.data.message)
+      await Promise.all([fetchMonitoringData(), fetchSampelData()])
+    } else {
+      toast.error(response.data.message)
+    }
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Gagal memperbarui stok awal.')
+  } finally {
+    refreshingStokId.value = null
+  }
+}
+
+const editingStokId = ref(null)
+const editingStokValue = ref(0)
+
+const startEditStok = (item) => {
+  if (!item.production_order_detail_id) return
+  editingStokId.value = item.production_order_detail_id
+  editingStokValue.value = item.stok || 0
+}
+
+const cancelEditStok = () => {
+  editingStokId.value = null
+}
+
+const saveStokManual = async (item) => {
+  if (!item.production_order_detail_id) return
+  const value = Number(editingStokValue.value)
+  if (isNaN(value) || value < 0) {
+    toast.error('Angka tidak valid.')
+    return
+  }
+  try {
+    const response = await axios.post(`/production-monitoring/detail/${item.production_order_detail_id}/set-stock-manual`, { value })
+    if (response.data.success) {
+      toast.success(response.data.message)
+      editingStokId.value = null
+      await Promise.all([fetchMonitoringData(), fetchSampelData()])
+    } else {
+      toast.error(response.data.message)
+    }
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Gagal menyimpan stok awal.')
+  }
+}
+
 const formatNumber = (num) => {
   if (num === null || num === undefined) return '0'
   const number = parseFloat(num)
@@ -845,8 +926,6 @@ const formatNumber = (num) => {
   return number.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 }
 
-// Persentase qty stage terhadap target SO — live, dihitung ulang tiap render, berlaku
-// merata untuk data lama maupun baru (bukan kolom tersimpan di database).
 const stagePercent = (qty, target) => {
   const t = parseFloat(target)
   if (!t || t <= 0) return 0
@@ -902,9 +981,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ============================================
-   MODERN DASHBOARD VARIABLES & BASE
-   ============================================ */
 :root {
   --color-primary: #3b82f6;
   --color-success: #10b981;
@@ -929,9 +1005,6 @@ onMounted(() => {
   min-height: 100vh;
 }
 
-/* ============================================
-   WELCOME SECTION - MODERN HERO
-   ============================================ */
 .welcome-section-compact {
   margin-bottom: 28px;
   padding: 20px;
@@ -955,9 +1028,6 @@ onMounted(() => {
   font-weight: 400;
 }
 
-/* ============================================
-   WIDGET CARD - ELEVATED MODERN CARD
-   ============================================ */
 .widget-card {
   background: white;
   border-radius: 16px;
@@ -1022,9 +1092,6 @@ onMounted(() => {
   transform: translateX(2px);
 }
 
-/* ============================================
-   LEGEND BAR - MODERN STATUS GUIDE
-   ============================================ */
 .legend-bar {
   display: flex;
   align-items: center;
@@ -1080,9 +1147,6 @@ onMounted(() => {
   background: #d1fae5;
 }
 
-/* ============================================
-   LOADING & EMPTY STATES
-   ============================================ */
 .loading-state {
   padding: 80px 20px;
   text-align: center;
@@ -1118,9 +1182,6 @@ onMounted(() => {
   opacity: 0.5;
 }
 
-/* ============================================
-   TABLE - MODERN DATA GRID
-   ============================================ */
 .table-wrapper {
   overflow-x: auto;
   overflow-y: visible;
@@ -1192,9 +1253,6 @@ onMounted(() => {
   background: linear-gradient(90deg, #dcfce7 0%, #bbf7d0 100%) !important;
 }
 
-/* ============================================
-   ZONE HEADERS - COLORFUL PRODUCTION STAGES
-   ============================================ */
 .zone-header {
   text-align: center !important;
   font-size: 13px !important;
@@ -1222,9 +1280,6 @@ onMounted(() => {
   border-bottom-color: #3b82f6 !important;
 }
 
-/* ============================================
-   STAGE COLUMNS - GRADIENT BACKGROUNDS
-   ============================================ */
 .stage-sanwil,
 .stage-kd,
 .stage-pembahanan {
@@ -1275,9 +1330,6 @@ onMounted(() => {
   background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%) !important;
 }
 
-/* ============================================
-   COLUMN ALIGNMENTS
-   ============================================ */
 .col-num {
   text-align: right !important;
   font-variant-numeric: tabular-nums;
@@ -1296,6 +1348,7 @@ onMounted(() => {
 .col-so,
 .col-item,
 .col-target,
+.col-stok,
 .col-tgl-kirim {
   position: sticky;
   z-index: 3;
@@ -1306,6 +1359,7 @@ onMounted(() => {
 .monitoring-table thead .col-so,
 .monitoring-table thead .col-item,
 .monitoring-table thead .col-target,
+.monitoring-table thead .col-stok,
 .monitoring-table thead .col-tgl-kirim {
   z-index: 12;
 }
@@ -1313,10 +1367,75 @@ onMounted(() => {
 .col-so { left: 0; width: 170px; min-width: 170px; max-width: 170px; }
 .col-item { left: 170px; width: 220px; min-width: 220px; max-width: 220px; }
 .col-target { left: 390px; width: 70px; min-width: 70px; max-width: 70px; }
+.col-stok { left: 460px; width: 70px; min-width: 70px; max-width: 70px; }
 .col-tgl-kirim {
   left: 460px;
   box-shadow: 4px 0 6px -4px rgba(0, 0, 0, 0.2);
 }
+.col-tgl-kirim-shifted { left: 530px; }
+
+.stok-value {
+  font-weight: 700;
+  color: #0f766e;
+}
+
+.btn-refresh-stok {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 11px;
+  margin-left: 4px;
+  padding: 0;
+  opacity: 0.7;
+}
+
+.btn-refresh-stok:hover:not(:disabled) {
+  opacity: 1;
+  transform: rotate(90deg);
+}
+
+.btn-refresh-stok:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.btn-edit-stok {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 11px;
+  margin-left: 4px;
+  padding: 0;
+  opacity: 0.6;
+}
+
+.btn-edit-stok:hover {
+  opacity: 1;
+}
+
+.input-stok-edit {
+  width: 40px;
+  padding: 2px 3px;
+  border: 1.5px solid #0f766e;
+  border-radius: 5px;
+  font-size: 11px;
+  text-align: right;
+  font-family: inherit;
+}
+
+.btn-stok-confirm,
+.btn-stok-cancel {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+  margin-left: 2px;
+  padding: 0;
+}
+
+.btn-stok-confirm { color: #059669; }
+.btn-stok-cancel { color: #dc2626; }
 
 .tgl-kirim-value {
   font-size: 12px;
@@ -1328,9 +1447,6 @@ onMounted(() => {
   display: inline-block;
 }
 
-/* ============================================
-   SO & ITEM CELLS - STRUCTURED INFO
-   ============================================ */
 .so-wrapper {
   display: flex;
   flex-direction: column;
@@ -1385,9 +1501,6 @@ onMounted(() => {
   font-size: 14px;
 }
 
-/* ============================================
-   STATUS INDICATORS - 3D BADGES
-   ============================================ */
 .status-indicator {
   display: inline-flex;
   align-items: center;
@@ -1436,9 +1549,6 @@ onMounted(() => {
   }
 }
 
-/* ============================================
-   QUANTITY VALUES - BOLD NUMBERS
-   ============================================ */
 .qty-value {
   display: inline-block;
   padding: 4px 10px;
@@ -1522,9 +1632,6 @@ onMounted(() => {
   border: 1px solid #fecaca;
 }
 
-/* ============================================
-   COMPLETION BADGE - SUCCESS STATE
-   ============================================ */
 .completion-badge {
   display: inline-flex;
   align-items: center;
@@ -1551,9 +1658,6 @@ onMounted(() => {
   font-size: 13px;
 }
 
-/* ============================================
-   WIDGET FOOTER - SUMMARY STATS
-   ============================================ */
 .widget-footer {
   display: flex;
   justify-content: space-between;
@@ -1619,9 +1723,6 @@ onMounted(() => {
   font-weight: 300;
 }
 
-/* ============================================
-   SISA CELL - DETAIL BUTTON
-   ============================================ */
 .sisa-cell {
   display: flex;
   align-items: center;
@@ -1717,9 +1818,6 @@ onMounted(() => {
   border: none !important;
 }
 
-/* ============================================
-   PRODUKSI SAMPEL WIDGET
-   ============================================ */
 .sampel-widget {
   margin-top: 28px;
 }
@@ -1821,16 +1919,10 @@ onMounted(() => {
   border-radius: 4px;
 }
 
-/* ============================================
-   SO PRINT WIDGET
-   ============================================ */
 .so-print-widget {
   margin-top: 28px;
 }
 
-/* ============================================
-   MONITOR FILTER BAR
-   ============================================ */
 .monitor-filter-bar {
   display: flex;
   align-items: center;
@@ -1874,9 +1966,6 @@ onMounted(() => {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
-/* ============================================
-   SO PRINT WIDGET
-   ============================================ */
 .so-search-box {
   display: flex;
   align-items: center;
@@ -2074,9 +2163,6 @@ onMounted(() => {
   cursor: default;
 }
 
-/* ============================================
-   RESPONSIVE DESIGN
-   ============================================ */
 @media (max-width: 1024px) {
   .dashboard-home {
     padding: 16px;

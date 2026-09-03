@@ -366,6 +366,7 @@ import axios from 'axios'
 import DashboardLayout from '@/components/DashboardLayout.vue'
 import VueSelect from 'vue-select'
 import 'vue-select/dist/vue-select.css'
+import { escapeHtml } from '@/utils/escapeHtml'
 
 export default {
   name: 'GeneralLedgerView',
@@ -428,8 +429,8 @@ export default {
         <tr class="${i % 2 === 0 ? 'even' : ''}">
           <td class="c">${i + 1}</td>
           <td class="c">${fmtDate(trx.transaction_date)}</td>
-          <td class="mono">${trx.journal_number}</td>
-          <td class="desc">${trx.description || '-'}</td>
+          <td class="mono">${escapeHtml(trx.journal_number)}</td>
+          <td class="desc">${trx.description ? escapeHtml(trx.description) : '-'}</td>
           <td class="r debit-c">${trx.debit > 0 ? fmt(trx.debit) : ''}</td>
           <td class="r credit-c">${trx.credit > 0 ? fmt(trx.credit) : ''}</td>
           <td class="r ${trx.running_balance >= 0 ? 'pos-c' : 'neg-c'}">${fmt(trx.running_balance)}</td>
@@ -439,7 +440,7 @@ export default {
 <html lang="id">
 <head>
 <meta charset="UTF-8"/>
-<title>Buku Besar — ${account.code} ${account.name}</title>
+<title>Buku Besar — ${escapeHtml(account.code)} ${escapeHtml(account.name)}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Times New Roman', Times, serif; font-size: 9.5pt; color: #1a1a1a; padding: 14mm 16mm; }
@@ -522,7 +523,7 @@ export default {
 <div class="content">
   <div class="report-header">
     <div class="report-title">Buku Besar</div>
-    <div><span class="account-badge">${account.code} &mdash; ${account.name}</span></div>
+    <div><span class="account-badge">${escapeHtml(account.code)} &mdash; ${escapeHtml(account.name)}</span></div>
     <div class="report-divider"></div>
   </div>
 

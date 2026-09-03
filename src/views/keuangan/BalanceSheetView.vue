@@ -327,6 +327,7 @@
 <script>
 import axios from 'axios'
 import DashboardLayout from '@/components/DashboardLayout.vue'
+import { escapeHtml } from '@/utils/escapeHtml'
 
 export default {
   name: 'BalanceSheetView',
@@ -374,13 +375,13 @@ export default {
       const groupRows = (label, accounts, total) => {
         if (!accounts || accounts.length === 0) return ''
         const rows = accounts.map((a, i) =>
-          `<tr class="${i % 2 === 0 ? 'even' : ''}"><td style="padding-left:12pt">${a.account_name}</td><td class="right">${fmt(a.amount)}</td></tr>`
+          `<tr class="${i % 2 === 0 ? 'even' : ''}"><td style="padding-left:12pt">${escapeHtml(a.account_name)}</td><td class="right">${fmt(a.amount)}</td></tr>`
         ).join('')
-        return `<tr class="group-head"><td colspan="2">${label}</td></tr>${rows}<tr class="subtotal-row"><td>Total ${label}</td><td class="right">${fmt(total)}</td></tr>`
+        return `<tr class="group-head"><td colspan="2">${escapeHtml(label)}</td></tr>${rows}<tr class="subtotal-row"><td>Total ${escapeHtml(label)}</td><td class="right">${fmt(total)}</td></tr>`
       }
 
       const modalRows = d.modal.accounts.map((a, i) =>
-        `<tr class="${i % 2 === 0 ? 'even' : ''}"><td style="padding-left:12pt">${a.account_name}</td><td class="right">${fmt(a.amount)}</td></tr>`
+        `<tr class="${i % 2 === 0 ? 'even' : ''}"><td style="padding-left:12pt">${escapeHtml(a.account_name)}</td><td class="right">${fmt(a.amount)}</td></tr>`
       ).join('')
 
       const html = `<!DOCTYPE html>
