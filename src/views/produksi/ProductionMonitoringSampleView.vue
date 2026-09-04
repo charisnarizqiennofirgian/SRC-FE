@@ -639,7 +639,7 @@ const formatNumber = (num) => {
 const stagePercent = (qty, target) => {
   const t = parseFloat(target)
   if (!t || t <= 0) return 0
-  return Math.round((parseFloat(qty || 0) / t) * 100)
+  return Math.min(100, Math.round((parseFloat(qty || 0) / t) * 100))
 }
 
 const getStatusIcon = (status) => {
