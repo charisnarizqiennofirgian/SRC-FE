@@ -251,7 +251,7 @@
                   <td class="td-qty stage-moulding">
                     <HoverPopover :enabled="!!(item.moulding_bom_checklist?.length || item.moulding_components?.length)">
                       <span :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value']">
-                        {{ formatNumber(item.qty_moulding) }} <span class="stage-pct">({{ stagePercent(item.qty_moulding, item.target) }}%)</span>
+                        {{ formatNumber(item.qty_moulding) }} <span class="stage-pct">({{ stagePercent(item.qty_moulding, item.target, item.moulding_bom_checklist) }}%)</span>
                       </span>
                       <template #content>
                         <template v-if="item.moulding_bom_checklist?.length">
@@ -277,7 +277,7 @@
                   <td class="td-qty stage-mesin">
                     <HoverPopover :enabled="!!(item.mesin_bom_checklist?.length || item.mesin_components?.length)">
                       <span :class="['qty-value', item.qty_mesin > 0 ? 'has-value' : 'no-value']">
-                        {{ formatNumber(item.qty_mesin) }} <span class="stage-pct">({{ stagePercent(item.qty_mesin, item.target) }}%)</span>
+                        {{ formatNumber(item.qty_mesin) }} <span class="stage-pct">({{ stagePercent(item.qty_mesin, item.target, item.mesin_bom_checklist) }}%)</span>
                       </span>
                       <template #content>
                         <template v-if="item.mesin_bom_checklist?.length">
@@ -700,7 +700,11 @@ const formatNumber = (num) => {
   return number.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 }
 
-const stagePercent = (qty, target) => {
+const stagePercent = (qty, target, checklist) => {
+  if (checklist && checklist.length) {
+    const done = checklist.filter((c) => c.done).length
+    return Math.round((done / checklist.length) * 100)
+  }
   const t = parseFloat(target)
   if (!t || t <= 0) return 0
   return Math.min(100, Math.round((parseFloat(qty || 0) / t) * 100))
