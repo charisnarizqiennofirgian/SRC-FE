@@ -689,6 +689,13 @@ const handleSubmit = async () => {
     return
   }
 
+  const emptyItemRowIndex = form.details.findIndex((item) => !item.item_id)
+  if (emptyItemRowIndex !== -1) {
+    toast.error(`Baris ke-${emptyItemRowIndex + 1}: Nama Barang belum dipilih.`)
+    isSaving.value = false
+    return
+  }
+
   // DEBUG: Log data yang akan dikirim
   console.log('=== DEBUG SUBMIT SO ===')
   console.log('Form data:', form)

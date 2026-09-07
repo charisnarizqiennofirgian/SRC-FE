@@ -861,7 +861,7 @@ const isKayuLogCategory = computed(() =>
   selectedCategoryName.value.toLowerCase().includes('kayu log'),
 )
 
-const mustSelectWarehouse = computed(() => (form.stock || 0) > 0)
+const mustSelectWarehouse = computed(() => !isEditMode.value && (form.stock || 0) > 0)
 
 const handleCategoryChange = () => {
   form.specifications.t = null
