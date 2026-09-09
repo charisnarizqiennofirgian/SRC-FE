@@ -17,7 +17,6 @@
     <div v-else class="print-sheet-a4">
       <PrintKopWrapper>
 
-      <!-- JUDUL + NOMOR -->
       <div class="pi-title-section">
         <h1 class="pi-title">PROFORMA INVOICE</h1>
         <div class="pi-meta-block">
@@ -34,7 +33,6 @@
         </div>
       </div>
 
-      <!-- INFO BUYER -->
       <div class="pi-buyer-section">
         <div class="pi-info-row">
           <span class="pi-info-label">To</span>
@@ -53,7 +51,6 @@
         </div>
       </div>
 
-      <!-- TABEL BARANG -->
       <div class="pi-table-wrap">
         <table class="pi-table">
           <thead>
@@ -102,10 +99,8 @@
         </table>
       </div>
 
-      <!-- FOOTER 2 KOLOM -->
       <div class="pi-footer-grid">
 
-        <!-- KIRI ATAS: Spec & Condition -->
         <div class="fc fc-top fc-left">
           <p class="fc-title">Specification And Condition :</p>
           <ul class="fc-list">
@@ -121,7 +116,6 @@
           </ul>
         </div>
 
-        <!-- KANAN ATAS: Payment To -->
         <div class="fc fc-top fc-right">
           <p class="fc-title">Payment to :</p>
           <p class="fc-line fc-line-bold">PT SURYA BANGKIT CEMERLANG</p>
@@ -131,7 +125,6 @@
           <p class="fc-line">Swift Code : CENAIDJA</p>
         </div>
 
-        <!-- KIRI BAWAH: TTD Buyer -->
         <div class="fc fc-bottom fc-left">
           <div class="sign-box">
             <p class="sign-label">CONFIRMED BY BUYER</p>
@@ -141,11 +134,10 @@
           </div>
         </div>
 
-        <!-- KANAN BAWAH: TTD SBC -->
         <div class="fc fc-bottom fc-right">
           <div class="signature-with-stamp">
             <img v-if="includeStamp" :src="capTtdEllen" class="stamp-overlay" alt="Cap & TTD" />
-            <SignatureCompany :date-line="`Semarang, ${formatSignDate(so.so_date)}`" />
+            <SignatureCompany :date-line="`Semarang, ${formatSignDate(signDateSource)}`" />
           </div>
         </div>
 
@@ -173,13 +165,16 @@ const so           = ref(null)
 const noPi         = ref('')
 const deliveryOrder = ref(null)
 
-// Toggle tampilkan cap & TTD asli (PNG dari klien) di footer — sebagian cetak butuh kosong
-// (ttd basah manual), sebagian sudah pakai cap. Cuma kontrol tampilan/print, disembunyikan
-// otomatis dari kertas cetak lewat .print-controls { display:none } di @media print.
 const includeStamp = ref(true)
 
-// Klaim sertifikasi FSC cuma ditampilkan untuk buyer Ethimo — lihat CetakPengiriman.vue.
 const isEthimoBuyer = computed(() => (so.value?.buyer?.name || '').toLowerCase().includes('ethimo'))
+
+const signDateSource = computed(() => {
+  if (deliveryOrder.value) {
+    return deliveryOrder.value.delivery_date || so.value?.shipment_date || so.value?.so_date
+  }
+  return so.value?.shipment_date || so.value?.so_date
+})
 
 onMounted(async () => {
   const id = route.params.id
@@ -206,9 +201,6 @@ onMounted(async () => {
   }
 })
 
-// Kalau dibuka dari konteks pengiriman (?do_id=), daftar barang ikut isi DO yang benar-benar
-// dikirim (bisa gabungan lintas SO) — bukan seluruh isi SO aslinya. Field lain (buyer, PO
-// number, payment term, tanda tangan, dll) tetap dari SO seperti biasa, tidak berubah.
 const printDetails = computed(() => {
   if (!deliveryOrder.value) return so.value?.details || []
 
@@ -270,7 +262,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
 </script>
 
 <style scoped>
-/* ─── WRAPPER LAYAR ─────────────────────────────────── */
 .print-page-container {
   width: 100%;
   min-height: 100vh;
@@ -279,7 +270,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   box-sizing: border-box;
 }
 
-/* ─── TOOLBAR ───────────────────────────────────────── */
 .print-controls {
   display: flex;
   justify-content: flex-end;
@@ -323,7 +313,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   height: 15px;
 }
 
-/* ─── LOADING ───────────────────────────────────────── */
 .loading-container-print {
   display: flex;
   flex-direction: column;
@@ -343,7 +332,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-text-form { font-size: 14px; font-weight: 600; margin: 0; }
 
-/* ─── KERTAS A4 ─────────────────────────────────────── */
 .print-sheet-a4 {
   width: 210mm;
   min-height: 297mm;
@@ -357,7 +345,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   box-sizing: border-box;
 }
 
-/* ─── JUDUL PI ──────────────────────────────────────── */
 .pi-title-section {
   margin: 5mm 0 3mm;
   padding-bottom: 3mm;
@@ -395,7 +382,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
 .pi-meta-sep   { text-align: center; }
 .pi-meta-value { font-weight: 600; }
 
-/* ─── BUYER INFO ────────────────────────────────────── */
 .pi-buyer-section {
   margin: 3mm 0;
   padding: 3mm 0 3mm;
@@ -425,7 +411,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   line-height: 1.5;
 }
 
-/* ─── TABEL ─────────────────────────────────────────── */
 .pi-table-wrap {
   margin: 4mm 0;
 }
@@ -443,7 +428,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   padding: 4pt 5pt;
 }
 
-/* header baris 1 & 2 */
 .pi-table thead th {
   background: #f0f0f0;
   color: #000;
@@ -455,7 +439,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   line-height: 1.4;
 }
 
-/* baris data */
 .pi-table tbody td {
   vertical-align: middle;
   line-height: 1.4;
@@ -463,7 +446,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
 
 .tr-stripe td { background: #f7f7f7; }
 
-/* tfoot */
 .tr-total td {
   background: #f0f0f0;
   border-top: 1.5pt solid #000;
@@ -480,9 +462,7 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   font-size: 9.5pt;
 }
 
-/* kolom lebar */
 .col-no    { width: 8mm;  }
-.col-prod  { /* colspan 2 — lebar otomatis */ }
 .col-code  { width: 24mm; }
 .col-desc  { min-width: 40mm; }
 .col-hs    { width: 20mm; }
@@ -491,7 +471,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
 .col-total { width: 26mm; }
 .col-ship  { width: 22mm; }
 
-/* helper alignment */
 .td-center { text-align: center; }
 .td-right  { text-align: right;  }
 .td-code   { font-size: 8.5pt; }
@@ -499,9 +478,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
 .td-ship   { font-size: 8.5pt; white-space: nowrap; }
 .td-empty  { text-align: center; font-style: italic; color: #888; padding: 6pt; }
 
-
-
-/* ─── FOOTER 2×2 ────────────────────────────────────── */
 .pi-footer-grid {
   display: flex;
   flex-wrap: wrap;
@@ -509,7 +485,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   page-break-inside: avoid;
 }
 
-/* setiap sel — flex 2 kolom (bukan CSS grid, lebih konsisten di mesin cetak/PDF) */
 .fc {
   box-sizing: border-box;
   width: 50%;
@@ -517,13 +492,11 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
 }
 .fc.fc-right { padding: 0 0 0 6mm; }
 
-/* baris atas */
 .fc-top {
   padding-bottom: 4mm;
   border-bottom: 0.5pt solid #ccc;
 }
 
-/* judul sub-seksi */
 .fc-title {
   font-weight: 700;
   font-size: 9.5pt;
@@ -533,7 +506,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   text-underline-offset: 2px;
 }
 
-/* list spec */
 .fc-list {
   margin: 0;
   padding-left: 4.5mm;
@@ -548,7 +520,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   font-style: italic;
 }
 
-/* baris payment to */
 .fc-line {
   margin: 0;
   font-size: 9pt;
@@ -559,7 +530,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   font-size: 9.5pt;
 }
 
-/* tanda tangan */
 .fc-bottom {
   padding-top: 4mm;
   display: flex;
@@ -601,8 +571,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   text-align: center;
 }
 
-/* Overlay cap & TTD (PNG asli dari klien) di ruang kosong antara nama perusahaan
-   dan nama "Ellen Apriliana" — ruang itu sebelumnya kosong (buat ttd basah manual). */
 .signature-with-stamp {
   position: relative;
 }
@@ -616,8 +584,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   pointer-events: none;
 }
 
-/* Selaraskan tampilan tanda tangan SBC (komponen SignatureCompany) dengan box
-   Confirmed by Buyer di halaman ini — garis di atas nama dihapus & font disamakan. */
 :deep(.signature-block) {
   font-size: 10pt;
 }
@@ -628,8 +594,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   color: #000;
 }
 
-/* Nama "PT. SURYA BANGKIT CEMERLANG" disembunyikan khusus di halaman ini (cap & TTD
-   sudah menampilkan identitas perusahaan) — beri jarak pengganti untuk ruang cap & TTD. */
 :deep(.sig-company) {
   display: none;
 }
@@ -642,7 +606,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
   display: none;
 }
 
-/* ─── PRINT ─────────────────────────────────────────── */
 @media print {
   .print-controls { display: none !important; }
 
@@ -666,19 +629,14 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
     position: static !important;
   }
 
-  /* Header tabel repeat di setiap halaman */
   thead {
     display: table-header-group;
   }
 
-
-
-  /* Total hanya muncul sekali di halaman terakhir, tidak repeat */
   tfoot {
     display: table-row-group;
   }
 
-  /* Baris tidak terpotong antar halaman */
   tbody tr {
     page-break-inside: avoid;
     break-inside: avoid;
@@ -689,14 +647,12 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
     break-inside: avoid;
   }
 
-  /* Footer tetap satu blok utuh di halaman terakhir */
   .pi-footer-grid {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     page-break-before: auto;
   }
 
-  /* Background tabel tetap muncul */
   .pi-table thead th,
   .tr-total td,
   .tr-stripe td {
@@ -708,7 +664,6 @@ const goBack      = () => router.push({ name: 'DaftarSalesOrder' })
 }
 </style>
 
-<!-- Reset global html/body saat print -->
 <style>
 @media print {
   html, body, #app {

@@ -1,6 +1,5 @@
 <template>
   <DashboardLayout>
-    <!-- HEADER -->
     <div class="page-header-sales">
       <div class="header-content">
         <div class="header-left">
@@ -21,7 +20,6 @@
       </div>
     </div>
 
-    <!-- LOADING -->
     <div v-if="loading" class="loading-container">
       <div class="loading-animation">
         <div class="spinner"></div>
@@ -30,9 +28,7 @@
       <p class="loading-text">Memuat daftar pesanan penjualan...</p>
     </div>
 
-    <!-- CONTENT -->
     <div v-else class="content-card">
-      <!-- HEADER LIST + FILTER -->
       <div class="card-header-list">
         <div class="list-header-left">
           <span class="header-icon">📋</span>
@@ -60,7 +56,6 @@
         </div>
       </div>
 
-      <!-- EMPTY STATE -->
       <div v-if="paginatedOrders.length === 0" class="empty-state-container">
         <div class="empty-state">
           <span class="empty-icon">📭</span>
@@ -73,7 +68,6 @@
         </div>
       </div>
 
-      <!-- TABLE -->
       <div v-else class="card-body-table">
         <div class="table-wrapper">
           <table class="data-table">
@@ -81,6 +75,7 @@
               <tr>
                 <th class="th-no">No</th>
                 <th class="th-so-number">No. Pesanan</th>
+                <th class="th-pi">No. PI</th>
                 <th class="th-items">Nama Barang</th>
                 <th class="th-customer">Customer</th>
                 <th class="th-date">Tgl. Pesanan</th>
@@ -96,6 +91,10 @@
                 </td>
                 <td class="td-so-number">
                   <span class="so-badge">{{ so.so_number }}</span>
+                </td>
+                <td class="td-pi">
+                  <span v-if="so.no_pi" class="pi-badge">{{ so.no_pi }}</span>
+                  <span v-else class="pi-empty">-</span>
                 </td>
                 <td class="td-items">
                   <div class="items-list">
@@ -184,7 +183,6 @@
           </table>
         </div>
 
-        <!-- PAGINATION -->
         <div class="card-footer-pagination" v-if="pagination.last_page > 1">
           <div class="pagination-info">
             Menampilkan {{ pagination.from }} - {{ pagination.to }} dari {{ pagination.total }} data
@@ -511,7 +509,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* HEADER */
 .page-header-sales {
   background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 50%, #4f46e5 100%);
   border-radius: 16px;
@@ -562,7 +559,6 @@ onUnmounted(() => {
   opacity: 0.95;
 }
 
-/* BUTTON CREATE TOP */
 .btn-create-so {
   display: flex;
   align-items: center;
@@ -587,7 +583,6 @@ onUnmounted(() => {
   font-size: 1rem;
 }
 
-/* LOADING */
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -655,7 +650,6 @@ onUnmounted(() => {
   color: #6b7280;
 }
 
-/* CARD */
 .content-card {
   background: white;
   border-radius: 16px;
@@ -663,7 +657,6 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-/* LIST HEADER */
 .card-header-list {
   display: flex;
   justify-content: space-between;
@@ -706,7 +699,6 @@ onUnmounted(() => {
   min-width: 220px;
 }
 
-/* EMPTY STATE */
 .empty-state-container {
   padding: 3rem 1.75rem;
 }
@@ -747,7 +739,6 @@ onUnmounted(() => {
   transition: all 0.2s ease;
 }
 
-/* TABLE */
 .card-body-table {
   padding: 1.25rem;
 }
@@ -788,6 +779,10 @@ onUnmounted(() => {
   text-align: center;
 }
 
+.th-pi {
+  white-space: nowrap;
+}
+
 .th-actions {
   width: 150px;
   text-align: center;
@@ -814,7 +809,6 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
-/* SO badge */
 .so-badge {
   display: inline-block;
   padding: 0.35rem 0.75rem;
@@ -825,7 +819,22 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
-/* Items */
+.pi-badge {
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pi-empty {
+  color: #9ca3af;
+}
+
 .items-list {
   display: flex;
   flex-wrap: wrap;
@@ -840,14 +849,12 @@ onUnmounted(() => {
   font-size: 0.75rem;
 }
 
-/* Customer */
 .customer-info {
   display: flex;
   align-items: center;
   gap: 0.45rem;
 }
 
-/* Status */
 .status-badge {
   display: inline-block;
   padding: 0.3rem 0.75rem;
@@ -878,13 +885,11 @@ onUnmounted(() => {
   color: #374151;
 }
 
-/* Total */
 .total-value {
   font-weight: 700;
   color: #059669;
 }
 
-/* ACTION BUTTONS */
 .action-buttons-group {
   display: flex;
   justify-content: center;
@@ -996,7 +1001,6 @@ onUnmounted(() => {
   background: #ef4444;
 }
 
-/* PAGINATION */
 .card-footer-pagination {
   padding: 1.1rem 1.75rem;
   display: flex;
@@ -1037,7 +1041,6 @@ onUnmounted(() => {
   cursor: default;
 }
 
-/* RESPONSIVE */
 @media (max-width: 768px) {
   .page-header-sales {
     padding: 1.5rem;
