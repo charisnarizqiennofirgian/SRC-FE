@@ -9,7 +9,7 @@
           <div class="header-text-content">
             <h1 class="page-title-sanding">Proses Sanding</h1>
             <p class="page-subtitle-sanding">
-              Pengamplasan barang — ambil dari gudang manapun, masuk Gudang Sanding.
+              Pengamplasan barang — ambil dari Gudang Mesin atau Assembling, masuk Gudang Sanding.
             </p>
           </div>
         </div>
@@ -21,7 +21,7 @@
             <span class="process-arrow">→</span>
             <span class="process-icon">✨</span>
           </div>
-          <div class="flow-label-sanding">Gudang → Sanding → Selesai</div>
+          <div class="flow-label-sanding">Mesin / Assembling → Sanding</div>
         </div>
       </div>
     </div>
@@ -100,19 +100,14 @@
               <div class="section-title-group">
                 <h3 class="section-title">Item yang Diproses</h3>
                 <p class="section-subtitle">
-                  Stok dari
-                  <strong>{{ selectedWarehouseName || 'gudang sumber' }}</strong>
+                  Stok dari <strong>Gudang Mesin &amp; Assembling</strong>
                   <span v-if="loadingItems" class="loading-inline">⏳ memuat...</span>
                 </p>
               </div>
             </div>
 
-            <div v-if="!form.source_warehouse_id" class="empty-hint">
-              ⬆️ Pilih gudang sumber dulu
-            </div>
-
-            <div v-else-if="sourceItems.length === 0 && !loadingItems" class="empty-hint">
-              📭 Tidak ada stok di {{ selectedWarehouseName }}
+            <div v-if="sourceItems.length === 0 && !loadingItems" class="empty-hint">
+              📭 Tidak ada stok di Gudang Mesin / Assembling
             </div>
 
             <template v-else>
@@ -132,32 +127,34 @@
                 </div>
                 <div class="form-grid-2col">
                   <div class="form-group-modern">
-                    <label class="form-label-modern">Item <span class="required-star">*</span></label>
-                    <!-- Read-only kalau dari PO -->
-                    <div v-if="row.item_name" class="item-readonly-box">
-                      <span class="item-readonly-code">{{ row.item_code }}</span>
-                      <span class="item-readonly-name">{{ row.item_name }}</span>
-                      <span class="item-readonly-badge">🎯 Dari PO</span>
-                    </div>
-                    <!-- Manual kalau tidak ada PO -->
+                    <label class="form-label-modern">Item + Gudang Sumber <span class="required-star">*</span></label>
                     <vue-select
-                      v-else
-                      v-model="row.item_id"
+                      v-model="row.key"
                       :options="sourceItemsForSelect"
-                      :reduce="(o) => o.item_id"
+                      :reduce="(o) => o.key"
                       label="label"
-                      placeholder="🔍 Pilih item..."
+                      placeholder="🔍 Pilih item + gudang..."
                       class="vue-select-item"
                       @option:selected="(opt) => onItemSelected(index, opt)"
+                      @option:deselected="() => onItemDeselected(index)"
                     >
                       <template #option="o">
                         <div class="item-option">
-                          <span class="item-option-code">{{ o.item_code }}</span>
+                          <span class="item-option-code">
+                            {{ o.item_code }}
+                            <span class="item-option-badge">{{ o.warehouse_code }}</span>
+                          </span>
                           <span class="item-option-name">{{ o.item_name }}</span>
                           <span class="item-option-stock">Stok: {{ o.qty_available }} pcs</span>
                         </div>
                       </template>
                     </vue-select>
+                    <div v-if="row.warehouse_name" class="source-info">
+                      📦 Sumber: <strong>{{ row.warehouse_name }}</strong>
+                    </div>
+                    <p v-else-if="row.fromPo" class="qty-warning">
+                      ⚠️ Item PO ini tidak ada stok di Gudang Mesin / Assembling — pilih manual atau lewati.
+                    </p>
                   </div>
                   <div class="form-group-modern">
                     <label class="form-label-modern">
@@ -222,33 +219,39 @@ const loadingItems   = ref(false)
 
 const productionOrders    = ref([])
 const sourceItems           = ref([])
-const selectedWarehouseName = ref('')
 const poInfo = ref({ buyer_name: null, so_number: null })
+
+const newRow = () => ({
+  local_id: Date.now() + Math.random(),
+  key: null, item_id: null, item_code: '', item_name: '',
+  warehouse_id: null, warehouse_name: '', warehouse_code: '',
+  qty: null, max_qty: 0, fromPo: false,
+})
 
 const form = reactive({
   date:               new Date().toISOString().slice(0, 10),
   ref_po_id:          null,
-  source_warehouse_id: null,
   notes:              '',
-  items: [{ local_id: Date.now(), item_id: null, qty: null, max_qty: 0 }],
+  items: [newRow()],
 })
 
 const sourceItemsForSelect = computed(() =>
   sourceItems.value.map((i) => ({
-    item_id:       i.item_id,
-    item_code:     i.item_code,
-    item_name:     i.item_name,
-    qty_available: i.qty_available,
-    label:         `${i.item_code} - ${i.item_name}`,
+    key:            `${i.item_id}-${i.warehouse_id}`,
+    item_id:        i.item_id,
+    item_code:      i.item_code,
+    item_name:      i.item_name,
+    qty_available:  i.qty_available,
+    warehouse_id:   i.warehouse_id,
+    warehouse_code: i.warehouse_code,
+    warehouse_name: i.warehouse_name,
+    label:          `${i.item_code} - ${i.item_name} (${i.warehouse_code})`,
   }))
 )
 
 const fetchInitialData = async () => {
   try {
-    const [poRes, whRes] = await Promise.all([
-      apiClient.get('/production-orders', { params: { status_not: 'completed' } }),
-      apiClient.get('/warehouses'),
-    ])
+    const poRes = await apiClient.get('/production-orders', { params: { status_not: 'completed' } })
     const poRaw = poRes.data.data?.data || poRes.data.data || []
     productionOrders.value = poRaw.map((po) => ({
       id:         po.id,
@@ -257,15 +260,7 @@ const fetchInitialData = async () => {
       buyer_name: po.buyer_name,
       so_number:  po.so_number,
     }))
-
-    // Auto-set source warehouse ke ASSEMBLING
-    const whAll = whRes.data.data || whRes.data || []
-    const assemblingWh = whAll.find((w) => w.code === 'ASSEMBLING')
-    if (assemblingWh) {
-      form.source_warehouse_id = assemblingWh.id
-      selectedWarehouseName.value = assemblingWh.name
-      await fetchSourceItems()
-    }
+    await fetchSourceItems()
   } catch (error) {
     console.error(error)
     showError('Gagal', 'Gagal mengambil data awal')
@@ -275,12 +270,9 @@ const fetchInitialData = async () => {
 
 
 const fetchSourceItems = async () => {
-  if (!form.source_warehouse_id) return
   loadingItems.value = true
   try {
-    const res = await apiClient.get('/produksi/transfer/source-items', {
-      params: { warehouse_id: form.source_warehouse_id }
-    })
+    const res = await apiClient.get('/produksi/transfer/source-items')
     sourceItems.value = res.data.data || []
   } catch {
     showError('Gagal', 'Gagal mengambil stok gudang')
@@ -304,16 +296,28 @@ const handlePoChange = async (opt) => {
     }
     poTargets.value = data.targets || []
 
-    // Auto-fill items dari detail PO
+    // Auto-fill items dari detail PO — resolve gudang sumber otomatis (utamakan Assembling, lalu Mesin)
     if (data.targets?.length > 0) {
-      form.items = data.targets.map((t, i) => ({
-        local_id:  Date.now() + i,
-        item_id:   t.item_id,
-        item_name: t.name,
-        item_code: t.code,
-        qty:       null,
-        max_qty:   0,
-      }))
+      form.items = data.targets.map((t, i) => {
+        const matches = sourceItems.value.filter((s) => s.item_id === t.item_id)
+        const pick = matches.find((m) => m.warehouse_code === 'ASSEMBLING')
+                  || matches.find((m) => m.warehouse_code === 'MESIN')
+                  || matches[0]
+                  || null
+        return {
+          local_id:       Date.now() + i,
+          key:            pick ? `${pick.item_id}-${pick.warehouse_id}` : null,
+          item_id:        t.item_id,
+          item_code:      t.code,
+          item_name:      t.name,
+          warehouse_id:   pick?.warehouse_id ?? null,
+          warehouse_name: pick?.warehouse_name ?? '',
+          warehouse_code: pick?.warehouse_code ?? '',
+          qty:            null,
+          max_qty:        pick?.qty_available ?? 0,
+          fromPo:         true,
+        }
+      })
     }
   } catch (e) { console.error(e) }
 }
@@ -321,22 +325,36 @@ const handlePoChange = async (opt) => {
 const handlePoDeselect = () => {
   poInfo.value    = { buyer_name: null, so_number: null }
   poTargets.value = []
-  form.items = [{ local_id: Date.now(), item_id: null, qty: null, max_qty: 0 }]
+  form.items = [newRow()]
 }
 
 const onItemSelected = (index, opt) => {
-  form.items[index].max_qty = opt?.qty_available ?? 0
+  const r = form.items[index]
+  r.item_id        = opt?.item_id ?? null
+  r.item_code      = opt?.item_code ?? ''
+  r.item_name      = opt?.item_name ?? ''
+  r.warehouse_id   = opt?.warehouse_id ?? null
+  r.warehouse_name = opt?.warehouse_name ?? ''
+  r.warehouse_code = opt?.warehouse_code ?? ''
+  r.max_qty        = opt?.qty_available ?? 0
 }
 
-const addItem    = () => form.items.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, max_qty: 0 })
+const onItemDeselected = (index) => {
+  const r = form.items[index]
+  r.item_id = null; r.item_code = ''; r.item_name = ''
+  r.warehouse_id = null; r.warehouse_name = ''; r.warehouse_code = ''
+  r.max_qty = 0
+}
+
+const addItem    = () => form.items.push(newRow())
 const removeItem = (i) => form.items.splice(i, 1)
 
 const handleSubmit = async () => {
   if (!form.ref_po_id)          { showError('Validasi', 'PO wajib dipilih'); return }
 
 
-  const validItems = form.items.filter((i) => i.item_id && i.qty > 0)
-  if (validItems.length === 0) { showError('Validasi', 'Minimal satu item wajib diisi'); return }
+  const validItems = form.items.filter((i) => i.item_id && i.warehouse_id && i.qty > 0)
+  if (validItems.length === 0) { showError('Validasi', 'Minimal satu item + gudang sumber wajib diisi'); return }
 
   for (let i = 0; i < validItems.length; i++) {
     if (validItems[i].qty > validItems[i].max_qty && validItems[i].max_qty > 0) {
@@ -350,9 +368,12 @@ const handleSubmit = async () => {
     await apiClient.post('/produksi/sanding/store', {
       date:               form.date,
       ref_po_id:          Number(form.ref_po_id),
-      source_warehouse_id: Number(form.source_warehouse_id),
       notes:              form.notes || null,
-      items: validItems.map((i) => ({ item_id: Number(i.item_id), qty: Number(i.qty) })),
+      items: validItems.map((i) => ({
+        item_id: Number(i.item_id),
+        source_warehouse_id: Number(i.warehouse_id),
+        qty: Number(i.qty),
+      })),
     })
     showSuccess('Sukses', 'Proses Sanding berhasil dicatat')
     router.back()
@@ -444,6 +465,8 @@ onMounted(fetchInitialData)
 .item-option-code { font-size: 0.82rem; font-weight: 700; color: #0369a1; }
 .item-option-name { font-size: 0.9rem; color: #111827; font-weight: 500; }
 .item-option-stock { font-size: 0.78rem; color: #6b7280; }
+.item-option-badge { display: inline-block; margin-left: 6px; padding: 1px 6px; background: #0369a1; color: white; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+.source-info { margin-top: 6px; font-size: 0.8rem; color: #075985; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 5px 10px; }
 
 .vue-select-po :deep(.vs__dropdown-toggle),
 .vue-select-item :deep(.vs__dropdown-toggle) { padding: 0.875rem 1.25rem; border: 2.5px solid #e5e7eb; border-radius: 12px; min-height: 54px; }
