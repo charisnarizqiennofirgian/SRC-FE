@@ -28,7 +28,7 @@
           <div class="pi-meta-row">
             <span class="pi-meta-label">Date</span>
             <span class="pi-meta-sep">:</span>
-            <span class="pi-meta-value">{{ formatDisplayDate(so.so_date) }}</span>
+            <span class="pi-meta-value">{{ formatDisplayDate(signDateSource) }}</span>
           </div>
         </div>
       </div>
