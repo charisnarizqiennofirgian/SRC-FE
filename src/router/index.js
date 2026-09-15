@@ -546,6 +546,18 @@ const router = createRouter({
       meta: { title: 'Packing', requiresAuth: true },
     },
     {
+      path: '/admin/produksi/konfirmasi-pengiriman',
+      name: 'KonfirmasiPengirimanList',
+      component: () => import('../views/produksi/KonfirmasiPengirimanView.vue'),
+      meta: { title: 'Konfirmasi Pengiriman', requiresAuth: true },
+    },
+    {
+      path: '/admin/produksi/konfirmasi-pengiriman/buat',
+      name: 'KonfirmasiPengirimanCreate',
+      component: FormPengiriman,
+      meta: { title: 'Konfirmasi Pengiriman Barang', requiresAuth: true },
+    },
+    {
       path: '/admin/produksi/material-usage',
       name: 'MaterialUsageView',
       component: MaterialUsageView,

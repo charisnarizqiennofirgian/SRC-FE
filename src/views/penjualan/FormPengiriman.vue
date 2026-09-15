@@ -7,8 +7,14 @@
             <span class="icon">🚚</span>
           </div>
           <div class="header-text">
-            <h1 class="page-title">{{ isEditMode ? 'Edit Pengiriman Barang' : 'Buat Pengiriman Barang' }}</h1>
-            <p class="page-subtitle">Kelola surat jalan dan packing list untuk pengiriman ekspor</p>
+            <h1 class="page-title">
+              {{ isProductionMode ? 'Konfirmasi Pengiriman Barang' : (isEditMode ? 'Edit Pengiriman Barang' : 'Buat Pengiriman Barang') }}
+            </h1>
+            <p class="page-subtitle">
+              {{ isProductionMode
+                ? 'Catat barang & qty yang benar-benar dimuat/dikirim. Dokumen ekspor dilengkapi tim Penjualan belakangan.'
+                : 'Kelola surat jalan dan packing list untuk pengiriman ekspor' }}
+            </p>
           </div>
         </div>
       </div>
@@ -90,6 +96,7 @@
       </div>
 
       <template v-if="selectedSalesOrders.length > 0">
+      <template v-if="!isProductionMode">
         <div class="form-card">
           <div class="card-header">
             <span class="header-icon">🏢</span>
@@ -406,6 +413,7 @@ INDONESIA</textarea
             </div>
           </div>
         </div>
+      </template>
 
         <div class="form-card">
           <div class="card-header">
@@ -627,7 +635,7 @@ INDONESIA</textarea
         <button type="submit" class="btn-primary-modern" :disabled="isSaving || !isFormValid">
           <span v-if="isSaving" class="spinner-inline"></span>
           <span v-else class="btn-icon">💾</span>
-          <span>{{ isSaving ? 'Menyimpan...' : isEditMode ? 'Update DO' : 'Simpan DO' }}</span>
+          <span>{{ isSaving ? 'Menyimpan...' : isProductionMode ? 'Konfirmasi Terkirim' : isEditMode ? 'Update DO' : 'Simpan DO' }}</span>
         </button>
       </div>
     </form>
@@ -649,6 +657,11 @@ const toast = useToast()
 // :id di URL.
 const isEditMode = computed(() => !!route.params.id)
 const editingDoId = ref(null)
+
+// Menu "Konfirmasi Pengiriman" (PPIC) pakai komponen yang sama juga — dibedakan dari nama
+// route. PPIC cuma tahu barang & qty yang dimuat, tidak isi dokumen ekspor (itu tetap
+// kerjaan Sales lewat Daftar Pengiriman, record yang sama, dilengkapi belakangan).
+const isProductionMode = computed(() => route.name === 'KonfirmasiPengirimanCreate')
 
 const loadingMaster = ref(true)
 const isSaving = ref(false)
@@ -1107,7 +1120,13 @@ const handleSubmit = async () => {
 
   try {
     let response
-    if (isEditMode.value && editingDoId.value) {
+    if (isProductionMode.value) {
+      // Menu Konfirmasi Pengiriman (PPIC) — endpoint ini langsung bikin DO + tandai SHIPPED
+      // sekali jalan (bukan DRAFT nunggu Sales klik Kirim manual belakangan).
+      response = await apiClient.post('/production/shipment-confirmations', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+    } else if (isEditMode.value && editingDoId.value) {
       // PUT dengan multipart body (file upload) tidak diparse PHP dengan benar kalau kirim
       // request PUT asli — pakai method-spoofing standar Laravel (_method=PUT via POST).
       formData.append('_method', 'PUT')
@@ -1124,7 +1143,7 @@ const handleSubmit = async () => {
       barcodeImageFile.value = null
       barcodeImagePreview.value = null
       barcodeImageError.value = ''
-      router.push({ name: 'DaftarPengiriman' })
+      router.push({ name: isProductionMode.value ? 'KonfirmasiPengirimanList' : 'DaftarPengiriman' })
     }
   } catch (error) {
     toast.error(error.response?.data?.message || 'Gagal menyimpan pengiriman.')
@@ -1144,7 +1163,7 @@ const retryLoad = async () => {
 }
 
 const goBack = () => {
-  router.push({ name: 'DaftarPengiriman' })
+  router.push({ name: isProductionMode.value ? 'KonfirmasiPengirimanList' : 'DaftarPengiriman' })
 }
 </script>
 
