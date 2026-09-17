@@ -87,7 +87,7 @@ const newItem = () => ({ lid: Date.now()+Math.random(), item_id: null, qty: null
 const form = reactive({ date: new Date().toISOString().slice(0,10), ref_po_id: null, source_warehouse_id: null, notes: '', items: [newItem()] })
 
 const posOpts      = computed(() => productionOrders.value.map(p => ({ id: p.id, label: p.po_number })))
-const warehouseOpts = computed(() => warehouses.value.filter(w => ['SANDING','FINISHING','PROTOTYPE'].includes(w.code)))
+const warehouseOpts = computed(() => warehouses.value.filter(w => ['SANDING','FINISHING','PROTOTYPE','RUSTIK_SAMPLE'].includes(w.code)))
 const sourceOpts   = computed(() => sourceItems.value.map(i => ({ item_id: i.item_id, label: `${i.item_code} - ${i.item_name}`, qty_available: i.qty_available })))
 
 const fetchBase = async () => {

@@ -522,6 +522,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/produksi-sampel/rustik',
+      name: 'SampelRustik',
+      component: () => import('../views/produksi-sampel/SampelRustikView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/produksi-sampel/sanding',
       name: 'SampelSanding',
       component: () => import('../views/produksi-sampel/SampelSandingView.vue'),

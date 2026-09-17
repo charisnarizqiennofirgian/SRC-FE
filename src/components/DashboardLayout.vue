@@ -134,8 +134,8 @@ const menuPermissionMap = {
   ],
   'Produksi Sampel': [
     'produksi-sampel-sawmill', 'produksi-sampel-kd', 'produksi-sampel-pembahanan',
-    'produksi-sampel-moulding', 'produksi-sampel-prototype', 'produksi-sampel-sanding',
-    'produksi-sampel-packing',
+    'produksi-sampel-moulding', 'produksi-sampel-prototype', 'produksi-sampel-rustik',
+    'produksi-sampel-sanding', 'produksi-sampel-packing',
   ],
   Pembelian: [
     'pembelian-operasional', 'pembelian-karton', 'pembelian-kayu',
@@ -230,6 +230,7 @@ const allMenuItems = [
       { name: 'Pembahanan', route: { name: 'SampelPembahanan' }, permission: 'produksi-sampel-pembahanan' },
       { name: 'Moulding', route: { name: 'SampelMoulding' }, permission: 'produksi-sampel-moulding' },
       { name: 'Prototype', route: { name: 'SampelPrototype' }, permission: 'produksi-sampel-prototype' },
+      { name: 'Rustik', route: { name: 'SampelRustik' }, permission: 'produksi-sampel-rustik' },
       { name: 'Sanding', route: { name: 'SampelSanding' }, permission: 'produksi-sampel-sanding' },
       { name: 'Packing', route: { name: 'SampelPacking' }, permission: 'produksi-sampel-packing' },
     ],

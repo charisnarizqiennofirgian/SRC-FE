@@ -309,36 +309,43 @@
                   <td class="td-qty stage-assembling">
                     <span :class="['qty-value', item.qty_assembling > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_assembling) }} <span class="stage-pct">({{ stagePercent(item.qty_assembling, item.target) }}%)</span>
+                      <span v-if="item.stok_gudang_hilir?.assembling" class="stok-gudang-badge">stok: {{ formatNumber(item.stok_gudang_hilir.assembling) }}</span>
                     </span>
                   </td>
                   <td class="td-qty stage-sanding">
                     <span :class="['qty-value', item.qty_sanding > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_sanding) }} <span class="stage-pct">({{ stagePercent(item.qty_sanding, item.target) }}%)</span>
+                      <span v-if="item.stok_gudang_hilir?.sanding" class="stok-gudang-badge">stok: {{ formatNumber(item.stok_gudang_hilir.sanding) }}</span>
                     </span>
                   </td>
                   <td class="td-qty stage-rustik">
                     <span :class="['qty-value', item.qty_rustik > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_rustik) }} <span class="stage-pct">({{ stagePercent(item.qty_rustik, item.target) }}%)</span>
+                      <span v-if="item.stok_gudang_hilir?.rustik" class="stok-gudang-badge">stok: {{ formatNumber(item.stok_gudang_hilir.rustik) }}</span>
                     </span>
                   </td>
                   <td class="td-qty stage-finishing">
                     <span :class="['qty-value', item.qty_finishing > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_finishing) }} <span class="stage-pct">({{ stagePercent(item.qty_finishing, item.target) }}%)</span>
+                      <span v-if="item.stok_gudang_hilir?.finishing" class="stok-gudang-badge">stok: {{ formatNumber(item.stok_gudang_hilir.finishing) }}</span>
                     </span>
                   </td>
                   <td class="td-qty stage-anyam">
                     <span :class="['qty-value', item.qty_anyam > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_anyam) }} <span class="stage-pct">({{ stagePercent(item.qty_anyam, item.target) }}%)</span>
+                      <span v-if="item.stok_gudang_hilir?.anyam" class="stok-gudang-badge">stok: {{ formatNumber(item.stok_gudang_hilir.anyam) }}</span>
                     </span>
                   </td>
                   <td class="td-qty stage-qcfinal">
                     <span :class="['qty-value', item.qty_qc_final > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_qc_final) }} <span class="stage-pct">({{ stagePercent(item.qty_qc_final, item.target) }}%)</span>
+                      <span v-if="item.stok_gudang_hilir?.qc_final" class="stok-gudang-badge">stok: {{ formatNumber(item.stok_gudang_hilir.qc_final) }}</span>
                     </span>
                   </td>
                   <td class="td-qty stage-packing">
                     <span :class="['qty-value', item.qty_packing > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_packing) }} <span class="stage-pct">({{ stagePercent(item.qty_packing, item.target) }}%)</span>
+                      <span v-if="item.stok_gudang_hilir?.packing" class="stok-gudang-badge">stok: {{ formatNumber(item.stok_gudang_hilir.packing) }}</span>
                     </span>
                   </td>
 
@@ -1784,6 +1791,17 @@ const getStageClass = (type) => {
   font-size: 10.5px;
   font-weight: 500;
   opacity: 0.7;
+}
+
+.stok-gudang-badge {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #b45309;
+  background: #fef3c7;
+  border-radius: 4px;
+  padding: 1px 6px;
 }
 
 .sisa-value {

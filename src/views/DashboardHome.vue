@@ -246,36 +246,43 @@
                   <td class="col-num stage-assembling">
                     <span :class="['qty-value', item.qty_assembling > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_assembling) }} <span class="stage-pct">({{ stagePercent(item.qty_assembling, item.target) }}%)</span>
+                      <span v-if="item.stok_gudang_hilir?.assembling" class="stok-gudang-badge">stok: {{ formatNumber(item.stok_gudang_hilir.assembling) }}</span>
                     </span>
                   </td>
                   <td class="col-num stage-sanding">
                     <span :class="['qty-value', item.qty_sanding > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_sanding) }} <span class="stage-pct">({{ stagePercent(item.qty_sanding, item.target) }}%)</span>
+                      <span v-if="item.stok_gudang_hilir?.sanding" class="stok-gudang-badge">stok: {{ formatNumber(item.stok_gudang_hilir.sanding) }}</span>
                     </span>
                   </td>
                   <td class="col-num stage-rustik">
                     <span :class="['qty-value', item.qty_rustik > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_rustik) }} <span class="stage-pct">({{ stagePercent(item.qty_rustik, item.target) }}%)</span>
+                      <span v-if="item.stok_gudang_hilir?.rustik" class="stok-gudang-badge">stok: {{ formatNumber(item.stok_gudang_hilir.rustik) }}</span>
                     </span>
                   </td>
                   <td class="col-num stage-finishing">
                     <span :class="['qty-value', item.qty_finishing > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_finishing) }} <span class="stage-pct">({{ stagePercent(item.qty_finishing, item.target) }}%)</span>
+                      <span v-if="item.stok_gudang_hilir?.finishing" class="stok-gudang-badge">stok: {{ formatNumber(item.stok_gudang_hilir.finishing) }}</span>
                     </span>
                   </td>
                   <td class="col-num stage-anyam">
                     <span :class="['qty-value', item.qty_anyam > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_anyam) }} <span class="stage-pct">({{ stagePercent(item.qty_anyam, item.target) }}%)</span>
+                      <span v-if="item.stok_gudang_hilir?.anyam" class="stok-gudang-badge">stok: {{ formatNumber(item.stok_gudang_hilir.anyam) }}</span>
                     </span>
                   </td>
                   <td class="col-num stage-qcfinal">
                     <span :class="['qty-value', item.qty_qc_final > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_qc_final) }} <span class="stage-pct">({{ stagePercent(item.qty_qc_final, item.target) }}%)</span>
+                      <span v-if="item.stok_gudang_hilir?.qc_final" class="stok-gudang-badge">stok: {{ formatNumber(item.stok_gudang_hilir.qc_final) }}</span>
                     </span>
                   </td>
                   <td class="col-num stage-packing">
                     <span :class="['qty-value', item.qty_packing > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_packing) }} <span class="stage-pct">({{ stagePercent(item.qty_packing, item.target) }}%)</span>
+                      <span v-if="item.stok_gudang_hilir?.packing" class="stok-gudang-badge">stok: {{ formatNumber(item.stok_gudang_hilir.packing) }}</span>
                     </span>
                   </td>
 
@@ -400,7 +407,7 @@
               <th class="col-tgl-kirim" rowspan="2">Tgl. Kirim</th>
               <th class="col-num" rowspan="2">Stok</th>
               <th colspan="3" class="zone-header zone-hulu"><span class="zone-icon">🌲</span> Persiapan Bahan</th>
-              <th colspan="4" class="zone-header sampel-zone-hilir"><span class="zone-icon">⚙️</span> Produksi Sampel</th>
+              <th colspan="5" class="zone-header sampel-zone-hilir"><span class="zone-icon">⚙️</span> Produksi Sampel</th>
               <th class="col-num" rowspan="2">Sisa</th>
             </tr>
             <tr>
@@ -409,6 +416,7 @@
               <th class="col-status stage-pembahanan">Pembahanan</th>
               <th class="col-num stage-moulding">Moulding</th>
               <th class="col-num sampel-stage-proto">Prototype</th>
+              <th class="col-num sampel-stage-rustik">Rustik</th>
               <th class="col-num sampel-stage-sanding">Sanding</th>
               <th class="col-num sampel-stage-packing">Packing</th>
             </tr>
@@ -513,6 +521,11 @@
                     {{ formatNumber(item.qty_prototype) }} <span class="stage-pct">({{ stagePercent(item.qty_prototype, item.target) }}%)</span>
                   </span>
                 </td>
+                <td class="col-num sampel-stage-rustik">
+                  <span :class="['qty-value', item.qty_rustik > 0 ? 'has-value' : 'no-value']">
+                    {{ formatNumber(item.qty_rustik) }} <span class="stage-pct">({{ stagePercent(item.qty_rustik, item.target) }}%)</span>
+                  </span>
+                </td>
                 <td class="col-num sampel-stage-sanding">
                   <span :class="['qty-value', item.qty_sanding > 0 ? 'has-value' : 'no-value']">
                     {{ formatNumber(item.qty_sanding) }} <span class="stage-pct">({{ stagePercent(item.qty_sanding, item.target) }}%)</span>
@@ -530,7 +543,7 @@
                   <span v-else class="sisa-value">{{ formatNumber(item.sisa) }}</span>
                 </td>
               </tr>
-              <tr class="so-separator"><td colspan="13"></td></tr>
+              <tr class="so-separator"><td colspan="14"></td></tr>
             </template>
           </tbody>
         </table>
@@ -1584,6 +1597,17 @@ onMounted(() => {
   opacity: 0.7;
 }
 
+.stok-gudang-badge {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #b45309;
+  background: #fef3c7;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
 .moulding-tooltip-title {
   font-weight: 700;
   margin-bottom: 4px;
@@ -1899,6 +1923,11 @@ onMounted(() => {
 .sampel-stage-proto {
   background: linear-gradient(180deg, #f5f3ff 0%, #ede9fe 100%) !important;
   color: #5b21b6 !important;
+}
+
+.sampel-stage-rustik {
+  background: linear-gradient(180deg, #fff7ed 0%, #fed7aa 100%) !important;
+  color: #7c2d12 !important;
 }
 
 .sampel-stage-sanding {

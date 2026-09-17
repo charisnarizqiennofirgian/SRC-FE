@@ -138,7 +138,7 @@
                   <span class="zone-icon">🌲</span>
                   <span class="zone-text">Persiapan Bahan</span>
                 </th>
-                <th colspan="4" class="zone-header zone-sampel">
+                <th colspan="5" class="zone-header zone-sampel">
                   <span class="zone-icon">🧪</span>
                   <span class="zone-text">Produksi Sampel</span>
                 </th>
@@ -150,13 +150,14 @@
                 <th class="th-stage stage-hulu">Pembahanan</th>
                 <th class="th-stage stage-moulding">Moulding</th>
                 <th class="th-stage stage-proto">Prototype</th>
+                <th class="th-stage stage-rustik">Rustik</th>
                 <th class="th-stage stage-sanding">Sanding</th>
                 <th class="th-stage stage-packing">Packing</th>
               </tr>
             </thead>
             <tbody class="table-body">
               <tr v-if="data.length === 0" class="empty-row">
-                <td colspan="13" class="empty-cell">
+                <td colspan="14" class="empty-cell">
                   <div class="empty-state">
                     <span class="empty-icon">🧪</span>
                     <p class="empty-text">Tidak ada data Production Order Sampel aktif.</p>
@@ -279,6 +280,11 @@
                       {{ formatNumber(item.qty_prototype) }} <span class="stage-pct">({{ stagePercent(item.qty_prototype, item.target) }}%)</span>
                     </span>
                   </td>
+                  <td class="td-qty stage-rustik">
+                    <span :class="['qty-value', item.qty_rustik > 0 ? 'has-value' : 'no-value']">
+                      {{ formatNumber(item.qty_rustik) }} <span class="stage-pct">({{ stagePercent(item.qty_rustik, item.target) }}%)</span>
+                    </span>
+                  </td>
                   <td class="td-qty stage-sanding">
                     <span :class="['qty-value', item.qty_sanding > 0 ? 'has-value' : 'no-value']">
                       {{ formatNumber(item.qty_sanding) }} <span class="stage-pct">({{ stagePercent(item.qty_sanding, item.target) }}%)</span>
@@ -307,7 +313,7 @@
                 </tr>
 
                 <tr class="so-separator">
-                  <td colspan="13"></td>
+                  <td colspan="14"></td>
                 </tr>
               </template>
             </tbody>
@@ -759,6 +765,7 @@ const getStageIcon = (type) => {
     'RAKIT':           '🔧',
     'SANDING':         '✨',
     'RUSTIK':          '🪵',
+    'RUSTIK_SAMPLE':   '🪵',
     'FINISHING':       '🎨',
     'QC_FINAL':        '🔍',
     'PACKING':         '📦',
@@ -777,6 +784,7 @@ const getStageClass = (type) => {
     'RAKIT':           'stage-assembling-block',
     'SANDING':         'stage-sanding-block',
     'RUSTIK':          'stage-rustik-block',
+    'RUSTIK_SAMPLE':   'stage-rustik-block',
     'FINISHING':       'stage-finishing-block',
     'QC_FINAL':        'stage-qc-block',
     'PACKING':         'stage-packing-block',
@@ -1340,6 +1348,11 @@ const getStageClass = (type) => {
 .stage-proto {
   background: linear-gradient(180deg, #ede9fe 0%, #ddd6fe 100%) !important;
   color: #5b21b6 !important;
+}
+
+.stage-rustik {
+  background: linear-gradient(180deg, #fff7ed 0%, #fed7aa 100%) !important;
+  color: #7c2d12 !important;
 }
 
 .stage-sanding {
