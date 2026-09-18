@@ -941,10 +941,10 @@ const itemTotalShipped = (item) =>
 
 const validateItem = (item) => {
   const totalShipped = itemTotalShipped(item)
-  const limit = Math.min(item.quantity_sisa, item.current_stock)
+  const limit = item.current_stock
   item.error =
     totalShipped > limit
-      ? `Total kirim (${totalShipped}) melebihi sisa/stok tersedia (${limit})`
+      ? `Total kirim (${totalShipped}) melebihi stok tersedia (${limit})`
       : null
 }
 
