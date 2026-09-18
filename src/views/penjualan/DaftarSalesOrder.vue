@@ -46,7 +46,7 @@
               @input="handleFilterChange"
               type="text"
               class="filter-input-search"
-              placeholder="Cari No SO / Customer..."
+              placeholder="Cari No SO / Customer / Nama Barang..."
             />
             <button class="btn-filter-clear" @click="clearFilters">
               <span class="btn-icon">🧹</span>
@@ -76,7 +76,10 @@
                 <th class="th-no">No</th>
                 <th class="th-so-number">No. Pesanan</th>
                 <th class="th-pi">No. PI</th>
-                <th class="th-items">Nama Barang</th>
+                <th class="th-items th-sortable" @click="toggleSortItemName">
+                  Nama Barang
+                  <span class="sort-icon">{{ sortIcon }}</span>
+                </th>
                 <th class="th-customer">Customer</th>
                 <th class="th-date">Tgl. Pesanan</th>
                 <th class="th-status">Status</th>
@@ -98,7 +101,11 @@
                 </td>
                 <td class="td-items">
                   <div class="items-list">
-                    <span v-for="(detail, idx) in so.details" :key="idx" class="item-tag">
+                    <span
+                      v-for="(detail, idx) in getDisplayDetails(so)"
+                      :key="idx"
+                      class="item-tag"
+                    >
                       {{ detail.item?.name || detail.item_name || 'N/A' }}
                     </span>
                   </div>
@@ -243,6 +250,36 @@ const filters = ref({
 const currentPage = ref(1)
 const perPage = ref(15)
 
+const sortItemNameDir = ref(null)
+
+const sortIcon = computed(() => {
+  if (sortItemNameDir.value === 'asc') return '▲'
+  if (sortItemNameDir.value === 'desc') return '▼'
+  return '⇅'
+})
+
+const toggleSortItemName = () => {
+  if (sortItemNameDir.value === null) sortItemNameDir.value = 'asc'
+  else if (sortItemNameDir.value === 'asc') sortItemNameDir.value = 'desc'
+  else sortItemNameDir.value = null
+  currentPage.value = 1
+}
+
+const getFirstItemName = (so) => {
+  return so.details?.[0]?.item?.name || so.details?.[0]?.item_name || ''
+}
+
+const getDisplayDetails = (so) => {
+  const details = so.details || []
+  if (!filters.value.search) return details
+
+  const search = filters.value.search.toLowerCase()
+  const matching = details.filter((detail) =>
+    (detail.item?.name || detail.item_name || '').toLowerCase().includes(search),
+  )
+  return matching.length > 0 ? matching : details
+}
+
 const filteredOrders = computed(() => {
   let filtered = [...allSalesOrders.value]
 
@@ -259,17 +296,33 @@ const filteredOrders = computed(() => {
     filtered = filtered.filter(
       (so) =>
         so.buyer?.name?.toLowerCase().includes(search) ||
-        so.so_number?.toLowerCase().includes(search),
+        so.so_number?.toLowerCase().includes(search) ||
+        so.details?.some((detail) =>
+          (detail.item?.name || detail.item_name || '').toLowerCase().includes(search),
+        ),
     )
   }
 
   return filtered
 })
 
+const sortedOrders = computed(() => {
+  if (!sortItemNameDir.value) return filteredOrders.value
+
+  const sorted = [...filteredOrders.value]
+  sorted.sort((a, b) => {
+    const cmp = getFirstItemName(a).localeCompare(getFirstItemName(b), 'id', {
+      sensitivity: 'base',
+    })
+    return sortItemNameDir.value === 'asc' ? cmp : -cmp
+  })
+  return sorted
+})
+
 const paginatedOrders = computed(() => {
   const start = (currentPage.value - 1) * perPage.value
   const end = start + perPage.value
-  return filteredOrders.value.slice(start, end)
+  return sortedOrders.value.slice(start, end)
 })
 
 const pagination = computed(() => {
@@ -781,6 +834,22 @@ onUnmounted(() => {
 
 .th-pi {
   white-space: nowrap;
+}
+
+.th-sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.th-sortable:hover {
+  color: #4f46e5;
+}
+
+.sort-icon {
+  margin-left: 0.3rem;
+  font-size: 0.7rem;
+  opacity: 0.7;
 }
 
 .th-actions {
