@@ -41,7 +41,7 @@
             <span class="search-icon">🔍</span>
             <input
               type="text"
-              placeholder="Cari No. PO atau Nama Supplier..."
+              placeholder="Cari No. PO, supplier, atau nama barang..."
               class="search-input"
               v-model="searchQuery"
             />

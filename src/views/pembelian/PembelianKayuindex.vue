@@ -35,7 +35,7 @@
             <span class="search-icon">🔍</span>
             <input
               type="text"
-              placeholder="Cari berdasarkan No. PO..."
+              placeholder="Cari No. PO, supplier, atau nama barang..."
               class="search-input"
               v-model="searchQuery"
             />

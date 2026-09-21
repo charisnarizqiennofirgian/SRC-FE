@@ -28,7 +28,7 @@
           v-model="search"
           type="text"
           class="input-search"
-          placeholder="Cari no. PR atau catatan..."
+          placeholder="Cari no. PR, no. SO, atau nama barang..."
           @input="onSearch"
         />
         <select v-model="filterStatus" class="input-filter" @change="onFilterStatusChange">

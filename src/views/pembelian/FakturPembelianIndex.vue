@@ -32,6 +32,16 @@
             <p class="card-subtitle">Total {{ daftarFaktur.length }} faktur terdaftar</p>
           </div>
         </div>
+
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            placeholder="Cari No. Faktur, supplier, atau nama barang..."
+            class="search-input"
+            v-model="searchQuery"
+          />
+        </div>
       </div>
 
       <div class="card-body-table">
@@ -81,8 +91,16 @@
                 <td colspan="6">
                   <div class="empty-state">
                     <span class="empty-icon">📭</span>
-                    <p class="empty-text">Belum ada faktur yang dicatat</p>
-                    <p class="empty-hint">Klik tombol "Buat Faktur Baru" untuk membuat faktur</p>
+                    <p class="empty-text">
+                      {{ searchQuery ? 'Tidak ada faktur yang cocok' : 'Belum ada faktur yang dicatat' }}
+                    </p>
+                    <p class="empty-hint">
+                      {{
+                        searchQuery
+                          ? 'Coba ubah kata kunci pencarian'
+                          : 'Klik tombol "Buat Faktur Baru" untuk membuat faktur'
+                      }}
+                    </p>
                   </div>
                 </td>
               </tr>
@@ -137,7 +155,7 @@
   </DashboardLayout>
 </template>
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import apiClient from '@/api/axios'
 import DashboardLayout from '@/components/DashboardLayout.vue'
 import { useToast } from 'vue-toastification'
@@ -145,11 +163,14 @@ import { useToast } from 'vue-toastification'
 const toast = useToast()
 const loading = ref(true)
 const daftarFaktur = ref([])
+const searchQuery = ref('')
+let searchTimer = null
 
 const fetchFaktur = async () => {
-  loading.value = true
   try {
-    const response = await apiClient.get('/purchase-bills')
+    const response = await apiClient.get('/purchase-bills', {
+      params: { search: searchQuery.value || undefined },
+    })
     daftarFaktur.value = response.data.data.data
   } catch (error) {
     console.error('Error fetching purchase bills:', error)
@@ -158,6 +179,11 @@ const fetchFaktur = async () => {
     loading.value = false
   }
 }
+
+watch(searchQuery, () => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(fetchFaktur, 400)
+})
 
 const formatTanggal = (tanggal) => {
   if (!tanggal) return ''
@@ -329,6 +355,36 @@ onMounted(fetchFaktur)
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.search-box {
+  position: relative;
+  min-width: 320px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  z-index: 1;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 16px 12px 42px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
 }
 
 .header-badge {
@@ -601,6 +657,16 @@ onMounted(fetchFaktur)
   .btn-primary {
     width: 100%;
     justify-content: center;
+  }
+  .card-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .search-box {
+    width: 100%;
+    min-width: auto;
   }
 
   .page-title {

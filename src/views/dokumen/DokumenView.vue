@@ -900,13 +900,13 @@ onMounted(() => {
 
 /* MODAL */
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(4px); }
-.modal-card { background:white; border-radius:20px; width:90%; max-width:560px; box-shadow:0 20px 60px rgba(0,0,0,0.3); overflow:hidden; }
-.modal-header { display:flex; justify-content:space-between; align-items:center; padding:20px 28px; background:linear-gradient(135deg,#0891b2,#0e7490); color:white; }
+.modal-card { background:white; border-radius:20px; width:90%; max-width:560px; box-shadow:0 20px 60px rgba(0,0,0,0.3); overflow:hidden; display:flex; flex-direction:column; max-height:90vh; }
+.modal-header { flex-shrink:0; display:flex; justify-content:space-between; align-items:center; padding:20px 28px; background:linear-gradient(135deg,#0891b2,#0e7490); color:white; }
 .modal-header h3 { margin:0; font-size:18px; font-weight:800; }
 .btn-tutup-modal { background:rgba(255,255,255,0.2); border:none; color:white; width:32px; height:32px; border-radius:50%; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
 .btn-tutup-modal:hover { background:rgba(255,255,255,0.3); }
-.modal-body { padding:28px; }
-.modal-footer { display:flex; justify-content:flex-end; gap:12px; padding:20px 28px; background:#f9fafb; border-top:1px solid #e5e7eb; }
+.modal-body { padding:28px; overflow-y:auto; flex:1 1 auto; min-height:0; }
+.modal-footer { flex-shrink:0; display:flex; justify-content:flex-end; gap:12px; padding:20px 28px; background:#f9fafb; border-top:1px solid #e5e7eb; }
 
 /* DROP ZONE */
 .drop-zone { border:3px dashed #cbd5e1; border-radius:14px; padding:32px; text-align:center; cursor:pointer; transition:all 0.2s; margin-bottom:20px; }
