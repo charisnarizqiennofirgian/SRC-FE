@@ -193,6 +193,13 @@
                       >
                         🖨️
                       </button>
+                      <button
+                        @click="goToEditPage(sj.id)"
+                        class="btn-action btn-edit"
+                        title="Edit Dokumen SJ"
+                      >
+                        ✏️
+                      </button>
                     </template>
 
                     <template v-else-if="sj.status === 'DELIVERED'">

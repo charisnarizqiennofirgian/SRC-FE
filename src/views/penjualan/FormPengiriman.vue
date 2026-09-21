@@ -40,6 +40,11 @@
     </div>
 
     <form v-else @submit.prevent="handleSubmit" class="form-container-modern">
+      <div v-if="isShippedEdit" class="shipped-edit-notice">
+        SJ ini sudah berstatus SHIPPED. Pesanan, mode pengiriman, barang, dan qty dikunci karena stok sudah berkurang — hanya tanggal kirim dan data dokumen yang bisa diubah.
+      </div>
+
+      <fieldset class="locked-fieldset" :disabled="isShippedEdit">
       <div class="form-card">
         <div class="card-header">
           <span class="header-icon">📋</span>
@@ -94,6 +99,7 @@
           </div>
         </div>
       </div>
+      </fieldset>
 
       <template v-if="selectedSalesOrders.length > 0">
       <template v-if="!isProductionMode">
@@ -415,6 +421,7 @@ INDONESIA</textarea
         </div>
       </template>
 
+        <fieldset class="locked-fieldset" :disabled="isShippedEdit">
         <div class="form-card">
           <div class="card-header">
             <span class="header-icon">📦</span>
@@ -625,6 +632,7 @@ INDONESIA</textarea
             </div>
           </div>
         </div>
+        </fieldset>
       </template>
 
       <div class="form-actions-modern">
@@ -657,6 +665,7 @@ const toast = useToast()
 // :id di URL.
 const isEditMode = computed(() => !!route.params.id)
 const editingDoId = ref(null)
+const isShippedEdit = ref(false)
 
 // Menu "Konfirmasi Pengiriman" (PPIC) pakai komponen yang sama juga — dibedakan dari nama
 // route. PPIC cuma tahu barang & qty yang dimuat, tidak isi dokumen ekspor (itu tetap
@@ -735,13 +744,14 @@ const loadExistingDeliveryOrder = async () => {
     const response = await apiClient.get(`/delivery-orders/${route.params.id}`)
     const doData = response.data.data
 
-    if (doData.status !== 'DRAFT') {
-      toast.error('Hanya pengiriman berstatus DRAFT yang bisa diedit.')
+    if (!['DRAFT', 'SHIPPED'].includes(doData.status)) {
+      toast.error('Hanya pengiriman berstatus DRAFT atau SHIPPED yang bisa diedit.')
       router.push({ name: 'DaftarPengiriman' })
       return
     }
 
     editingDoId.value = doData.id
+    isShippedEdit.value = doData.status === 'SHIPPED'
 
     form.buyer_id = doData.buyer_id
     form.delivery_date = doData.delivery_date ? doData.delivery_date.split('T')[0] : form.delivery_date
@@ -823,7 +833,7 @@ const loadExistingDeliveryOrder = async () => {
       })
     }
     form.details = Array.from(grouped.values())
-    form.details.forEach(validateItem)
+    if (!isShippedEdit.value) form.details.forEach(validateItem)
 
     if (doData.barcode_image) {
       barcodeImagePreview.value = doData.barcode_image
@@ -1053,7 +1063,7 @@ const handleSubmit = async () => {
   isSaving.value = true
   // Tiap item bisa punya >1 packing_rows (pecahan crate/box mode Air) — di-flatten jadi
   // baris detail terpisah, semua tetap merujuk ke sales_order_detail_id yang sama.
-  const payloadDetails = form.details.flatMap((d) =>
+  const payloadDetails = isShippedEdit.value ? [] : form.details.flatMap((d) =>
     d.packing_rows
       .filter((row) => row.quantity_shipped > 0)
       .map((row) => ({
@@ -1073,7 +1083,7 @@ const handleSubmit = async () => {
       })),
   )
 
-  if (payloadDetails.length === 0) {
+  if (!isShippedEdit.value && payloadDetails.length === 0) {
     toast.error('Tidak ada barang yang dikirim. Isi "Qty Kirim (Pcs)" minimal 1 barang.')
     isSaving.value = false
     return
@@ -1104,7 +1114,7 @@ const handleSubmit = async () => {
   formData.append('consignee_info', JSON.stringify(form.consignee_info))
   formData.append('applicant_info', JSON.stringify(form.applicant_info))
   formData.append('notify_info', JSON.stringify(form.notify_info))
-  formData.append('details', JSON.stringify(payloadDetails))
+  if (!isShippedEdit.value) formData.append('details', JSON.stringify(payloadDetails))
   formData.append('forwarder_name', form.forwarder_name)
   formData.append('peb_number', form.peb_number)
   formData.append('container_type', form.container_type)
@@ -1154,7 +1164,7 @@ const handleSubmit = async () => {
 
 const isFormValid = computed(() => {
   if (selectedSalesOrders.value.length === 0 || form.details.length === 0) return false
-  return !form.details.some((d) => d.error)
+  return isShippedEdit.value || !form.details.some((d) => d.error)
 })
 
 const retryLoad = async () => {
@@ -1301,6 +1311,27 @@ const goBack = () => {
 .form-container-modern {
   max-width: 1200px;
   margin: 0 auto 3rem;
+}
+
+.locked-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.locked-fieldset:disabled {
+  opacity: 0.65;
+}
+
+.shipped-edit-notice {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  color: #856404;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
 }
 
 .form-card {
