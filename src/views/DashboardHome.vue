@@ -535,6 +535,13 @@
                   <span :class="['qty-value', item.qty_packing > 0 ? 'has-value' : 'no-value']">
                     {{ formatNumber(item.qty_packing) }} <span class="stage-pct">({{ stagePercent(item.qty_packing, item.target) }}%)</span>
                   </span>
+                  <button
+                    v-if="!item.is_done"
+                    type="button"
+                    class="btn-ambil-gudang"
+                    title="Ambil dari Gudang (skip produksi)"
+                    @click="openGudangModal(item)"
+                  >📦</button>
                 </td>
                 <td class="col-num">
                   <span v-if="item.is_done" class="completion-badge">
@@ -673,6 +680,74 @@
         </div>
       </div>
     </div>
+    </div>
+
+    <div v-if="showGudangModal" class="modal-overlay" @click.self="closeGudangModal">
+      <div class="modal-content modal-content-sm">
+        <div class="modal-header">
+          <div class="modal-header-left">
+            <span class="modal-icon">📦</span>
+            <div>
+              <h3 class="modal-title">Ambil dari Gudang</h3>
+              <p class="modal-subtitle">{{ gudangModalItem?.item_name }}</p>
+            </div>
+          </div>
+          <div class="modal-header-actions">
+            <button class="modal-close" @click="closeGudangModal">✕</button>
+          </div>
+        </div>
+
+        <div class="modal-body modal-body-sm">
+          <p class="gudang-modal-hint">
+            Pakai ini kalau item ini <strong>tidak diproduksi lewat pipeline sample</strong> — dipenuhi langsung
+            dari stok gudang yang sudah ada. Stok akan dipindah ke Gudang Packing supaya bisa langsung dikirim.
+          </p>
+
+          <div v-if="loadingGudangSource" class="loading-state">
+            <div class="spinner sampel-spinner"></div>
+            <p>Memuat stok gudang...</p>
+          </div>
+
+          <template v-else>
+            <div v-if="gudangSourceItems.length === 0" class="gudang-empty">
+              Tidak ada stok item ini di gudang manapun (selain Gudang Packing).
+            </div>
+
+            <template v-else>
+              <label class="form-label">Gudang Sumber</label>
+              <select v-model="gudangForm.warehouse_id" class="form-select">
+                <option :value="null" disabled>Pilih gudang...</option>
+                <option v-for="wh in gudangSourceItems" :key="wh.warehouse_id" :value="wh.warehouse_id">
+                  {{ wh.warehouse_name }} ({{ formatNumber(wh.qty_available) }} pcs tersedia)
+                </option>
+              </select>
+
+              <label class="form-label">Qty</label>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                class="form-input"
+                v-model.number="gudangForm.qty"
+              />
+
+              <label class="form-label">Catatan (opsional)</label>
+              <textarea class="form-textarea" v-model="gudangForm.notes" rows="2"></textarea>
+            </template>
+          </template>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="closeGudangModal">Batal</button>
+          <button
+            class="btn btn-primary"
+            :disabled="!canSubmitGudang || submittingGudang"
+            @click="submitAmbilGudang"
+          >
+            {{ submittingGudang ? 'Menyimpan...' : 'Simpan' }}
+          </button>
+        </div>
+      </div>
     </div>
   </DashboardLayout>
 </template>
@@ -927,6 +1002,72 @@ const saveStokManual = async (item) => {
     }
   } catch (error) {
     toast.error(error.response?.data?.message || 'Gagal menyimpan stok awal.')
+  }
+}
+
+const showGudangModal      = ref(false)
+const gudangModalItem      = ref(null)
+const loadingGudangSource  = ref(false)
+const gudangSourceItems    = ref([])
+const submittingGudang     = ref(false)
+const gudangForm = ref({ warehouse_id: null, qty: 0, notes: '' })
+
+const canSubmitGudang = computed(() => {
+  return !!gudangForm.value.warehouse_id
+    && Number(gudangForm.value.qty) > 0
+    && gudangSourceItems.value.length > 0
+})
+
+const openGudangModal = async (item) => {
+  gudangModalItem.value = item
+  showGudangModal.value = true
+  gudangForm.value = { warehouse_id: null, qty: item.sisa || 0, notes: '' }
+  gudangSourceItems.value = []
+
+  if (!item.production_order_detail_id) return
+
+  loadingGudangSource.value = true
+  try {
+    const res = await axios.get(`/production-monitoring/detail/${item.production_order_detail_id}/gudang-source-items`)
+    if (res.data.success) {
+      gudangSourceItems.value = res.data.data
+    }
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Gagal memuat data stok gudang.')
+  } finally {
+    loadingGudangSource.value = false
+  }
+}
+
+const closeGudangModal = () => {
+  showGudangModal.value = false
+  gudangModalItem.value = null
+  gudangSourceItems.value = []
+}
+
+const submitAmbilGudang = async () => {
+  if (!canSubmitGudang.value || !gudangModalItem.value?.production_order_detail_id) return
+  submittingGudang.value = true
+  try {
+    const res = await axios.post(
+      `/production-monitoring/detail/${gudangModalItem.value.production_order_detail_id}/ambil-dari-gudang`,
+      {
+        warehouse_id: gudangForm.value.warehouse_id,
+        qty: gudangForm.value.qty,
+        notes: gudangForm.value.notes || null,
+      }
+    )
+    if (res.data.success) {
+      toast.success(res.data.message)
+      closeGudangModal()
+      await Promise.all([fetchMonitoringData(), fetchSampelData()])
+    } else {
+      toast.error(res.data.message)
+    }
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Gagal menyimpan.')
+  } finally {
+    submittingGudang.value = false
   }
 }
 
@@ -2228,5 +2369,177 @@ onMounted(() => {
     width: 100%;
     justify-content: space-between;
   }
+}
+
+.btn-ambil-gudang {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 4px;
+  padding: 0;
+  opacity: 0.6;
+  vertical-align: middle;
+}
+
+.btn-ambil-gudang:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, #6d28d9, #5b21b6);
+  color: white;
+}
+
+.modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.modal-icon { font-size: 2rem; }
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.modal-subtitle {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin: 0;
+}
+
+.modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.modal-close:hover { background: rgba(255, 255, 255, 0.3); }
+
+.modal-body-sm {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gudang-modal-hint {
+  font-size: 0.82rem;
+  color: #6b7280;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+.gudang-empty {
+  text-align: center;
+  color: #9ca3af;
+  padding: 1.5rem 0;
+  font-size: 0.9rem;
+}
+
+.form-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-top: 10px;
+  margin-bottom: 6px;
+}
+
+.form-select,
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.form-select:focus,
+.form-input:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: #8b5cf6;
+}
+
+.form-textarea {
+  resize: vertical;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.modal-footer .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+}
+
+.modal-footer .btn-primary {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  color: white;
+}
+
+.modal-footer .btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-footer .btn-secondary {
+  background: #f3f4f6;
+  color: #4b5563;
 }
 </style>
