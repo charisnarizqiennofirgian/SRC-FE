@@ -57,6 +57,7 @@
               <th>Barang</th>
               <th class="text-center">Status</th>
               <th>Dicatat Oleh</th>
+              <th class="text-center">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -74,6 +75,17 @@
                 <span :class="['status-badge', statusClass(row.status)]">{{ statusLabel(row.status) }}</span>
               </td>
               <td class="cell-user">{{ row.user?.name || '-' }}</td>
+              <td class="text-center">
+                <button
+                  v-if="canEdit(row)"
+                  class="btn-edit-konfirmasi"
+                  title="Edit barang & qty yang dikirim"
+                  @click="goToEdit(row)"
+                >
+                  ✏️ Edit
+                </button>
+                <span v-else class="cell-user" :title="lockedReason(row)">🔒</span>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -164,6 +176,15 @@ const goToCreate = () => {
   router.push({ name: 'KonfirmasiPengirimanCreate' })
 }
 
+const canEdit = (row) => ['DRAFT', 'SHIPPED'].includes(row.status)
+
+const lockedReason = (row) =>
+  row.status === 'DELIVERED' ? 'Sudah diterima buyer / siap invoice, tidak bisa diedit' : 'Tidak bisa diedit'
+
+const goToEdit = (row) => {
+  router.push({ name: 'KonfirmasiPengirimanEdit', params: { id: row.id } })
+}
+
 onMounted(() => fetchData())
 </script>
 
@@ -240,6 +261,12 @@ onMounted(() => fetchData())
   display: inline-block; padding: 0.15rem 0.55rem; margin: 0.1rem 0.2rem 0.1rem 0;
   background: #e0f2fe; color: #0369a1; border-radius: 999px; font-size: 0.75rem; font-weight: 700;
 }
+
+.btn-edit-konfirmasi {
+  padding: 0.4rem 0.85rem; border: 1px solid #0891b2; background: white; color: #0e7490;
+  border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+.btn-edit-konfirmasi:hover { background: #ecfeff; }
 
 .status-badge { padding: 0.3rem 0.75rem; border-radius: 999px; font-size: 0.78rem; font-weight: 800; }
 .status-draft { background: #f3f4f6; color: #6b7280; }

@@ -80,6 +80,7 @@
                   Nama Barang
                   <span class="sort-icon">{{ sortIcon }}</span>
                 </th>
+                <th class="th-qty">Qty Dipesan</th>
                 <th class="th-customer">Customer</th>
                 <th class="th-date">Tgl. Pesanan</th>
                 <th class="th-status">Status</th>
@@ -107,8 +108,14 @@
                       class="item-tag"
                     >
                       {{ detail.item?.name || detail.item_name || 'N/A' }}
+                      <strong class="item-qty">× {{ formatQty(detail.quantity) }}</strong>
                     </span>
                   </div>
+                </td>
+                <td class="td-qty">
+                  <span class="qty-total">{{ formatQty(totalQty(so)) }}</span>
+                  <span class="qty-unit">pcs</span>
+                  <div v-if="(so.details || []).length > 1" class="qty-hint">{{ so.details.length }} barang</div>
                 </td>
                 <td class="td-customer">
                   <div class="customer-info">
@@ -268,6 +275,10 @@ const toggleSortItemName = () => {
 const getFirstItemName = (so) => {
   return so.details?.[0]?.item?.name || so.details?.[0]?.item_name || ''
 }
+
+const formatQty = (value) => (parseFloat(value) || 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })
+
+const totalQty = (so) => (so.details || []).reduce((sum, d) => sum + (parseFloat(d.quantity) || 0), 0)
 
 const getDisplayDetails = (so) => {
   const details = so.details || []
@@ -916,6 +927,39 @@ onUnmounted(() => {
   background: #eef2ff;
   color: #4f46e5;
   font-size: 0.75rem;
+}
+
+.item-qty {
+  margin-left: 0.3rem;
+  color: #1e1b4b;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.th-qty {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.td-qty {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.qty-total {
+  font-weight: 800;
+  color: #1f2937;
+}
+
+.qty-unit {
+  margin-left: 4px;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.qty-hint {
+  font-size: 0.72rem;
+  color: #9ca3af;
 }
 
 .customer-info {

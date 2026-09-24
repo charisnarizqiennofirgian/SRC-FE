@@ -65,6 +65,16 @@
         </button>
 
         <div class="header-left">
+          <button
+            v-if="showBackButton"
+            type="button"
+            class="back-btn"
+            title="Kembali ke halaman sebelumnya"
+            @click="goBack"
+          >
+            <span class="back-btn-icon">←</span>
+            <span class="back-btn-text">Kembali</span>
+          </button>
           <h3 class="breadcrumb">ERP Surya Bangkit Cemerlang</h3>
         </div>
         <div class="header-right">
@@ -108,6 +118,16 @@ const userPermissions = ref([]) // ✅ TAMBAH
 const userMenuOpen = ref(false)
 const sidebarOpen = ref(false)
 
+const showBackButton = computed(() => route.name !== 'dashboard')
+
+const goBack = () => {
+  if (window.history.state?.back) {
+    router.back()
+  } else {
+    router.push({ name: 'dashboard' })
+  }
+}
+
 // MAPPING PERMISSION → MENU
 const menuPermissionMap = {
   // Parent menu — tampil kalau punya minimal 1 child permission
@@ -123,7 +143,7 @@ const menuPermissionMap = {
   ],
   'Manajemen Stok': [
     'stok-laporan-sawmill', 'stok-index', 'stok-adjustment',
-    'stok-laporan-mutasi', 'stok-monitoring-produksi',
+    'stok-laporan-mutasi', 'stok-monitoring-produksi', 'stok-opname',
   ],
   Produksi: [
     'produksi-sawmill', 'produksi-kd', 'produksi-pembahanan',
@@ -195,6 +215,7 @@ const allMenuItems = [
       { name: 'Stock Index', route: { name: 'StockIndex' }, permission: 'stok-index' },
       { name: 'Stock Adjustment', route: '/stock-adjustment', permission: 'stok-adjustment' },
       { name: 'Laporan Mutasi', route: { name: 'LaporanMutasi' }, permission: 'stok-laporan-mutasi' },
+      { name: 'Stok Opname', route: { name: 'StockOpname' }, permission: 'stok-opname' },
       { name: 'Monitoring Produksi', route: { name: 'ProductionMonitoring' }, permission: 'stok-monitoring-produksi' },
       { name: 'Monitoring Produksi Sampel', route: { name: 'ProductionMonitoringSample' }, permission: 'stok-monitoring-produksi' },
     ],
@@ -722,6 +743,41 @@ watch(
   position: relative;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background: #f0fdf4;
+  border-color: #4caf50;
+  color: #2e7d32;
+}
+
+.back-btn-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
 .breadcrumb {
   font-size: 16px;
   color: #495057;
@@ -882,6 +938,10 @@ watch(
   }
 
   .welcome-text {
+    display: none;
+  }
+
+  .back-btn-text {
     display: none;
   }
 

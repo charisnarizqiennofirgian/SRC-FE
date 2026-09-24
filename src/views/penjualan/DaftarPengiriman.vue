@@ -101,6 +101,8 @@
                 <th class="th-date">Tgl. Kirim</th>
                 <th class="th-so-number">No. Pesanan (SO)</th>
                 <th class="th-items">Nama Barang</th>
+                <th class="th-qty">Qty Pesanan</th>
+                <th class="th-qty">Qty Dikirim</th>
                 <th class="th-customer">Customer</th>
                 <th class="th-status">Status</th>
                 <th class="th-actions">Aksi</th>
@@ -132,6 +134,17 @@
                       </span>
                     </template>
                     <span v-else class="no-items">-</span>
+                  </div>
+                </td>
+                <td class="td-qty" :title="qtyTooltip(sj)">
+                  <span class="qty-ordered">{{ formatQty(sj.qty_summary?.ordered) }}</span>
+                  <span class="qty-unit">pcs</span>
+                </td>
+                <td class="td-qty" :title="qtyTooltip(sj)">
+                  <span class="qty-shipped">{{ formatQty(sj.qty_summary?.shipped) }}</span>
+                  <span class="qty-unit">pcs</span>
+                  <div v-if="(sj.qty_summary?.items?.length || 0) > 1" class="qty-hint">
+                    {{ sj.qty_summary.items.length }} barang
                   </div>
                 </td>
                 <td class="td-customer">
@@ -413,6 +426,13 @@ const cancelShipment = (id, doNumber) => {
     }
   })
 }
+
+const formatQty = (value) => (parseFloat(value) || 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })
+
+const qtyTooltip = (sj) =>
+  (sj.qty_summary?.items || [])
+    .map((line) => `${line.item_name}${line.so_number ? ` (${line.so_number})` : ''}: dikirim ${formatQty(line.shipped)} dari pesanan ${formatQty(line.ordered)}`)
+    .join('\n')
 
 const formatDisplayDate = (dateString) => {
   if (!dateString) return ''
@@ -788,6 +808,34 @@ onMounted(() => {
 }
 .td-items {
   padding: 12px 8px;
+}
+
+.th-qty {
+  text-align: right;
+  white-space: nowrap;
+}
+.td-qty {
+  text-align: right;
+  white-space: nowrap;
+  padding: 12px 10px;
+  cursor: help;
+}
+.qty-ordered {
+  font-weight: 600;
+  color: #374151;
+}
+.qty-shipped {
+  font-weight: 800;
+  color: #0056b3;
+}
+.qty-unit {
+  margin-left: 4px;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+.qty-hint {
+  font-size: 0.72rem;
+  color: #9ca3af;
 }
 
 .card-footer-pagination {

@@ -564,6 +564,12 @@ const router = createRouter({
       meta: { title: 'Konfirmasi Pengiriman Barang', requiresAuth: true },
     },
     {
+      path: '/admin/produksi/konfirmasi-pengiriman/:id/edit',
+      name: 'KonfirmasiPengirimanEdit',
+      component: FormPengiriman,
+      meta: { title: 'Edit Konfirmasi Pengiriman', requiresAuth: true },
+    },
+    {
       path: '/admin/produksi/material-usage',
       name: 'MaterialUsageView',
       component: MaterialUsageView,
@@ -680,6 +686,24 @@ const router = createRouter({
       name: 'LaporanMutasi',
       component: LaporanMutasiView,
       meta: { title: 'Laporan Mutasi', requiresAuth: true },
+    },
+    {
+      path: '/stok-opname',
+      name: 'StockOpname',
+      component: () => import('../views/manajemen-stok/StockOpnameListView.vue'),
+      meta: { title: 'Stok Opname', requiresAuth: true },
+    },
+    {
+      path: '/stok-opname/:id',
+      name: 'StockOpnameDetail',
+      component: () => import('../views/manajemen-stok/StockOpnameDetailView.vue'),
+      meta: { title: 'Detail Stok Opname', requiresAuth: true },
+    },
+    {
+      path: '/stok-opname/:id/cetak',
+      name: 'StockOpnameCetak',
+      component: () => import('../views/manajemen-stok/StockOpnameCetak.vue'),
+      meta: { title: 'Cetak Lembar Hitung', requiresAuth: true },
     },
 
     // ROUTE LAPORAN STOK LAMA DIHAPUS DARI NAVIGASI, BISA DIHAPUS TOTAL JIKA SUDAH YAKIN

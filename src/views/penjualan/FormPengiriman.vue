@@ -8,7 +8,9 @@
           </div>
           <div class="header-text">
             <h1 class="page-title">
-              {{ isProductionMode ? 'Konfirmasi Pengiriman Barang' : (isEditMode ? 'Edit Pengiriman Barang' : 'Buat Pengiriman Barang') }}
+              {{ isProductionMode
+                ? (isEditMode ? 'Edit Konfirmasi Pengiriman' : 'Konfirmasi Pengiriman Barang')
+                : (isEditMode ? 'Edit Pengiriman Barang' : 'Buat Pengiriman Barang') }}
             </h1>
             <p class="page-subtitle">
               {{ isProductionMode
@@ -40,6 +42,12 @@
     </div>
 
     <form v-else @submit.prevent="handleSubmit" class="form-container-modern">
+      <div v-if="isProductionMode && wasShipped" class="shipped-edit-notice production-edit-notice">
+        Pengiriman ini sudah tercatat terkirim. Kalau barang atau qty diubah, sistem otomatis mengembalikan stok
+        lama ke Gudang Packing lalu memotong ulang sesuai angka baru. Kolom "Qty Terkirim" dan "Stok Tersedia" di
+        bawah sudah dihitung seolah-olah pengiriman ini belum dikirim.
+      </div>
+
       <div v-if="isShippedEdit" class="shipped-edit-notice">
         SJ ini sudah berstatus SHIPPED. Pesanan, mode pengiriman, barang, dan qty dikunci karena stok sudah berkurang — hanya tanggal kirim dan data dokumen yang bisa diubah.
       </div>
@@ -428,11 +436,31 @@ INDONESIA</textarea
             <h2 class="card-title">Barang yang Dikirim</h2>
           </div>
           <div class="card-body">
-            <div class="table-responsive">
+            <div v-if="isMultiSo && !isShippedEdit" class="items-toolbar">
+              <div class="items-search">
+                <span class="items-search-icon">🔍</span>
+                <input
+                  v-model="itemSearch"
+                  type="text"
+                  class="form-input-modern items-search-input"
+                  placeholder="Cari nama barang / HS code..."
+                />
+                <button v-if="itemSearch" type="button" class="items-search-clear" @click="itemSearch = ''">✕</button>
+              </div>
+              <label class="items-filter-toggle">
+                <input v-model="onlyWithStock" type="checkbox" />
+                <span>Hanya yang ada stok</span>
+              </label>
+              <div class="items-toolbar-actions">
+                <button type="button" class="btn-toolbar" @click="setAllGroupsExpanded(true)">Buka semua</button>
+                <button type="button" class="btn-toolbar" @click="setAllGroupsExpanded(false)">Lipat semua</button>
+              </div>
+            </div>
+
+            <div class="table-responsive" :style="{ '--thead-h': theadHeight + 'px' }">
               <table class="table-modern">
-                <thead>
+                <thead ref="theadRef">
                   <tr>
-                    <th v-if="selectedSalesOrders.length > 1">Asal SO</th>
                     <th class="col-frozen col-frozen-1">Nama Barang</th>
                     <th class="text-center col-frozen col-frozen-2">HS Code</th>
                     <th class="text-center col-frozen col-frozen-3">Qty Dipesan</th>
@@ -452,16 +480,30 @@ INDONESIA</textarea
                     <th v-if="form.shipment_mode === 'AIR'" class="text-center">Aksi</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <template v-for="item in form.details" :key="item.sales_order_detail_id">
+                <tbody v-for="group in soGroups" :key="group.so_number">
+                  <tr v-if="isMultiSo" class="so-group-row" @click="toggleGroup(group.so_number)">
+                    <td :colspan="tableColspan" class="so-group-cell">
+                      <div class="so-group-header">
+                        <span class="so-group-chevron">{{ isGroupExpanded(group.so_number) ? '▼' : '▶' }}</span>
+                        <span class="so-origin-badge">{{ group.so_number }}</span>
+                        <span class="so-group-meta">{{ group.filledCount }}/{{ group.items.length }} item diisi</span>
+                        <span class="so-group-meta"><strong>{{ formatQty(group.totalPcs) }}</strong> pcs</span>
+                        <span v-if="group.totalNw" class="so-group-meta">NW {{ formatNumber(group.totalNw) }} kg</span>
+                        <span v-if="group.totalGw" class="so-group-meta">GW {{ formatNumber(group.totalGw) }} kg</span>
+                        <span v-if="group.totalM3" class="so-group-meta">{{ formatNumber(group.totalM3, 4) }} m³</span>
+                        <span v-if="group.errorCount" class="so-group-error">⚠ {{ group.errorCount }} item melebihi stok</span>
+                        <span v-if="isFiltering" class="so-group-meta so-group-match">
+                          {{ group.visibleItems.length }} cocok
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  <template v-if="!isMultiSo || isGroupExpanded(group.so_number)">
+                  <tr v-if="isMultiSo && group.visibleItems.length === 0" class="so-group-empty-row">
+                    <td :colspan="tableColspan">Tidak ada barang yang cocok dengan filter di SO ini.</td>
+                  </tr>
+                  <template v-for="item in group.visibleItems" :key="item.sales_order_detail_id">
                     <tr v-for="(row, rowIdx) in item.packing_rows" :key="item.sales_order_detail_id + '-' + rowIdx">
-                      <td
-                        v-if="selectedSalesOrders.length > 1 && rowIdx === 0"
-                        :rowspan="item.packing_rows.length"
-                        class="text-center"
-                      >
-                        <span class="so-origin-badge">{{ item.so_number }}</span>
-                      </td>
                       <td v-if="rowIdx === 0" :rowspan="item.packing_rows.length" class="item-name col-frozen col-frozen-1">
                         {{ item.item_name }}
                       </td>
@@ -608,6 +650,7 @@ INDONESIA</textarea
                       </td>
                     </tr>
                   </template>
+                  </template>
                 </tbody>
               </table>
             </div>
@@ -643,7 +686,7 @@ INDONESIA</textarea
         <button type="submit" class="btn-primary-modern" :disabled="isSaving || !isFormValid">
           <span v-if="isSaving" class="spinner-inline"></span>
           <span v-else class="btn-icon">💾</span>
-          <span>{{ isSaving ? 'Menyimpan...' : isProductionMode ? 'Konfirmasi Terkirim' : isEditMode ? 'Update DO' : 'Simpan DO' }}</span>
+          <span>{{ isSaving ? 'Menyimpan...' : isProductionMode ? (isEditMode ? 'Simpan Perubahan' : 'Konfirmasi Terkirim') : isEditMode ? 'Update DO' : 'Simpan DO' }}</span>
         </button>
       </div>
     </form>
@@ -651,7 +694,7 @@ INDONESIA</textarea
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, watch } from 'vue'
+import { ref, reactive, onMounted, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
@@ -670,7 +713,12 @@ const isShippedEdit = ref(false)
 // Menu "Konfirmasi Pengiriman" (PPIC) pakai komponen yang sama juga — dibedakan dari nama
 // route. PPIC cuma tahu barang & qty yang dimuat, tidak isi dokumen ekspor (itu tetap
 // kerjaan Sales lewat Daftar Pengiriman, record yang sama, dilengkapi belakangan).
-const isProductionMode = computed(() => route.name === 'KonfirmasiPengirimanCreate')
+const isProductionMode = computed(() =>
+  ['KonfirmasiPengirimanCreate', 'KonfirmasiPengirimanEdit'].includes(route.name),
+)
+const wasShipped = ref(false)
+const shippedQtyBySoDetail = ref(new Map())
+const shippedQtyByItem = ref(new Map())
 
 const loadingMaster = ref(true)
 const isSaving = ref(false)
@@ -741,17 +789,40 @@ const fetchOpenSalesOrders = async () => {
 const loadExistingDeliveryOrder = async () => {
   loadingMaster.value = true
   try {
-    const response = await apiClient.get(`/delivery-orders/${route.params.id}`)
+    const response = await apiClient.get(
+      isProductionMode.value
+        ? `/production/shipment-confirmations/${route.params.id}`
+        : `/delivery-orders/${route.params.id}`,
+    )
     const doData = response.data.data
 
     if (!['DRAFT', 'SHIPPED'].includes(doData.status)) {
       toast.error('Hanya pengiriman berstatus DRAFT atau SHIPPED yang bisa diedit.')
-      router.push({ name: 'DaftarPengiriman' })
+      router.push({ name: isProductionMode.value ? 'KonfirmasiPengirimanList' : 'DaftarPengiriman' })
       return
     }
 
     editingDoId.value = doData.id
-    isShippedEdit.value = doData.status === 'SHIPPED'
+    wasShipped.value = doData.status === 'SHIPPED'
+    isShippedEdit.value = wasShipped.value && !isProductionMode.value
+
+    if (isProductionMode.value && wasShipped.value) {
+      const bySoDetail = new Map()
+      const byItem = new Map()
+      for (const d of doData.details) {
+        const qty = parseFloat(d.quantity_shipped) || 0
+        bySoDetail.set(d.sales_order_detail_id, (bySoDetail.get(d.sales_order_detail_id) || 0) + qty)
+        byItem.set(d.item_id, (byItem.get(d.item_id) || 0) + qty)
+      }
+      shippedQtyBySoDetail.value = bySoDetail
+      shippedQtyByItem.value = byItem
+    }
+
+    for (const so of doData.edit_sales_orders || []) {
+      const idx = openSalesOrders.value.findIndex((o) => o.id === so.id)
+      if (idx >= 0) openSalesOrders.value.splice(idx, 1, so)
+      else openSalesOrders.value.push(so)
+    }
 
     form.buyer_id = doData.buyer_id
     form.delivery_date = doData.delivery_date ? doData.delivery_date.split('T')[0] : form.delivery_date
@@ -801,7 +872,8 @@ const loadExistingDeliveryOrder = async () => {
       const key = d.sales_order_detail_id
       if (!grouped.has(key)) {
         const qtyOrdered = parseFloat(soDetail?.quantity ?? 0)
-        const qtyAlreadyShipped = parseFloat(soDetail?.quantity_shipped ?? 0)
+        const qtyAlreadyShipped =
+          parseFloat(soDetail?.quantity_shipped ?? 0) - (shippedQtyBySoDetail.value.get(key) || 0)
         grouped.set(key, {
           sales_order_detail_id: key,
           so_number: soDetail?.sales_order?.so_number || '-',
@@ -811,7 +883,8 @@ const loadExistingDeliveryOrder = async () => {
           quantity_ordered: qtyOrdered,
           quantity_already_shipped: qtyAlreadyShipped,
           quantity_sisa: qtyOrdered - qtyAlreadyShipped,
-          current_stock: parseFloat(d.current_stock ?? d.item?.stock ?? 0),
+          current_stock:
+            parseFloat(d.current_stock ?? d.item?.stock ?? 0) + (shippedQtyByItem.value.get(d.item_id) || 0),
           delivery_date_promise: soDetail?.delivery_date,
           error: null,
           packing_rows: [],
@@ -903,7 +976,9 @@ const rebuildFromSelectedSalesOrders = () => {
   form.details = selectedSalesOrders.value.flatMap((so) =>
     so.details
       .map((detail) => {
-        const qtySisa = parseFloat(detail.quantity) - parseFloat(detail.quantity_shipped)
+        const qtyShipped =
+          parseFloat(detail.quantity_shipped) - (shippedQtyBySoDetail.value.get(detail.id) || 0)
+        const qtySisa = parseFloat(detail.quantity) - qtyShipped
         const existing = existingBySoDetailId.get(detail.id)
         return {
           sales_order_detail_id: detail.id,
@@ -912,9 +987,9 @@ const rebuildFromSelectedSalesOrders = () => {
           item_name: detail.item_name,
           hs_code: detail.item?.hs_code || null,
           quantity_ordered: parseFloat(detail.quantity),
-          quantity_already_shipped: parseFloat(detail.quantity_shipped),
+          quantity_already_shipped: qtyShipped,
           quantity_sisa: qtySisa,
-          current_stock: parseFloat(detail.current_stock || 0),
+          current_stock: parseFloat(detail.current_stock || 0) + (shippedQtyByItem.value.get(detail.item_id) || 0),
           delivery_date_promise: detail.delivery_date,
           error: existing?.error ?? null,
           packing_rows: existing?.packing_rows ?? [
@@ -1030,6 +1105,89 @@ const grandTotalWood = computed(() =>
   ),
 )
 
+const itemSearch = ref('')
+const onlyWithStock = ref(false)
+const expandedSo = ref({})
+
+const isMultiSo = computed(() => selectedSalesOrders.value.length > 1)
+
+const isFiltering = computed(() => itemSearch.value.trim() !== '' || onlyWithStock.value)
+
+const tableColspan = computed(() => (form.shipment_mode === 'AIR' ? 17 : 15))
+
+const sumRows = (items, field) =>
+  items.reduce(
+    (sum, item) => sum + item.packing_rows.reduce((s, r) => s + (parseFloat(r[field]) || 0), 0),
+    0,
+  )
+
+const itemMatchesFilter = (item) => {
+  if (onlyWithStock.value && !(item.current_stock > 0)) return false
+  const keyword = itemSearch.value.trim().toLowerCase()
+  if (!keyword) return true
+  return (
+    (item.item_name || '').toLowerCase().includes(keyword) ||
+    (item.hs_code || '').toLowerCase().includes(keyword)
+  )
+}
+
+const soGroups = computed(() => {
+  const groups = new Map()
+  for (const item of form.details) {
+    if (!groups.has(item.so_number)) groups.set(item.so_number, [])
+    groups.get(item.so_number).push(item)
+  }
+  return Array.from(groups, ([soNumber, items]) => ({
+    so_number: soNumber,
+    items,
+    visibleItems: isMultiSo.value ? items.filter(itemMatchesFilter) : items,
+    filledCount: items.filter((item) => itemTotalShipped(item) > 0).length,
+    errorCount: items.filter((item) => item.error).length,
+    totalPcs: sumRows(items, 'quantity_shipped'),
+    totalNw: sumRows(items, 'total_nw'),
+    totalGw: sumRows(items, 'total_gw'),
+    totalM3: sumRows(items, 'total_m3'),
+  }))
+})
+
+watch(
+  () => soGroups.value.map((g) => g.so_number),
+  (soNumbers) => {
+    for (const soNumber of soNumbers) {
+      if (!(soNumber in expandedSo.value)) {
+        expandedSo.value[soNumber] = true
+      }
+    }
+  },
+  { immediate: true },
+)
+
+const isGroupExpanded = (soNumber) => {
+  if (itemSearch.value.trim() !== '') return true
+  return !!expandedSo.value[soNumber]
+}
+
+const toggleGroup = (soNumber) => {
+  expandedSo.value[soNumber] = !isGroupExpanded(soNumber)
+}
+
+const setAllGroupsExpanded = (value) => {
+  for (const group of soGroups.value) expandedSo.value[group.so_number] = value
+}
+
+const formatQty = (value) => (parseFloat(value) || 0).toLocaleString('id-ID')
+
+const theadRef = ref(null)
+const theadHeight = ref(0)
+
+watch(
+  () => [soGroups.value.length, form.shipment_mode],
+  async () => {
+    await nextTick()
+    theadHeight.value = theadRef.value?.offsetHeight || 0
+  },
+)
+
 watch(
   () => form.shipment_mode,
   (newMode) => {
@@ -1130,7 +1288,12 @@ const handleSubmit = async () => {
 
   try {
     let response
-    if (isProductionMode.value) {
+    if (isProductionMode.value && isEditMode.value && editingDoId.value) {
+      formData.append('_method', 'PUT')
+      response = await apiClient.post(`/production/shipment-confirmations/${editingDoId.value}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+    } else if (isProductionMode.value) {
       // Menu Konfirmasi Pengiriman (PPIC) — endpoint ini langsung bikin DO + tandai SHIPPED
       // sekali jalan (bukan DRAFT nunggu Sales klik Kirim manual belakangan).
       response = await apiClient.post('/production/shipment-confirmations', formData, {
@@ -1332,6 +1495,14 @@ const goBack = () => {
   padding: 1rem 1.25rem;
   margin-bottom: 1.5rem;
   font-weight: 600;
+}
+
+.shipped-edit-notice.production-edit-notice {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e40af;
+  font-weight: 500;
+  line-height: 1.55;
 }
 
 .form-card {
@@ -1592,6 +1763,138 @@ const goBack = () => {
   font-size: 0.8125rem;
 }
 
+.items-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.items-search {
+  position: relative;
+  flex: 1 1 280px;
+  max-width: 420px;
+}
+
+.items-search-icon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.items-search-input {
+  box-sizing: border-box;
+  padding-left: 2.4rem;
+  padding-right: 2.2rem;
+}
+
+.items-search-clear {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.items-filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+}
+
+.items-toolbar-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.btn-toolbar {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  color: #374151;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-toolbar:hover {
+  background: #f3f4f6;
+}
+
+.table-modern tbody tr.so-group-row {
+  cursor: pointer;
+  background: #f0fdf4;
+}
+
+.table-modern tbody tr.so-group-row:hover {
+  background: #dcfce7;
+  box-shadow: none;
+}
+
+.table-modern td.so-group-cell {
+  position: sticky;
+  top: var(--thead-h, 0px);
+  z-index: 3;
+  background: #f0fdf4;
+  padding: 0.75rem 1rem;
+  border-top: 2px solid #a7f3d0;
+  border-bottom: 1px solid #a7f3d0;
+}
+
+.so-group-header {
+  position: sticky;
+  left: 1rem;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.so-group-chevron {
+  width: 1rem;
+  color: #047857;
+  font-size: 0.8rem;
+}
+
+.so-group-meta {
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.so-group-match {
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.so-group-error {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #b91c1c;
+  background: #fee2e2;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+}
+
+.table-modern tbody tr.so-group-empty-row td {
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  padding: 0.9rem 1rem;
+}
+
 .readonly-field {
   background: #f9fafb;
   color: #374151;
@@ -1700,9 +2003,10 @@ const goBack = () => {
 }
 
 .table-responsive {
-  overflow-x: auto;
-  margin: -0.5rem;
-  padding: 0.5rem;
+  overflow: auto;
+  max-height: 65vh;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
 }
 
 .table-modern {
@@ -1716,6 +2020,10 @@ const goBack = () => {
 }
 
 .table-modern th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #eef0f2;
   padding: 1.25rem 1rem;
   font-size: 0.875rem;
   font-weight: 800;
@@ -1778,7 +2086,7 @@ const goBack = () => {
 }
 
 .table-modern thead .col-frozen {
-  z-index: 3;
+  z-index: 4;
   background: #eef0f2;
 }
 
