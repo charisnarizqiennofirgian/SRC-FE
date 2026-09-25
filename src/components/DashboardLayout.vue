@@ -266,6 +266,11 @@ const allMenuItems = [
       { name: 'Pembelian Kayu RST', route: { name: 'PembelianKayu' }, permission: 'pembelian-kayu' },
       { name: 'Faktur Pembelian', route: { name: 'DaftarFakturPembelian' }, permission: 'pembelian-faktur' },
       { name: 'Laporan Harga', route: { name: 'LaporanHarga' }, permission: 'pembelian-laporan-harga' },
+      {
+        name: 'Rekap PO per Supplier',
+        route: { name: 'RekapPoSupplier' },
+        permission: ['pembelian-operasional', 'pembelian-karton'],
+      },
     ],
   },
   {
@@ -305,7 +310,9 @@ const menuItems = computed(() => {
       const filteredChildren = isSuperAdmin
         ? menuItem.children
         : menuItem.children.filter(
-            (child) => !child.permission || userPermissions.value.includes(child.permission),
+            (child) =>
+              !child.permission ||
+              [].concat(child.permission).some((permission) => userPermissions.value.includes(permission)),
           )
 
       // Sembunyikan parent jika tidak ada child yang bisa diakses

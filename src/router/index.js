@@ -342,6 +342,12 @@ const router = createRouter({
           meta: { title: 'Laporan Harga Pembelian', requiresAuth: true },
         },
         {
+          path: '/admin/pembelian/rekap-po-supplier',
+          name: 'RekapPoSupplier',
+          component: () => import('../views/pembelian/RekapPoSupplier.vue'),
+          meta: { title: 'Rekap PO per Supplier', requiresAuth: true },
+        },
+        {
           path: '/admin/pembelian/:id/edit',
           name: 'EditPesananPembelian',
           component: () => import('../views/admin/pembelian/EditPesananPembelian.vue'),
@@ -374,6 +380,12 @@ const router = createRouter({
           meta: {
             title: 'Daftar Faktur Pembelian',
           },
+        },
+        {
+          path: '/admin/pembelian/penerimaan/:id/bukti',
+          name: 'CetakBuktiPenerimaan',
+          component: () => import('../views/pembelian/BuktiPenerimaanCetak.vue'),
+          meta: { title: 'Bukti Penerimaan Barang' },
         },
         {
           path: '/admin/pembelian/cetak/:id',

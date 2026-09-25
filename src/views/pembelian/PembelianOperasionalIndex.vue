@@ -172,6 +172,16 @@
                     <span>📋</span>
                   </button>
 
+                  <button
+                    v-if="pesanan.status === 'Diterima Sebagian' || pesanan.status === 'Selesai'"
+                    class="btn-action btn-bpb"
+                    title="Cetak Bukti Penerimaan Barang"
+                    :disabled="bpbLoading === pesanan.id"
+                    @click="cetakBuktiPenerimaan(pesanan)"
+                  >
+                    <span>{{ bpbLoading === pesanan.id ? '⏳' : '🧾' }}</span>
+                  </button>
+
                   <router-link
                     :to="{ name: 'CetakPesananPembelian', params: { id: pesanan.id } }"
                     class="btn-action btn-print"
@@ -233,6 +243,9 @@
                   <span v-if="gr.supplier_document_number" class="gr-sj">SJ: {{ gr.supplier_document_number }}</span>
                 </div>
                 <div class="gr-actions">
+                  <button class="btn-cetak-bpb" title="Cetak Bukti Penerimaan Barang" @click="bukaCetakBpb(gr.id)">
+                    🧾 Cetak Bukti
+                  </button>
                   <span v-if="gr.is_billed" class="badge-billed">Sudah Difakturkan</span>
                   <button
                     v-else
@@ -294,6 +307,33 @@ const bukaRiwayat = async (pesanan) => {
     toast.error('Gagal memuat riwayat penerimaan')
   } finally {
     modalRiwayat.value.loading = false
+  }
+}
+
+const bpbLoading = ref(null)
+
+const bukaCetakBpb = (receiptId) => {
+  const target = router.resolve({ name: 'CetakBuktiPenerimaan', params: { id: receiptId } })
+  window.open(target.href, '_blank')
+}
+
+const cetakBuktiPenerimaan = async (pesanan) => {
+  bpbLoading.value = pesanan.id
+  try {
+    const res = await apiClient.get('/goods-receipts', { params: { purchase_order_id: pesanan.id } })
+    const receipts = res.data.data || []
+    if (receipts.length === 0) {
+      toast.info('Belum ada penerimaan barang untuk PO ini.')
+    } else if (receipts.length === 1) {
+      bukaCetakBpb(receipts[0].id)
+    } else {
+      toast.info(`PO ini diterima ${receipts.length} kali. Pilih penerimaan yang mau dicetak.`)
+      await bukaRiwayat(pesanan)
+    }
+  } catch {
+    toast.error('Gagal memuat data penerimaan')
+  } finally {
+    bpbLoading.value = null
   }
 }
 
@@ -1123,6 +1163,26 @@ const formatRupiah = (angka) => {
   background: linear-gradient(135deg, #0284c7, #0ea5e9);
   transform: translateY(-3px) scale(1.05);
 }
+
+.btn-bpb {
+  background: linear-gradient(135deg, #374151, #4b5563);
+  color: white;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(55, 65, 81, 0.3);
+}
+.btn-bpb:hover {
+  background: linear-gradient(135deg, #4b5563, #6b7280);
+  transform: translateY(-3px) scale(1.05);
+}
+.btn-bpb:disabled { opacity: 0.6; cursor: wait; }
+
+.btn-cetak-bpb {
+  background: #f8fafc; color: #1f2937; border: 1.5px solid #cbd5e1;
+  padding: 6px 12px; border-radius: 7px; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-cetak-bpb:hover { background: #e2e8f0; }
 
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.55);
