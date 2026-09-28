@@ -714,8 +714,15 @@ const handleSubmit = async () => {
 
   try {
     if (isEditMode.value) {
-      await apiClient.put(`/sales-orders/${soId.value}`, payload)
+      const res = await apiClient.put(`/sales-orders/${soId.value}`, payload)
       toast.success('Pesanan Penjualan berhasil diperbarui!')
+      const blocked = res.data?.production_sync_blocked || []
+      if (blocked.length) {
+        toast.warning(
+          `Item berikut sudah tidak ada di SO tapi tetap di PO karena sudah ada progres produksi (cek manual): ${blocked.join(', ')}`,
+          { timeout: 15000 },
+        )
+      }
     } else {
       await apiClient.post('/sales-orders', payload)
       toast.success('Pesanan Penjualan baru berhasil disimpan!')
