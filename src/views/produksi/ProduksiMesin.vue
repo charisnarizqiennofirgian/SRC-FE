@@ -1,6 +1,5 @@
 <template>
   <DashboardLayout>
-    <!-- HEADER -->
     <div class="page-header-mesin">
       <div class="header-content-wrapper">
         <div class="header-left-section">
@@ -29,9 +28,8 @@
 
     <div class="content-card-mesin">
       <div class="card-body-mesin">
-        <form @submit.prevent="handleSubmit" @keydown.enter.prevent>
+        <form @submit.prevent="handleSubmit" @keydown.enter="onFormEnter">
 
-          <!-- SECTION 1: INFO UMUM -->
           <div class="form-section-modern">
             <div class="section-header section-header-mesin">
               <div class="section-icon-badge">
@@ -97,7 +95,6 @@
               />
             </div>
 
-            <!-- PRODUK YANG DIKERJAKAN -->
             <div v-if="form.ref_po_id" class="form-group-modern" style="margin-bottom:1.25rem;">
               <label class="form-label-modern">
                 Produk yang Dikerjakan <span class="required-star">*</span>
@@ -130,7 +127,6 @@
               </p>
             </div>
 
-            <!-- INFO BOM -->
             <div v-if="form.production_order_detail_id" class="form-group-modern" style="margin-bottom:1.25rem;">
               <div v-if="bomComponents.length > 0 && !showAllInputItems" class="bom-info-bar bom-info-ok">
                 <span>✓ Menampilkan {{ bomComponents.length }} komponen sesuai resep BOM produk ini</span>
@@ -146,7 +142,6 @@
               </div>
             </div>
 
-            <!-- QTY PRODUK JADI -->
             <div class="form-group-modern" v-if="form.production_order_detail_id" style="margin-bottom:1.25rem;">
               <label class="form-label-modern">
                 Qty Produk Jadi
@@ -165,7 +160,6 @@
               </div>
             </div>
 
-            <!-- Info PO -->
             <div v-if="poInfo.buyer_name" class="po-selected-info">
               <span class="po-info-icon">👤</span>
               <div>
@@ -174,7 +168,6 @@
               </div>
             </div>
 
-            <!-- Target PO -->
             <div v-if="poTargets.length" class="po-hint-box">
               <div class="po-hint-header">
                 <div class="po-hint-title-wrap">
@@ -203,7 +196,6 @@
             </div>
           </div>
 
-          <!-- SECTION 2: LINES (Komponen S4S → Komponen Mesin + Reject per baris) -->
           <div class="form-section-modern">
             <div class="section-header section-header-mesin">
               <div class="section-icon-badge section-badge-input">
@@ -226,14 +218,13 @@
               v-for="(line, idx) in form.lines"
               :key="line.local_id"
               class="item-row-card"
+              @keydown.enter="onEnterAdd($event, addLine, '.form-section-modern', '.item-row-card')"
             >
-              <!-- Header baris -->
               <div class="item-row-header">
                 <span class="item-row-number">Baris #{{ idx + 1 }}</span>
                 <button v-if="form.lines.length > 1" type="button" class="btn-remove-row" @click="removeLine(idx)">✕</button>
               </div>
 
-              <!-- MESIN per baris -->
               <div class="form-group-modern" style="margin-bottom:1rem;">
                 <label class="form-label-modern">Mesin yang Dipakai <span class="required-star">*</span></label>
                 <vue-select
@@ -255,7 +246,6 @@
                 </vue-select>
               </div>
 
-              <!-- INPUT dari S4S -->
               <div class="line-block line-block--input">
                 <span class="line-label">📥 INPUT KOMPONEN (dari S4S)</span>
                 <div class="form-grid-2col">
@@ -316,7 +306,6 @@
                 </div>
               </div>
 
-              <!-- OUTPUT ke MESIN -->
               <div class="line-block line-block--output">
                 <span class="line-label">📤 OUTPUT KOMPONEN → Gudang MESIN</span>
                 <div class="form-grid-2col">
@@ -339,7 +328,6 @@
                 </div>
               </div>
 
-              <!-- REJECT (toggle) -->
               <div class="line-reject-toggle">
                 <button type="button" class="btn-toggle-reject" @click="line.show_reject = !line.show_reject">
                   {{ line.show_reject ? '▲ Sembunyikan Reject' : '⚠️ + Tambah Reject' }}
@@ -373,7 +361,6 @@
             </button>
           </div>
 
-          <!-- FORM ACTIONS -->
           <div class="form-actions-modern">
             <button type="button" class="btn-action btn-cancel-modern" @click="router.back()">
               <span class="btn-icon">↩️</span>
@@ -413,16 +400,17 @@ import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import { useNotification } from '../../composables/useNotification.js'
+import { useEnterAddRow } from '../../composables/useEnterAddRow.js'
 import VueSelect from 'vue-select'
 import 'vue-select/dist/vue-select.css'
 
 const router = useRouter()
+const { onFormEnter, onEnterAdd } = useEnterAddRow()
 const { showSuccess, showError } = useNotification()
 const isSubmitting   = ref(false)
 const isMarkingDone  = ref(false)
 const loadingS4s     = ref(false)
 
-// === DATA ===
 const productionOrders = ref([])
 const machines         = ref([])
 const s4sItems         = ref([])
@@ -430,8 +418,7 @@ const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
 const poDetailItems    = ref([])
 
-// === BOM (resep) — filter dropdown Item Komponen sesuai produk yang dikerjakan ===
-const bomComponents     = ref([]) // [{item_id, item_code, item_name, qty}]
+const bomComponents     = ref([])
 const showAllInputItems = ref(false)
 
 const newLine = () => ({
@@ -458,7 +445,6 @@ const form = reactive({
   lines: [newLine()],
 })
 
-// === COMPUTED ===
 const s4sItemsForSelect = computed(() =>
   s4sItems.value.map((i) => ({
     item_id:       i.item_id,
@@ -488,12 +474,8 @@ const filterS4sItem = (option, label, search) => {
 
 const bomComponentIds = computed(() => new Set(bomComponents.value.map((c) => c.item_id)))
 
-// Dropdown "Item Komponen" (Input) — sesuai resep BOM produk yang dikerjakan kalau ada,
-// fallback ke semua item S4S kalau BOM belum diisi atau operator klik "Tampilkan semua item"
 const inputS4sOptions = computed(() => {
   if (showAllInputItems.value || bomComponents.value.length === 0) return s4sItemsForSelect.value
-  // Item yang sudah kepilih di baris manapun tetap dipertahankan di daftar opsi (walau di luar BOM) —
-  // vue-select pakai :reduce, kalau opsinya hilang dari :options, label jadi gak bisa ditampilkan (cuma nongol id).
   const selectedIds = new Set(form.lines.map((l) => l.input_item_id).filter(Boolean))
   return s4sItemsForSelect.value.filter((o) => bomComponentIds.value.has(o.item_id) || selectedIds.has(o.item_id))
 })
@@ -524,7 +506,6 @@ watch(() => form.production_order_detail_id, (val) => {
   fetchBomForDetail(val)
 })
 
-// === FETCH DATA ===
 const fetchInitialData = async () => {
   loadingS4s.value = true
   try {
@@ -583,7 +564,6 @@ const onS4sItemSelected = (lineIdx, opt) => {
   form.lines[lineIdx].output_item_id = opt?.item_id ?? null
 }
 
-// Sync output_qty mengikuti input_qty per baris
 watch(
   () => form.lines.map((l) => l.input_qty),
   (newVals) => {
@@ -593,11 +573,9 @@ watch(
   }
 )
 
-// === LINES ===
 const addLine    = () => form.lines.push(newLine())
 const removeLine = (i) => form.lines.splice(i, 1)
 
-// === TANDAI SELESAI ===
 const tandaiSelesai = async () => {
   if (!form.ref_po_id) return
 
@@ -618,7 +596,6 @@ const tandaiSelesai = async () => {
   } catch (error) {
     const msg = error.response?.data?.message || 'Gagal menandai selesai'
     showError('Gagal', msg)
-    // Refresh status
     if (form.ref_po_id) {
       try {
         const res = await apiClient.get(`/operator-mesin/po-detail-items/${form.ref_po_id}`)
@@ -630,7 +607,6 @@ const tandaiSelesai = async () => {
   }
 }
 
-// === SUBMIT ===
 const handleSubmit = async () => {
   if (!form.ref_po_id)                   { showError('Validasi', 'Production Order wajib dipilih'); return }
   if (!form.production_order_detail_id)  { showError('Validasi', 'Produk yang dikerjakan wajib dipilih'); return }
@@ -773,7 +749,6 @@ onMounted(fetchInitialData)
 .qty-warning { margin-top: 4px; font-size: 0.82rem; color: #ef4444; }
 .loading-inline { font-size: 0.82rem; color: #6b7280; margin-left: 8px; }
 
-/* Line blocks */
 .line-block { padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 0.75rem; }
 .line-block--input  { background: #ecfdf5; border: 1px solid #a7f3d0; }
 .line-block--output { background: #eff6ff; border: 1px solid #bfdbfe; }
@@ -821,7 +796,6 @@ onMounted(fetchInitialData)
 .item-option-stock { font-size: 0.78rem; color: #6b7280; }
 .item-option-warning { color: #d97706; font-weight: 600; }
 
-/* Detail item dropdown */
 .detail-option { display: flex; align-items: center; gap: 0.5rem; padding: 6px 12px; flex-wrap: wrap; }
 .detail-option-name { font-size: 0.9rem; font-weight: 600; color: #111827; flex: 1; }
 .detail-option-code { font-size: 0.78rem; color: #6b7280; }

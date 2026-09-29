@@ -28,9 +28,8 @@
 
     <div class="content-card-moulding">
       <div class="card-body-moulding">
-        <form @submit.prevent="handleSubmit" @keydown.enter.prevent>
+        <form @submit.prevent="handleSubmit" @keydown.enter="onFormEnter">
 
-          <!-- SECTION 1: INFO UMUM -->
           <div class="form-section-modern">
             <div class="section-header section-header-moulding">
               <div class="section-icon-badge">
@@ -70,7 +69,6 @@
                 />
               </div>
 
-              <!-- PRODUK YANG DIKERJAKAN -->
               <div class="form-group-modern" v-if="form.ref_po_id">
                 <label class="form-label-modern">
                   Produk yang Dikerjakan <span class="required-star">*</span>
@@ -103,7 +101,6 @@
                 </p>
               </div>
 
-              <!-- INFO BOM -->
               <div class="form-group-modern" v-if="form.production_order_detail_id" style="grid-column: 1 / -1;">
                 <div v-if="bomComponents.length > 0 && !showAllOutputItems" class="bom-info-bar bom-info-ok">
                   <span>✓ Menampilkan {{ bomComponents.length }} komponen sesuai resep BOM produk ini</span>
@@ -151,7 +148,6 @@
               </div>
             </div>
 
-            <!-- Info PO -->
             <div v-if="poInfo.buyer_name" class="po-selected-info">
               <span class="po-info-icon">👤</span>
               <div>
@@ -160,7 +156,6 @@
               </div>
             </div>
 
-            <!-- Target PO -->
             <div v-if="poTargets.length" class="po-hint-box">
               <div class="po-hint-header">
                 <div class="po-hint-title-wrap">
@@ -189,7 +184,6 @@
             </div>
           </div>
 
-          <!-- SECTION 2: GRUP PRODUKSI -->
           <div class="form-section-modern">
             <div class="section-header section-header-moulding">
               <div class="section-icon-badge section-badge-rst">
@@ -206,15 +200,13 @@
               </div>
             </div>
 
-            <div v-for="(group, gi) in form.groups" :key="group.local_id" class="group-card">
-              <!-- Header grup -->
+            <div v-for="(group, gi) in form.groups" :key="group.local_id" class="group-card" @keydown.enter="onEnterAdd($event, addGroup, '.form-section-modern', '.group-card')">
               <div class="group-header">
                 <span class="group-number">Grup #{{ gi + 1 }}</span>
                 <button v-if="form.groups.length > 1" type="button" class="btn-remove-row" @click="removeGroup(gi)">✕ Hapus Grup</button>
               </div>
 
-              <!-- INPUT KAYU RST (bisa banyak) -->
-              <div class="line-block line-block--input">
+              <div class="line-block line-block--input" @keydown.enter="onEnterAdd($event, () => addInput(gi), '.line-block--input', '.input-row')">
                 <span class="line-label">📥 INPUT KAYU RST ({{ group.inputs.length }} ukuran, opsional)</span>
                 <p class="input-optional-hint">Boleh dikosongkan kalau grup ini cuma pakai komponen (tanpa potong RST baru).</p>
 
@@ -262,7 +254,6 @@
                 </button>
               </div>
 
-              <!-- OUTPUT KOMPONEN -->
               <div class="line-block line-block--output">
                 <span class="line-label">📤 OUTPUT KOMPONEN → S4S</span>
                 <div class="form-grid-2col">
@@ -311,7 +302,6 @@
                 </div>
               </div>
 
-              <!-- REJECT (toggle) -->
               <div class="line-reject-toggle">
                 <button type="button" class="btn-toggle-reject" @click="group.show_reject = !group.show_reject">
                   {{ group.show_reject ? '▲ Sembunyikan Reject' : '⚠️ + Tambah Reject' }}
@@ -364,7 +354,6 @@
             </button>
           </div>
 
-          <!-- FORM ACTIONS -->
           <div class="form-actions-modern">
             <button type="button" class="btn-action btn-cancel-modern" @click="router.back()">
               <span class="btn-icon">↩️</span>
@@ -392,7 +381,6 @@
       </div>
     </div>
 
-    <!-- MODAL TAMBAH KOMPONEN BARU -->
     <div v-if="showModalKomponen" class="modal-overlay" @click.self="closeModalKomponen">
       <div class="modal-card">
         <div class="modal-header">
@@ -434,15 +422,16 @@ import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import { useNotification } from '../../composables/useNotification.js'
+import { useEnterAddRow } from '../../composables/useEnterAddRow.js'
 import VueSelect from 'vue-select'
 import 'vue-select/dist/vue-select.css'
 
 const router = useRouter()
+const { onFormEnter, onEnterAdd } = useEnterAddRow()
 const { showSuccess, showError } = useNotification()
 const isSubmitting   = ref(false)
 const isMarkingDone  = ref(false)
 
-// === DATA ===
 const productionOrders = ref([])
 const rstItems         = ref([])
 const komponenItems    = ref([])
@@ -450,8 +439,7 @@ const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
 const poDetailItems    = ref([])
 
-// === BOM (resep) — filter dropdown Item Komponen sesuai produk yang dikerjakan ===
-const bomComponents      = ref([]) // [{item_id, item_code, item_name, qty}]
+const bomComponents      = ref([])
 const showAllOutputItems = ref(false)
 
 const newInput = () => ({
@@ -482,12 +470,10 @@ const form = reactive({
   groups:                     [newGroup()],
 })
 
-// === MODAL KOMPONEN BARU ===
 const showModalKomponen = ref(false)
 const isSavingKomponen  = ref(false)
 const formKomponenBaru  = reactive({ name: '', code: '', category: '' })
 
-// === COMPUTED ===
 const rstItemsForSelect = computed(() =>
   rstItems.value.map((i) => ({
     id:    i.id,
@@ -512,12 +498,8 @@ const komponenItemsForSelect = computed(() =>
 
 const bomComponentIds = computed(() => new Set(bomComponents.value.map((c) => c.item_id)))
 
-// Dropdown "Item Komponen" (Output) — sesuai resep BOM produk yang dikerjakan kalau ada,
-// fallback ke semua item kalau BOM belum diisi atau operator klik "Tampilkan semua item"
 const outputKomponenOptions = computed(() => {
   if (showAllOutputItems.value || bomComponents.value.length === 0) return komponenItemsForSelect.value
-  // Item yang sudah kepilih di grup manapun tetap dipertahankan di daftar opsi (walau di luar BOM) —
-  // vue-select pakai :reduce, kalau opsinya hilang dari :options, label jadi gak bisa ditampilkan (cuma nongol id).
   const selectedIds = new Set(form.groups.map((g) => g.output_item_id).filter(Boolean))
   return komponenItemsForSelect.value.filter((o) => bomComponentIds.value.has(o.id) || selectedIds.has(o.id))
 })
@@ -527,7 +509,6 @@ const isOutputOutsideBom = (group) => {
   return !bomComponentIds.value.has(group.output_item_id)
 }
 
-// === FETCH DATA ===
 const fetchInitialData = async () => {
   try {
     const [poRes, rstRes, kompRes] = await Promise.all([
@@ -577,7 +558,6 @@ const handlePoDeselect = () => {
   showAllOutputItems.value         = false
 }
 
-// === BOM: ambil resep komponen produk yang dikerjakan ===
 const fetchBomForDetail = async (detailId) => {
   bomComponents.value      = []
   showAllOutputItems.value = false
@@ -599,13 +579,11 @@ watch(() => form.production_order_detail_id, (val) => {
   fetchBomForDetail(val)
 })
 
-// === GRUP & INPUT MANAGEMENT ===
 const addGroup    = () => form.groups.push(newGroup())
 const removeGroup = (gi) => form.groups.splice(gi, 1)
 const addInput    = (gi) => form.groups[gi].inputs.push(newInput())
 const removeInput = (gi, ii) => form.groups[gi].inputs.splice(ii, 1)
 
-// === MODAL KOMPONEN BARU ===
 const openModalKomponen = () => {
   formKomponenBaru.name     = ''
   formKomponenBaru.code     = ''
@@ -639,7 +617,6 @@ const simpanKomponenBaru = async () => {
   }
 }
 
-// === SUBMIT ===
 const handleSubmit = async () => {
   if (!form.ref_po_id) { showError('Validasi', 'Production Order wajib dipilih'); return }
   if (!form.production_order_detail_id) { showError('Validasi', 'Produk yang dikerjakan wajib dipilih'); return }

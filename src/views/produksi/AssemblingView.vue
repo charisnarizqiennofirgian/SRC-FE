@@ -1,6 +1,5 @@
 <template>
   <DashboardLayout>
-    <!-- HEADER -->
     <div class="page-header-assembling">
       <div class="header-content-wrapper">
         <div class="header-left-section">
@@ -29,9 +28,8 @@
 
     <div class="content-card-assembling">
       <div class="card-body-assembling">
-        <form @submit.prevent="handleSubmit" @keydown.enter.prevent>
+        <form @submit.prevent="handleSubmit" @keydown.enter="onFormEnter">
 
-          <!-- SECTION 1: INFO UMUM -->
           <div class="form-section-modern">
             <div class="section-header section-header-assembling">
               <div class="section-icon-badge">
@@ -43,7 +41,6 @@
               </div>
             </div>
 
-            <!-- PILIH JENIS PROSES -->
             <div class="process-type-toggle">
               <button
                 type="button"
@@ -111,7 +108,6 @@
               </div>
             </div>
 
-            <!-- Info PO -->
             <div v-if="poInfo.buyer_name" class="po-selected-info">
               <span class="po-info-icon">👤</span>
               <div>
@@ -120,7 +116,6 @@
               </div>
             </div>
 
-            <!-- Target PO -->
             <div v-if="poTargets.length" class="po-hint-box">
               <div class="po-hint-header">
                 <div class="po-hint-title-wrap">
@@ -149,7 +144,6 @@
             </div>
           </div>
 
-          <!-- SECTION 2: INPUT KOMPONEN -->
           <div class="form-section-modern">
             <div class="section-header section-header-assembling">
               <div class="section-icon-badge section-badge-input">
@@ -164,7 +158,6 @@
               </div>
             </div>
 
-            <!-- INFO BOM -->
             <div v-if="form.ref_po_id" class="form-group-modern" style="margin-bottom:1.25rem;">
               <div v-if="bomComponents.length > 0 && !showAllSourceItems" class="bom-info-bar bom-info-ok">
                 <span>✓ Menampilkan {{ bomComponents.length }} komponen sesuai resep BOM produk target PO ini</span>
@@ -189,6 +182,7 @@
                 v-for="(row, index) in form.inputs"
                 :key="row.local_id"
                 class="item-row-card"
+                @keydown.enter="onEnterAdd($event, addInput, '.form-section-modern', '.item-row-card')"
               >
                 <div class="item-row-header">
                   <span class="item-row-number">Input #{{ index + 1 }}</span>
@@ -251,12 +245,10 @@
                     </p>
                   </div>
                 </div>
-                <!-- Info gudang sumber -->
                 <div v-if="row.warehouse_name" class="source-info">
                   📦 Sumber: <strong>{{ row.warehouse_name }}</strong>
                 </div>
 
-                <!-- Finishing (khusus item type=component) -->
                 <div v-if="row.item_type === 'component'" class="form-group-modern" style="margin-top:1rem;">
                   <label class="form-label-modern">Jenis Finishing yang Dipakai <span class="required-star">*</span></label>
                   <div class="finishing-toggle">
@@ -278,7 +270,6 @@
             </template>
           </div>
 
-          <!-- SECTION 3: OUTPUT -->
           <div class="form-section-modern">
             <div class="section-header section-header-assembling">
               <div class="section-icon-badge section-badge-output">
@@ -290,17 +281,16 @@
               </div>
             </div>
 
-            <!-- Belum pilih PO -->
             <div v-if="!form.ref_po_id" class="empty-hint">
               🔍 Pilih Production Order terlebih dahulu — output akan otomatis terisi dari target PO (tetap bisa diganti/dicari produk lain)
             </div>
 
-            <!-- Output — default dari target PO, tapi bisa diganti/cari produk lain -->
             <template v-else>
               <div
                 v-for="(row, index) in form.outputs"
                 :key="row.local_id"
                 class="item-row-card item-row-card--output"
+                @keydown.enter="onEnterAdd($event, addOutput, '.form-section-modern', '.item-row-card--output')"
               >
                 <div class="item-row-header">
                   <span class="item-row-number">Output #{{ index + 1 }}</span>
@@ -360,7 +350,6 @@
             </template>
           </div>
 
-          <!-- SECTION 4: REJECT -->
           <div class="form-section-modern">
             <div class="section-header section-header-assembling">
               <div class="section-icon-badge section-badge-reject">
@@ -384,6 +373,7 @@
               v-for="(row, index) in form.rejects"
               :key="row.local_id"
               class="item-row-card item-row-card--reject"
+              @keydown.enter="onEnterAdd($event, addReject, '.form-section-modern', '.item-row-card--reject')"
             >
               <div class="item-row-header">
                 <span class="item-row-number">Reject #{{ index + 1 }}</span>
@@ -441,7 +431,6 @@
             </button>
           </div>
 
-          <!-- FORM ACTIONS -->
           <div class="form-actions-modern">
             <button type="button" class="btn-action btn-cancel-modern" @click="router.back()">
               <span class="btn-icon">↩️</span>
@@ -467,11 +456,13 @@ import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import { useNotification } from '../../composables/useNotification.js'
+import { useEnterAddRow } from '../../composables/useEnterAddRow.js'
 import VueSelect from 'vue-select'
 import 'vue-select/dist/vue-select.css'
 import { debounce } from 'lodash-es'
 
 const router = useRouter()
+const { onFormEnter, onEnterAdd } = useEnterAddRow()
 const { showSuccess, showError } = useNotification()
 const isSubmitting = ref(false)
 const loadingItems = ref(false)
@@ -481,13 +472,11 @@ const sourceItems      = ref([])
 const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
 
-// === BOM (resep) — filter dropdown Item Komponen sesuai produk-produk output yang dipilih ===
-const bomComponents      = ref([]) // union komponen dari BOM semua produk di form.outputs
+const bomComponents      = ref([])
 const showAllSourceItems = ref(false)
 
-// === OUTPUT: bisa cari/pilih produk jadi/setengah jadi, tidak cuma terkunci ke target PO ===
-const outputSearchOptionsByRow = ref({}) // keyed by row.local_id — hasil search terakhir
-const selectedOutputByRow      = ref({}) // keyed by row.local_id — object lengkap yang dipilih (fix label vue-select)
+const outputSearchOptionsByRow = ref({})
+const selectedOutputByRow      = ref({})
 
 const poTargetOptions = computed(() =>
   poTargets.value.map((t) => ({
@@ -551,7 +540,6 @@ const form = reactive({
   rejects: [],
 })
 
-// === COMPUTED ===
 const sourceItemsForSelect = computed(() =>
   sourceItems.value.map((i) => ({
     key:            `${i.item_id}-${i.warehouse_id}`,
@@ -579,8 +567,6 @@ const filterSourceItem = (option, label, search) => {
 
 const bomComponentIds = computed(() => new Set(bomComponents.value.map((c) => c.item_id)))
 
-// Dropdown "Item Komponen" (Input) — sesuai gabungan resep BOM semua produk target PO ini kalau ada,
-// fallback ke semua item kalau BOM belum diisi atau operator klik "Tampilkan semua item"
 const inputSourceOptions = computed(() => {
   if (showAllSourceItems.value || bomComponents.value.length === 0) return sourceItemsForSelect.value
   return sourceItemsForSelect.value.filter((o) => bomComponentIds.value.has(o.item_id))
@@ -591,7 +577,6 @@ const isInputOutsideBom = (row) => {
   return !bomComponentIds.value.has(row.item_id)
 }
 
-// Gabungkan (union) BOM dari semua produk target PO
 const fetchBomForTargets = async (targets) => {
   bomComponents.value      = []
   showAllSourceItems.value = false
@@ -613,8 +598,6 @@ const fetchBomForTargets = async (targets) => {
   }
 }
 
-// BOM buat filter Input selalu ikuti produk yang SEDANG dipilih di Output (bukan cuma target PO awal) —
-// supaya kalau operator ganti/tambah output ke produk lain, filter komponennya ikut update.
 watch(
   () => form.outputs.map((o) => o.item_id),
   (ids) => {
@@ -623,7 +606,6 @@ watch(
   }
 )
 
-// === FETCH ===
 const fetchInitialData = async () => {
   loadingItems.value = true
   try {
@@ -657,8 +639,6 @@ const handlePoChange = async (opt) => {
     }
     poTargets.value = data.targets || []
 
-    // Auto-fill output dari detail PO — tetap jadi titik awal yang praktis, tapi tiap baris
-    // sekarang bisa diganti/dicari ke produk lain lewat dropdown (lihat outputOptionsFor)
     if (data.targets?.length > 0) {
       form.outputs = data.targets.map((t, i) => {
         const localId = Date.now() + i
@@ -671,7 +651,7 @@ const handlePoChange = async (opt) => {
           item_id:  t.item_id,
           item_name: t.name,
           item_code: t.code,
-          qty:      null, // operator isi sendiri
+          qty:      null,
         }
       })
     }
@@ -697,7 +677,6 @@ const onItemSelected = (index, opt) => {
   form.inputs[index].finishing      = 'natural'
 }
 
-// === INPUT ===
 const addInput = () => form.inputs.push({
   local_id: Date.now() + Math.random(),
   key: null, item_id: null, warehouse_id: null,
@@ -706,11 +685,9 @@ const addInput = () => form.inputs.push({
 })
 const removeInput = (i) => form.inputs.splice(i, 1)
 
-// === REJECT ===
 const addReject    = () => form.rejects.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, keterangan: '' })
 const removeReject = (i) => form.rejects.splice(i, 1)
 
-// === SUBMIT ===
 const handleSubmit = async () => {
   if (!form.ref_po_id) { showError('Validasi', 'Production Order wajib dipilih'); return }
 
@@ -756,7 +733,6 @@ const handleSubmit = async () => {
     await apiClient.post('/assembling-produksi/store', payload)
     showSuccess('Sukses', `${form.process_type === 'sub_assembling' ? 'Sub Assembling' : 'Rakit'} berhasil dicatat`)
 
-    // Reset form tapi pertahankan process_type
     const currentType  = form.process_type
     form.ref_po_id     = null
     form.notes         = ''
@@ -769,7 +745,6 @@ const handleSubmit = async () => {
     outputSearchOptionsByRow.value = {}
     selectedOutputByRow.value      = {}
 
-    // Refresh source items
     const res = await apiClient.get('/assembling-produksi/source-items')
     sourceItems.value = res.data.data || []
 

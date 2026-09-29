@@ -1,6 +1,5 @@
 <template>
   <DashboardLayout>
-    <!-- HEADER -->
     <div class="page-header-ruskomp">
       <div class="header-content-wrapper">
         <div class="header-left-section">
@@ -29,9 +28,8 @@
 
     <div class="content-card-ruskomp">
       <div class="card-body-ruskomp">
-        <form @submit.prevent="handleSubmit" @keydown.enter.prevent>
+        <form @submit.prevent="handleSubmit" @keydown.enter="onFormEnter">
 
-          <!-- SECTION 1: INFO UMUM -->
           <div class="form-section-modern">
             <div class="section-header section-header-ruskomp">
               <div class="section-icon-badge">
@@ -85,7 +83,6 @@
               </div>
             </div>
 
-            <!-- Info PO -->
             <div v-if="poInfo.buyer_name" class="po-selected-info">
               <span class="po-info-icon">👤</span>
               <div>
@@ -94,7 +91,6 @@
               </div>
             </div>
 
-            <!-- PRODUK YANG DIKERJAKAN -->
             <div class="form-grid-3col" v-if="form.ref_po_id" style="margin-top:1rem;">
               <div class="form-group-modern">
                 <label class="form-label-modern">
@@ -137,7 +133,6 @@
               </div>
             </div>
 
-            <!-- INFO BOM -->
             <div v-if="form.production_order_detail_id" class="bom-info-wrap">
               <div v-if="bomComponents.length > 0 && !showAllItems" class="bom-info-bar bom-info-ok">
                 <span>✓ Menampilkan {{ bomComponents.length }} komponen sesuai resep BOM produk ini</span>
@@ -153,7 +148,6 @@
               </div>
             </div>
 
-            <!-- Target PO -->
             <div v-if="poTargets.length" class="po-hint-box">
               <div class="po-hint-header">
                 <div class="po-hint-title-wrap">
@@ -182,7 +176,6 @@
             </div>
           </div>
 
-          <!-- SECTION 2: INPUT KOMPONEN DARI GUDANG MESIN -->
           <div class="form-section-modern">
             <div class="section-header section-header-ruskomp">
               <div class="section-icon-badge section-badge-input">
@@ -206,6 +199,7 @@
                 v-for="(row, index) in form.inputs"
                 :key="row.local_id"
                 class="item-row-card"
+                @keydown.enter="onEnterAdd($event, addInput, '.form-section-modern', '.item-row-card')"
               >
                 <div class="item-row-header">
                   <span class="item-row-number">Input #{{ index + 1 }}</span>
@@ -289,7 +283,6 @@
             </template>
           </div>
 
-          <!-- SECTION 3: OUTPUT -->
           <div class="form-section-modern">
             <div class="section-header section-header-ruskomp">
               <div class="section-icon-badge section-badge-output">
@@ -305,6 +298,7 @@
               v-for="(row, index) in form.outputs"
               :key="row.local_id"
               class="item-row-card item-row-card--output"
+              @keydown.enter="onEnterAdd($event, addOutput, '.form-section-modern', '.item-row-card--output')"
             >
               <div class="item-row-header">
                 <span class="item-row-number">Output #{{ index + 1 }}</span>
@@ -374,7 +368,6 @@
             </button>
           </div>
 
-          <!-- SECTION 4: REJECT -->
           <div class="form-section-modern">
             <div class="section-header section-header-ruskomp">
               <div class="section-icon-badge section-badge-reject">
@@ -398,6 +391,7 @@
               v-for="(row, index) in form.rejects"
               :key="row.local_id"
               class="item-row-card item-row-card--reject"
+              @keydown.enter="onEnterAdd($event, addReject, '.form-section-modern', '.item-row-card--reject')"
             >
               <div class="item-row-header">
                 <span class="item-row-number">Reject #{{ index + 1 }}</span>
@@ -454,7 +448,6 @@
             </button>
           </div>
 
-          <!-- FORM ACTIONS -->
           <div class="form-actions-modern">
             <button type="button" class="btn-action btn-cancel-modern" @click="router.back()">
               <span class="btn-icon">↩️</span>
@@ -478,10 +471,12 @@ import { useRouter } from 'vue-router'
 import apiClient from '../../api/axios'
 import DashboardLayout from '../../components/DashboardLayout.vue'
 import { useNotification } from '../../composables/useNotification.js'
+import { useEnterAddRow } from '../../composables/useEnterAddRow.js'
 import VueSelect from 'vue-select'
 import 'vue-select/dist/vue-select.css'
 
 const router = useRouter()
+const { onFormEnter, onEnterAdd } = useEnterAddRow()
 const { showSuccess, showError } = useNotification()
 const isSubmitting = ref(false)
 const loadingItems = ref(false)
@@ -608,7 +603,6 @@ const handlePoDeselect = () => {
 
 const onItemSelected = (index, opt) => {
   form.inputs[index].max_qty = opt?.qty_available ?? 0
-  // Auto sync output
   if (form.outputs[index]) {
     form.outputs[index].item_id = opt?.item_id ?? null
     form.outputs[index].finishing = form.inputs[index].finishing
@@ -669,7 +663,6 @@ const handleSubmit = async () => {
     await apiClient.post('/rustik-komponen/store', payload)
     showSuccess('Sukses', 'Proses Rustik Komponen berhasil dicatat')
 
-    // Reset form
     form.ref_po_id = null
     form.production_order_detail_id = null
     form.qty_produk_jadi            = null
