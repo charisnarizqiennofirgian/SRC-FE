@@ -1,6 +1,5 @@
 <template>
   <DashboardLayout>
-    <!-- PAGE HEADER -->
     <div class="page-header">
       <div class="header-content">
         <div class="header-left">
@@ -21,7 +20,6 @@
       </div>
     </div>
 
-    <!-- FILTER -->
     <div class="filter-card">
       <div class="filter-row">
         <input
@@ -42,7 +40,6 @@
       </div>
     </div>
 
-    <!-- TABLE -->
     <div class="content-card">
       <div v-if="loading" class="loading-state">
         <div class="spinner"></div>
@@ -58,6 +55,7 @@
                 <th>Referensi SO</th>
                 <th>Dibuat Oleh</th>
                 <th>Deadline</th>
+                <th>Peruntukan</th>
                 <th>Item</th>
                 <th>Status</th>
                 <th class="th-action">Aksi</th>
@@ -65,7 +63,7 @@
             </thead>
             <tbody>
               <tr v-if="rows.length === 0">
-                <td colspan="7" class="empty-state">Tidak ada data Purchase Request</td>
+                <td colspan="8" class="empty-state">Tidak ada data Purchase Request</td>
               </tr>
               <tr v-for="pr in rows" :key="pr.id" class="data-row">
                 <td>
@@ -78,6 +76,7 @@
                     {{ formatDate(pr.deadline) }}
                   </span>
                 </td>
+                <td>{{ pr.peruntukan || '-' }}</td>
                 <td>{{ pr.details_count ?? pr.details?.length ?? 0 }} item</td>
                 <td>
                   <span :class="['status-badge', `status-${pr.status}`]">
@@ -108,7 +107,6 @@
           </table>
         </div>
 
-        <!-- PAGINATION -->
         <div v-if="totalPages > 1" class="pagination">
           <button :disabled="page === 1" @click="goPage(page - 1)" class="page-btn">‹</button>
           <button
@@ -121,7 +119,6 @@
       </template>
     </div>
 
-    <!-- MODAL KONFIRMASI HAPUS -->
     <div v-if="deleteTarget" class="modal-overlay" @click.self="deleteTarget = null">
       <div class="modal-container">
         <div class="modal-header">
@@ -140,7 +137,6 @@
       </div>
     </div>
 
-    <!-- MODAL EXPORT REKAP -->
     <div v-if="showRekapModal" class="modal-overlay" @click.self="closeRekapModal">
       <div class="modal-container">
         <div class="modal-header">
@@ -218,7 +214,6 @@ const rekapError       = ref('')
 const prNumberOptions  = ref([])
 const rekapForm = ref({ prStart: '', prEnd: '' })
 
-// Sinkronkan state filter/pagination ke URL supaya tidak hilang saat kembali dari Detail/Edit.
 const syncQuery = () => {
   const query = {}
   if (page.value > 1)   query.page   = page.value
@@ -324,7 +319,6 @@ const openRekapModal = async () => {
       const res = await apiClient.get('/purchase-requests/list-for-rekap')
       prNumberOptions.value = res.data.data || []
     } catch (error) {
-      // Datalist cuma bantuan autocomplete — kalau gagal diambil, user tetap bisa ketik manual
       console.error('Gagal memuat daftar No. PR', error)
     }
   }

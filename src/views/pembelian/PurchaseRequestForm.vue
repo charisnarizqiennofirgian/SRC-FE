@@ -1,6 +1,5 @@
 <template>
   <DashboardLayout>
-    <!-- PAGE HEADER -->
     <div class="page-header">
       <div class="header-content">
         <div class="header-left">
@@ -20,7 +19,6 @@
     </div>
 
     <form v-else @submit.prevent="handleSubmit">
-      <!-- INFO UMUM -->
       <div class="content-card">
         <div class="card-head">
           <div class="card-head-icon">📅</div>
@@ -45,6 +43,16 @@
               <input v-model="form.deadline" type="date" class="form-control" required />
             </div>
             <div class="form-group full-width">
+              <label class="form-label">Peruntukan <span class="hint">(opsional)</span></label>
+              <input
+                v-model="form.peruntukan"
+                type="text"
+                class="form-control"
+                maxlength="255"
+                placeholder="Contoh: Gudang Assembling"
+              />
+            </div>
+            <div class="form-group full-width">
               <label class="form-label">Catatan</label>
               <textarea
                 v-model="form.notes"
@@ -57,7 +65,6 @@
         </div>
       </div>
 
-      <!-- DETAIL ITEM -->
       <div class="content-card card-overflow-visible">
         <div class="card-head">
           <div class="card-head-icon">📦</div>
@@ -125,7 +132,6 @@
         </div>
       </div>
 
-      <!-- ACTIONS -->
       <div class="form-actions">
         <button type="button" class="btn-cancel" @click="router.push(backTarget)">Batal</button>
         <button type="submit" class="btn-save" :disabled="isSaving">
@@ -158,8 +164,6 @@ const route   = useRoute()
 const toast   = useToast()
 
 const isEditMode  = computed(() => !!route.params.id)
-// URL list (dengan ?page=) tempat user datang — dipakai tombol Kembali/Batal & redirect
-// setelah simpan, supaya balik ke halaman pagination yang sama, bukan reset ke halaman 1.
 const backTarget  = computed(() => route.query.returnTo || { name: 'PurchaseRequestIndex' })
 const loading     = ref(false)
 const loadingItem = ref(false)
@@ -172,11 +176,10 @@ const newUid = () => ++uidCounter
 const form = reactive({
   so_id:    '',
   deadline: '',
+  peruntukan: '',
   notes:    '',
   details:  [],
 })
-
-// ── DETAIL ROWS ──────────────────────────────────────────────────────────────
 
 const addDetail = () => {
   form.details.push({ _uid: newUid(), item_id: '', qty_requested: 1, notes: '' })
@@ -187,16 +190,14 @@ const removeDetail = (index) => {
   form.details.splice(index, 1)
 }
 
-// ── SAVE ─────────────────────────────────────────────────────────────────────
-
 const savePR = async (autoSubmit = false) => {
   isSaving.value = true
   try {
     const payload = {
       so_id:    form.so_id || null,
       deadline: form.deadline,
+      peruntukan: form.peruntukan?.trim() || null,
       notes:    form.notes,
-      // Filter hanya baris yang sudah dipilih itemnya
       details:  form.details
         .filter(d => d.item_id && d.qty_requested > 0)
         .map(({ item_id, qty_requested, notes }) => ({
@@ -241,15 +242,12 @@ const savePR = async (autoSubmit = false) => {
 const handleSubmit        = () => savePR(false)
 const handleSubmitAndSend = () => savePR(true)
 
-// ── FETCH ────────────────────────────────────────────────────────────────────
-
 const fetchSO = async () => {
   try {
     const res = await apiClient.get('/sales-orders', { params: { all: true }, timeout: 6000 })
     const data = res.data.data || []
-    // Filter null/undefined
     daftarSO.value = data.filter(so => so && so.id)
-  } catch { /* opsional */ }
+  } catch {}
 }
 
 const targetCategoryIds  = ref([])
@@ -280,6 +278,7 @@ const fetchPR = async () => {
     const pr  = res.data.data
     form.so_id    = pr.so_id    ?? ''
     form.deadline = pr.deadline?.slice(0, 10) ?? ''
+    form.peruntukan = pr.peruntukan ?? ''
     form.notes    = pr.notes    ?? ''
     ;(pr.details || []).forEach((d) => {
       form.details.push({ _uid: newUid(), item_id: d.item_id, item: d.item, qty_requested: d.qty_requested, notes: d.notes ?? '' })
@@ -306,7 +305,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* ===== HEADER ===== */
 .page-header {
   background: linear-gradient(135deg, #0369a1, #0284c7);
   padding: 24px 28px; border-radius: 14px; margin-bottom: 20px;
@@ -319,14 +317,12 @@ onMounted(async () => {
 .page-subtitle  { font-size:13px; opacity:0.85; margin:0; }
 .btn-back       { background:white; color:#0369a1; padding:9px 16px; border-radius:8px; font-weight:700; text-decoration:none; font-size:13px; white-space:nowrap; }
 
-/* ===== LOADING ===== */
 .loading-container { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:280px; gap:14px; background:white; border-radius:14px; box-shadow:0 2px 12px rgba(0,0,0,0.06); }
 .spinner      { width:44px; height:44px; border:4px solid #e5e7eb; border-top-color:#0369a1; border-radius:50%; animation:spin 0.8s linear infinite; }
 .loading-text { font-size:14px; color:#6b7280; font-weight:600; }
 .loading-hint { color:#9ca3af; font-style:italic; }
 @keyframes spin { to { transform:rotate(360deg); } }
 
-/* ===== CARD ===== */
 .content-card {
   background:white; border-radius:14px; border:1.5px solid #f3f4f6;
   box-shadow:0 2px 12px rgba(0,0,0,0.06); margin-bottom:20px; overflow:hidden;
@@ -341,7 +337,6 @@ onMounted(async () => {
 .card-body     { padding:24px; }
 .card-body-table { padding:20px 24px 24px; }
 
-/* ===== FORM GRID ===== */
 .info-grid  { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
 .form-group { display:flex; flex-direction:column; gap:6px; }
 .form-group.full-width { grid-column:1 / -1; }
@@ -352,7 +347,6 @@ onMounted(async () => {
 .form-control:focus { outline:none; border-color:#0369a1; box-shadow:0 0 0 3px rgba(3,105,161,0.08); }
 textarea.form-control { resize:vertical; min-height:80px; }
 
-/* ===== TABLE ===== */
 .detail-table { width:100%; border-collapse:collapse; }
 .detail-table thead { background:linear-gradient(135deg,#1e293b 0%,#334155 100%); }
 .detail-table th {
@@ -376,7 +370,6 @@ textarea.form-control { resize:vertical; min-height:80px; }
 .td-note { min-width:130px; }
 .td-aksi { text-align:center; min-width:50px; }
 
-/* ===== SMALL INPUTS ===== */
 .form-control-sm {
   width:100%; padding:8px 11px; border:1.5px solid #e5e7eb;
   border-radius:8px; font-size:13px; font-family:inherit;
@@ -384,7 +377,6 @@ textarea.form-control { resize:vertical; min-height:80px; }
 }
 .form-control-sm:focus { outline:none; border-color:#0369a1; box-shadow:0 0 0 3px rgba(3,105,161,0.08); }
 
-/* ===== BUTTONS ===== */
 .btn-remove {
   width:32px; height:32px; background:#fee2e2; color:#dc2626;
   border:none; border-radius:8px; cursor:pointer; font-size:14px;
@@ -403,7 +395,6 @@ textarea.form-control { resize:vertical; min-height:80px; }
 }
 .btn-add-row:hover { background:#d1fae5; border-color:#6ee7b7; }
 
-/* ===== FORM ACTIONS ===== */
 .form-actions {
   display:flex; justify-content:flex-end; gap:12px;
   padding:18px 24px; background:white; border-radius:14px;

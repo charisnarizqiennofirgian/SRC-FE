@@ -145,6 +145,7 @@ const pages = computed(() => {
 const notesText = computed(() => {
   if (!data.value) return ''
   const parts = []
+  if (data.value.peruntukan) parts.push(`Peruntukan: ${data.value.peruntukan}`)
   if (data.value.supplier_document_number) parts.push(`SJ Supplier: ${data.value.supplier_document_number}`)
   if (data.value.notes) parts.push(data.value.notes)
   return parts.join(' — ')

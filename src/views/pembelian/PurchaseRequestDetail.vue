@@ -19,7 +19,6 @@
     </div>
 
     <template v-else-if="pr">
-      <!-- INFO PR -->
       <div class="content-card">
         <div class="card-header">
           <span class="card-icon">📋</span>
@@ -55,13 +54,16 @@
               </span>
             </div>
             <div class="info-item">
+              <span class="info-label">Peruntukan</span>
+              <span class="info-value">{{ pr.peruntukan || '-' }}</span>
+            </div>
+            <div class="info-item">
               <span class="info-label">Catatan</span>
               <span class="info-value">{{ pr.notes ?? '-' }}</span>
             </div>
           </div>
         </div>
 
-        <!-- ACTION BUTTONS -->
         <div class="card-actions">
           <router-link
             v-if="pr.status === 'draft' || pr.status === 'submitted'"
@@ -104,7 +106,6 @@
         </div>
       </div>
 
-      <!-- DETAIL ITEMS -->
       <div class="content-card">
         <div class="card-header">
           <span class="card-icon">📦</span>
@@ -141,7 +142,6 @@
       </div>
     </template>
 
-    <!-- MODAL CONVERT TO PO -->
     <div v-if="showConvertModal" class="modal-overlay" @click.self="showConvertModal = false">
       <div class="modal-container">
         <div class="modal-header">
@@ -222,8 +222,6 @@ const isConverting    = ref(false)
 const showConvertModal = ref(false)
 const daftarSupplier  = ref([])
 
-// URL list (dengan ?page=) yang mengantar user ke halaman ini — dipakai tombol Kembali
-// & diteruskan ke Edit PR, supaya balik ke halaman pagination yang sama, bukan reset ke 1.
 const listReturnTo = computed(() => route.query.returnTo || { name: 'PurchaseRequestIndex' })
 
 const convertForm = reactive({
@@ -240,7 +238,6 @@ const fetchPR = async () => {
     const res = await apiClient.get(`/purchase-requests/${route.params.id}`)
     pr.value = res.data.data
 
-    // Siapkan convert form
     convertForm.details = pr.value.details.map(d => ({
       purchase_request_detail_id: d.id,
       item_id:  d.item_id,
@@ -419,7 +416,6 @@ onMounted(async () => {
 .btn-convert-confirm { padding: 10px 24px; background: linear-gradient(135deg, #059669, #047857); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
 .btn-convert-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
 
-/* Vue Select Styling */
 .vue-select-supplier :deep(.vs__dropdown-toggle) {
   padding: 4px 8px;
   border: 2px solid #e5e7eb;
