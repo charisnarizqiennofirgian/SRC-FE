@@ -249,7 +249,8 @@
                     </span>
                   </td>
                   <td class="td-qty stage-moulding">
-                    <HoverPopover :enabled="!!(item.moulding_bom_checklist?.length || item.moulding_components?.length)">
+                    <span v-if="isStagePassed(item, 'moulding', PRODUCTION_STAGES)" class="stage-passed">✓ selesai</span>
+                    <HoverPopover v-else :enabled="!!(item.moulding_bom_checklist?.length || item.moulding_components?.length)">
                       <span :class="['qty-value', item.qty_moulding > 0 ? 'has-value' : 'no-value']">
                         {{ formatNumber(item.qty_moulding) }} <span class="stage-pct">({{ stagePercent(item.qty_moulding, item.target, item.moulding_bom_checklist) }}%)</span>
                       </span>
@@ -275,7 +276,8 @@
                     </HoverPopover>
                   </td>
                   <td class="td-qty stage-mesin">
-                    <HoverPopover :enabled="!!(item.mesin_bom_checklist?.length || item.mesin_components?.length)">
+                    <span v-if="isStagePassed(item, 'mesin', PRODUCTION_STAGES)" class="stage-passed">✓ selesai</span>
+                    <HoverPopover v-else :enabled="!!(item.mesin_bom_checklist?.length || item.mesin_components?.length)">
                       <span :class="['qty-value', item.qty_mesin > 0 ? 'has-value' : 'no-value']">
                         {{ formatNumber(item.qty_mesin) }} <span class="stage-pct">({{ stagePercent(item.qty_mesin, item.target, item.mesin_bom_checklist) }}%)</span>
                       </span>
@@ -705,6 +707,16 @@ const formatNumber = (num) => {
     return number.toLocaleString('id-ID')
   }
   return number.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+}
+
+const PRODUCTION_STAGES = ['moulding', 'mesin', 'ruskomp', 'assembling', 'sanding', 'rustik', 'finishing', 'anyam', 'qc_final', 'packing']
+
+const isStagePassed = (item, stage, stages) => {
+  const checklist = item[`${stage}_bom_checklist`]
+  if (!checklist?.length || !checklist.every((c) => c.done)) return false
+  if (parseFloat(item[`qty_${stage}`] || 0) > 0) return false
+  const later = stages.slice(stages.indexOf(stage) + 1)
+  return !!item.is_done || later.some((s) => parseFloat(item[`qty_${s}`] || 0) > 0)
 }
 
 const stagePercent = (qty, target, checklist) => {
@@ -1791,6 +1803,14 @@ const getStageClass = (type) => {
   font-size: 10.5px;
   font-weight: 500;
   opacity: 0.7;
+}
+
+.stage-passed {
+  font-size: 11px;
+  font-weight: 600;
+  color: #059669;
+  opacity: 0.75;
+  white-space: nowrap;
 }
 
 .stok-gudang-badge {

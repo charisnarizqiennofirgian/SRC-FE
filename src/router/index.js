@@ -553,6 +553,12 @@ const router = createRouter({
     },
     {
       path: '/admin/produksi/qc-final',
+    {
+      path: '/admin/produksi/pembatalan-transaksi',
+      name: 'PembatalanTransaksi',
+      component: () => import('../views/produksi/PembatalanTransaksiView.vue'),
+      meta: { title: 'Pembatalan Transaksi Produksi', requiresAuth: true },
+    },
       name: 'QcFinalView',
       component: () => import('../views/produksi/QcFinalView.vue'),
       meta: { title: 'QC Final', requiresAuth: true },

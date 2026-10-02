@@ -148,6 +148,7 @@ const menuPermissionMap = {
   Produksi: [
     'produksi-sawmill', 'produksi-kd', 'produksi-pembahanan',
     'produksi-moulding', 'produksi-mesin', 'produksi-rustik-komponen',
+    'produksi-batal-transaksi',
     'produksi-assembling', 'produksi-pemakaian-bahan', 'produksi-sanding',
     'produksi-rustik', 'produksi-finishing', 'produksi-anyam', 'produksi-qc-final',
     'produksi-packing', 'produksi-konfirmasi-pengiriman', 'produksi-master-bom',
@@ -236,6 +237,7 @@ const allMenuItems = [
       { name: 'Rustik', route: { name: 'RustikView' }, permission: 'produksi-rustik' },
       { name: 'Finishing', route: { name: 'FinishingView' }, permission: 'produksi-finishing' },
       { name: 'Anyam', route: { name: 'ProduksiAnyam' }, permission: 'produksi-anyam' },
+      { name: 'Pembatalan Transaksi', route: { name: 'PembatalanTransaksi' }, permission: 'produksi-batal-transaksi' },
       { name: 'QC Final', route: { name: 'QcFinalView' }, permission: 'produksi-qc-final' },
       { name: 'Packing', route: { name: 'PackingView' }, permission: 'produksi-packing' },
       { name: 'Konfirmasi Pengiriman', route: { name: 'KonfirmasiPengirimanList' }, permission: 'produksi-konfirmasi-pengiriman' },
