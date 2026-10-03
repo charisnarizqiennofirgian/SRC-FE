@@ -3,12 +3,6 @@ import HomeView from '../views/HomeView.vue'
 import StockAdjustmentView from '../views/manajemen-stok/StockAdjustmentView.vue'
 import StockIndex from '../views/manajemen-stok/StockIndex.vue'
 import LaporanMutasiView from '../views/manajemen-stok/LaporanMutasiView.vue'
-// LAPORAN STOK LAMA DIHAPUS DARI ROUTER SESUAI ARAHAN PM
-// import LaporanOperasional from '../views/manajemen-stok/LaporanOperasional.vue'
-// import LaporanProdukJadi from '../views/manajemen-stok/LaporanProdukJadi.vue'
-// import LaporanKayuLogs from '../views/manajemen-stok/LaporanKayuLogs.vue'
-// import LaporanKayuRST from '../views/manajemen-stok/LaporanKayuRST.vue'
-// import LaporanKartonBox from '../views/manajemen-stok/LaporanKartonBox.vue'
 import DaftarPesananPembelian from '../views/pembelian/DaftarPesananPembelian.vue'
 
 import AdminView from '../views/AdminView.vue'
@@ -35,7 +29,6 @@ import DaftarPengiriman from '../views/penjualan/DaftarPengiriman.vue'
 import FormPengiriman from '../views/penjualan/FormPengiriman.vue'
 import CetakPengiriman from '../views/penjualan/CetakPengiriman.vue'
 import InvoiceList from '../views/penjualan/invoices/InvoiceList.vue'
-// import InvoiceCreate from '../views/penjualan/invoices/InvoiceCreate.vue' // Removed static import
 import InvoiceDetail from '../views/penjualan/invoices/InvoiceDetail.vue'
 import InvoicePayment from '../views/penjualan/invoices/InvoicePayment.vue'
 import DownPaymentList from '../views/penjualan/downpayments/DownPaymentList.vue'
@@ -49,7 +42,6 @@ import PackingView from '../views/produksi/PackingView.vue'
 import MaterialUsageView from '../views/produksi/MaterialUsageView.vue'
 import ChartOfAccountView from '../views/master/ChartOfAccountView.vue'
 
-// MODULE PERBAIKAN
 import JurnalUmumIndex from '../views/perbaikan/JurnalUmumIndex.vue'
 import JurnalUmumDetail from '../views/perbaikan/JurnalUmumDetail.vue'
 import JurnalUmumEdit from '../views/perbaikan/JurnalUmumEdit.vue'
@@ -407,7 +399,6 @@ const router = createRouter({
           component: DetailFakturPembelian,
           meta: { title: 'Detail Faktur Pembelian' },
         },
-        // PERBAIKAN JURNAL MANUAL
         {
           path: '/admin/perbaikan/jurnal-manual',
           name: 'JurnalPerbaikan',
@@ -502,7 +493,6 @@ const router = createRouter({
       component: () => import('../views/produksi/AnyamView.vue'),
       meta: { requiresAuth: true },
     },
-    // Produksi Sampel
     {
       path: '/produksi-sampel/sawmill',
       name: 'SampelSawmill',
@@ -553,12 +543,6 @@ const router = createRouter({
     },
     {
       path: '/admin/produksi/qc-final',
-    {
-      path: '/admin/produksi/pembatalan-transaksi',
-      name: 'PembatalanTransaksi',
-      component: () => import('../views/produksi/PembatalanTransaksiView.vue'),
-      meta: { title: 'Pembatalan Transaksi Produksi', requiresAuth: true },
-    },
       name: 'QcFinalView',
       component: () => import('../views/produksi/QcFinalView.vue'),
       meta: { title: 'QC Final', requiresAuth: true },
@@ -568,6 +552,12 @@ const router = createRouter({
       name: 'PackingView',
       component: PackingView,
       meta: { title: 'Packing', requiresAuth: true },
+    },
+    {
+      path: '/admin/produksi/pembatalan-transaksi',
+      name: 'PembatalanTransaksi',
+      component: () => import('../views/produksi/PembatalanTransaksiView.vue'),
+      meta: { title: 'Pembatalan Transaksi Produksi', requiresAuth: true },
     },
     {
       path: '/admin/produksi/konfirmasi-pengiriman',
@@ -686,7 +676,6 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
 
-    // ROUTE STOK YANG MASIH DIPAKAI
     {
       path: '/stock-index',
       name: 'StockIndex',
@@ -724,50 +713,17 @@ const router = createRouter({
       meta: { title: 'Cetak Lembar Hitung', requiresAuth: true },
     },
 
-    // ROUTE LAPORAN STOK LAMA DIHAPUS DARI NAVIGASI, BISA DIHAPUS TOTAL JIKA SUDAH YAKIN
-    // {
-    //   path: '/stock-report-operational',
-    //   name: 'StockReportOperational',
-    //   component: LaporanOperasional,
-    //   meta: { requiresAuth: true },
-    // },
-    // {
-    //   path: '/stock-report-finished',
-    //   name: 'StockReportFinished',
-    //   component: LaporanProdukJadi,
-    //   meta: { requiresAuth: true },
-    // },
-    // {
-    //   path: '/stock-report-logs',
-    //   name: 'StockReportLogs',
-    //   component: LaporanKayuLogs,
-    //   meta: { requiresAuth: true },
-    // },
-    // {
-    //   path: '/stock-report-rst',
-    //   name: 'StockReportRST',
-    //   component: LaporanKayuRST,
-    //   meta: { requiresAuth: true },
-    // },
-    // {
-    //   path: '/laporan/karton-box',
-    //   name: 'LaporanKartonBox',
-    //   component: LaporanKartonBox,
-    //   meta: { title: 'Laporan Karton Box' },
-    // },
   ],
 })
 
 router.beforeEach((to, from, next) => {
   const isLoggedIn = !!localStorage.getItem('token')
 
-  // Halaman login — kalau sudah login redirect ke dashboard
   if (to.name === 'login' && isLoggedIn) {
     next({ name: 'admin-dashboard' })
     return
   }
 
-  // Semua route kecuali login → wajib login
   const publicRoutes = ['login']
 
   if (!publicRoutes.includes(to.name) && !isLoggedIn) {
