@@ -239,6 +239,7 @@
           <button class="modal-close" @click="showAddItem = false">✕</button>
         </div>
         <div class="modal-body">
+          <template v-if="!createMode">
           <p class="modal-hint">
             Untuk barang yang ditemukan di gudang tapi tidak ada di daftar (stok sistemnya 0 di gudang ini).
           </p>
@@ -267,10 +268,44 @@
             <label class="form-label">Grade (opsional)</label>
             <input v-model="addGrade" type="text" class="form-control" placeholder="Contoh: A, B" />
           </template>
+
+          <button class="btn-link" type="button" @click="openCreateMode">
+            Barang belum terdaftar di master? Buat barang baru
+          </button>
+          </template>
+
+          <template v-else>
+            <p class="modal-hint">
+              Barang baru dibuat di master tanpa stok awal. Stoknya masuk sesuai jumlah fisik saat opname diposting.
+            </p>
+            <label class="form-label">Nama Barang</label>
+            <input v-model="newItem.name" type="text" class="form-control" placeholder="Contoh: KUAS LUKIS 6" />
+            <label class="form-label">Kode (opsional)</label>
+            <input v-model="newItem.code" type="text" class="form-control" placeholder="Kosongkan jika belum ada" />
+            <label class="form-label">Kategori</label>
+            <select v-model="newItem.category_id" class="form-control">
+              <option :value="null" disabled>Pilih kategori</option>
+              <option v-for="cat in newItemOptions.categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+            </select>
+            <label class="form-label">Satuan</label>
+            <select v-model="newItem.unit_id" class="form-control">
+              <option :value="null" disabled>Pilih satuan</option>
+              <option v-for="unit in newItemOptions.units" :key="unit.id" :value="unit.id">{{ unit.name }}</option>
+            </select>
+            <button class="btn-link" type="button" @click="createMode = false">← Kembali ke pencarian</button>
+          </template>
         </div>
         <div class="modal-footer">
           <button class="btn-secondary" @click="showAddItem = false">Batal</button>
-          <button class="btn-primary" :disabled="!selectedItem || isBusy" @click="addItem">Tambahkan</button>
+          <button v-if="!createMode" class="btn-primary" :disabled="!selectedItem || isBusy" @click="addItem">Tambahkan</button>
+          <button
+            v-else
+            class="btn-primary"
+            :disabled="!newItem.name.trim() || !newItem.category_id || !newItem.unit_id || isBusy"
+            @click="createItem"
+          >
+            Buat & Tambahkan
+          </button>
         </div>
       </div>
     </div>
@@ -308,6 +343,9 @@ const isSearching = ref(false)
 const selectedItem = ref(null)
 const addGrade = ref('')
 let searchTimer = null
+const createMode = ref(false)
+const newItem = reactive({ name: '', code: '', category_id: null, unit_id: null })
+const newItemOptions = reactive({ categories: [], units: [] })
 
 const opnameId = computed(() => route.params.id)
 const isDraft = computed(() => header.value?.status === 'draft')
@@ -562,7 +600,46 @@ const openAddItem = () => {
   itemResults.value = []
   selectedItem.value = null
   addGrade.value = ''
+  createMode.value = false
   showAddItem.value = true
+}
+
+const openCreateMode = async () => {
+  Object.assign(newItem, { name: itemSearch.value.trim(), code: '', category_id: null, unit_id: null })
+  createMode.value = true
+  if (!newItemOptions.categories.length) {
+    try {
+      const response = await apiClient.get('/stock-opnames/items/new-options')
+      newItemOptions.categories = response.data.data.categories || []
+      newItemOptions.units = response.data.data.units || []
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Gagal memuat kategori dan satuan.')
+    }
+  }
+  newItem.category_id = newItemOptions.categories.find((c) => c.name === 'Bahan Operasional')?.id ?? null
+  newItem.unit_id = newItemOptions.units.find((u) => u.name === 'PIECES')?.id ?? null
+}
+
+const createItem = async () => {
+  if (!(await saveChanges({ silent: true }))) return
+  isWorking.value = true
+  try {
+    const response = await apiClient.post(`/stock-opnames/${opnameId.value}/items/new`, {
+      name: newItem.name,
+      code: newItem.code || null,
+      category_id: newItem.category_id,
+      unit_id: newItem.unit_id,
+    })
+    toast.success(response.data.message)
+    showAddItem.value = false
+    await loadData()
+    filters.search = newItem.code || newItem.name
+  } catch (error) {
+    const errors = error.response?.data?.errors
+    toast.error(errors ? Object.values(errors).flat()[0] : error.response?.data?.message || 'Gagal membuat barang baru.')
+  } finally {
+    isWorking.value = false
+  }
 }
 
 const onItemSearch = () => {
@@ -814,6 +891,7 @@ kbd { background: white; border: 1px solid #99f6e4; border-radius: 4px; padding:
 .item-result.selected { background: #ccfbf1; }
 .item-result-name { font-weight: 700; font-size: 0.88rem; color: #111827; }
 .item-result-meta { font-size: 0.78rem; color: #6b7280; }
+.btn-link { display: inline-block; margin-top: 0.9rem; padding: 0; border: none; background: none; color: #0d9488; font-weight: 700; font-size: 0.85rem; cursor: pointer; text-decoration: underline; }
 .modal-footer { display: flex; justify-content: flex-end; gap: 0.6rem; padding: 1rem 1.5rem 1.25rem; }
 .btn-secondary { padding: 0.65rem 1.2rem; border: 1px solid #d1d5db; background: white; border-radius: 10px; font-weight: 700; cursor: pointer; }
 .btn-primary { padding: 0.65rem 1.4rem; border: none; background: #0d9488; color: white; border-radius: 10px; font-weight: 700; cursor: pointer; }
