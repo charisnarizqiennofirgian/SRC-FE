@@ -30,6 +30,7 @@
               <button class="btn-header" :disabled="isBusy" @click="triggerUpload">⬆️ Upload Excel</button>
               <input ref="fileInput" type="file" accept=".xlsx,.xls" class="hidden-input" @change="uploadExcel" />
               <button class="btn-header" :disabled="isBusy" @click="openAddItem">➕ Tambah Item</button>
+              <button class="btn-header" :disabled="isBusy" @click="syncItems">🔄 Sinkron Item</button>
             </template>
           </div>
         </div>
@@ -598,6 +599,29 @@ const addItem = async () => {
     filters.search = selectedItem.value?.code || ''
   } catch (error) {
     toast.error(error.response?.data?.message || 'Gagal menambah item.')
+  } finally {
+    isWorking.value = false
+  }
+}
+
+const syncItems = async () => {
+  const result = await Swal.fire({
+    title: 'Sinkron item dengan stok gudang?',
+    text: 'Barang yang sekarang ada stoknya di gudang ini tapi belum ada di daftar akan ditambahkan, dan stok sistem diperbarui. Angka REAL yang sudah diisi tidak berubah.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sinkron',
+    cancelButtonText: 'Batal',
+  })
+  if (!result.isConfirmed) return
+  if (!(await saveChanges({ silent: true }))) return
+  isWorking.value = true
+  try {
+    const response = await apiClient.post(`/stock-opnames/${opnameId.value}/sync`)
+    toast.success(response.data.message)
+    await loadData()
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Gagal sinkron item.')
   } finally {
     isWorking.value = false
   }
