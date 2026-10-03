@@ -123,6 +123,7 @@
                 <td class="cell-name">
                   {{ row.item_name }}
                   <span v-if="row.is_manual" class="tag-manual">manual</span>
+                  <span v-if="row.item_deleted" class="tag-deleted">dihapus dari master</span>
                 </td>
                 <td class="cell-muted">{{ row.category_name }}</td>
                 <td v-if="hasKayu" class="text-center">{{ row.grade || '-' }}</td>
@@ -199,7 +200,7 @@
                   />
                 </td>
                 <td v-if="isDraft" class="text-center">
-                  <button v-if="row.is_manual" class="btn-remove" title="Hapus item manual" @click="removeItem(row)">✕</button>
+                  <button v-if="row.is_manual || row.item_deleted" class="btn-remove" title="Hapus dari opname" @click="removeItem(row)">✕</button>
                 </td>
               </tr>
             </tbody>
@@ -838,6 +839,7 @@ kbd { background: white; border: 1px solid #99f6e4; border-radius: 4px; padding:
 .cell-name { font-weight: 600; color: #111827; min-width: 220px; }
 .cell-muted { color: #6b7280; font-size: 0.82rem; }
 .tag-manual { display: inline-block; margin-left: 0.35rem; padding: 0.05rem 0.45rem; border-radius: 999px; background: #e0e7ff; color: #3730a3; font-size: 0.7rem; font-weight: 700; }
+.tag-deleted { margin-left: 0.35rem; padding: 0.1rem 0.45rem; border-radius: 6px; background: #fee2e2; color: #b91c1c; font-size: 0.7rem; font-weight: 700; }
 .changed-hint { font-size: 0.72rem; color: #b45309; font-weight: 700; }
 .empty-cell { text-align: center; color: #6b7280; padding: 2rem !important; font-style: italic; }
 
