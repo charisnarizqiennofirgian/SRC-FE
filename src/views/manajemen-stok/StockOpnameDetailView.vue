@@ -146,10 +146,10 @@
                     <div class="komponen-inputs">
                       <input
                         v-model="row.in_nat"
-                        type="number"
-                        min="0"
-                        step="any"
-                        class="input-real input-half"
+                        type="text"
+                        inputmode="decimal"
+                        autocomplete="off"
+                        :class="['input-real', 'input-half', { invalid: isInvalidInput(row.in_nat) }]"
                         :placeholder="isDraft ? 'N' : ''"
                         :disabled="!isDraft"
                         data-nav="real"
@@ -158,10 +158,10 @@
                       />
                       <input
                         v-model="row.in_warna"
-                        type="number"
-                        min="0"
-                        step="any"
-                        class="input-real input-half"
+                        type="text"
+                        inputmode="decimal"
+                        autocomplete="off"
+                        :class="['input-real', 'input-half', { invalid: isInvalidInput(row.in_warna) }]"
                         :placeholder="isDraft ? 'W' : ''"
                         :disabled="!isDraft"
                         data-nav="real"
@@ -173,10 +173,10 @@
                   <input
                     v-else
                     v-model="row.in_pcs"
-                    type="number"
-                    min="0"
-                    step="any"
-                    class="input-real"
+                    type="text"
+                    inputmode="decimal"
+                    autocomplete="off"
+                    :class="['input-real', { invalid: isInvalidInput(row.in_pcs) }]"
                     :disabled="!isDraft"
                     data-nav="real"
                     @input="markDirty(row)"
@@ -358,8 +358,25 @@ const colspan = computed(() => 8 + (hasKayu.value ? 2 : 0) + (hasKomponen.value 
 
 const categories = computed(() => [...new Set(rows.value.map((r) => r.category_name).filter(Boolean))].sort())
 
-const toInput = (value) => (value === null || value === undefined ? '' : String(value))
-const toNumber = (value) => (value === '' || value === null || value === undefined ? null : Number(value))
+const toInput = (value) => (value === null || value === undefined ? '' : String(value).replace('.', ','))
+
+const toNumber = (value) => {
+  if (value === null || value === undefined) return null
+  let text = String(value).replace(/\s/g, '')
+  if (text === '') return null
+  const commas = (text.match(/,/g) || []).length
+  const dots = (text.match(/\./g) || []).length
+  if (commas && dots) {
+    text = text.lastIndexOf(',') > text.lastIndexOf('.')
+      ? text.replace(/\./g, '').replace(',', '.')
+      : text.replace(/,/g, '')
+  } else if (commas) {
+    text = commas > 1 ? text.replace(/,/g, '') : text.replace(',', '.')
+  } else if (dots > 1) {
+    text = text.replace(/\./g, '')
+  }
+  return /^(\d+\.?\d*|\.\d+)$/.test(text) ? Number(text) : NaN
+}
 
 const loadData = async () => {
   isLoading.value = !header.value
@@ -395,12 +412,14 @@ const realQty = (row) => {
 
 const isCounted = (row) => realQty(row) !== null
 
+const isInvalidInput = (value) => Number.isNaN(toNumber(value))
+
 const baseQty = (row) => (isDraft.value ? row.current_qty_pcs : row.posted_system_qty_pcs ?? row.system_qty_pcs)
 
 const diffOf = (row) => {
   if (!isDraft.value) return row.diff_qty_pcs
   const real = realQty(row)
-  if (real === null) return null
+  if (real === null || isNaN(real)) return null
   return Math.round((real - baseQty(row)) * 10000) / 10000
 }
 
@@ -845,6 +864,7 @@ kbd { background: white; border: 1px solid #99f6e4; border-radius: 4px; padding:
 
 .input-real { width: 110px; padding: 0.4rem 0.5rem; border: 2px solid #fde68a; border-radius: 8px; text-align: right; font-weight: 700; font-size: 0.9rem; background: white; }
 .input-real:focus { outline: none; border-color: #0d9488; }
+.input-real.invalid { border-color: #dc2626; background: #fef2f2; }
 .input-real:disabled { background: transparent; border-color: transparent; color: #111827; }
 .komponen-inputs { display: flex; gap: 0.3rem; justify-content: center; }
 .input-half { width: 68px; }
