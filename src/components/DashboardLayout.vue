@@ -143,7 +143,7 @@ const menuPermissionMap = {
   ],
   'Manajemen Stok': [
     'stok-laporan-sawmill', 'stok-index', 'stok-adjustment',
-    'stok-laporan-mutasi', 'stok-monitoring-produksi', 'stok-opname',
+    'stok-laporan-mutasi', 'stok-monitoring-produksi', 'stok-opname', 'stok-inventaris',
   ],
   Produksi: [
     'produksi-sawmill', 'produksi-kd', 'produksi-pembahanan',
@@ -213,7 +213,7 @@ const allMenuItems = [
     icon: '📦',
     children: [
       { name: 'Laporan Produksi Sawmill', route: '/reports/sawmill', permission: 'stok-laporan-sawmill' },
-      { name: 'Stock Index', route: { name: 'StockIndex' }, permission: 'stok-index' },
+      { name: 'Stock Index', route: { name: 'StockIndex' }, permission: ['stok-index', 'stok-inventaris'] },
       { name: 'Stock Adjustment', route: '/stock-adjustment', permission: 'stok-adjustment' },
       { name: 'Laporan Mutasi', route: { name: 'LaporanMutasi' }, permission: 'stok-laporan-mutasi' },
       { name: 'Stok Opname', route: { name: 'StockOpname' }, permission: 'stok-opname' },

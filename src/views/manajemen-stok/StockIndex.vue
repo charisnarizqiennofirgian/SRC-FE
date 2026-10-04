@@ -14,7 +14,7 @@
             </p>
           </div>
         </div>
-        <div class="header-stats-section">
+        <div v-if="activeTab !== 'inventaris'" class="header-stats-section">
           <div class="stat-card-modern">
             <div class="stat-icon-wrapper">
               <span class="stat-icon">📊</span>
@@ -63,7 +63,9 @@
     </div>
 
     <!-- LOADING -->
-    <div v-if="loading" class="loading-container-modern">
+    <InventarisTab v-if="activeTab === 'inventaris'" />
+
+    <div v-else-if="loading" class="loading-container-modern">
       <div class="loading-content">
         <div class="spinner-modern"></div>
         <p class="loading-text-modern">Memuat data stok...</p>
@@ -851,6 +853,7 @@
 import { ref, watch, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import DashboardLayout from '../../components/DashboardLayout.vue'
+import InventarisTab from './InventarisTab.vue'
 import apiClient from '../../api/axios'
 import { useToast } from 'vue-toastification'
 
@@ -858,7 +861,21 @@ const toast = useToast()
 const router = useRouter()
 const route = useRoute()
 
-const tabs = [
+const INVENTARIS_TAB = 'inventaris'
+
+const hasPermission = (perm) => {
+  try {
+    const perms = JSON.parse(localStorage.getItem('permissions') || '[]')
+    return perms.includes('*') || perms.includes(perm)
+  } catch {
+    return false
+  }
+}
+
+const canViewStock = hasPermission('stok-index')
+const canViewInventaris = hasPermission('stok-inventaris')
+
+const stockTabs = [
   { key: 'logs', label: 'Kayu Log', category: 'Kayu Log', icon: '🪵' },
   { key: 'rst', label: 'Kayu RST', category: 'Kayu RST', icon: '🪚' },
   { key: 'jeblosan', label: 'Jeblosan', category: 'Jeblosan', icon: '🪓' },
@@ -868,7 +885,12 @@ const tabs = [
   { key: 'component', label: 'Komponen', category: 'Komponen', icon: '🧩' },
 ]
 
-const activeTab = ref('logs')
+const tabs = [
+  ...(canViewStock || !canViewInventaris ? stockTabs : []),
+  ...(canViewInventaris ? [{ key: INVENTARIS_TAB, label: 'Inventaris', category: 'Inventaris', icon: '🏭' }] : []),
+]
+
+const activeTab = ref(tabs[0].key)
 const reportData = ref([])
 const loading = ref(false)
 const pagination = ref(null)
@@ -928,6 +950,7 @@ const fetchWarehouses = async () => {
 }
 
 const fetchReport = async () => {
+  if (activeTab.value === INVENTARIS_TAB) return
   loading.value = true
   try {
     const params = {
