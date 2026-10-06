@@ -98,19 +98,46 @@
                     <div class="detail-option">
                       <span class="detail-option-name">{{ d.item_name }}</span>
                       <span class="detail-option-code">{{ d.item_code }}</span>
-                      <span :class="['detail-option-badge', d.moulding_done ? 'badge-done' : 'badge-pending']">
+                      <span v-if="d.moulding_selesai" class="detail-option-badge badge-selesai">✅ Selesai</span>
+                      <span v-else :class="['detail-option-badge', d.moulding_done ? 'badge-done' : 'badge-pending']">
                         {{ d.moulding_done ? '✓ Sudah' : '○ Belum' }}
                       </span>
                     </div>
                   </template>
                   <template #selected-option="d">
                     <span>{{ d.item_name }}</span>
-                    <span v-if="d.moulding_done" class="badge-done-inline">✓</span>
+                    <span v-if="d.moulding_selesai" class="badge-done-inline">✅ Selesai</span>
+                    <span v-else-if="d.moulding_done" class="badge-done-inline">✓</span>
                   </template>
                 </vue-select>
                 <p v-if="poDetailItems.length > 0" class="detail-hint">
-                  {{ poDetailItems.filter(d => d.moulding_done).length }} / {{ poDetailItems.length }} produk sudah moulding
+                  {{ poDetailItems.filter(d => d.moulding_done).length }} / {{ poDetailItems.length }} produk sudah moulding,
+                  {{ poDetailItems.filter(d => d.moulding_selesai).length }} ditandai selesai
                 </p>
+              </div>
+
+              <div class="form-group-modern" v-if="selectedDetail" style="grid-column: 1 / -1;">
+                <div v-if="selectedDetail.moulding_selesai" class="selesai-bar selesai-bar-done">
+                  <span>
+                    ✅ Produk ini sudah ditandai <strong>Selesai Moulding</strong>
+                    <template v-if="selectedDetail.moulding_selesai_by"> oleh {{ selectedDetail.moulding_selesai_by }}</template>
+                    <template v-if="selectedDetail.moulding_selesai_at"> ({{ selectedDetail.moulding_selesai_at }})</template>.
+                    Input moulding baru dikunci.
+                  </span>
+                  <button
+                    v-if="canTandaiSelesai"
+                    type="button"
+                    class="btn-link-small"
+                    :disabled="isMarkingDone"
+                    @click="batalSelesai"
+                  >Batal Selesai</button>
+                </div>
+                <div v-else-if="selectedDetail.moulding_bom_total > 0" :class="['selesai-bar', bomLengkap ? 'selesai-bar-ready' : 'selesai-bar-pending']">
+                  <span>
+                    Checklist BOM: {{ selectedDetail.moulding_bom_done }} / {{ selectedDetail.moulding_bom_total }} komponen sudah dimoulding
+                    <template v-if="!bomLengkap"> — belum: {{ selectedDetail.moulding_bom_missing.join(', ') }}</template>
+                  </span>
+                </div>
               </div>
 
               <div class="form-group-modern" v-if="form.production_order_detail_id" style="grid-column: 1 / -1;">
@@ -383,17 +410,17 @@
             </button>
 
             <button
-              v-if="form.ref_po_id"
+              v-if="canTandaiSelesai && selectedDetail && !selectedDetail.moulding_selesai"
               type="button"
               class="btn-action btn-selesai-modern"
-              :disabled="isMarkingDone"
+              :disabled="isMarkingDone || isSubmitting"
               @click="tandaiSelesai"
             >
               <span class="btn-icon">✅</span>
               <span class="btn-text">{{ isMarkingDone ? 'Memproses...' : 'Selesai Moulding' }}</span>
             </button>
 
-            <button type="submit" class="btn-action btn-submit-modern" :disabled="isSubmitting">
+            <button type="submit" class="btn-action btn-submit-modern" :disabled="isSubmitting || isMarkingDone || !!selectedDetail?.moulding_selesai">
               <span class="btn-icon">💾</span>
               <span class="btn-text">{{ isSubmitting ? 'Menyimpan...' : 'Simpan Moulding' }}</span>
             </button>
@@ -460,6 +487,22 @@ const komponenItems    = ref([])
 const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
 const poDetailItems    = ref([])
+
+const hasPermission = (perm) => {
+  try {
+    const perms = JSON.parse(localStorage.getItem('permissions') || '[]')
+    return perms.includes('*') || perms.includes(perm)
+  } catch {
+    return false
+  }
+}
+const canTandaiSelesai = hasPermission('produksi-tandai-selesai')
+
+const selectedDetail = computed(() =>
+  poDetailItems.value.find((d) => d.id === form.production_order_detail_id) || null
+)
+
+const bomLengkap = computed(() => !selectedDetail.value?.moulding_bom_missing?.length)
 
 const bomComponents      = ref([])
 const showAllOutputItems = ref(false)
@@ -654,7 +697,7 @@ const handleSubmit = async () => {
   if (!form.ref_po_id) { showError('Validasi', 'Production Order wajib dipilih'); return }
   if (!form.production_order_detail_id) { showError('Validasi', 'Produk yang dikerjakan wajib dipilih'); return }
 
-  const validGroups = form.groups.filter((g) => g.output_item_id && g.output_qty > 0)
+  const validGroups = getValidGroups()
   if (validGroups.length === 0) {
     showError('Validasi', 'Minimal satu grup dengan output komponen wajib diisi')
     return
@@ -662,68 +705,103 @@ const handleSubmit = async () => {
 
   isSubmitting.value = true
   try {
-    const payload = {
-      date:                       form.date,
-      ref_po_id:                  Number(form.ref_po_id),
-      production_order_detail_id: Number(form.production_order_detail_id),
-      qty_produk_jadi:            form.qty_produk_jadi !== null && form.qty_produk_jadi !== '' ? Number(form.qty_produk_jadi) : null,
-      notes:                      form.notes || null,
-      groups: validGroups.map((g) => ({
-        output_item_id: Number(g.output_item_id),
-        output_qty:     Number(g.output_qty),
-        finishing:      g.finishing || 'natural',
-        inputs: g.inputs
-          .filter((i) => i.item_id && i.qty > 0)
-          .map((i) => ({ item_id: Number(i.item_id), qty: Number(i.qty) })),
-        reject_item_id: g.reject_item_id && g.reject_qty > 0 ? Number(g.reject_item_id) : null,
-        reject_qty:     g.reject_qty > 0 ? Number(g.reject_qty) : null,
-        reject_type:    g.reject_type  || null,
-        reject_notes:   g.reject_notes || null,
-      })),
-    }
-
-    await apiClient.post('/produksi/moulding', payload)
+    await apiClient.post('/produksi/moulding', buildPayload(validGroups))
     showSuccess('Sukses', 'Proses Moulding berhasil dicatat')
     router.push({ name: 'ProduksiMesin' })
   } catch (error) {
-    const message =
-      error.response?.data?.message ||
-      (error.response?.data?.errors && JSON.stringify(error.response.data.errors)) ||
-      'Gagal menyimpan moulding'
-    showError('Gagal', message)
+    showError('Gagal', errorMessage(error, 'Gagal menyimpan moulding'))
   } finally {
     isSubmitting.value = false
   }
 }
 
-const tandaiSelesai = async () => {
+const getValidGroups = () => form.groups.filter((g) => g.output_item_id && g.output_qty > 0)
+
+const buildPayload = (validGroups) => ({
+  date:                       form.date,
+  ref_po_id:                  Number(form.ref_po_id),
+  production_order_detail_id: Number(form.production_order_detail_id),
+  qty_produk_jadi:            form.qty_produk_jadi !== null && form.qty_produk_jadi !== '' ? Number(form.qty_produk_jadi) : null,
+  notes:                      form.notes || null,
+  groups: validGroups.map((g) => ({
+    output_item_id: Number(g.output_item_id),
+    output_qty:     Number(g.output_qty),
+    finishing:      g.finishing || 'natural',
+    inputs: g.inputs
+      .filter((i) => i.item_id && i.qty > 0)
+      .map((i) => ({ item_id: Number(i.item_id), qty: Number(i.qty) })),
+    reject_item_id: g.reject_item_id && g.reject_qty > 0 ? Number(g.reject_item_id) : null,
+    reject_qty:     g.reject_qty > 0 ? Number(g.reject_qty) : null,
+    reject_type:    g.reject_type  || null,
+    reject_notes:   g.reject_notes || null,
+  })),
+})
+
+const errorMessage = (error, fallback) =>
+  error.response?.data?.message ||
+  (error.response?.data?.errors && Object.values(error.response.data.errors).flat().join(' ')) ||
+  fallback
+
+const reloadPoDetailItems = async () => {
   if (!form.ref_po_id) return
-
-  const pending = poDetailItems.value.filter((d) => !d.moulding_done)
-  if (pending.length > 0) {
-    const names = pending.map((d) => d.item_name).join(', ')
-    showError('Belum Selesai', `Produk berikut belum selesai moulding: ${names}`)
-    return
+  try {
+    const res = await apiClient.get(`/produksi/moulding/po-detail-items/${form.ref_po_id}`)
+    const details = res.data.data || []
+    poDetailItems.value = details.map((d) => ({ ...d, label: d.item_name }))
+  } catch {
+    showError('Error', 'Gagal memuat ulang daftar produk')
   }
+}
 
-  if (!confirm('Semua produk sudah moulding. Tandai PO selesai moulding dan lanjut ke Mesin?')) return
+const tandaiSelesai = async () => {
+  const detail = selectedDetail.value
+  if (!detail) return
+
+  const validGroups = getValidGroups()
+  const pesan = validGroups.length > 0
+    ? `Simpan input moulding ini, lalu tandai ${detail.item_name} Selesai Moulding?`
+    : `Tandai ${detail.item_name} Selesai Moulding? Setelah ini input moulding untuk produk ini dikunci.`
+  if (!confirm(pesan)) return
 
   isMarkingDone.value = true
   try {
-    await apiClient.post(`/produksi/moulding/${form.ref_po_id}/selesai`)
-    showSuccess('Selesai', 'PO berhasil ditandai selesai moulding, lanjut ke Mesin')
-    router.push({ name: 'ProduksiMesin' })
-  } catch (error) {
-    const msg = error.response?.data?.message || 'Gagal menandai selesai'
-    showError('Gagal', msg)
-    if (form.ref_po_id) {
-      try {
-        const res = await apiClient.get(`/produksi/moulding/po-detail-items/${form.ref_po_id}`)
-        const details = res.data.data || []
-        poDetailItems.value = details.map((d) => ({ ...d, label: d.item_name }))
-      } catch (_) {}
+    if (validGroups.length > 0) {
+      await apiClient.post('/produksi/moulding', buildPayload(validGroups))
+      form.groups          = [newGroup()]
+      form.qty_produk_jadi = null
+      form.notes           = ''
     }
+  } catch (error) {
+    showError('Gagal', errorMessage(error, 'Gagal menyimpan moulding'))
+    isMarkingDone.value = false
+    return
+  }
+
+  try {
+    const res = await apiClient.post(`/produksi/moulding/detail/${detail.id}/selesai`)
+    showSuccess('Selesai', res.data.message || 'Produk ditandai Selesai Moulding')
+  } catch (error) {
+    const prefix = validGroups.length > 0 ? 'Input moulding sudah tersimpan, tapi produk belum bisa ditandai selesai. ' : ''
+    showError('Belum Bisa Selesai', prefix + errorMessage(error, 'Gagal menandai selesai'))
   } finally {
+    await reloadPoDetailItems()
+    isMarkingDone.value = false
+  }
+}
+
+const batalSelesai = async () => {
+  const detail = selectedDetail.value
+  if (!detail) return
+  if (!confirm(`Batalkan status Selesai Moulding untuk ${detail.item_name}? Input moulding untuk produk ini akan dibuka lagi.`)) return
+
+  isMarkingDone.value = true
+  try {
+    const res = await apiClient.post(`/produksi/moulding/detail/${detail.id}/batal-selesai`)
+    showSuccess('Dibatalkan', res.data.message || 'Status selesai dibatalkan')
+  } catch (error) {
+    showError('Gagal', errorMessage(error, 'Gagal membatalkan status selesai'))
+  } finally {
+    await reloadPoDetailItems()
     isMarkingDone.value = false
   }
 }
@@ -848,6 +926,11 @@ onMounted(fetchInitialData)
   box-shadow: 0 6px 16px rgba(8, 145, 178, 0.45);
 }
 .btn-selesai-modern:disabled { opacity: 0.6; cursor: not-allowed; }
+.selesai-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0.9rem; border-radius: 8px; font-size: 0.85rem; }
+.selesai-bar-done { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+.selesai-bar-ready { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.selesai-bar-pending { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.badge-selesai { background: #16a34a; color: #fff; }
 
 .line-block { padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 0.75rem; }
 .line-block--input  { background: #f0fdf4; border: 1px solid #bbf7d0; }

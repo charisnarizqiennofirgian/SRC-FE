@@ -112,19 +112,46 @@
                   <div class="detail-option">
                     <span class="detail-option-name">{{ d.item_name }}</span>
                     <span class="detail-option-code">{{ d.item_code }}</span>
-                    <span :class="['detail-option-badge', d.mesin_done ? 'badge-done' : 'badge-pending']">
+                    <span v-if="d.mesin_selesai" class="detail-option-badge badge-selesai">✅ Selesai</span>
+                    <span v-else :class="['detail-option-badge', d.mesin_done ? 'badge-done' : 'badge-pending']">
                       {{ d.mesin_done ? '✓ Sudah' : '○ Belum' }}
                     </span>
                   </div>
                 </template>
                 <template #selected-option="d">
                   <span>{{ d.item_name }}</span>
-                  <span v-if="d.mesin_done" class="badge-done-inline">✓</span>
+                  <span v-if="d.mesin_selesai" class="badge-done-inline">✅ Selesai</span>
+                  <span v-else-if="d.mesin_done" class="badge-done-inline">✓</span>
                 </template>
               </vue-select>
               <p v-if="poDetailItems.length > 0" class="detail-hint">
-                {{ poDetailItems.filter(d => d.mesin_done).length }} / {{ poDetailItems.length }} produk sudah proses Mesin
+                {{ poDetailItems.filter(d => d.mesin_done).length }} / {{ poDetailItems.length }} produk sudah proses Mesin,
+                {{ poDetailItems.filter(d => d.mesin_selesai).length }} ditandai selesai
               </p>
+            </div>
+
+            <div v-if="selectedDetail" class="form-group-modern" style="margin-bottom:1.25rem;">
+              <div v-if="selectedDetail.mesin_selesai" class="selesai-bar selesai-bar-done">
+                <span>
+                  ✅ Produk ini sudah ditandai <strong>Selesai Mesin</strong>
+                  <template v-if="selectedDetail.mesin_selesai_by"> oleh {{ selectedDetail.mesin_selesai_by }}</template>
+                  <template v-if="selectedDetail.mesin_selesai_at"> ({{ selectedDetail.mesin_selesai_at }})</template>.
+                  Input proses Mesin baru dikunci.
+                </span>
+                <button
+                  v-if="canTandaiSelesai"
+                  type="button"
+                  class="btn-link-small"
+                  :disabled="isMarkingDone"
+                  @click="batalSelesai"
+                >Batal Selesai</button>
+              </div>
+              <div v-else-if="selectedDetail.mesin_bom_total > 0" :class="['selesai-bar', bomLengkap ? 'selesai-bar-ready' : 'selesai-bar-pending']">
+                <span>
+                  Checklist BOM: {{ selectedDetail.mesin_bom_done }} / {{ selectedDetail.mesin_bom_total }} komponen sudah diproses Mesin
+                  <template v-if="!bomLengkap"> — belum: {{ selectedDetail.mesin_bom_missing.join(', ') }}</template>
+                </span>
+              </div>
             </div>
 
             <div v-if="form.production_order_detail_id" class="form-group-modern" style="margin-bottom:1.25rem;">
@@ -368,10 +395,10 @@
             </button>
 
             <button
-              v-if="form.ref_po_id"
+              v-if="canTandaiSelesai && selectedDetail && !selectedDetail.mesin_selesai"
               type="button"
               class="btn-action btn-selesai-modern"
-              :disabled="isMarkingDone"
+              :disabled="isMarkingDone || isSubmitting"
               @click="tandaiSelesai"
             >
               <span class="btn-icon">✅</span>
@@ -381,7 +408,7 @@
             <button
               type="submit"
               class="btn-action btn-submit-modern"
-              :disabled="isSubmitting"
+              :disabled="isSubmitting || isMarkingDone || !!selectedDetail?.mesin_selesai"
             >
               <span class="btn-icon">💾</span>
               <span class="btn-text">{{ isSubmitting ? 'Menyimpan...' : 'Simpan Proses Mesin' }}</span>
@@ -417,6 +444,22 @@ const s4sItems         = ref([])
 const poInfo           = ref({ buyer_name: null, so_number: null })
 const poTargets        = ref([])
 const poDetailItems    = ref([])
+
+const hasPermission = (perm) => {
+  try {
+    const perms = JSON.parse(localStorage.getItem('permissions') || '[]')
+    return perms.includes('*') || perms.includes(perm)
+  } catch {
+    return false
+  }
+}
+const canTandaiSelesai = hasPermission('produksi-tandai-selesai')
+
+const selectedDetail = computed(() =>
+  poDetailItems.value.find((d) => d.id === form.production_order_detail_id) || null
+)
+
+const bomLengkap = computed(() => !selectedDetail.value?.mesin_bom_missing?.length)
 
 const bomComponents     = ref([])
 const showAllInputItems = ref(false)
@@ -576,33 +619,104 @@ watch(
 const addLine    = () => form.lines.push(newLine())
 const removeLine = (i) => form.lines.splice(i, 1)
 
-const tandaiSelesai = async () => {
-  if (!form.ref_po_id) return
+const getValidLines = () =>
+  form.lines.filter((l) => l.input_item_id && l.input_qty > 0 && l.output_item_id && l.output_qty > 0)
 
-  const pending = poDetailItems.value.filter((d) => !d.mesin_done)
-  if (pending.length > 0) {
-    const names = pending.map((d) => d.item_name).join(', ')
-    showError('Belum Selesai', `Produk berikut belum selesai proses Mesin: ${names}`)
-    return
+const lineError = (validLines) => {
+  for (let i = 0; i < validLines.length; i++) {
+    if (!validLines[i].machine_id) return `Baris #${i + 1}: Mesin wajib dipilih`
+    if (validLines[i].input_qty > validLines[i].max_qty && validLines[i].max_qty > 0) {
+      return `Baris #${i + 1}: Qty melebihi stok S4S tersedia (${validLines[i].max_qty} pcs)`
+    }
   }
+  return null
+}
 
-  if (!confirm('Semua produk sudah selesai proses Mesin. Lanjut ke Assembling?')) return
+const buildPayload = (validLines) => ({
+  date:                       form.date,
+  ref_po_id:                  Number(form.ref_po_id),
+  production_order_detail_id: Number(form.production_order_detail_id),
+  qty_produk_jadi:            form.qty_produk_jadi !== null && form.qty_produk_jadi !== '' ? Number(form.qty_produk_jadi) : null,
+  notes:                      form.notes || null,
+  lines: validLines.map((l) => ({
+    machine_id:     Number(l.machine_id),
+    input_item_id:  Number(l.input_item_id),
+    input_qty:      Number(l.input_qty),
+    finishing:      l.finishing || 'natural',
+    output_item_id: Number(l.output_item_id),
+    output_qty:     Number(l.output_qty),
+    reject_qty:     l.reject_qty > 0 ? Number(l.reject_qty) : null,
+    reject_notes:   l.reject_notes || null,
+  })),
+})
+
+const errorMessage = (error, fallback) =>
+  error.response?.data?.message ||
+  (error.response?.data?.errors && Object.values(error.response.data.errors).flat().join(' ')) ||
+  fallback
+
+const reloadPoDetailItems = async () => {
+  if (!form.ref_po_id) return
+  try {
+    const res = await apiClient.get(`/operator-mesin/po-detail-items/${form.ref_po_id}`)
+    poDetailItems.value = (res.data.data || []).map((d) => ({ ...d, label: d.item_name }))
+  } catch {
+    showError('Error', 'Gagal memuat ulang daftar produk')
+  }
+}
+
+const tandaiSelesai = async () => {
+  const detail = selectedDetail.value
+  if (!detail) return
+
+  const validLines = getValidLines()
+  const err = lineError(validLines)
+  if (err) { showError('Validasi', err); return }
+
+  const pesan = validLines.length > 0
+    ? `Simpan input proses Mesin ini, lalu tandai ${detail.item_name} Selesai Mesin?`
+    : `Tandai ${detail.item_name} Selesai Mesin? Setelah ini input proses Mesin untuk produk ini dikunci.`
+  if (!confirm(pesan)) return
 
   isMarkingDone.value = true
   try {
-    await apiClient.post(`/operator-mesin/selesai/${form.ref_po_id}`)
-    showSuccess('Selesai', 'PO berhasil ditandai selesai proses Mesin, lanjut ke Assembling')
-    router.push({ name: 'AssemblingView' })
-  } catch (error) {
-    const msg = error.response?.data?.message || 'Gagal menandai selesai'
-    showError('Gagal', msg)
-    if (form.ref_po_id) {
-      try {
-        const res = await apiClient.get(`/operator-mesin/po-detail-items/${form.ref_po_id}`)
-        poDetailItems.value = (res.data.data || []).map((d) => ({ ...d, label: d.item_name }))
-      } catch (_) {}
+    if (validLines.length > 0) {
+      await apiClient.post('/operator-mesin/store', buildPayload(validLines))
+      form.lines           = [newLine()]
+      form.qty_produk_jadi = null
+      form.notes           = ''
     }
+  } catch (error) {
+    showError('Gagal', errorMessage(error, 'Gagal menyimpan proses mesin'))
+    isMarkingDone.value = false
+    return
+  }
+
+  try {
+    const res = await apiClient.post(`/operator-mesin/detail/${detail.id}/selesai`)
+    showSuccess('Selesai', res.data.message || 'Produk ditandai Selesai Mesin')
+  } catch (error) {
+    const prefix = validLines.length > 0 ? 'Input proses Mesin sudah tersimpan, tapi produk belum bisa ditandai selesai. ' : ''
+    showError('Belum Bisa Selesai', prefix + errorMessage(error, 'Gagal menandai selesai'))
   } finally {
+    await reloadPoDetailItems()
+    isMarkingDone.value = false
+  }
+}
+
+const batalSelesai = async () => {
+  const detail = selectedDetail.value
+  if (!detail) return
+  if (!confirm(`Batalkan status Selesai Mesin untuk ${detail.item_name}? Input proses Mesin untuk produk ini akan dibuka lagi.`)) return
+
+  isMarkingDone.value = true
+  try {
+    const res = await apiClient.post(`/operator-mesin/detail/${detail.id}/batal-selesai`)
+    showSuccess('Dibatalkan', res.data.message || 'Status selesai dibatalkan')
+  } catch (error) {
+    showError('Gagal', errorMessage(error, 'Gagal membatalkan status selesai'))
+  } finally {
+    await reloadPoDetailItems()
     isMarkingDone.value = false
   }
 }
@@ -611,50 +725,20 @@ const handleSubmit = async () => {
   if (!form.ref_po_id)                   { showError('Validasi', 'Production Order wajib dipilih'); return }
   if (!form.production_order_detail_id)  { showError('Validasi', 'Produk yang dikerjakan wajib dipilih'); return }
 
-  const validLines = form.lines.filter((l) => l.input_item_id && l.input_qty > 0 && l.output_item_id && l.output_qty > 0)
+  const validLines = getValidLines()
   if (validLines.length === 0) { showError('Validasi', 'Minimal satu baris Komponen → Output wajib diisi'); return }
 
-  for (let i = 0; i < validLines.length; i++) {
-    if (!validLines[i].machine_id) {
-      showError('Validasi', `Baris #${i + 1}: Mesin wajib dipilih`)
-      return
-    }
-    if (validLines[i].input_qty > validLines[i].max_qty && validLines[i].max_qty > 0) {
-      showError('Validasi', `Baris #${i + 1}: Qty melebihi stok S4S tersedia (${validLines[i].max_qty} pcs)`)
-      return
-    }
-  }
+  const err = lineError(validLines)
+  if (err) { showError('Validasi', err); return }
 
   isSubmitting.value = true
   try {
-    const payload = {
-      date:                       form.date,
-      ref_po_id:                  Number(form.ref_po_id),
-      production_order_detail_id: Number(form.production_order_detail_id),
-      qty_produk_jadi:            form.qty_produk_jadi !== null && form.qty_produk_jadi !== '' ? Number(form.qty_produk_jadi) : null,
-      notes:                      form.notes || null,
-      lines: validLines.map((l) => ({
-        machine_id:     Number(l.machine_id),
-        input_item_id:  Number(l.input_item_id),
-        input_qty:      Number(l.input_qty),
-        finishing:      l.finishing || 'natural',
-        output_item_id: Number(l.output_item_id),
-        output_qty:     Number(l.output_qty),
-        reject_qty:     l.reject_qty > 0 ? Number(l.reject_qty) : null,
-        reject_notes:   l.reject_notes || null,
-      })),
-    }
-
-    await apiClient.post('/operator-mesin/store', payload)
+    await apiClient.post('/operator-mesin/store', buildPayload(validLines))
     showSuccess('Sukses', 'Proses Mesin berhasil dicatat, lanjut ke Assembling')
 
     router.push({ name: 'AssemblingView' })
   } catch (error) {
-    const message =
-      error.response?.data?.message ||
-      (error.response?.data?.errors && JSON.stringify(error.response.data.errors)) ||
-      'Gagal menyimpan proses mesin'
-    showError('Gagal', message)
+    showError('Gagal', errorMessage(error, 'Gagal menyimpan proses mesin'))
   } finally {
     isSubmitting.value = false
   }
@@ -779,6 +863,11 @@ onMounted(fetchInitialData)
 .btn-selesai-modern { background: linear-gradient(135deg, #16a34a, #15803d); color: white; box-shadow: 0 4px 12px rgba(22,163,74,0.35); }
 .btn-selesai-modern:hover:not(:disabled) { transform: translateY(-1px); }
 .btn-selesai-modern:disabled { opacity: 0.6; cursor: not-allowed; }
+.selesai-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0.9rem; border-radius: 8px; font-size: 0.85rem; }
+.selesai-bar-done { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+.selesai-bar-ready { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.selesai-bar-pending { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.badge-selesai { background: #16a34a; color: #fff; }
 .btn-submit-modern { background: linear-gradient(135deg, #0891b2, #0e7490); color: white; box-shadow: 0 4px 12px rgba(8,145,178,0.35); }
 .btn-submit-modern:hover:not(:disabled) { transform: translateY(-1px); }
 .btn-submit-modern:disabled { opacity: 0.6; cursor: not-allowed; }
