@@ -11,7 +11,6 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
-    // Cek apakah di browser (bukan SSR)
     if (typeof window !== 'undefined' && window.localStorage) {
       const token = localStorage.getItem('token')
       if (token) {
@@ -19,8 +18,6 @@ apiClient.interceptors.request.use(
       }
     }
 
-    // Atur Content-Type menjadi application/json HANYA JIKA BUKAN FormData.
-    // Untuk FormData (upload file), biarkan browser yang mengaturnya secara otomatis.
     if (!(config.data instanceof FormData)) {
       config.headers['Content-Type'] = 'application/json'
     }
