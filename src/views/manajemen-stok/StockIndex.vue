@@ -236,7 +236,6 @@
                 <th class="th-small">Qty/Set</th>
                 <th class="th-small" :title="isWarehouseFiltered ? 'Khusus gudang yang difilter' : 'Gabungan semua gudang'">Qty Natural</th>
                 <th class="th-small" :title="isWarehouseFiltered ? 'Khusus gudang yang difilter' : 'Gabungan semua gudang'">Qty Warna</th>
-                <th v-if="activeTab === 'operational'" class="th-small">Merk</th>
                 <th class="th-small">Total Stok</th>
                 <th class="th-small">M³ Total</th>
                 <th class="th-small" :title="isWarehouseFiltered ? 'Khusus gudang yang difilter' : 'Gabungan semua gudang'">M³ Natural</th>
@@ -249,6 +248,7 @@
                 <th class="th-number">No</th>
                 <th class="th-code">Kode Item</th>
                 <th class="th-name">Nama Barang</th>
+                <th v-if="activeTab === 'operational'" class="th-small">Merk</th>
                 <th class="th-category">Kategori</th>
                 <th class="th-unit">Satuan</th>
                 <th class="th-stock">Stok</th>
@@ -556,7 +556,6 @@
                         : index + 1
                     }}
                   </div>
-                <td v-if="activeTab === 'operational'" class="td-small">{{ item.merk || '-' }}</td>
                 </td>
                 <td class="td-code">
                   <div class="code-badge-modern">
@@ -574,6 +573,7 @@
                     </div>
                   </div>
                 </td>
+                <td v-if="activeTab === 'operational'" class="td-small">{{ item.merk || '-' }}</td>
                 <td class="td-category">
                   <span class="badge-category-modern">
                     <span class="badge-dot"></span>
@@ -763,10 +763,6 @@
           </table>
         </div>
         <div class="modal-footer">
-            <div class="form-group-dim">
-              <label>Merk</label>
-              <input v-model="editOpsForm.merk" type="text" class="dim-input" placeholder="Merk barang..." />
-            </div>
           <button class="btn-modal-ok" @click="closeDetail">Tutup</button>
         </div>
       </div>
@@ -788,6 +784,10 @@
             <div class="form-group-dim">
               <label>Nama Barang</label>
               <input v-model="editOpsForm.name" type="text" class="dim-input" placeholder="Nama barang..." />
+            </div>
+            <div class="form-group-dim">
+              <label>Merk</label>
+              <input v-model="editOpsForm.merk" type="text" class="dim-input" placeholder="Merk barang..." />
             </div>
             <div class="form-group-dim">
               <label>Satuan</label>
@@ -1255,7 +1255,6 @@ const totalKubikasi = (item, stocks) => {
   }
 
   return totalQtyPcs * m3PerPcs
-    merk:        item.merk          || '',
 }
 
 const openDetail = (item) => {
@@ -1279,7 +1278,6 @@ const closeDetail = () => {
 // Edit Bahan Operasional
 const isEditOpsOpen = ref(false)
 const editOpsItem   = ref(null)
-      item.merk  = editOpsForm.value.merk || null
 const isSavingOps   = ref(false)
 const units         = ref([])
 const editOpsForm   = ref({ code: '', name: '', merk: '', unit_id: null, price: 0, category_id: null })
@@ -1296,6 +1294,7 @@ const openEditOperasional = (item) => {
   editOpsForm.value = {
     code:        item.code          || '',
     name:        item.name          || '',
+    merk:        item.merk          || '',
     unit_id:     item.unit?.id      || null,
     price:       item.price         || 0,
     category_id: item.category?.id  || null,
@@ -1320,6 +1319,7 @@ const saveEditOperasional = async () => {
     if (item) {
       item.code  = editOpsForm.value.code
       item.name  = editOpsForm.value.name
+      item.merk  = editOpsForm.value.merk || null
       item.price = editOpsForm.value.price
       const unit = units.value.find(u => u.id === editOpsForm.value.unit_id)
       if (unit) item.unit = unit

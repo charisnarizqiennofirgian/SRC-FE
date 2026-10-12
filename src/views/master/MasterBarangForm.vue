@@ -690,6 +690,15 @@
                   <span class="input-icon">📦</span>
                   <input
                     v-model.number="form.stock"
+                    type="number"
+                    class="form-control"
+                    placeholder="0"
+                    min="0"
+                    @input="handleInitialStockChange"
+                  />
+                </div>
+              </div>
+
               <div v-if="isBahanOperasionalCategory" class="form-group">
                 <label class="form-label">
                   Merk
@@ -703,15 +712,6 @@
                     class="form-control"
                     placeholder="Masukkan merk barang"
                     maxlength="255"
-                  />
-                </div>
-              </div>
-
-                    type="number"
-                    class="form-control"
-                    placeholder="0"
-                    min="0"
-                    @input="handleInitialStockChange"
                   />
                 </div>
               </div>
@@ -815,7 +815,6 @@ const route = useRoute()
 const { showSuccess, showError } = useNotification()
 
 const isEditMode = computed(() => !!route.params.id)
-  merk: '',
 
 const form = reactive({
   id: null,
@@ -826,6 +825,7 @@ const form = reactive({
   unit_id: '',
   stock: 0,
   price: 0,
+  merk: '',
   initial_warehouse_id: '',
   hs_code: '',
   specifications: {
@@ -868,9 +868,6 @@ const selectedCategoryName = computed(() => {
 
 const isKayuRSTCategory = computed(() =>
   selectedCategoryName.value.toLowerCase().includes('kayu rst'),
-const isBahanOperasionalCategory = computed(() =>
-  selectedCategoryName.value.toLowerCase().includes('bahan'),
-)
 )
 const isKartonBoxCategory = computed(() =>
   selectedCategoryName.value.toLowerCase().includes('karton box'),
@@ -880,6 +877,9 @@ const isProdukJadiCategory = computed(() =>
 )
 const isKayuLogCategory = computed(() =>
   selectedCategoryName.value.toLowerCase().includes('kayu log'),
+)
+const isBahanOperasionalCategory = computed(() =>
+  selectedCategoryName.value.toLowerCase().includes('bahan'),
 )
 
 const mustSelectWarehouse = computed(() => !isEditMode.value && (form.stock || 0) > 0)
@@ -990,7 +990,6 @@ const fetchDropdownData = async () => {
 const fetchItemData = async (itemId) => {
   try {
     const response = await apiClient.get(`/materials/${itemId}?include=unit,category`)
-    form.merk = data.merk || ''
     const data = response.data.data
 
     form.id = data.id
@@ -1001,6 +1000,7 @@ const fetchItemData = async (itemId) => {
     form.unit_id = data.unit_id || ''
     form.stock = parseInt(data.stock) || 0
     form.price = data.price || 0
+    form.merk = data.merk || ''
     form.hs_code = data.hs_code || ''
     form.initial_warehouse_id = data.initial_warehouse_id || ''
 
@@ -1083,7 +1083,6 @@ const handleSubmit = async () => {
     }
     // Jika bahan operasional tanpa gudang, set null
     if (!form.initial_warehouse_id) {
-      merk: isBahanOperasionalCategory.value ? form.merk || null : null,
       form.initial_warehouse_id = null
     }
 
@@ -1095,6 +1094,7 @@ const handleSubmit = async () => {
       unit_id: form.unit_id,
       stock: form.stock || 0,
       price: form.price || 0,
+      merk: isBahanOperasionalCategory.value ? form.merk || null : null,
       initial_warehouse_id: form.initial_warehouse_id || null,
       hs_code: form.hs_code || null,
       specifications: null,
