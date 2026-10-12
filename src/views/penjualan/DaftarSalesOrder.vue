@@ -383,7 +383,7 @@ const paginationPages = computed(() => {
 const fetchSalesOrders = async () => {
   loading.value = true
   try {
-    const response = await apiClient.get('/sales-orders')
+    const response = await apiClient.get('/sales-orders', { params: { per_page: 9999 } })
 
     if (response.data.data?.data) {
       allSalesOrders.value = response.data.data.data
