@@ -60,7 +60,7 @@
               <th class="th-supplier">Supplier</th>
               <th class="th-barang">Barang</th>
               <th class="th-date">Tanggal Pesan</th>
-              <th class="th-date">Tanggal Kirim</th> <!-- ✅ TAMBAH INI -->
+              <th class="th-date">Tanggal Kirim</th>
               <th class="th-total">Total</th>
               <th class="th-status">Status</th>
               <th class="th-action">Aksi</th>
@@ -104,7 +104,6 @@
               <td class="td-date">
                 <span class="date-text">{{ formatTanggal(pesanan.order_date) }}</span>
               </td>
-              <!-- ✅ TAMBAH KOLOM TANGGAL KIRIM -->
               <td class="td-date">
                 <span class="date-text">{{
                   pesanan.delivery_date ? formatTanggal(pesanan.delivery_date) : '-'
@@ -191,7 +190,6 @@
       </div>
     </div>
 
-    <!-- MODAL RIWAYAT PENERIMAAN -->
     <div v-if="modalRiwayat.show" class="modal-overlay" @click.self="modalRiwayat.show = false">
       <div class="modal-riwayat">
         <div class="modal-head">
@@ -343,8 +341,6 @@ const perHalaman = ref(parseInt(route.query.per_page) || 15)
 const totalHalaman = ref(1)
 const totalItem = ref(0)
 
-// Sinkronkan pagination/search/per-page ke URL supaya tidak reset ke halaman 1
-// saat kembali dari Detail/Edit/Terima Barang (lihat kasus serupa di menu PR).
 const syncQuery = () => {
   const query = {}
   if (halamanSekarang.value > 1) query.page = halamanSekarang.value
@@ -1087,7 +1083,6 @@ const formatRupiah = (angka) => {
   }
 }
 
-/* ===== RIWAYAT PENERIMAAN ===== */
 .btn-history {
   background: linear-gradient(135deg, #0369a1, #0284c7);
   color: white;

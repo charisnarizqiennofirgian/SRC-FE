@@ -30,7 +30,6 @@
 
       <div class="card-body">
         <form @submit.prevent="handleSubmit">
-          <!-- INFORMASI DASAR -->
           <div class="form-section">
             <div class="section-title">
               <span class="section-icon">📝</span>
@@ -77,7 +76,6 @@
             </div>
           </div>
 
-          <!-- KLASIFIKASI -->
           <div class="form-section">
             <div class="section-title">
               <span class="section-icon">🗂️</span>
@@ -131,7 +129,6 @@
             </div>
           </div>
 
-          <!-- DATA EKSPOR (PRODUK JADI) -->
           <transition name="slide-fade">
             <div v-if="isProdukJadiCategory" class="form-section">
               <div class="section-title section-title-accent">
@@ -164,7 +161,6 @@
             </div>
           </transition>
 
-          <!-- SPESIFIKASI KAYU LOG -->
           <transition name="slide-fade">
             <div v-if="isKayuLogCategory" class="form-section">
               <div class="section-title section-title-accent">
@@ -347,7 +343,6 @@
             </div>
           </transition>
 
-          <!-- SPESIFIKASI KAYU RST -->
           <transition name="slide-fade">
             <div v-if="isKayuRSTCategory" class="form-section">
               <div class="section-title section-title-accent">
@@ -409,7 +404,6 @@
                 </div>
               </div>
 
-              <!-- Cutting Size -->
               <div class="form-row form-row-triple">
                 <div class="form-group">
                   <label class="form-label">
@@ -516,7 +510,6 @@
             </div>
           </transition>
 
-          <!-- KARTON BOX -->
           <transition name="slide-fade">
             <div v-if="isKartonBoxCategory" class="form-section">
               <div class="section-title section-title-accent">
@@ -580,7 +573,6 @@
             </div>
           </transition>
 
-          <!-- DNA PRODUK JADI -->
           <transition name="slide-fade">
             <div v-if="isProdukJadiCategory" class="form-section">
               <div class="section-title section-title-accent">
@@ -674,7 +666,6 @@
             </div>
           </transition>
 
-          <!-- DETAIL TAMBAHAN -->
           <div class="form-section">
             <div class="section-title">
               <span class="section-icon">📊</span>
@@ -782,7 +773,6 @@
             </div>
           </div>
 
-          <!-- ACTIONS -->
           <div class="form-actions">
             <button
               type="button"
@@ -1081,7 +1071,6 @@ const handleSubmit = async () => {
       showError('Validasi Gagal', 'Silakan pilih Gudang untuk Stok Awal.')
       return
     }
-    // Jika bahan operasional tanpa gudang, set null
     if (!form.initial_warehouse_id) {
       form.initial_warehouse_id = null
     }

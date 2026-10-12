@@ -1,6 +1,5 @@
 <template>
   <DashboardLayout>
-    <!-- HEADER -->
     <div class="page-header-stock">
       <div class="header-content-wrapper">
         <div class="header-left-section">
@@ -48,7 +47,6 @@
       </div>
     </div>
 
-    <!-- TABS -->
     <div class="tabs-container-modern">
       <button
         v-for="tab in tabs"
@@ -62,7 +60,6 @@
       </button>
     </div>
 
-    <!-- LOADING -->
     <InventarisTab v-if="activeTab === 'inventaris'" />
 
     <div v-else-if="loading" class="loading-container-modern">
@@ -73,9 +70,7 @@
       </div>
     </div>
 
-    <!-- CONTENT -->
     <div v-else class="content-card-stock">
-      <!-- CARD HEADER -->
       <div class="card-header-stock">
         <div class="header-left-info">
           <div class="header-icon-badge">
@@ -101,7 +96,6 @@
         </div>
       </div>
 
-      <!-- FILTER -->
       <div class="card-filter-modern">
         <div class="filter-left-group">
           <div class="search-box-modern">
@@ -168,12 +162,10 @@
         </div>
       </div>
 
-      <!-- TABLE -->
       <div class="card-body-stock">
         <div class="table-container-modern">
           <table class="table-stock-modern">
             <thead>
-              <!-- HEADER KAYU LOG -->
               <tr v-if="activeTab === 'logs'">
                 <th class="th-number">No</th>
                 <th class="th-code">Kode</th>
@@ -189,7 +181,6 @@
                 <th class="th-small">Mutu</th>
               </tr>
 
-              <!-- HEADER KAYU RST -->
               <tr v-else-if="activeTab === 'rst'">
                 <th class="th-number">No</th>
                 <th class="th-code">Kode</th>
@@ -206,7 +197,6 @@
                 <th class="th-small">Kubikasi (m³)</th>
               </tr>
 
-              <!-- HEADER KARTON BOX -->
               <tr v-else-if="activeTab === 'packaging'">
                 <th class="th-number">No</th>
                 <th class="th-code">Kode</th>
@@ -222,7 +212,6 @@
                 <th class="th-small">Aksi</th>
               </tr>
 
-              <!-- HEADER KOMPONEN -->
               <tr v-else-if="activeTab === 'component'">
                 <th class="th-number">No</th>
                 <th class="th-code">Kode</th>
@@ -243,7 +232,6 @@
                 <th class="th-small">Aksi</th>
               </tr>
 
-              <!-- HEADER KATEGORI LAIN -->
               <tr v-else>
                 <th class="th-number">No</th>
                 <th class="th-code">Kode Item</th>
@@ -279,7 +267,6 @@
                 </td>
               </tr>
 
-              <!-- ROWS KAYU LOG -->
               <tr
                 v-else-if="activeTab === 'logs'"
                 v-for="(item, index) in filteredReport"
@@ -340,7 +327,6 @@
                 </td>
               </tr>
 
-              <!-- ROWS KAYU RST — satu baris per (item, grade) -->
               <tr
                 v-else-if="activeTab === 'rst'"
                 v-for="(item, index) in rstRows"
@@ -386,7 +372,6 @@
                 </td>
               </tr>
 
-              <!-- ROWS KARTON BOX -->
               <tr
                 v-else-if="activeTab === 'packaging'"
                 v-for="(item, index) in filteredReport"
@@ -459,7 +444,6 @@
                 </td>
               </tr>
 
-              <!-- ROWS KOMPONEN -->
               <tr
                 v-else-if="activeTab === 'component'"
                 v-for="(item, index) in filteredReport"
@@ -541,7 +525,6 @@
                 </td>
               </tr>
 
-              <!-- ROWS KATEGORI LAIN -->
               <tr
                 v-else
                 v-for="(item, index) in filteredReport"
@@ -619,7 +602,6 @@
         </div>
       </div>
 
-      <!-- PAGINATION -->
       <div v-if="activePagination && activePagination.last_page > 1" class="card-footer-modern">
         <div class="pagination-info-modern">
           <span class="info-icon">📄</span>
@@ -663,7 +645,6 @@
       </div>
     </div>
 
-    <!-- MODAL EDIT DIMENSI KARTON BOX -->
     <div v-if="isEditDimOpen" class="modal-overlay">
       <div class="modal-card">
         <div class="modal-header">
@@ -695,7 +676,6 @@
             </div>
           </div>
 
-          <!-- Riwayat -->
           <div v-if="dimHistories.length > 0" class="dim-history">
             <h4>📋 Riwayat Perubahan</h4>
             <table class="dim-history-table">
@@ -730,7 +710,6 @@
       </div>
     </div>
 
-    <!-- MODAL DETAIL STOK -->
     <div v-if="isDetailOpen" class="modal-overlay">
       <div class="modal-card">
         <div class="modal-header">
@@ -768,7 +747,6 @@
       </div>
     </div>
 
-    <!-- MODAL EDIT BAHAN OPERASIONAL -->
     <div v-if="isEditOpsOpen" class="modal-overlay">
       <div class="modal-card">
         <div class="modal-header">
@@ -809,7 +787,6 @@
         </div>
       </div>
     </div>
-    <!-- MODAL EDIT KOMPONEN -->
     <div v-if="isEditKompOpen" class="modal-overlay">
       <div class="modal-card">
         <div class="modal-header">
@@ -915,9 +892,6 @@ const isDetailOpen = ref(false)
 const detailItem = ref(null)
 const detailStocks = ref([])
 
-// Backend mengirim qty_natural_scoped/qty_warna_scoped (dari inventories per gudang) — akurat
-// baik saat filter gudang aktif maupun "Semua Gudang". isWarehouseFiltered dipakai untuk label
-// tooltip header saja (bukan lagi untuk menyembunyikan kolom).
 const isWarehouseFiltered = computed(() => !!selectedWarehouseId.value)
 
 const uniqueTpk = computed(() => {
@@ -1090,12 +1064,9 @@ const filteredStocks = (stocks = []) => {
   return stocks.filter((s) => Number(s.warehouse_id) === Number(selectedWarehouseId.value))
 }
 
-// Data setelah semua filter client-side diterapkan (gudang + search)
 const baseFilteredData = computed(() => {
   let data = reportData.value
 
-  // Filter gudang client-side untuk tab yang memiliki item.stocks,
-  // hanya ketika server tidak mengembalikan paginated response
   if (selectedWarehouseId.value && !pagination.value && activeTab.value !== 'operational') {
     data = data.filter((item) => {
       if (!Array.isArray(item.stocks)) return true
@@ -1189,12 +1160,10 @@ const totalQty = (stocks) => {
   return (stocks || []).reduce((sum, s) => sum + parseFloat(s.qty || 0), 0)
 }
 
-// RST tab: satu baris per (item, grade) — eksplode inventory per grade
 const rstRows = computed(() => {
   const rows = []
   for (const item of filteredReport.value) {
     const stocks = filteredStocks(item.stocks || [])
-    // Kelompokkan inventory per grade
     const gradeMap = {}
     for (const inv of stocks) {
       const key = inv.grade ?? '__none__'
@@ -1203,7 +1172,6 @@ const rstRows = computed(() => {
     }
     const grades = Object.values(gradeMap)
     if (grades.length === 0) {
-      // Belum ada inventory row → tampilkan satu baris dengan kualitas item
       rows.push({ ...item, _grade: item.kualitas || null, _qty: parseFloat(item.stock) || 0 })
     } else {
       for (const g of grades) {
@@ -1214,7 +1182,6 @@ const rstRows = computed(() => {
   return rows
 })
 
-// Kubikasi untuk qty tertentu (dipakai di RST per-grade row)
 const kubikasiPerGrade = (item, qty) => {
   if (!item) return 0
   const spec = item.specifications
@@ -1236,21 +1203,16 @@ const totalKubikasi = (item, stocks) => {
     return Number(item.kubikasi || 0)
   }
 
-  // Hitung total qty dari stok
   const totalQtyPcs = stocks?.reduce((acc, s) => acc + (parseFloat(s.qty_pcs) || 0), 0) ?? 0
 
-  // Ambil m3_per_pcs dari specifications
   const spec = item.specifications
   let m3PerPcs = 0
 
   if (spec?.m3_per_pcs) {
-    // Data dari Excel upload — sudah ada m3_per_pcs
     m3PerPcs = parseFloat(spec.m3_per_pcs) || 0
   } else if (spec?.t && spec?.l && spec?.p) {
-    // Data dari quick store — hitung manual dari dimensi mm
     m3PerPcs = (parseFloat(spec.t) * parseFloat(spec.l) * parseFloat(spec.p)) / 1_000_000_000
   } else if (item.volume_m3) {
-    // Fallback ke volume_m3 di item
     m3PerPcs = parseFloat(item.volume_m3) || 0
   }
 
@@ -1275,7 +1237,6 @@ const closeDetail = () => {
   detailStocks.value = []
 }
 
-// Edit Bahan Operasional
 const isEditOpsOpen = ref(false)
 const editOpsItem   = ref(null)
 const isSavingOps   = ref(false)
@@ -1286,7 +1247,7 @@ const fetchUnits = async () => {
   try {
     const res = await apiClient.get('/units/all')
     units.value = res.data.data || []
-  } catch { /* silent */ }
+  } catch {}
 }
 
 const openEditOperasional = (item) => {
@@ -1314,7 +1275,6 @@ const saveEditOperasional = async () => {
   try {
     await apiClient.put(`/materials/${editOpsItem.value.id}`, editOpsForm.value)
     toast.success('Barang berhasil diperbarui!')
-    // Update data lokal
     const item = reportData.value.find(i => i.id === editOpsItem.value.id)
     if (item) {
       item.code  = editOpsForm.value.code
@@ -1332,7 +1292,6 @@ const saveEditOperasional = async () => {
   }
 }
 
-// Edit Komponen
 const isEditKompOpen = ref(false)
 const editKompItem = ref(null)
 const isSavingKomp = ref(false)
@@ -1380,7 +1339,6 @@ const saveEditKomp = async () => {
   }
 }
 
-// Edit Dimensi Karton Box
 const isEditDimOpen = ref(false)
 const editDimItem = ref(null)
 const editDimForm = ref({ p: 0, l: 0, t: 0, notes: '' })
@@ -1446,9 +1404,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ========================================
-   PAGE HEADER - GRADIENT & MODERN
-   ======================================== */
 .page-header-stock {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 2rem 2.5rem;
@@ -1558,9 +1513,6 @@ onMounted(() => {
   line-height: 1;
 }
 
-/* ========================================
-   TABS - MODERN PILLS
-   ======================================== */
 .tabs-container-modern {
   display: flex;
   gap: 1rem;
@@ -1610,9 +1562,6 @@ onMounted(() => {
   font-size: 0.875rem;
 }
 
-/* ========================================
-   LOADING STATE
-   ======================================== */
 .loading-container-modern {
   display: flex;
   justify-content: center;
@@ -1656,9 +1605,6 @@ onMounted(() => {
   margin: 0;
 }
 
-/* ========================================
-   CONTENT CARD
-   ======================================== */
 .content-card-stock {
   background: white;
   border-radius: 20px;
@@ -1667,7 +1613,6 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* CARD HEADER */
 .card-header-stock {
   display: flex;
   justify-content: space-between;
@@ -1765,9 +1710,6 @@ onMounted(() => {
   color: #1e40af;
 }
 
-/* ========================================
-   FILTER SECTION
-   ======================================== */
 .card-filter-modern {
   display: flex;
   justify-content: space-between;
@@ -1890,9 +1832,6 @@ onMounted(() => {
   font-weight: 500;
 }
 
-/* ========================================
-   TABLE SECTION
-   ======================================== */
 .card-body-stock {
   padding: 0;
 }
@@ -1939,7 +1878,6 @@ onMounted(() => {
   box-shadow: inset 0 0 0 1px #e5e7eb;
 }
 
-/* TABLE CELLS */
 .th-number {
   width: 60px;
 }
@@ -2046,7 +1984,6 @@ onMounted(() => {
   font-size: 0.875rem;
 }
 
-/* STOCK PER WAREHOUSE */
 .stock-warehouse-list {
   display: flex;
   flex-direction: column;
@@ -2129,9 +2066,6 @@ onMounted(() => {
   color: #1e3a8a;
 }
 
-/* ========================================
-   EMPTY STATE
-   ======================================== */
 .empty-row-modern .empty-cell-modern {
   padding: 5rem 2rem;
   text-align: center;
@@ -2173,9 +2107,6 @@ onMounted(() => {
   line-height: 1.6;
 }
 
-/* ========================================
-   PAGINATION
-   ======================================== */
 .card-footer-modern {
   display: flex;
   justify-content: space-between;
@@ -2253,9 +2184,6 @@ onMounted(() => {
   font-size: 1rem;
 }
 
-/* ========================================
-   RESPONSIVE
-   ======================================== */
 @media (max-width: 1024px) {
   .header-content-wrapper {
     flex-direction: column;
@@ -2412,9 +2340,6 @@ onMounted(() => {
   font-size: 0.875rem;
 }
 
-/* ========================================
-   MODAL STYLES
-   ======================================== */
 .modal-overlay {
   position: fixed;
   top: 0;
