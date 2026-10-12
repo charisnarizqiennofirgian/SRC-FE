@@ -82,7 +82,25 @@
               <td class="right">{{ line ? formatUang(line.amount) : '' }}</td>
             </tr>
           </tbody>
-          <tfoot>
+          <tfoot v-if="page.isLast && hasPpn">
+            <tr class="bpb-foot bpb-foot-sub">
+              <td colspan="3" rowspan="3" class="bpb-notes">
+                <span class="notes-label">Catatan :</span>
+                <span class="notes-text">{{ notesText }}</span>
+              </td>
+              <td class="total-label">Subtotal</td>
+              <td class="right">{{ formatUang(data.subtotal) }}</td>
+            </tr>
+            <tr class="bpb-foot bpb-foot-sub">
+              <td class="total-label">PPN {{ ppnLabel }}%</td>
+              <td class="right">{{ formatUang(data.ppn_amount) }}</td>
+            </tr>
+            <tr class="bpb-foot bpb-foot-sub">
+              <td class="total-label">Total</td>
+              <td class="right total-value">{{ formatUang(data.total) }}</td>
+            </tr>
+          </tfoot>
+          <tfoot v-else>
             <tr class="bpb-foot">
               <td colspan="3" class="bpb-notes">
                 <span class="notes-label">Catatan :</span>
@@ -149,6 +167,13 @@ const notesText = computed(() => {
   if (data.value.supplier_document_number) parts.push(`SJ Supplier: ${data.value.supplier_document_number}`)
   if (data.value.notes) parts.push(data.value.notes)
   return parts.join(' — ')
+})
+
+const hasPpn = computed(() => (parseFloat(data.value?.ppn_amount) || 0) > 0)
+
+const ppnLabel = computed(() => {
+  const value = parseFloat(data.value?.ppn_percentage) || 0
+  return value === 11.12 ? 12 : value
 })
 
 const formatTanggal = (tanggal) => {
@@ -374,6 +399,11 @@ onBeforeUnmount(() => {
   height: 9mm;
   vertical-align: top;
   padding-top: 1mm;
+}
+
+.bpb-foot-sub td {
+  height: 5.6mm;
+  padding-top: 0.6mm;
 }
 
 .bpb-notes {
