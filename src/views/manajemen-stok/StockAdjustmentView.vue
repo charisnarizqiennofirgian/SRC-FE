@@ -340,7 +340,8 @@
                 <strong>Karton Box</strong> (barang umum).
               </p>
               <p class="info-sub">
-                Template hanya butuh 6 kolom: kode, nama, kategori, satuan, stok_awal, deskripsi.
+                Kolom template: kode, nama, kategori, satuan, stok_awal, gudang_awal, harga, merk
+                (merk opsional).
               </p>
             </div>
           </div>

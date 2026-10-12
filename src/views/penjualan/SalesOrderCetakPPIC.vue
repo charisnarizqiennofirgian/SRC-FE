@@ -119,11 +119,13 @@ const toast = useToast()
 const loading = ref(true)
 const salesOrder = ref(null)
 const soId = ref(route.params.id)
+const isDrafterMode = route.meta.soSource === 'dokumen'
 
 const fetchSalesOrder = async () => {
   loading.value = true
   try {
-    const response = await apiClient.get(`/sales-orders/${soId.value}`)
+    const url = isDrafterMode ? `/dokumen/sales-orders/${soId.value}` : `/sales-orders/${soId.value}`
+    const response = await apiClient.get(url)
     salesOrder.value = response.data.data
   } catch (error) {
     console.error('Error fetching sales order:', error)
@@ -133,12 +135,19 @@ const fetchSalesOrder = async () => {
   }
 }
 
-const handlePrint = () => {
+const handlePrint = async () => {
+  if (isDrafterMode && salesOrder.value?.is_final) {
+    try {
+      await apiClient.post(`/dokumen/sales-orders/${soId.value}/printed`)
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Gagal mencatat riwayat cetak SO.')
+    }
+  }
   window.print()
 }
 
 const goBack = () => {
-  router.push({ name: 'DaftarSalesOrder' })
+  router.push({ name: isDrafterMode ? 'SoTerbaru' : 'DaftarSalesOrder' })
 }
 
 const formatDisplayDate = (dateString) => {

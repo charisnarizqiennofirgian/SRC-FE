@@ -675,6 +675,18 @@ const router = createRouter({
       component: () => import('../views/dokumen/FileBuyerView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/dokumen/so-terbaru',
+      name: 'SoTerbaru',
+      component: () => import('../views/dokumen/SoTerbaruView.vue'),
+      meta: { requiresAuth: true, title: 'SO Terbaru' },
+    },
+    {
+      path: '/dokumen/so-terbaru/:id/cetak',
+      name: 'CetakSoDrafter',
+      component: SalesOrderCetakPPIC,
+      meta: { requiresAuth: true, title: 'Cetak SO (PPIC)', soSource: 'dokumen' },
+    },
 
     {
       path: '/stock-index',

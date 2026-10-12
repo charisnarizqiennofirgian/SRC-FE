@@ -690,6 +690,23 @@
                   <span class="input-icon">📦</span>
                   <input
                     v-model.number="form.stock"
+              <div v-if="isBahanOperasionalCategory" class="form-group">
+                <label class="form-label">
+                  Merk
+                  <span class="label-hint">(Opsional)</span>
+                </label>
+                <div class="input-wrapper">
+                  <span class="input-icon">🏷️</span>
+                  <input
+                    v-model="form.merk"
+                    type="text"
+                    class="form-control"
+                    placeholder="Masukkan merk barang"
+                    maxlength="255"
+                  />
+                </div>
+              </div>
+
                     type="number"
                     class="form-control"
                     placeholder="0"
@@ -798,6 +815,7 @@ const route = useRoute()
 const { showSuccess, showError } = useNotification()
 
 const isEditMode = computed(() => !!route.params.id)
+  merk: '',
 
 const form = reactive({
   id: null,
@@ -850,6 +868,9 @@ const selectedCategoryName = computed(() => {
 
 const isKayuRSTCategory = computed(() =>
   selectedCategoryName.value.toLowerCase().includes('kayu rst'),
+const isBahanOperasionalCategory = computed(() =>
+  selectedCategoryName.value.toLowerCase().includes('bahan'),
+)
 )
 const isKartonBoxCategory = computed(() =>
   selectedCategoryName.value.toLowerCase().includes('karton box'),
@@ -969,6 +990,7 @@ const fetchDropdownData = async () => {
 const fetchItemData = async (itemId) => {
   try {
     const response = await apiClient.get(`/materials/${itemId}?include=unit,category`)
+    form.merk = data.merk || ''
     const data = response.data.data
 
     form.id = data.id
@@ -1061,6 +1083,7 @@ const handleSubmit = async () => {
     }
     // Jika bahan operasional tanpa gudang, set null
     if (!form.initial_warehouse_id) {
+      merk: isBahanOperasionalCategory.value ? form.merk || null : null,
       form.initial_warehouse_id = null
     }
 

@@ -236,6 +236,7 @@
                 <th class="th-small">Qty/Set</th>
                 <th class="th-small" :title="isWarehouseFiltered ? 'Khusus gudang yang difilter' : 'Gabungan semua gudang'">Qty Natural</th>
                 <th class="th-small" :title="isWarehouseFiltered ? 'Khusus gudang yang difilter' : 'Gabungan semua gudang'">Qty Warna</th>
+                <th v-if="activeTab === 'operational'" class="th-small">Merk</th>
                 <th class="th-small">Total Stok</th>
                 <th class="th-small">M³ Total</th>
                 <th class="th-small" :title="isWarehouseFiltered ? 'Khusus gudang yang difilter' : 'Gabungan semua gudang'">M³ Natural</th>
@@ -259,7 +260,7 @@
             <tbody>
               <tr v-if="filteredReport.length === 0" class="empty-row-modern">
                 <td
-                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 13 : activeTab === 'packaging' ? 12 : activeTab === 'component' ? 17 : activeTab === 'operational' ? 8 : 6"
+                  :colspan="activeTab === 'logs' ? 12 : activeTab === 'rst' ? 13 : activeTab === 'packaging' ? 12 : activeTab === 'component' ? 17 : activeTab === 'operational' ? 9 : 6"
                   class="empty-cell-modern"
                 >
                   <div class="empty-state-content">
@@ -555,6 +556,7 @@
                         : index + 1
                     }}
                   </div>
+                <td v-if="activeTab === 'operational'" class="td-small">{{ item.merk || '-' }}</td>
                 </td>
                 <td class="td-code">
                   <div class="code-badge-modern">
@@ -761,6 +763,10 @@
           </table>
         </div>
         <div class="modal-footer">
+            <div class="form-group-dim">
+              <label>Merk</label>
+              <input v-model="editOpsForm.merk" type="text" class="dim-input" placeholder="Merk barang..." />
+            </div>
           <button class="btn-modal-ok" @click="closeDetail">Tutup</button>
         </div>
       </div>
@@ -1249,6 +1255,7 @@ const totalKubikasi = (item, stocks) => {
   }
 
   return totalQtyPcs * m3PerPcs
+    merk:        item.merk          || '',
 }
 
 const openDetail = (item) => {
@@ -1272,9 +1279,10 @@ const closeDetail = () => {
 // Edit Bahan Operasional
 const isEditOpsOpen = ref(false)
 const editOpsItem   = ref(null)
+      item.merk  = editOpsForm.value.merk || null
 const isSavingOps   = ref(false)
 const units         = ref([])
-const editOpsForm   = ref({ code: '', name: '', unit_id: null, price: 0, category_id: null })
+const editOpsForm   = ref({ code: '', name: '', merk: '', unit_id: null, price: 0, category_id: null })
 
 const fetchUnits = async () => {
   try {

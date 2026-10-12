@@ -78,8 +78,15 @@
           <h3 class="breadcrumb">ERP Surya Bangkit Cemerlang</h3>
         </div>
         <div class="header-right">
-          <button class="notification-btn" title="Notifikasi">
+          <button
+            class="notification-btn"
+            :title="canSeeSo() ? (pendingCount > 0 ? `${pendingCount} SO perlu ditindaklanjuti` : 'Tidak ada SO baru') : 'Notifikasi'"
+            @click="onBellClick"
+          >
             <span class="bell-icon">🔔</span>
+            <span v-if="canSeeSo() && pendingCount > 0" class="bell-badge">
+              {{ pendingCount > 99 ? '99+' : pendingCount }}
+            </span>
           </button>
 
           <span class="welcome-text">Selamat Datang, {{ userName }}</span>
@@ -110,12 +117,18 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useSoPrintNotifier } from '../composables/useSoPrintNotifier'
 
 const router = useRouter()
 const route = useRoute()
 const userName = ref('User')
 const userPermissions = ref([]) // ✅ TAMBAH
 const userMenuOpen = ref(false)
+const { pendingCount, canSeeSo, start: startSoNotifier } = useSoPrintNotifier()
+
+const onBellClick = () => {
+  if (canSeeSo()) router.push({ name: 'SoTerbaru' })
+}
 const sidebarOpen = ref(false)
 
 const showBackButton = computed(() => route.name !== 'dashboard')
@@ -206,6 +219,7 @@ const allMenuItems = [
     children: [
       { name: 'Manajemen Dokumen', route: { name: 'Dokumen' }, permission: 'dokumen-lihat' },
       { name: 'File Buyer', route: { name: 'FileBuyer' }, permission: 'dokumen-lihat' },
+      { name: 'SO Terbaru', route: { name: 'SoTerbaru' }, permission: 'dokumen-so' },
     ],
   },
   {
@@ -377,11 +391,13 @@ const logout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     localStorage.removeItem('permissions') 
+    sessionStorage.removeItem('so_print_known')
     router.push('/')
   }
 }
 
 onMounted(() => {
+  startSoNotifier(router)
   const userData = localStorage.getItem('user')
   if (userData) {
     try {
@@ -810,6 +826,27 @@ watch(
   border-radius: 10px;
   transition: all 0.2s;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.notification-btn {
+  position: relative;
+}
+
+.bell-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: #e53935;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  box-shadow: 0 0 0 2px #fff;
 }
 
 .notification-btn:hover {
