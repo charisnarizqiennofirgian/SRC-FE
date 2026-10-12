@@ -82,18 +82,14 @@
               <td class="right">{{ line ? formatUang(line.amount) : '' }}</td>
             </tr>
           </tbody>
-          <tfoot v-if="page.isLast && hasPpn">
-            <tr class="bpb-foot bpb-foot-sub">
-              <td colspan="3" rowspan="3" class="bpb-notes">
+          <tfoot v-if="page.isLast && summaryRows.length">
+            <tr v-for="(row, rowIndex) in summaryRows" :key="row.label" class="bpb-foot bpb-foot-sub">
+              <td v-if="rowIndex === 0" colspan="3" :rowspan="summaryRows.length + 1" class="bpb-notes">
                 <span class="notes-label">Catatan :</span>
                 <span class="notes-text">{{ notesText }}</span>
               </td>
-              <td class="total-label">Subtotal</td>
-              <td class="right">{{ formatUang(data.subtotal) }}</td>
-            </tr>
-            <tr class="bpb-foot bpb-foot-sub">
-              <td class="total-label">PPN {{ ppnLabel }}%</td>
-              <td class="right">{{ formatUang(data.ppn_amount) }}</td>
+              <td class="total-label">{{ row.label }}</td>
+              <td class="right">{{ formatUang(row.value) }}</td>
             </tr>
             <tr class="bpb-foot bpb-foot-sub">
               <td class="total-label">Total</td>
@@ -165,15 +161,25 @@ const notesText = computed(() => {
   const parts = []
   if (data.value.peruntukan) parts.push(`Peruntukan: ${data.value.peruntukan}`)
   if (data.value.supplier_document_number) parts.push(`SJ Supplier: ${data.value.supplier_document_number}`)
+  if (data.value.other_cost_description) parts.push(`Ongkir: ${data.value.other_cost_description}`)
   if (data.value.notes) parts.push(data.value.notes)
   return parts.join(' — ')
 })
 
-const hasPpn = computed(() => (parseFloat(data.value?.ppn_amount) || 0) > 0)
-
 const ppnLabel = computed(() => {
   const value = parseFloat(data.value?.ppn_percentage) || 0
   return value === 11.12 ? 12 : value
+})
+
+const summaryRows = computed(() => {
+  if (!data.value) return []
+  const ppn = parseFloat(data.value.ppn_amount) || 0
+  const otherCost = parseFloat(data.value.other_cost) || 0
+  if (ppn <= 0 && otherCost <= 0) return []
+  const rows = [{ label: 'Subtotal', value: data.value.subtotal }]
+  if (ppn > 0) rows.push({ label: `PPN ${ppnLabel.value}%`, value: ppn })
+  if (otherCost > 0) rows.push({ label: 'Ongkir', value: otherCost })
+  return rows
 })
 
 const formatTanggal = (tanggal) => {

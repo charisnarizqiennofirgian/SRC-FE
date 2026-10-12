@@ -255,6 +255,14 @@
                     <td class="text-right">{{ d.subtotal ? formatRupiah(d.subtotal) : '-' }}</td>
                   </tr>
                 </tbody>
+                <tfoot v-if="gr.other_cost > 0">
+                  <tr class="gr-ongkir">
+                    <td colspan="3">
+                      Ongkir<span v-if="gr.other_cost_description"> — {{ gr.other_cost_description }}</span>
+                    </td>
+                    <td class="text-right">{{ formatRupiah(gr.other_cost) }}</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </template>
@@ -1180,5 +1188,6 @@ const formatRupiah = (angka) => {
 }
 .gr-table td { padding: 9px 14px; border-bottom: 1px solid #f1f5f9; }
 .gr-table tr:last-child td { border-bottom: none; }
+.gr-table .gr-ongkir td { border-top: 1px dashed #cbd5e1; font-weight: 600; color: #475569; background: #f8fafc; }
 .text-right { text-align: right; }
 </style>

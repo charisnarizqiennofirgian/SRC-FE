@@ -68,7 +68,7 @@
               <th class="th-supplier">Supplier</th>
               <th class="th-barang">Barang</th>
               <th class="th-date">Tanggal Pesan</th>
-              <th class="th-date">Tanggal Kirim</th> <!-- ✅ TAMBAH INI -->
+              <th class="th-date">Tanggal Kirim</th>
               <th class="th-total">Total</th>
               <th class="th-status">Status</th>
               <th class="th-action">Aksi</th>
@@ -112,7 +112,6 @@
               <td class="td-date">
                 <span class="date-text">{{ formatTanggal(pesanan.order_date) }}</span>
               </td>
-              <!-- ✅ TAMBAH KOLOM TANGGAL KIRIM -->
               <td class="td-date">
                 <span class="date-text">{{
                   pesanan.delivery_date ? formatTanggal(pesanan.delivery_date) : '-'
@@ -208,7 +207,6 @@
       </div>
     </div>
 
-    <!-- MODAL RIWAYAT PENERIMAAN -->
     <div v-if="modalRiwayat.show" class="modal-overlay" @click.self="modalRiwayat.show = false">
       <div class="modal-riwayat">
         <div class="modal-head">
@@ -274,6 +272,14 @@
                     <td class="text-right">{{ d.subtotal ? formatRupiah(d.subtotal) : '-' }}</td>
                   </tr>
                 </tbody>
+                <tfoot v-if="gr.other_cost > 0">
+                  <tr class="gr-ongkir">
+                    <td colspan="3">
+                      Ongkir<span v-if="gr.other_cost_description"> — {{ gr.other_cost_description }}</span>
+                    </td>
+                    <td class="text-right">{{ formatRupiah(gr.other_cost) }}</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </template>
@@ -1151,7 +1157,6 @@ const formatRupiah = (angka) => {
   }
 }
 
-/* ===== RIWAYAT PENERIMAAN ===== */
 .btn-history {
   background: linear-gradient(135deg, #0369a1, #0284c7);
   color: white;
@@ -1249,5 +1254,6 @@ const formatRupiah = (angka) => {
 }
 .gr-table td { padding: 9px 14px; border-bottom: 1px solid #f1f5f9; }
 .gr-table tr:last-child td { border-bottom: none; }
+.gr-table .gr-ongkir td { border-top: 1px dashed #cbd5e1; font-weight: 600; color: #475569; background: #f8fafc; }
 .text-right { text-align: right; }
 </style>
