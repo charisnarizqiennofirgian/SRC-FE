@@ -578,6 +578,12 @@ const router = createRouter({
       meta: { title: 'Edit Konfirmasi Pengiriman', requiresAuth: true },
     },
     {
+      path: '/admin/produksi/konfirmasi-pengiriman/:id/cetak-do',
+      name: 'KonfirmasiPengirimanCetakDo',
+      component: () => import('../views/produksi/CetakDoSupirView.vue'),
+      meta: { title: 'Cetak Delivery Order (Supir)', requiresAuth: true },
+    },
+    {
       path: '/admin/produksi/material-usage',
       name: 'MaterialUsageView',
       component: MaterialUsageView,

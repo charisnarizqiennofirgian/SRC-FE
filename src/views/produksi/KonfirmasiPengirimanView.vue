@@ -76,15 +76,27 @@
               </td>
               <td class="cell-user">{{ row.user?.name || '-' }}</td>
               <td class="text-center">
-                <button
-                  v-if="canEdit(row)"
-                  class="btn-edit-konfirmasi"
-                  title="Edit barang & qty yang dikirim"
-                  @click="goToEdit(row)"
-                >
-                  ✏️ Edit
-                </button>
-                <span v-else class="cell-user" :title="lockedReason(row)">🔒</span>
+                <div class="action-group">
+                  <button
+                    v-if="canEdit(row)"
+                    class="btn-edit-konfirmasi"
+                    title="Edit barang & qty yang dikirim"
+                    @click="goToEdit(row)"
+                  >
+                    ✏️ Edit
+                  </button>
+                  <span v-else class="cell-user" :title="lockedReason(row)">🔒</span>
+                  <button
+                    class="btn-edit-konfirmasi"
+                    title="Edit keterangan per barang di Delivery Order (Supir)"
+                    @click="openRemarkModal(row)"
+                  >
+                    📝 Keterangan
+                  </button>
+                  <button class="btn-edit-konfirmasi" title="Cetak Delivery Order (Supir)" @click="goToPrint(row)">
+                    🖨️ Cetak DO
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -107,11 +119,72 @@
         </div>
       </div>
     </div>
+
+    <div v-if="remarkModal.open" class="modal-overlay-remark" @click.self="closeRemarkModal">
+      <div class="modal-remark">
+        <div class="modal-remark-header">
+          <div>
+            <div class="modal-remark-title">Keterangan DO Supir</div>
+            <div class="modal-remark-subtitle">{{ remarkModal.doNumber }}</div>
+          </div>
+          <button class="modal-remark-close" @click="closeRemarkModal">✕</button>
+        </div>
+
+        <div v-if="remarkModal.loading" class="loading-state">
+          <div class="spinner-modern"></div>
+          <p>Memuat barang...</p>
+        </div>
+
+        <div v-else class="modal-remark-body">
+          <p class="modal-remark-hint">
+            Kosongkan untuk memakai keterangan otomatis (teks abu-abu). Keterangan hanya mengubah cetakan DO, tidak
+            mengubah qty atau stok.
+          </p>
+          <table class="table-konfirmasi table-remark">
+            <thead>
+              <tr>
+                <th>Barang</th>
+                <th class="text-center">Box</th>
+                <th class="text-center">Pcs</th>
+                <th>Keterangan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="d in remarkModal.details" :key="d.id">
+                <td>{{ d.item_name }}</td>
+                <td class="text-center">{{ formatQty(d.quantity_boxes) }}</td>
+                <td class="text-center">{{ formatQty(d.quantity_shipped) }}</td>
+                <td>
+                  <input
+                    v-model="d.remark"
+                    type="text"
+                    maxlength="255"
+                    class="remark-input"
+                    :placeholder="autoRemark(d) || 'Keterangan...'"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="modal-remark-footer">
+          <button class="page-btn" @click="closeRemarkModal">Batal</button>
+          <button
+            class="btn-search-konfirmasi"
+            :disabled="remarkModal.loading || remarkModal.saving"
+            @click="saveRemarks"
+          >
+            {{ remarkModal.saving ? 'Menyimpan...' : '💾 Simpan Keterangan' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </DashboardLayout>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '@/api/axios'
 import { useToast } from 'vue-toastification'
@@ -183,6 +256,67 @@ const lockedReason = (row) =>
 
 const goToEdit = (row) => {
   router.push({ name: 'KonfirmasiPengirimanEdit', params: { id: row.id } })
+}
+
+const goToPrint = (row) => {
+  router.push({ name: 'KonfirmasiPengirimanCetakDo', params: { id: row.id } })
+}
+
+const remarkModal = reactive({
+  open: false,
+  loading: false,
+  saving: false,
+  id: null,
+  doNumber: '',
+  details: [],
+})
+
+const formatQty = (val) => (val ? parseFloat(val).toFixed(0) : 0)
+
+const autoRemark = (d) => {
+  const boxes = parseFloat(d.quantity_boxes) || 0
+  const pcs = parseFloat(d.quantity_shipped) || 0
+  if (boxes <= 0) return ''
+  return `1 BOX = ${(pcs / boxes).toFixed(0)} PCS`
+}
+
+const openRemarkModal = async (row) => {
+  Object.assign(remarkModal, { open: true, loading: true, saving: false, id: row.id, doNumber: row.do_number, details: [] })
+  try {
+    const response = await apiClient.get(`/production/shipment-confirmations/${row.id}`)
+    remarkModal.details = (response.data.data?.details || []).map((d) => ({
+      id: d.id,
+      item_name: d.item_name,
+      quantity_boxes: d.quantity_boxes,
+      quantity_shipped: d.quantity_shipped,
+      remark: d.remark || '',
+    }))
+  } catch {
+    toast.error('Gagal memuat barang pengiriman.')
+    remarkModal.open = false
+  } finally {
+    remarkModal.loading = false
+  }
+}
+
+const closeRemarkModal = () => {
+  if (remarkModal.saving) return
+  remarkModal.open = false
+}
+
+const saveRemarks = async () => {
+  remarkModal.saving = true
+  try {
+    const response = await apiClient.put(`/production/shipment-confirmations/${remarkModal.id}/remarks`, {
+      details: remarkModal.details.map((d) => ({ id: d.id, remark: (d.remark || '').trim() })),
+    })
+    toast.success(response.data.message || 'Keterangan berhasil disimpan.')
+    remarkModal.saving = false
+    remarkModal.open = false
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Gagal menyimpan keterangan.')
+    remarkModal.saving = false
+  }
 }
 
 onMounted(() => fetchData())
@@ -267,6 +401,36 @@ onMounted(() => fetchData())
   border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; white-space: nowrap;
 }
 .btn-edit-konfirmasi:hover { background: #ecfeff; }
+.action-group { display: flex; gap: 0.4rem; justify-content: center; align-items: center; flex-wrap: wrap; }
+
+.modal-overlay-remark {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); z-index: 1000;
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.modal-remark {
+  background: white; border-radius: 16px; width: 100%; max-width: 820px; max-height: 90vh;
+  display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+.modal-remark-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb;
+}
+.modal-remark-title { font-size: 1.15rem; font-weight: 800; color: #111827; }
+.modal-remark-subtitle { font-size: 0.9rem; color: #0e7490; font-weight: 700; margin-top: 0.2rem; }
+.modal-remark-close { border: none; background: none; font-size: 1.2rem; cursor: pointer; color: #6b7280; }
+.modal-remark-body { padding: 1rem 1.5rem; overflow-y: auto; }
+.modal-remark-hint { font-size: 0.85rem; color: #6b7280; margin: 0 0 1rem; }
+.table-remark { min-width: 0; }
+.remark-input {
+  width: 100%; min-width: 200px; padding: 0.5rem 0.7rem; border: 2px solid #e5e7eb;
+  border-radius: 8px; font-size: 0.9rem; box-sizing: border-box;
+}
+.remark-input:focus { outline: none; border-color: #0891b2; }
+.modal-remark-footer {
+  display: flex; justify-content: flex-end; gap: 0.75rem;
+  padding: 1rem 1.5rem; border-top: 1px solid #e5e7eb;
+}
+.modal-remark-footer .btn-search-konfirmasi:disabled { opacity: 0.6; cursor: default; }
 
 .status-badge { padding: 0.3rem 0.75rem; border-radius: 999px; font-size: 0.78rem; font-weight: 800; }
 .status-draft { background: #f3f4f6; color: #6b7280; }

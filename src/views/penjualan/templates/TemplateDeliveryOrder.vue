@@ -48,7 +48,8 @@
           <td class="text-center">{{ formatNumber(item.quantity_boxes) }}</td>
           <td class="text-center">{{ formatNumber(item.quantity_shipped) }}</td>
           <td class="text-center remark-col">
-            <span v-if="item.quantity_boxes > 0">
+            <span v-if="item.remark" class="remark-manual">{{ item.remark }}</span>
+            <span v-else-if="item.quantity_boxes > 0">
               1 BOX = {{ formatNumber(item.quantity_shipped / item.quantity_boxes) }} PCS
             </span>
           </td>
@@ -117,7 +118,6 @@ const totals = computed(() => {
 </script>
 
 <style scoped>
-/* === STYLING KHUSUS DO === */
 .template-do-container {
   font-family: 'Arial', sans-serif;
   color: #000;
@@ -163,7 +163,6 @@ const totals = computed(() => {
   text-transform: uppercase;
 }
 
-/* TABEL STYLE */
 .table-do {
   width: 100%;
   border-collapse: collapse;
@@ -171,7 +170,7 @@ const totals = computed(() => {
   margin-bottom: 30px;
 }
 .table-do th {
-  background-color: #e8e6d1; /* Warna Cream Khas DO */
+  background-color: #e8e6d1;
   border: 1px solid #000;
   padding: 6px;
   font-weight: 800;
@@ -193,7 +192,11 @@ const totals = computed(() => {
   font-style: italic;
 }
 
-/* FOOTER */
+.remark-manual {
+  white-space: pre-line;
+  word-break: break-word;
+}
+
 .footer-signatures {
   display: flex;
   justify-content: space-between;

@@ -49,7 +49,7 @@
       </div>
 
       <div v-if="isShippedEdit" class="shipped-edit-notice">
-        SJ ini sudah berstatus SHIPPED. Pesanan, mode pengiriman, barang, dan qty dikunci karena stok sudah berkurang — hanya tanggal kirim dan data dokumen yang bisa diubah.
+        SJ ini sudah berstatus SHIPPED. Pesanan, mode pengiriman, barang, dan qty dikunci karena stok sudah berkurang — hanya tanggal kirim, data dokumen, dan keterangan DO supir yang bisa diubah.
       </div>
 
       <fieldset class="locked-fieldset" :disabled="isShippedEdit">
@@ -429,7 +429,7 @@ INDONESIA</textarea
         </div>
       </template>
 
-        <fieldset class="locked-fieldset" :disabled="isShippedEdit">
+        <fieldset class="locked-fieldset">
         <div class="form-card">
           <div class="card-header">
             <span class="header-icon">📦</span>
@@ -477,6 +477,7 @@ INDONESIA</textarea
                     <th class="text-center">Total GW (kg)</th>
                     <th class="text-center">Total M3</th>
                     <th class="text-center">Total Wood (m3)</th>
+                    <th class="text-center">Keterangan DO Supir</th>
                     <th v-if="form.shipment_mode === 'AIR'" class="text-center">Aksi</th>
                   </tr>
                 </thead>
@@ -526,6 +527,7 @@ INDONESIA</textarea
                           type="number"
                           min="0"
                           class="form-input-table"
+                          :disabled="isShippedEdit"
                           placeholder="0"
                         />
                       </td>
@@ -536,6 +538,7 @@ INDONESIA</textarea
                           type="number"
                           min="0"
                           class="form-input-table"
+                          :disabled="isShippedEdit"
                           placeholder="0"
                           @input="calculateTotals(row)"
                         />
@@ -547,6 +550,7 @@ INDONESIA</textarea
                           type="number"
                           min="0"
                           class="form-input-table"
+                          :disabled="isShippedEdit"
                           placeholder="0"
                           @input="onRowInput(item, row)"
                         />
@@ -571,6 +575,7 @@ INDONESIA</textarea
                           step="0.01"
                           min="0"
                           class="form-input-table"
+                          :disabled="isShippedEdit"
                           placeholder="0.00"
                           @input="calculateTotals(row)"
                         />
@@ -583,6 +588,7 @@ INDONESIA</textarea
                           step="0.01"
                           min="0"
                           class="form-input-table"
+                          :disabled="isShippedEdit"
                           placeholder="0.00"
                           @input="calculateTotals(row)"
                         />
@@ -595,6 +601,7 @@ INDONESIA</textarea
                           step="0.0001"
                           min="0"
                           class="form-input-table"
+                          :disabled="isShippedEdit"
                           placeholder="0.0000"
                           @input="calculateTotals(row)"
                         />
@@ -607,6 +614,7 @@ INDONESIA</textarea
                           step="0.0001"
                           min="0"
                           class="form-input-table"
+                          :disabled="isShippedEdit"
                           placeholder="0.0000"
                           @input="calculateTotals(row)"
                         />
@@ -628,11 +636,23 @@ INDONESIA</textarea
                         <span class="total-badge">{{ formatNumber(row.total_wood_consumed, 4) }}</span>
                       </td>
 
+                      <td class="text-center">
+                        <input
+                          v-model="row.remark"
+                          type="text"
+                          maxlength="255"
+                          class="form-input-table form-input-remark"
+                          :placeholder="autoRemark(row) || 'Keterangan...'"
+                          title="Kosongkan untuk memakai keterangan otomatis (1 BOX = ... PCS)"
+                        />
+                      </td>
+
                       <td v-if="form.shipment_mode === 'AIR'" class="text-center packing-row-actions">
                         <button
                           v-if="rowIdx === item.packing_rows.length - 1"
                           type="button"
                           class="btn-packing-row btn-add-row"
+                          :disabled="isShippedEdit"
                           title="Produk ini dikirim dalam crate/box terpisah — tambah baris"
                           @click="addPackingRow(item)"
                         >
@@ -642,6 +662,7 @@ INDONESIA</textarea
                           v-if="item.packing_rows.length > 1"
                           type="button"
                           class="btn-packing-row btn-remove-row"
+                          :disabled="isShippedEdit"
                           title="Hapus baris ini"
                           @click="removePackingRow(item, rowIdx)"
                         >
@@ -704,15 +725,10 @@ const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 
-// EditPengiriman pakai komponen yang sama dengan BuatPengiriman — dibedakan dari ada/tidaknya
-// :id di URL.
 const isEditMode = computed(() => !!route.params.id)
 const editingDoId = ref(null)
 const isShippedEdit = ref(false)
 
-// Menu "Konfirmasi Pengiriman" (PPIC) pakai komponen yang sama juga — dibedakan dari nama
-// route. PPIC cuma tahu barang & qty yang dimuat, tidak isi dokumen ekspor (itu tetap
-// kerjaan Sales lewat Daftar Pengiriman, record yang sama, dilengkapi belakangan).
 const isProductionMode = computed(() =>
   ['KonfirmasiPengirimanCreate', 'KonfirmasiPengirimanEdit'].includes(route.name),
 )
@@ -782,10 +798,6 @@ const fetchOpenSalesOrders = async () => {
   }
 }
 
-// Muat DO yang mau diedit — form.details dibangun LANGSUNG dari baris yang sudah tersimpan
-// di DO ini (dikelompokkan per sales_order_detail_id jadi packing_rows[]), bukan dari
-// rebuildFromSelectedSalesOrders(), supaya nilai yang sudah diisi (crate/box/pcs/NW/GW/M3/
-// wood) tidak hilang dan admin tidak perlu input ulang dari awal.
 const loadExistingDeliveryOrder = async () => {
   loadingMaster.value = true
   try {
@@ -849,9 +861,6 @@ const loadExistingDeliveryOrder = async () => {
     form.peb_number = doData.peb_number || ''
     form.container_type = doData.container_type || ''
 
-    // Checklist SO — cuma buat tampilan badge & validasi kalau admin nambah SO lain saat
-    // edit. Kalau SO-nya sudah tidak ada lagi di daftar "open" (mis. semua sisa item sudah
-    // dikirim di pengiriman lain), pakai info minimal dari DO sendiri sebagai fallback.
     const involvedSoIds = (doData.sales_orders || []).map((so) => so.id)
     const matched = openSalesOrders.value.filter((so) => involvedSoIds.includes(so.id))
     selectedSalesOrders.value =
@@ -895,6 +904,7 @@ const loadExistingDeliveryOrder = async () => {
         quantity_shipped: parseFloat(d.quantity_shipped) || 0,
         quantity_boxes: d.quantity_boxes,
         quantity_crates: d.quantity_crates,
+        remark: d.remark || '',
         nw_per_box: d.nw_per_box,
         gw_per_box: d.gw_per_box,
         m3_per_carton: d.m3_per_carton,
@@ -922,8 +932,6 @@ const loadExistingDeliveryOrder = async () => {
 
 const isSoSelected = (soId) => selectedSalesOrders.value.some((so) => so.id === soId)
 
-// SO lain cuma boleh digabung kalau buyer & currency-nya sama dengan SO yang sudah dipilih —
-// sesuai kebutuhan lapangan (gabung SO beda produk) tapi tetap 1 dokumen ekspor = 1 buyer/currency.
 const isSoDisabled = (so) => {
   if (isSoSelected(so.id)) return false
   if (selectedSalesOrders.value.length === 0) return false
@@ -952,7 +960,6 @@ const rebuildFromSelectedSalesOrders = () => {
   const first = selectedSalesOrders.value[0]
   form.buyer_id = first.buyer_id
 
-  // ✅ Auto-fill dari data buyer (SO pertama yang dipilih — semua SO tergabung sudah divalidasi buyer sama)
   form.consignee_info.name = first.buyer?.name || ''
   form.consignee_info.address = first.buyer?.address || ''
   form.applicant_info.name = first.buyer?.name || ''
@@ -965,12 +972,6 @@ const rebuildFromSelectedSalesOrders = () => {
   form.goods_description = 'TEAK GARDEN FURNITURE AND ACCESSORIES'
   form.eu_factory_number = first.buyer?.eu_factory_number || ''
 
-  // Gabungkan item dari semua SO terpilih jadi satu tabel, tiap baris tetap ingat SO asalnya.
-  // Tiap item punya packing_rows[] — biasanya cuma 1 baris, tapi mode Air Freight bisa
-  // dipecah jadi beberapa baris crate/box berbeda untuk produk yang sama (lihat addPackingRow).
-  // Kalau item ini sudah ada sebelumnya di form.details (mis. lagi edit DO, atau admin toggle
-  // checkbox SO bolak-balik), packing_rows yang sudah diisi dipertahankan — tidak direset ke
-  // default kosong.
   const existingBySoDetailId = new Map(form.details.map((d) => [d.sales_order_detail_id, d]))
 
   form.details = selectedSalesOrders.value.flatMap((so) =>
@@ -1010,6 +1011,7 @@ const makeDefaultPackingRow = (overrides = {}) => ({
   quantity_shipped: 0,
   quantity_boxes: null,
   quantity_crates: null,
+  remark: '',
   nw_per_box: null,
   gw_per_box: null,
   m3_per_carton: null,
@@ -1113,7 +1115,14 @@ const isMultiSo = computed(() => selectedSalesOrders.value.length > 1)
 
 const isFiltering = computed(() => itemSearch.value.trim() !== '' || onlyWithStock.value)
 
-const tableColspan = computed(() => (form.shipment_mode === 'AIR' ? 17 : 15))
+const tableColspan = computed(() => (form.shipment_mode === 'AIR' ? 18 : 16))
+
+const autoRemark = (row) => {
+  const boxes = parseFloat(row.quantity_boxes) || 0
+  const pcs = parseFloat(row.quantity_shipped) || 0
+  if (boxes <= 0) return ''
+  return `1 BOX = ${(pcs / boxes).toFixed(0)} PCS`
+}
 
 const sumRows = (items, field) =>
   items.reduce(
@@ -1219,21 +1228,17 @@ const handleBarcodeImageUpload = (event) => {
 
 const handleSubmit = async () => {
   isSaving.value = true
-  // Tiap item bisa punya >1 packing_rows (pecahan crate/box mode Air) — di-flatten jadi
-  // baris detail terpisah, semua tetap merujuk ke sales_order_detail_id yang sama.
   const payloadDetails = isShippedEdit.value ? [] : form.details.flatMap((d) =>
     d.packing_rows
       .filter((row) => row.quantity_shipped > 0)
       .map((row) => ({
-        // id cuma ada kalau baris ini sudah tersimpan sebelumnya (mode edit) — backend pakai
-        // ini buat bedakan "update baris lama" vs "baris baru" (mis. pecahan crate/box yang
-        // baru ditambah admin saat edit).
         ...(row.id ? { id: row.id } : {}),
         sales_order_detail_id: d.sales_order_detail_id,
         item_id: d.item_id,
         quantity_shipped: row.quantity_shipped,
         quantity_boxes: row.quantity_boxes || null,
         quantity_crates: form.shipment_mode === 'AIR' ? row.quantity_crates || null : null,
+        remark: (row.remark || '').trim(),
         nw_per_box: row.nw_per_box || null,
         gw_per_box: row.gw_per_box || null,
         m3_per_carton: row.m3_per_carton || null,
@@ -1273,6 +1278,12 @@ const handleSubmit = async () => {
   formData.append('applicant_info', JSON.stringify(form.applicant_info))
   formData.append('notify_info', JSON.stringify(form.notify_info))
   if (!isShippedEdit.value) formData.append('details', JSON.stringify(payloadDetails))
+  if (isShippedEdit.value) {
+    const detailRemarks = form.details.flatMap((d) =>
+      d.packing_rows.filter((row) => row.id).map((row) => ({ id: row.id, remark: (row.remark || '').trim() })),
+    )
+    formData.append('detail_remarks', JSON.stringify(detailRemarks))
+  }
   formData.append('forwarder_name', form.forwarder_name)
   formData.append('peb_number', form.peb_number)
   formData.append('container_type', form.container_type)
@@ -1294,14 +1305,10 @@ const handleSubmit = async () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
     } else if (isProductionMode.value) {
-      // Menu Konfirmasi Pengiriman (PPIC) — endpoint ini langsung bikin DO + tandai SHIPPED
-      // sekali jalan (bukan DRAFT nunggu Sales klik Kirim manual belakangan).
       response = await apiClient.post('/production/shipment-confirmations', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
     } else if (isEditMode.value && editingDoId.value) {
-      // PUT dengan multipart body (file upload) tidak diparse PHP dengan benar kalau kirim
-      // request PUT asli — pakai method-spoofing standar Laravel (_method=PUT via POST).
       formData.append('_method', 'PUT')
       response = await apiClient.post(`/delivery-orders/${editingDoId.value}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -2118,6 +2125,18 @@ const goBack = () => {
   text-align: center;
   transition: all 0.2s;
   font-weight: 600;
+}
+
+.form-input-remark {
+  width: 200px;
+  text-align: left;
+  font-weight: 500;
+}
+
+.form-input-table:disabled {
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: not-allowed;
 }
 
 .form-input-table:focus {
