@@ -466,6 +466,7 @@ INDONESIA</textarea
                     <th class="text-center col-frozen col-frozen-3">Qty Dipesan</th>
                     <th class="text-center">Qty Terkirim</th>
                     <th class="text-center">Stok Tersedia</th>
+                    <th class="text-center" title="Isi kode yang sama (mis. A) untuk barang yang dikemas campur dalam box yang sama">Box Gabungan</th>
                     <th v-if="form.shipment_mode === 'AIR'" class="text-center">Kirim (Crate)</th>
                     <th class="text-center">Kirim (Box)</th>
                     <th class="text-center">Kirim (Pcs)</th>
@@ -478,7 +479,7 @@ INDONESIA</textarea
                     <th class="text-center">Total M3</th>
                     <th class="text-center">Total Wood (m3)</th>
                     <th class="text-center">Keterangan DO Supir</th>
-                    <th v-if="form.shipment_mode === 'AIR'" class="text-center">Aksi</th>
+                    <th class="text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody v-for="group in soGroups" :key="group.so_number">
@@ -521,13 +522,28 @@ INDONESIA</textarea
                         <span class="stock-badge">{{ item.current_stock }}</span>
                       </td>
 
+                      <td class="text-center">
+                        <input
+                          v-model="row.box_group"
+                          type="text"
+                          maxlength="20"
+                          class="form-input-table form-input-group"
+                          :class="{ 'is-member': isBoxMember(row), 'is-lead': isBoxLead(row) }"
+                          :disabled="isShippedEdit"
+                          placeholder="-"
+                          @input="onBoxGroupInput(row)"
+                        />
+                        <div v-if="isBoxLead(row)" class="packing-total-hint">Box campur: {{ boxGroupSize(row) }} baris</div>
+                        <div v-else-if="isBoxMember(row)" class="packing-total-hint">ikut box {{ normalizeBoxGroup(row.box_group) }}</div>
+                      </td>
+
                       <td v-if="form.shipment_mode === 'AIR'" class="text-center">
                         <input
                           v-model.number="row.quantity_crates"
                           type="number"
                           min="0"
                           class="form-input-table"
-                          :disabled="isShippedEdit"
+                          :disabled="isShippedEdit || isBoxMember(row)"
                           placeholder="0"
                         />
                       </td>
@@ -538,7 +554,7 @@ INDONESIA</textarea
                           type="number"
                           min="0"
                           class="form-input-table"
-                          :disabled="isShippedEdit"
+                          :disabled="isShippedEdit || isBoxMember(row)"
                           placeholder="0"
                           @input="calculateTotals(row)"
                         />
@@ -575,7 +591,7 @@ INDONESIA</textarea
                           step="0.01"
                           min="0"
                           class="form-input-table"
-                          :disabled="isShippedEdit"
+                          :disabled="isShippedEdit || isBoxMember(row)"
                           placeholder="0.00"
                           @input="calculateTotals(row)"
                         />
@@ -588,7 +604,7 @@ INDONESIA</textarea
                           step="0.01"
                           min="0"
                           class="form-input-table"
-                          :disabled="isShippedEdit"
+                          :disabled="isShippedEdit || isBoxMember(row)"
                           placeholder="0.00"
                           @input="calculateTotals(row)"
                         />
@@ -601,7 +617,7 @@ INDONESIA</textarea
                           step="0.0001"
                           min="0"
                           class="form-input-table"
-                          :disabled="isShippedEdit"
+                          :disabled="isShippedEdit || isBoxMember(row)"
                           placeholder="0.0000"
                           @input="calculateTotals(row)"
                         />
@@ -647,7 +663,7 @@ INDONESIA</textarea
                         />
                       </td>
 
-                      <td v-if="form.shipment_mode === 'AIR'" class="text-center packing-row-actions">
+                      <td class="text-center packing-row-actions">
                         <button
                           v-if="rowIdx === item.packing_rows.length - 1"
                           type="button"
@@ -902,6 +918,7 @@ const loadExistingDeliveryOrder = async () => {
       grouped.get(key).packing_rows.push({
         id: d.id,
         quantity_shipped: parseFloat(d.quantity_shipped) || 0,
+        box_group: d.box_group || '',
         quantity_boxes: d.quantity_boxes,
         quantity_crates: d.quantity_crates,
         remark: d.remark || '',
@@ -1009,6 +1026,7 @@ const rebuildFromSelectedSalesOrders = () => {
 
 const makeDefaultPackingRow = (overrides = {}) => ({
   quantity_shipped: 0,
+  box_group: '',
   quantity_boxes: null,
   quantity_crates: null,
   remark: '',
@@ -1115,10 +1133,56 @@ const isMultiSo = computed(() => selectedSalesOrders.value.length > 1)
 
 const isFiltering = computed(() => itemSearch.value.trim() !== '' || onlyWithStock.value)
 
-const tableColspan = computed(() => (form.shipment_mode === 'AIR' ? 18 : 16))
+const tableColspan = computed(() => (form.shipment_mode === 'AIR' ? 19 : 18))
+
+const normalizeBoxGroup = (value) => (value || '').trim().toUpperCase()
+
+const orderedPackingRows = computed(() =>
+  soGroups.value.flatMap((group) =>
+    group.items.flatMap((item) => item.packing_rows.map((row) => ({ item, row }))),
+  ),
+)
+
+const boxGroupInfo = computed(() => {
+  const leads = new Map()
+  const sizes = new Map()
+  for (const { row } of orderedPackingRows.value) {
+    const code = normalizeBoxGroup(row.box_group)
+    if (!code) continue
+    if (!leads.has(code)) leads.set(code, row)
+    sizes.set(code, (sizes.get(code) || 0) + 1)
+  }
+  return { leads, sizes }
+})
+
+const boxGroupLead = (row) => boxGroupInfo.value.leads.get(normalizeBoxGroup(row.box_group)) || null
+
+const isBoxMember = (row) => {
+  const lead = boxGroupLead(row)
+  return !!lead && lead !== row
+}
+
+const isBoxLead = (row) =>
+  boxGroupLead(row) === row && (boxGroupInfo.value.sizes.get(normalizeBoxGroup(row.box_group)) || 0) > 1
+
+const boxGroupSize = (row) => boxGroupInfo.value.sizes.get(normalizeBoxGroup(row.box_group)) || 0
+
+const clearMemberBoxFields = (row) => {
+  row.quantity_boxes = null
+  row.quantity_crates = null
+  row.nw_per_box = null
+  row.gw_per_box = null
+  row.m3_per_carton = null
+  calculateTotals(row)
+}
+
+const onBoxGroupInput = (row) => {
+  row.box_group = normalizeBoxGroup(row.box_group)
+}
 
 const autoRemark = (row) => {
-  const boxes = parseFloat(row.quantity_boxes) || 0
+  const lead = boxGroupLead(row)
+  const boxes = parseFloat((lead || row).quantity_boxes) || 0
   const pcs = parseFloat(row.quantity_shipped) || 0
   if (boxes <= 0) return ''
   return `1 BOX = ${(pcs / boxes).toFixed(0)} PCS`
@@ -1158,6 +1222,14 @@ const soGroups = computed(() => {
     totalM3: sumRows(items, 'total_m3'),
   }))
 })
+
+watch(
+  () => orderedPackingRows.value.filter(({ row }) => isBoxMember(row)).map(({ row }) => row),
+  (members) => {
+    if (isShippedEdit.value) return
+    members.forEach(clearMemberBoxFields)
+  },
+)
 
 watch(
   () => soGroups.value.map((g) => g.so_number),
@@ -1228,23 +1300,33 @@ const handleBarcodeImageUpload = (event) => {
 
 const handleSubmit = async () => {
   isSaving.value = true
-  const payloadDetails = isShippedEdit.value ? [] : form.details.flatMap((d) =>
-    d.packing_rows
-      .filter((row) => row.quantity_shipped > 0)
-      .map((row) => ({
-        ...(row.id ? { id: row.id } : {}),
-        sales_order_detail_id: d.sales_order_detail_id,
-        item_id: d.item_id,
-        quantity_shipped: row.quantity_shipped,
-        quantity_boxes: row.quantity_boxes || null,
-        quantity_crates: form.shipment_mode === 'AIR' ? row.quantity_crates || null : null,
-        remark: (row.remark || '').trim(),
-        nw_per_box: row.nw_per_box || null,
-        gw_per_box: row.gw_per_box || null,
-        m3_per_carton: row.m3_per_carton || null,
-        wood_consumed_per_pcs: row.wood_consumed_per_pcs || null,
-      })),
-  )
+  const payloadDetails = isShippedEdit.value ? [] : orderedPackingRows.value
+    .filter(({ row }) => row.quantity_shipped > 0)
+    .map(({ item: d, row }) => ({
+      ...(row.id ? { id: row.id } : {}),
+      sales_order_detail_id: d.sales_order_detail_id,
+      item_id: d.item_id,
+      box_group: normalizeBoxGroup(row.box_group) || null,
+      quantity_shipped: row.quantity_shipped,
+      quantity_boxes: row.quantity_boxes || null,
+      quantity_crates: form.shipment_mode === 'AIR' ? row.quantity_crates || null : null,
+      remark: (row.remark || '').trim(),
+      nw_per_box: row.nw_per_box || null,
+      gw_per_box: row.gw_per_box || null,
+      m3_per_carton: row.m3_per_carton || null,
+      wood_consumed_per_pcs: row.wood_consumed_per_pcs || null,
+    }))
+
+  if (!isShippedEdit.value) {
+    for (const [code, lead] of boxGroupInfo.value.leads) {
+      if ((boxGroupInfo.value.sizes.get(code) || 0) < 2) continue
+      if (!(lead.quantity_shipped > 0) || !(lead.quantity_boxes > 0)) {
+        toast.error(`Box gabungan ${code}: baris pertama wajib diisi Kirim (Pcs) dan Kirim (Box).`)
+        isSaving.value = false
+        return
+      }
+    }
+  }
 
   if (!isShippedEdit.value && payloadDetails.length === 0) {
     toast.error('Tidak ada barang yang dikirim. Isi "Qty Kirim (Pcs)" minimal 1 barang.')
@@ -2142,6 +2224,21 @@ const goBack = () => {
   width: 200px;
   text-align: left;
   font-weight: 500;
+}
+
+.form-input-group {
+  width: 64px;
+  text-transform: uppercase;
+}
+
+.form-input-group.is-lead {
+  border-color: #0e7490;
+  background: #ecfeff;
+}
+
+.form-input-group.is-member {
+  border-color: #67e8f9;
+  background: #f0fdff;
 }
 
 .form-input-table:disabled {

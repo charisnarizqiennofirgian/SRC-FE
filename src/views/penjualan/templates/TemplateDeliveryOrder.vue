@@ -41,16 +41,18 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(item, index) in data.details" :key="item.id">
+        <tr v-for="(item, index) in rows" :key="item.id">
           <td class="text-center">{{ index + 1 }}</td>
           <td>{{ item.item?.code || '-' }}</td>
           <td>{{ item.item_name }}</td>
-          <td class="text-center">{{ formatNumber(item.quantity_boxes) }}</td>
+          <td v-if="!item._isBoxMember" :rowspan="item._boxSpan" class="text-center box-cell">
+            {{ formatNumber(item.quantity_boxes) }}
+          </td>
           <td class="text-center">{{ formatNumber(item.quantity_shipped) }}</td>
           <td class="text-center remark-col">
             <span v-if="item.remark" class="remark-manual">{{ item.remark }}</span>
-            <span v-else-if="item.quantity_boxes > 0">
-              1 BOX = {{ formatNumber(item.quantity_shipped / item.quantity_boxes) }} PCS
+            <span v-else-if="item._groupBoxes > 0">
+              1 BOX = {{ formatNumber(item.quantity_shipped / item._groupBoxes) }} PCS
             </span>
           </td>
         </tr>
@@ -86,10 +88,13 @@
 
 <script setup>
 import { computed } from 'vue'
+import { arrangeBoxGroups } from '@/utils/boxGroups'
 
 const props = defineProps({
   data: { type: Object, required: true },
 })
+
+const rows = computed(() => arrangeBoxGroups(props.data?.details || []))
 
 const formatNumber = (val) => {
   if (!val) return 0
@@ -118,6 +123,10 @@ const totals = computed(() => {
 </script>
 
 <style scoped>
+.box-cell {
+  vertical-align: middle;
+}
+
 .template-do-container {
   font-family: 'Arial', sans-serif;
   color: #000;

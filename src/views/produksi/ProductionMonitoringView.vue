@@ -214,18 +214,11 @@
                       />
                       <button type="button" class="btn-stok-confirm" title="Simpan" @click="saveStokManual(item)">✓</button>
                       <button type="button" class="btn-stok-cancel" title="Batal" @click="cancelEditStok()">✕</button>
+                      <StokAwalInfoPanel :detail-id="item.production_order_detail_id" />
                     </template>
                     <template v-else>
                       <span class="stok-value">{{ formatNumber(item.stok) }}</span>
                       <button type="button" class="btn-edit-stok" title="Edit Stok Awal" @click="startEditStok(item)">✏️</button>
-                      <button
-                        v-if="item.stok_updatable"
-                        type="button"
-                        class="btn-refresh-stok"
-                        title="Perbarui Stok Awal (otomatis dari stok gudang)"
-                        :disabled="refreshingStokId === item.production_order_detail_id"
-                        @click="refreshStok(item)"
-                      >🔄</button>
                     </template>
                   </td>
 
@@ -612,6 +605,7 @@ import HoverPopover from '../../components/HoverPopover.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from 'vue-toastification'
 import axios from '@/api/axios'
+import StokAwalInfoPanel from '@/components/StokAwalInfoPanel.vue'
 
 const toast = useToast()
 const data = ref([])
@@ -619,7 +613,6 @@ const isLoading = ref(false)
 const search = ref('')
 const currentPage = ref(1)
 const perPage = 20
-const refreshingStokId = ref(null)
 
 const fetchData = async () => {
   isLoading.value = true
@@ -638,24 +631,6 @@ const fetchData = async () => {
     console.error('Error fetching data:', error)
   } finally {
     isLoading.value = false
-  }
-}
-
-const refreshStok = async (item) => {
-  if (!item.production_order_detail_id || refreshingStokId.value) return
-  refreshingStokId.value = item.production_order_detail_id
-  try {
-    const response = await axios.post(`/production-monitoring/detail/${item.production_order_detail_id}/refresh-stock`)
-    if (response.data.success) {
-      toast.success(response.data.message)
-      await fetchData()
-    } else {
-      toast.error(response.data.message)
-    }
-  } catch (error) {
-    toast.error(error.response?.data?.message || 'Gagal memperbarui stok awal.')
-  } finally {
-    refreshingStokId.value = null
   }
 }
 
@@ -1608,26 +1583,6 @@ const getStageClass = (type) => {
   font-weight: 700;
   color: #0f766e;
   font-size: 14px;
-}
-
-.btn-refresh-stok {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 12px;
-  margin-left: 4px;
-  padding: 0;
-  opacity: 0.7;
-}
-
-.btn-refresh-stok:hover:not(:disabled) {
-  opacity: 1;
-  transform: rotate(90deg);
-}
-
-.btn-refresh-stok:disabled {
-  cursor: not-allowed;
-  opacity: 0.3;
 }
 
 .btn-edit-stok {

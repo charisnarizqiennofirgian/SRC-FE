@@ -151,18 +151,11 @@
                       />
                       <button type="button" class="btn-stok-confirm" title="Simpan" @click="saveStokManual(item)">✓</button>
                       <button type="button" class="btn-stok-cancel" title="Batal" @click="cancelEditStok()">✕</button>
+                      <StokAwalInfoPanel :detail-id="item.production_order_detail_id" />
                     </template>
                     <template v-else>
                       <span class="stok-value">{{ formatNumber(item.stok) }}</span>
                       <button type="button" class="btn-edit-stok" title="Edit Stok Awal" @click="startEditStok(item)">✏️</button>
-                      <button
-                        v-if="item.stok_updatable"
-                        type="button"
-                        class="btn-refresh-stok"
-                        title="Perbarui Stok Awal (otomatis dari stok gudang)"
-                        :disabled="refreshingStokId === item.production_order_detail_id"
-                        @click="refreshStok(item)"
-                      >🔄</button>
                     </template>
                   </td>
 
@@ -463,18 +456,11 @@
                     />
                     <button type="button" class="btn-stok-confirm" title="Simpan" @click="saveStokManual(item)">✓</button>
                     <button type="button" class="btn-stok-cancel" title="Batal" @click="cancelEditStok()">✕</button>
+                    <StokAwalInfoPanel :detail-id="item.production_order_detail_id" />
                   </template>
                   <template v-else>
                     <span class="stok-value">{{ formatNumber(item.stok) }}</span>
                     <button type="button" class="btn-edit-stok" title="Edit Stok Awal" @click="startEditStok(item)">✏️</button>
-                    <button
-                      v-if="item.stok_updatable"
-                      type="button"
-                      class="btn-refresh-stok"
-                      title="Perbarui Stok Awal (otomatis dari stok gudang)"
-                      :disabled="refreshingStokId === item.production_order_detail_id"
-                      @click="refreshStok(item)"
-                    >🔄</button>
                   </template>
                 </td>
                 <td class="col-status stage-sanwil">
@@ -762,6 +748,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import axios from '@/api/axios'
+import StokAwalInfoPanel from '@/components/StokAwalInfoPanel.vue'
 
 const router = useRouter()
 const toast = useToast()
@@ -951,26 +938,6 @@ const fetchMonitoringData = async () => {
     console.error('Error fetching monitoring data:', error)
   } finally {
     isLoading.value = false
-  }
-}
-
-const refreshingStokId = ref(null)
-
-const refreshStok = async (item) => {
-  if (!item.production_order_detail_id || refreshingStokId.value) return
-  refreshingStokId.value = item.production_order_detail_id
-  try {
-    const response = await axios.post(`/production-monitoring/detail/${item.production_order_detail_id}/refresh-stock`)
-    if (response.data.success) {
-      toast.success(response.data.message)
-      await Promise.all([fetchMonitoringData(), fetchSampelData()])
-    } else {
-      toast.error(response.data.message)
-    }
-  } catch (error) {
-    toast.error(error.response?.data?.message || 'Gagal memperbarui stok awal.')
-  } finally {
-    refreshingStokId.value = null
   }
 }
 
@@ -1548,26 +1515,6 @@ onMounted(() => {
 .stok-value {
   font-weight: 700;
   color: #0f766e;
-}
-
-.btn-refresh-stok {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 11px;
-  margin-left: 4px;
-  padding: 0;
-  opacity: 0.7;
-}
-
-.btn-refresh-stok:hover:not(:disabled) {
-  opacity: 1;
-  transform: rotate(90deg);
-}
-
-.btn-refresh-stok:disabled {
-  cursor: not-allowed;
-  opacity: 0.3;
 }
 
 .btn-edit-stok {

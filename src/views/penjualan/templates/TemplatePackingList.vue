@@ -8,7 +8,6 @@
           <th rowspan="2" style="width: 8%">HS CODE</th>
           <th rowspan="2" :style="{ width: (hasCrates ? 25 : 30) + '%' }">DESCRIPTION</th>
 
-          <!-- QUANTITY: lebar grup = jumlah lebar sub-kolomnya (dicek konsisten dengan row2) -->
           <th :colspan="hasCrates ? 3 : 2" :style="{ width: (hasCrates ? 16 : 11) + '%' }">
             QUANTITY
           </th>
@@ -18,7 +17,6 @@
           <th colspan="2" style="width: 12%">WEIGHT (KG)</th>
         </tr>
         <tr>
-          <!-- Header CRATE hanya jika AIR -->
           <th v-if="hasCrates" style="width: 5%">CRATE</th>
           <th style="width: 5.5%">BOXES</th>
           <th style="width: 5.5%">PCS</th>
@@ -36,7 +34,7 @@
           <td :colspan="hasCrates ? 13 : 12" class="text-center-empty">Tidak ada barang.</td>
         </tr>
 
-        <tr v-for="(item, index) in data.details" :key="item.id">
+        <tr v-for="(item, index) in rows" :key="item.id">
           <td class="text-center">{{ index + 1 }}</td>
           <td class="text-center">{{ item.item?.code || '-' }}</td>
 
@@ -46,12 +44,11 @@
 
           <td class="item-desc">{{ item.item_name }}</td>
 
-          <!-- ✅ Kolom CRATE per item (hanya jika AIR) -->
-          <td v-if="hasCrates" class="text-center">
+          <td v-if="hasCrates && !item._isBoxMember" :rowspan="item._boxSpan" class="text-center box-cell">
             {{ formatNumber(item.quantity_crates) }}
           </td>
 
-          <td class="text-center">{{ formatNumber(item.quantity_boxes) }}</td>
+          <td v-if="!item._isBoxMember" :rowspan="item._boxSpan" class="text-center box-cell">{{ formatNumber(item.quantity_boxes) }}</td>
           <td class="text-center">{{ formatNumber(item.quantity_shipped) }}</td>
 
           <td class="text-center">
@@ -61,16 +58,16 @@
             {{ formatDecimal(calculateWoodTotal(item), 4) }}
           </td>
 
-          <td class="text-center">
+          <td v-if="!item._isBoxMember" :rowspan="item._boxSpan" class="text-center box-cell">
             {{ formatDecimal(item.m3_per_carton || item.item?.volume_m3 || item.item?.m3_per_carton || 0, 4) }}
           </td>
 
-          <td class="text-center">
+          <td v-if="!item._isBoxMember" :rowspan="item._boxSpan" class="text-center box-cell">
             {{ formatDecimal(calculateVolumeTotal(item), 4) }}
           </td>
 
-          <td class="text-center">{{ formatNumber(calculateNettTotal(item)) }}</td>
-          <td class="text-center">{{ formatNumber(calculateGrossTotal(item)) }}</td>
+          <td v-if="!item._isBoxMember" :rowspan="item._boxSpan" class="text-center box-cell">{{ formatNumber(calculateNettTotal(item)) }}</td>
+          <td v-if="!item._isBoxMember" :rowspan="item._boxSpan" class="text-center box-cell">{{ formatNumber(calculateGrossTotal(item)) }}</td>
         </tr>
 
         <tr class="total-row">
@@ -78,7 +75,6 @@
           <td></td>
           <td></td>
 
-          <!-- ✅ Total CRATE kalau AIR -->
           <td v-if="hasCrates" class="text-center-bold">
             {{ formatNumber(totals.crates) }}
           </td>
@@ -99,10 +95,13 @@
 
 <script setup>
 import { computed } from 'vue'
+import { arrangeBoxGroups } from '@/utils/boxGroups'
 
 const props = defineProps({
   data: { type: Object, required: true },
 })
+
+const rows = computed(() => arrangeBoxGroups(props.data?.details || []))
 
 const hasCrates = computed(() => {
   const mode = props.data?.shipment_mode || 'SEA'
@@ -174,6 +173,10 @@ const totals = computed(() => {
 })
 </script>
 <style scoped>
+.box-cell {
+  vertical-align: middle;
+}
+
 .template-packing-container {
   font-family: 'Arial Narrow', Arial, sans-serif;
 }
@@ -214,7 +217,6 @@ const totals = computed(() => {
   font-weight: 600;
 }
 
-/* HS CODE */
 .hs-code-cell {
   font-weight: 700;
   background-color: #f8f9fa;
