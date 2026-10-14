@@ -23,7 +23,6 @@
             </div>
           </router-link>
 
-          <!-- Dropdown Menu Item -->
           <div v-else class="nav-item-group">
             <div
               class="nav-item nav-item-parent"
@@ -122,7 +121,7 @@ import { useSoPrintNotifier } from '../composables/useSoPrintNotifier'
 const router = useRouter()
 const route = useRoute()
 const userName = ref('User')
-const userPermissions = ref([]) // ✅ TAMBAH
+const userPermissions = ref([])
 const userMenuOpen = ref(false)
 const { pendingCount, canSeeSo, start: startSoNotifier } = useSoPrintNotifier()
 
@@ -141,9 +140,7 @@ const goBack = () => {
   }
 }
 
-// MAPPING PERMISSION → MENU
 const menuPermissionMap = {
-  // Parent menu — tampil kalau punya minimal 1 child permission
   Dashboard: ['view-dashboard'],
   'Master Data': [
     'master-kategori', 'master-satuan', 'master-barang',
@@ -161,10 +158,10 @@ const menuPermissionMap = {
   Produksi: [
     'produksi-sawmill', 'produksi-kd', 'produksi-pembahanan',
     'produksi-moulding', 'produksi-mesin', 'produksi-rustik-komponen',
-    'produksi-batal-transaksi',
     'produksi-assembling', 'produksi-pemakaian-bahan', 'produksi-sanding',
     'produksi-rustik', 'produksi-finishing', 'produksi-anyam', 'produksi-qc-final',
     'produksi-packing', 'produksi-konfirmasi-pengiriman', 'produksi-master-bom',
+    'produksi-batal-transaksi',
   ],
   'Produksi Sampel': [
     'produksi-sampel-sawmill', 'produksi-sampel-kd', 'produksi-sampel-pembahanan',
@@ -182,7 +179,6 @@ const menuPermissionMap = {
   Perbaikan: ['perbaikan-jurnal-manual'],
 }
 
-// SEMUA MENU ITEMS
 const allMenuItems = [
   { name: 'Dashboard', route: '/dashboard', icon: '📊', permission: 'view-dashboard' },
   {
@@ -251,11 +247,11 @@ const allMenuItems = [
       { name: 'Rustik', route: { name: 'RustikView' }, permission: 'produksi-rustik' },
       { name: 'Finishing', route: { name: 'FinishingView' }, permission: 'produksi-finishing' },
       { name: 'Anyam', route: { name: 'ProduksiAnyam' }, permission: 'produksi-anyam' },
-      { name: 'Pembatalan Transaksi', route: { name: 'PembatalanTransaksi' }, permission: 'produksi-batal-transaksi' },
       { name: 'QC Final', route: { name: 'QcFinalView' }, permission: 'produksi-qc-final' },
       { name: 'Packing', route: { name: 'PackingView' }, permission: 'produksi-packing' },
       { name: 'Konfirmasi Pengiriman', route: { name: 'KonfirmasiPengirimanList' }, permission: 'produksi-konfirmasi-pengiriman' },
       { name: 'Master BOM / Resep', route: { name: 'MasterBom' }, permission: 'produksi-master-bom' },
+      { name: 'Pembatalan Transaksi', route: { name: 'PembatalanTransaksi' }, permission: 'produksi-batal-transaksi' },
     ],
   },
   {
@@ -308,21 +304,18 @@ const allMenuItems = [
   },
 ]
 
-// COMPUTED: FILTER MENU BERDASARKAN PERMISSION
 const menuItems = computed(() => {
   const isSuperAdmin =
     userPermissions.value.includes('*') || userPermissions.value.includes('super-admin')
 
   return allMenuItems
     .map((menuItem) => {
-      // Menu tunggal (tanpa children)
       if (!menuItem.children) {
         if (isSuperAdmin) return menuItem
         if (!menuItem.permission) return menuItem
         return userPermissions.value.includes(menuItem.permission) ? menuItem : null
       }
 
-      // Filter children berdasarkan permission
       const filteredChildren = isSuperAdmin
         ? menuItem.children
         : menuItem.children.filter(
@@ -331,7 +324,6 @@ const menuItems = computed(() => {
               [].concat(child.permission).some((permission) => userPermissions.value.includes(permission)),
           )
 
-      // Sembunyikan parent jika tidak ada child yang bisa diakses
       if (filteredChildren.length === 0) return null
 
       return { ...menuItem, children: filteredChildren }
@@ -411,7 +403,6 @@ onMounted(() => {
     }
   }
 
-  // ✅ LOAD PERMISSIONS
   const permissionsData = localStorage.getItem('permissions')
   if (permissionsData) {
     try {
@@ -497,7 +488,6 @@ watch(
   transform: rotate(-45deg) translate(6px, -6px);
 }
 
-/* ===== SIDEBAR OVERLAY (untuk mobile) ===== */
 .sidebar-overlay {
   position: fixed;
   top: 0;
@@ -516,7 +506,6 @@ watch(
   visibility: visible;
 }
 
-/* ===== SIDEBAR ===== */
 .sidebar {
   width: 280px;
   background: linear-gradient(180deg, #fff 0%, #f8f9fa 100%);
@@ -566,7 +555,6 @@ watch(
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* ===== NAVIGATION ===== */
 .nav-menu {
   padding: 16px 0;
   display: flex;
@@ -676,7 +664,6 @@ watch(
   transform: rotate(180deg);
 }
 
-/* ===== SUBMENU ===== */
 .submenu {
   background: linear-gradient(90deg, #f8f9fa 0%, #fff 100%);
   display: flex;
@@ -732,7 +719,6 @@ watch(
   transform: scale(1.5);
 }
 
-/* ===== TRANSITIONS ===== */
 .submenu-slide-enter-active,
 .submenu-slide-leave-active {
   transition: all 0.3s ease;
@@ -745,14 +731,13 @@ watch(
   opacity: 0;
 }
 
-/* ===== MAIN CONTENT ===== */
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   margin-left: 0;
-  min-width: 0; /* Cegah flex item meluber */
-  overflow: clip; /* clip tidak buat stacking context baru, lebih ringan dari hidden */
+  min-width: 0;
+  overflow: clip;
   transition: margin-left 0.3s ease;
 }
 
@@ -886,12 +871,11 @@ watch(
 .content-area {
   flex: 1;
   padding: 28px;
-  overflow-y: scroll; /* Selalu tampilkan scrollbar — cegah layout shift 17px di Windows */
-  scrollbar-gutter: stable; /* Modern browsers: reservasi ruang scrollbar agar konten tidak bergeser */
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
   background: #f0f2f5;
 }
 
-/* ===== USER DROPDOWN ===== */
 .user-dropdown {
   position: relative;
 }
@@ -936,7 +920,6 @@ watch(
   opacity: 0;
 }
 
-/* ===== SCROLLBAR ===== */
 .sidebar::-webkit-scrollbar {
   width: 6px;
 }
@@ -954,7 +937,6 @@ watch(
   background: linear-gradient(180deg, #43a047, #388e3c);
 }
 
-/* ===== RESPONSIVE ===== */
 @media (min-width: 769px) {
   .sidebar.open + .main-content {
     margin-left: 280px;
@@ -964,9 +946,8 @@ watch(
     display: none;
   }
 
-  /* Tambahkan padding kiri ke header saat sidebar terbuka */
   .sidebar.open + .main-content .top-header {
-    padding-left: 298px; /* 280px (lebar sidebar) + 18px (jarak tombol dari kiri sidebar) */
+    padding-left: 298px;
   }
 }
 

@@ -36,7 +36,6 @@
       <button type="button" class="btn-add-item" @click="showModal = true" title="Tambah barang baru">➕</button>
     </div>
 
-    <!-- MODAL TAMBAH ITEM BARU -->
     <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
       <div class="modal-card">
         <div class="modal-header">
@@ -46,7 +45,6 @@
         <div class="modal-body">
           <p v-if="!addableCategories.length" class="modal-hint">Barang akan masuk ke kategori <strong>Bahan Operasional</strong>, gudang <strong>UMUM</strong>.</p>
           <div class="form-grid">
-            <!-- Pilih jenis barang jika ada beberapa kategori -->
             <div v-if="addableCategories.length" class="form-group form-full">
               <label class="form-label">Jenis Barang <span class="req">*</span></label>
               <select v-model="newItem.category_id" class="form-input">
@@ -55,7 +53,6 @@
               </select>
             </div>
 
-            <!-- Field umum: Kode & Nama selalu tampil -->
             <div class="form-group">
               <label class="form-label">Kode <span class="hint">(opsional)</span></label>
               <input v-model="newItem.code" type="text" class="form-input" placeholder="Auto generate jika kosong" />
@@ -65,7 +62,6 @@
               <input v-model="newItem.name" type="text" class="form-input" placeholder="Nama barang..." />
             </div>
 
-            <!-- Bahan Operasional: Satuan & Harga -->
             <template v-if="!newItemIsKartonBox">
               <div class="form-group">
                 <label class="form-label">Satuan <span class="req">*</span></label>
@@ -80,7 +76,6 @@
               </div>
             </template>
 
-            <!-- Karton Box: Buyer, Model, Jenis Karton, Kualitas, P/L/T -->
             <template v-if="newItemIsKartonBox">
               <div class="form-group form-full">
                 <p class="dim-hint">Satuan otomatis <strong>PCS</strong>, gudang otomatis <strong>PACKING</strong></p>
@@ -164,7 +159,7 @@ const fetchSatuan = async () => {
   try {
     const res = await apiClient.get('/units/all')
     daftarSatuan.value = res.data.data || []
-  } catch { /* silent */ }
+  } catch {}
 }
 
 const simpanItemBaru = async () => {
@@ -182,7 +177,6 @@ const simpanItemBaru = async () => {
     let warehouseCode = newItemIsKartonBox.value ? 'PACKING' : 'UMUM'
 
     if (!categoryId) {
-      // fallback: cari Bahan Operasional (perilaku lama)
       const catRes = await apiClient.get('/categories/all')
       const categories = catRes.data.data || []
       const cat = categories.find(c => c.name.toLowerCase().includes('operasional') || c.name.toLowerCase().includes('bahan'))
@@ -191,7 +185,6 @@ const simpanItemBaru = async () => {
     }
 
     if (newItemIsKartonBox.value) {
-      // Karton box selalu PCS, sama persis dengan FormKarton
       const pcUnit = daftarSatuan.value.find(u => u.name === 'PCS' || u.short_name === 'PCS')
       if (!pcUnit) { alert('Satuan PCS tidak ditemukan!'); return }
       unitId = pcUnit.id
@@ -251,14 +244,12 @@ const formatDim = (item) => {
   return `${item.cutting_p} × ${item.cutting_l} × ${item.cutting_t} mm`
 }
 
-// Formatting item for vue-select display
 const formatItem = (item) => ({
   ...item,
   label: item.code ? `${item.code} — ${item.name}` : item.name,
   category_name: item.category?.name || item.category_name || 'Lainnya',
 })
 
-// Initialize options with initial item if exists
 const initOptions = () => {
   if (props.initialItem && props.initialItem.id) {
     selectedItemInternal.value = formatItem(props.initialItem)
@@ -287,10 +278,9 @@ const onSearch = debounce(async (search, loading) => {
     const res = await apiClient.get('/materials', { params })
     const raw = res.data?.data?.data ?? res.data?.data ?? res.data ?? []
     const results = Array.isArray(raw) ? raw : []
-    
+
     const formattedResults = results.map(formatItem)
-    
-    // Pastikan item yang sedang terpilih tetap ada di daftar agar tidak hilang labelnya
+
     if (selectedItemInternal.value) {
       const exists = formattedResults.find(r => r.id === selectedItemInternal.value.id)
       if (!exists) {
@@ -308,14 +298,13 @@ const onSearch = debounce(async (search, loading) => {
 }, 200)
 
 const onUpdate = (val) => {
-  // Cari objek item dari options untuk disimpan sebagai selectedItemInternal
   const itemObj = options.value.find(o => o.id === val)
   if (itemObj) {
     selectedItemInternal.value = itemObj
   } else if (!val) {
     selectedItemInternal.value = null
   }
-  
+
   emit('update:modelValue', val ?? '')
 }
 
@@ -324,7 +313,6 @@ onMounted(() => {
   fetchSatuan()
 })
 
-// Watch initialItem for changes (e.g. when Edit data is loaded)
 watch(() => props.initialItem, initOptions, { deep: true })
 </script>
 

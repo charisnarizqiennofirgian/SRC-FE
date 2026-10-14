@@ -53,7 +53,6 @@ const closeNotification = () => {
   emit('close')
 }
 
-// Auto close after duration
 watch(
   () => props.show,
   (newVal) => {

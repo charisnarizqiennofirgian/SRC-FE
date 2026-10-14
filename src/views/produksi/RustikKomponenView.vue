@@ -266,11 +266,11 @@
                   <label class="form-label-modern">Jenis Finishing <span class="required-star">*</span></label>
                   <div class="finishing-toggle">
                     <label class="finishing-option">
-                      <input type="radio" v-model="row.finishing" value="natural" />
+                      <input type="radio" v-model="row.finishing" value="natural" @change="syncFinishing(index)" />
                       <span>🌳 Natural</span>
                     </label>
                     <label class="finishing-option">
-                      <input type="radio" v-model="row.finishing" value="warna" />
+                      <input type="radio" v-model="row.finishing" value="warna" @change="syncFinishing(index)" />
                       <span>🎨 Warna</span>
                     </label>
                   </div>
@@ -601,22 +601,41 @@ const handlePoDeselect = () => {
   form.qty_produk_jadi            = null
 }
 
+const ensureOutput = (index) => {
+  while (form.outputs.length <= index) {
+    form.outputs.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, finishing: 'natural' })
+  }
+  return form.outputs[index]
+}
+
 const onItemSelected = (index, opt) => {
   form.inputs[index].max_qty = opt?.qty_available ?? 0
+  const out = ensureOutput(index)
+  out.item_id = opt?.item_id ?? null
+  out.finishing = form.inputs[index].finishing
+  out.qty = form.inputs[index].qty
+}
+
+const syncOutput = (index) => {
+  ensureOutput(index).qty = form.inputs[index].qty
+}
+
+const syncFinishing = (index) => {
   if (form.outputs[index]) {
-    form.outputs[index].item_id = opt?.item_id ?? null
     form.outputs[index].finishing = form.inputs[index].finishing
   }
 }
 
-const syncOutput = (index) => {
-  if (form.outputs[index]) {
-    form.outputs[index].qty = form.inputs[index].qty
+const addInput = () => {
+  form.inputs.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, max_qty: 0, finishing: 'natural' })
+  ensureOutput(form.inputs.length - 1)
+}
+const removeInput = (i) => {
+  form.inputs.splice(i, 1)
+  if (form.outputs.length > 1 && form.outputs[i]) {
+    form.outputs.splice(i, 1)
   }
 }
-
-const addInput    = () => form.inputs.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, max_qty: 0, finishing: 'natural' })
-const removeInput = (i) => form.inputs.splice(i, 1)
 
 const addOutput    = () => form.outputs.push({ local_id: Date.now() + Math.random(), item_id: null, qty: null, finishing: 'natural' })
 const removeOutput = (i) => form.outputs.splice(i, 1)

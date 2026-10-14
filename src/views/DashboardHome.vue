@@ -234,9 +234,18 @@
                   </td>
 
                   <td class="col-num stage-ruskomp">
-                    <span :class="['qty-value', item.qty_ruskomp > 0 ? 'has-value' : 'no-value']">
-                      {{ formatNumber(item.qty_ruskomp) }} <span class="stage-pct">({{ stagePercent(item.qty_ruskomp, item.target) }}%)</span>
-                    </span>
+                    <HoverPopover :enabled="!!item.ruskomp_components?.length">
+                      <span :class="['qty-value', item.qty_ruskomp > 0 ? 'has-value' : 'no-value']">
+                        {{ formatNumber(item.qty_ruskomp) }} <span class="stage-pct">({{ stagePercent(item.qty_ruskomp, item.target) }}%)</span>
+                      </span>
+                      <template #content>
+                        <div class="moulding-tooltip-title">Komponen Rustik</div>
+                        <div v-for="c in item.ruskomp_components" :key="c.item_id" class="moulding-tooltip-row">
+                          <span class="moulding-tooltip-name">{{ c.item_name }}</span>
+                          <span class="moulding-tooltip-qty">{{ formatNumber(c.qty) }}</span>
+                        </div>
+                      </template>
+                    </HoverPopover>
                   </td>
                   <td class="col-num stage-assembling">
                     <span :class="['qty-value', item.qty_assembling > 0 ? 'has-value' : 'no-value']">
