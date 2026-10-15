@@ -22,11 +22,6 @@ import KopSuratCetak from './KopSuratCetak.vue'
 </script>
 
 <style scoped>
-/*
-  Teknik: thead di dalam table diulang otomatis oleh browser
-  di setiap halaman saat cetak — tanpa perlu JavaScript.
-  Ini standar CSS2 Table Model dan didukung semua browser modern.
-*/
 
 .print-kop-table {
   width: 100%;
@@ -46,7 +41,6 @@ import KopSuratCetak from './KopSuratCetak.vue'
 }
 
 @media screen {
-  /* Di layar: tidak ada efek khusus, tampil normal */
   .print-kop-table {
     display: block;
   }
@@ -60,8 +54,6 @@ import KopSuratCetak from './KopSuratCetak.vue'
   }
 
   thead {
-    /* display: table-header-group adalah nilai default thead,
-       tapi kita eksplisit agar tidak di-override CSS lain */
     display: table-header-group;
   }
 

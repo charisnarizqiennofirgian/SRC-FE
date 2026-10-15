@@ -9,8 +9,6 @@
 
 <script setup>
 defineProps({
-  // Baris opsional di atas nama perusahaan, mis. "Semarang, July 09, 2026" — kosongkan
-  // kalau dokumen tidak butuh baris tempat/tanggal (Packing List, Commercial Invoice, dst).
   dateLine: { type: String, default: '' },
 })
 </script>

@@ -34,7 +34,7 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
   align-items: center;
   border-bottom: 2.5pt solid #000;
   padding-bottom: 3mm;
-  margin-top: -10mm; /* kompensasi padding sheet di screen */
+  margin-top: -10mm;
   width: 100%;
   box-sizing: border-box;
   gap: 3mm;
@@ -101,7 +101,6 @@ import logoSVLK from '@/assets/lgo.jpeg?url'
   text-decoration: none;
 }
 
-/* SVLK: seukuran logo, rata kiri, tanpa garis */
 .svlk-wrapper {
   flex: 0 0 36mm;
   display: flex;

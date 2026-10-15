@@ -28,7 +28,6 @@
         <td class="right">{{ formatCurrency(item.subtotal) }}</td>
         <td class="center">{{ formatDate(item.delivery_date || po?.delivery_date) }}</td>
       </tr>
-      <!-- Total Rows -->
       <tr class="total-row">
         <td></td>
         <td colspan="6" class="left bold">Sub Total</td>

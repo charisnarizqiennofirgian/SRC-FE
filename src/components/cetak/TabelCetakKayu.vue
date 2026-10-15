@@ -42,7 +42,6 @@
         <td class="right">{{ formatCurrency(item.price) }}</td>
         <td class="right">{{ formatCurrency(item.subtotal) }}</td>
       </tr>
-      <!-- Total Rows — colspan +1 saat ada kolom Peruntukan -->
       <tr class="total-row">
         <td></td>
         <td :colspan="showPeruntukan ? 7 : 6" class="left bold">Sub Total</td>
