@@ -26,7 +26,6 @@ const props = defineProps(['po'])
 
 const displayPPN = computed(() => {
   const val = parseFloat(props.po.ppn_percentage)
-  // Logic to handle 11.12% -> 12% display if that was what you were doing
   if (val === 11.12) return '12'
   return Number.isInteger(val) ? val : val
 })

@@ -5,7 +5,6 @@ export function useMenu() {
   const loading = ref(false)
   const error = ref(null)
 
-  // Track dropdown open/close state
   const openMenus = ref({})
 
   const toggleMenu = (menuName) => {
@@ -20,7 +19,6 @@ export function useMenu() {
     loading.value = false
     error.value = null
 
-    // Gunakan menu statis sesuai dengan arsitektur project
     menuItems.value = [
       { name: 'Dashboard', route: '/dashboard', icon: '📊' },
       {
@@ -64,7 +62,6 @@ export function useMenu() {
       },
     ]
 
-    // Auto-open semua menu groups
     menuItems.value.forEach((item) => {
       if (item.children) {
         openMenus.value[item.name] = true

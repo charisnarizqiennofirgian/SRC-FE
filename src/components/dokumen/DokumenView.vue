@@ -1,6 +1,5 @@
 <template>
   <DashboardLayout>
-    <!-- HEADER -->
     <div class="page-header-dokumen">
       <div class="header-content">
         <div class="header-left">
@@ -20,7 +19,6 @@
       </div>
     </div>
 
-    <!-- FILTER -->
     <div class="filter-card">
       <div class="filter-row">
         <div class="search-box">
@@ -47,33 +45,28 @@
       </div>
     </div>
 
-    <!-- LOADING -->
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
       <p>Memuat dokumen...</p>
     </div>
 
-    <!-- EMPTY -->
     <div v-else-if="daftarDokumen.length === 0" class="empty-state">
       <span class="empty-icon">📭</span>
       <p class="empty-title">Belum ada dokumen</p>
       <p class="empty-sub">Upload dokumen pertama menggunakan tombol di atas</p>
     </div>
 
-    <!-- GRID DOKUMEN -->
     <div v-else class="dokumen-grid">
       <div
         v-for="dok in daftarDokumen"
         :key="dok.id"
         class="dokumen-card"
       >
-        <!-- PREVIEW ICON -->
         <div class="dok-preview" :class="getPreviewClass(dok.tipe_file)">
           <span class="dok-icon">{{ getFileIcon(dok.tipe_file) }}</span>
           <span class="dok-ext">{{ getEkstensi(dok.nama_asli) }}</span>
         </div>
 
-        <!-- INFO -->
         <div class="dok-info">
           <div class="dok-nama" :title="dok.nama_file">{{ dok.nama_file }}</div>
           <div class="dok-meta">
@@ -89,7 +82,6 @@
           </div>
         </div>
 
-        <!-- ACTIONS -->
         <div class="dok-actions">
           <button class="btn-download" @click="downloadDokumen(dok)" title="Download">
             ⬇️ Download
@@ -114,7 +106,6 @@
       </div>
     </div>
 
-    <!-- PAGINATION -->
     <div v-if="pagination.last_page > 1" class="pagination-wrapper">
       <button
         class="btn-page"
@@ -132,7 +123,6 @@
       >Next →</button>
     </div>
 
-    <!-- MODAL UPLOAD -->
     <div v-if="showModalUpload" class="modal-overlay" @click.self="tutupModal">
       <div class="modal-card">
         <div class="modal-header">
@@ -140,7 +130,6 @@
           <button class="btn-tutup-modal" @click="tutupModal">✕</button>
         </div>
         <div class="modal-body">
-          <!-- DROP ZONE -->
           <div
             class="drop-zone"
             :class="{ 'drag-over': isDragging }"
@@ -171,7 +160,6 @@
             </div>
           </div>
 
-          <!-- FORM -->
           <div class="form-upload">
             <div class="form-group-dok">
               <label class="form-label-dok">Nama File <span class="req">*</span></label>
@@ -214,7 +202,6 @@
         </div>
       </div>
     </div>
-    <!-- MODAL REVISI -->
     <div v-if="showModalRevisi" class="modal-overlay" @click.self="tutupModalRevisi">
       <div class="modal-card">
         <div class="modal-header">
@@ -229,7 +216,6 @@
           </div>
           <p class="revisi-hint">⚠️ File lama akan diganti otomatis. Nama dan kategori tetap sama.</p>
 
-          <!-- DROP ZONE -->
           <div
             class="drop-zone"
             :class="{ 'drag-over': isDraggingRevisi }"
@@ -390,7 +376,6 @@ const handleFileChange = (e) => {
   if (!file) return
   formUpload.file = file
   if (!formUpload.nama_file) {
-    // Auto isi nama file dari nama file yang diupload (tanpa ekstensi)
     formUpload.nama_file = file.name.replace(/\.[^/.]+$/, '')
   }
 }
@@ -527,7 +512,6 @@ const submitRevisi = async () => {
   }
 }
 
-// Helpers
 const getFileIcon = (tipe) => {
   if (!tipe) return '📄'
   if (tipe.includes('image'))    return '🖼️'
@@ -614,7 +598,6 @@ onMounted(fetchDokumen)
 .empty-title { font-size:20px; font-weight:800; color:#374151; margin:0 0 8px; }
 .empty-sub { font-size:14px; color:#9ca3af; margin:0; }
 
-/* GRID */
 .dokumen-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:20px; margin-bottom:24px; }
 
 .dokumen-card { background:white; border-radius:16px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.06); border:1px solid #f0f0f0; transition:all 0.2s; display:flex; flex-direction:column; }
@@ -655,14 +638,12 @@ onMounted(fetchDokumen)
 .revisi-hint  { font-size:12px; color:#92400e; background:#fef3c7; border:1px solid #fde68a; border-radius:7px; padding:8px 12px; margin-bottom:14px; }
 .hint-opt     { font-weight:400; color:#9ca3af; font-size:12px; }
 
-/* PAGINATION */
 .pagination-wrapper { display:flex; justify-content:center; align-items:center; gap:16px; padding:20px; background:white; border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,0.06); }
 .btn-page { padding:10px 20px; border:2px solid #e5e7eb; border-radius:10px; background:white; font-weight:700; cursor:pointer; transition:all 0.2s; }
 .btn-page:hover:not(:disabled) { border-color:#0891b2; color:#0891b2; }
 .btn-page:disabled { opacity:0.4; cursor:not-allowed; }
 .page-info { font-size:14px; color:#6b7280; font-weight:600; }
 
-/* MODAL */
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(4px); }
 .modal-card { background:white; border-radius:20px; width:90%; max-width:560px; box-shadow:0 20px 60px rgba(0,0,0,0.3); overflow:hidden; }
 .modal-header { display:flex; justify-content:space-between; align-items:center; padding:20px 28px; background:linear-gradient(135deg,#0891b2,#0e7490); color:white; }
@@ -672,7 +653,6 @@ onMounted(fetchDokumen)
 .modal-body { padding:28px; }
 .modal-footer { display:flex; justify-content:flex-end; gap:12px; padding:20px 28px; background:#f9fafb; border-top:1px solid #e5e7eb; }
 
-/* DROP ZONE */
 .drop-zone { border:3px dashed #cbd5e1; border-radius:14px; padding:32px; text-align:center; cursor:pointer; transition:all 0.2s; margin-bottom:20px; }
 .drop-zone:hover, .drop-zone.drag-over { border-color:#0891b2; background:#f0f9ff; }
 .drop-icon { font-size:48px; display:block; margin-bottom:12px; }
@@ -685,7 +665,6 @@ onMounted(fetchDokumen)
 .file-size { font-size:12px; color:#6b7280; margin:0; }
 .btn-ganti-file { padding:6px 14px; background:#e5e7eb; border:none; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; }
 
-/* FORM UPLOAD */
 .form-group-dok { margin-bottom:16px; }
 .form-label-dok { display:block; font-size:13px; font-weight:700; color:#374151; margin-bottom:6px; }
 .req { color:#ef4444; }

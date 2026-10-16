@@ -32,7 +32,6 @@
         <td class="center">{{ po.delivery_date ? formatTanggal(po.delivery_date) : '-' }}</td>
       </tr>
 
-      <!-- Total Rows -->
       <tr class="total-row">
         <td></td>
         <td colspan="4" class="left bold">Sub Total</td>
@@ -86,7 +85,6 @@ const subTotal = computed(() => {
   return props.details.reduce((acc, item) => acc + parseFloat(item.subtotal || 0), 0)
 })
 
-// Foreign currency totals: sum price × qty (in USD/EUR)
 const subTotalForeign = computed(() => {
   return props.details.reduce((acc, item) => acc + parseFloat(item.price || 0) * parseFloat(item.quantity_ordered || 0), 0)
 })
@@ -97,8 +95,6 @@ const ppnRate = computed(() => {
 })
 
 const ppn = computed(() => subTotal.value * (ppnRate.value / 100))
-// other_cost selalu IDR — cuma ditambahkan ke grand total IDR, tidak dikonversi ke foreign total
-// karena tidak ada exchange rate yang berlaku untuknya (lihat catatan di FormOperasional.vue).
 const otherCost = computed(() => parseFloat(props.po?.other_cost || 0))
 const grandTotal = computed(() => subTotal.value + ppn.value + otherCost.value)
 const ppnForeign = computed(() => subTotalForeign.value * (ppnRate.value / 100))
